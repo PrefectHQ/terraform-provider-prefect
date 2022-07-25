@@ -4,7 +4,7 @@ A terraform provider for [Prefect](prefect.io). Currently supports Prefect Cloud
 
 See the generated [docs/](docs/) for usage, and the [examples](examples/).
 
-TODO: See [versions available on the Terraform Registry](https://registry.terraform.io/providers/PrefectHQ/prefect/latest).
+TODO: Publish [versions to the Terraform Registry](https://registry.terraform.io/providers/PrefectHQ/prefect/latest).
 
 ## Contributing 🌳
 
