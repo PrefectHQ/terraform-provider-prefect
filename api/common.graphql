@@ -1,0 +1,12 @@
+scalar UUID
+scalar uuid
+scalar timestamptz
+scalar jsonb
+scalar DateTime
+
+type success_payload {
+  "A boolean specifying whether this mutation was successful"
+  success: Boolean
+  "If populated, contains an error message explaining what went wrong with the mutation"
+  error: String
+}
