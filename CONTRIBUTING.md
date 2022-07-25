@@ -5,14 +5,6 @@
 - make
 - golang 1.17: `brew install go`
 
-## CICD
-
-To release a new version:
-
-- Make sure you are on the main branch
-- Set `$version` to the next version
-- Tag and push: `git tag $version && gps --tags`
-
 ## Developing
 
 Run `make` to see all options for development, test, and publish.
