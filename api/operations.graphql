@@ -1,0 +1,146 @@
+# ------------------------------------------------------
+# project
+# ------------------------------------------------------
+
+mutation createProject($name: String!, $description: String) {
+  create_project(
+    input: {name: $name, description: $description}
+  ) {
+    id
+  }
+}
+
+mutation setProjectName($project_id: UUID!, $name: String!) {
+  set_project_name(
+    input: { project_id: $project_id, name: $name }
+  ) {
+    id
+  }
+}
+
+mutation setProjectDescription($project_id: UUID!, $description: String) {
+  set_project_description(
+    input: { project_id: $project_id, description: $description }
+  ) {
+    id
+  }
+}
+
+mutation deleteProject($projectId: UUID!) {
+  delete_project(
+    input: {project_id: $projectId}
+  ) {
+    success,
+    error
+  }
+}
+
+query getProject($id: uuid!) {
+  project_by_pk(id: $id) {
+    id
+    name
+    description
+    tenant_id
+    updated
+  }
+}
+
+# ------------------------------------------------------
+# service account
+# ------------------------------------------------------
+
+mutation CreateServiceAccount(
+  $tenant_id: UUID!
+  $name: String!
+  $role_id: UUID
+) {
+  create_service_account(input: {tenant_id: $tenant_id, name: $name, role_id: $role_id}) {
+    id
+  }
+}
+
+mutation SetMembershipRole(
+  $membership_id: UUID!
+  $role: membership_role!) {
+  set_membership_role(input: {membership_id: $membership_id, role: $role}) {
+    id
+  }
+}
+
+mutation DeleteServiceAccount($id: UUID!) {
+  delete_service_account(input: {user_id: $id}) {
+    success
+  }
+}
+
+query GetTenantUser($id: uuid!) {
+  user_view_same_tenant(where: {id: {_eq: $id}}) {
+    id
+    first_name
+    last_name
+    account_type
+    memberships {
+      id
+      tenant_id
+      role_detail {
+        id
+        name
+      }
+    }
+  }
+}
+
+query GetTenantUserIdsWithSimilarUsername($similar: String!) {
+  user_view_same_tenant(where: {username: {_similar: $similar}}) {
+    id
+  }
+}
+
+query AuthRoles {
+  auth_role {
+    name
+    id
+  }
+}
+
+query CurrentUser {
+  user {
+    id
+    username
+    first_name
+    default_membership {
+      id
+      tenant {
+        id
+        name
+      }
+    }
+  }
+}
+
+mutation CreateAPIKey($user_id: UUID!, $name: String!, $expires_at: DateTime, $default_tenant_id: UUID) {
+  create_api_key(
+    input: {user_id: $user_id, name: $name, expires_at: $expires_at, default_tenant_id: $default_tenant_id}
+  ) {
+    id
+    key
+  }
+}
+
+mutation DeleteAPIKey($id: UUID!) {
+  delete_api_key(input: {key_id: $id}) {
+    success
+  }
+}
+
+query APIKeysByUser($user_id: uuid!) {
+  auth_api_key(where: {user_id: {_eq: $user_id}}) {
+    id
+    name
+    created
+    expires_at
+    default_tenant_id
+    user_id
+    key_hash
+  }
+}
