@@ -34,11 +34,13 @@ To build and install locally into _~/go/bin_:
 go install
 ```
 
-To use the locally built version of the provider, tell terraform where to find it (only needed once):
+To use the locally built version of the provider, use dev overrides to tell terraform where to find it (only needed once):
 
 ```
 make ~/.terraformrc
 ```
+
+NB: when using dev overrides `terraform init` will fail, but this can be ignored. If you have more than one provider then they all must be overridden. For more info see [#27459](https://github.com/hashicorp/terraform/issues/27459#issuecomment-1381507253).
 
 ## Prefect API
 
