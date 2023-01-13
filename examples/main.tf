@@ -31,7 +31,7 @@ resource "prefect_service_account" "test" {
   ]
 }
 
-# example showing how to inject the store the api key as a secret value
+# example showing how to store the api key in an AWS Secrets Manager secret
 
 # resource "aws_secretsmanager_secret" "this" {
 #   name = "prefect-svc.apikey"
