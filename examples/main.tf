@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     prefect = {
-      source = "registry.terraform.io/PrefectHQ/prefect"
+      source = "PrefectHQ/prefect"
     }
   }
   required_version = ">= 1.0"
