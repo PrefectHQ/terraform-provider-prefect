@@ -1,83 +1,37 @@
-MAKEFLAGS += --warn-undefined-variables
-SHELL = /bin/bash -o pipefail
-.DEFAULT_GOAL := help
-.PHONY: help fmt apply state lint fix tidy test testacc vet
+TEST?=$$(go list ./... | grep -v 'vendor')
+HOSTNAME=hashicorp.com
+NAMESPACE=edu
+NAME=prefect
+BINARY=terraform-provider-${NAME}
+VERSION=0.2
+OS_ARCH=${CPU_ARCHITECTURE}
 
-GOBIN := $(shell go env GOPATH)/bin
+default: install
 
-## display help message
-help:
-	@awk '/^##.*$$/,/^[~\/\.0-9a-zA-Z_-]+:/' $(MAKEFILE_LIST) | awk '!(NR%2){print $$0p}{p=$$0}' | awk 'BEGIN {FS = ":.*?##"}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
+build:
+	go build -o ${BINARY}
 
-## generate API models from graphql schema and queries
-api/operations.go: api/operations.graphql api/common.graphql api/projects.graphql api/service_account.graphql
-	go run git.sr.ht/~emersion/gqlclient/cmd/gqlclientgen@latest -q api/operations.graphql -s api/common.graphql -s api/projects.graphql -s api/service_account.graphql -o api/operations.go
-# update these scalars to a type alias, because these types are lowercase and so aren't exported and so can't be referenced for casting
-	sed -i '' 's/type timestamptz string/type timestamptz = string/' api/operations.go
-	sed -i '' 's/type uuid string/type uuid = string/' api/operations.go
-	sed -i '' 's/type membership_role string/type membership_role = string/' api/operations.go
-# fix NotAType error because the name of the return value is the same as a type and gqclient doesn't support field aliases
-	sed -i '' 's/(user_view_same_tenant \[\]user_view_same_tenant, err error)/(tenant_user \[\]user_view_same_tenant, err error)/' api/operations.go
-	sed -i '' 's/(auth_role \[\]auth_role, err error)/(auth_roles \[\]auth_role, err error)/' api/operations.go
-	sed -i '' 's/(user \[\]user, err error)/(current_user \[\]user, err error)/' api/operations.go
-# export enums that have a lowercase name
-	sed -i '' 's/membership_roleReadOnlyUser/Membership_roleReadOnlyUser/' api/operations.go
-	sed -i '' 's/membership_roleUser/Membership_roleUser/' api/operations.go
-	sed -i '' 's/membership_roleTenantAdmin/Membership_roleTenantAdmin/' api/operations.go
+release:
+	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
+	GOOS=freebsd GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_freebsd_386
+	GOOS=freebsd GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_freebsd_amd64
+	GOOS=freebsd GOARCH=arm go build -o ./bin/${BINARY}_${VERSION}_freebsd_arm
+	GOOS=linux GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_linux_386
+	GOOS=linux GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_linux_amd64
+	GOOS=linux GOARCH=arm go build -o ./bin/${BINARY}_${VERSION}_linux_arm
+	GOOS=openbsd GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_openbsd_386
+	GOOS=openbsd GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_openbsd_amd64
+	GOOS=solaris GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_solaris_amd64
+	GOOS=windows GOARCH=386 go build -o ./bin/${BINARY}_${VERSION}_windows_386
+	GOOS=windows GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_windows_amd64
 
-## format
-fmt:
-	terraform fmt -recursive ./examples/
-	go fmt ./...
+install: build
+	mkdir -p ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
+	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
 
-## finds Go programs that use old APIs and rewrites them to use newer ones.
-fix:
-	go fix ./...
+test: 
+	go test -i $(TEST) || exit 1                                                   
+	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -timeout=30s -parallel=4                    
 
-## run the lint aggreator golangci-lint over the codebase
-lint:
-	(which golangci-lint || go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.47.2)
-	$(GOBIN)/golangci-lint run ./...
-
-## update go.mod to match the source code in the module
-tidy:
-	go mod tidy
-
-## examines Go source code and reports suspicious constructs
-vet:
-	go vet ./...
-
-## run tests
-test:
-	go test -cover ./...
-
-## run acceptance tests against real infra
-testacc:
-	TF_ACC=1 go test -v ./...
-
-sweep:
-	@echo "WARNING: This will destroy infrastructure. Use only in development accounts."
-	TF_ACC=1 go test ./... -v -sweep -timeout 10m
-
-# install into ~/go/bin, needed to generate the docs
-install: $(GOBIN)/terraform-provider-prefect
-
-$(GOBIN)/terraform-provider-prefect: internal/*/* api/* api/operations.go
-	go install
-
-## make docs
-docs: $(GOBIN)/terraform-provider-prefect examples/*
-	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-	touch docs
-
-## apply examples
-apply:
-	terraform -chdir=examples apply
-
-## show state for test project
-state:
-	terraform -chdir=examples state show prefect_project.test
-
-## create ~/.terraformrc for local testing
-~/.terraformrc: devtools/.terraformrc
-	cat devtools/.terraformrc | sed "s|<GOBIN>|$(GOBIN)|" > ~/.terraformrc
+testacc: 
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m   
