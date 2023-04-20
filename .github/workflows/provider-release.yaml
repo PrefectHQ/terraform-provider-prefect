@@ -6,12 +6,13 @@ on:
     tags:
       - 'v*'
 
-# GitHub considers creating releases and uploading assets as writing contents.
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   goreleaser:
+    permissions:
+      # GitHub considers creating releases and uploading assets as writing contents.
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@8v3
