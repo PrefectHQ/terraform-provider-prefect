@@ -20,6 +20,8 @@ builds:
     - windows
     - linux
     - darwin
+    - openbsd
+    - solaris
   goarch:
     - amd64
     - '386'
