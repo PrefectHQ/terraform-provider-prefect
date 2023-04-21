@@ -3,8 +3,8 @@ name: Release
 
 on:
   push:
-    branches:
-      - '12/automated-provider-build'
+    tags:
+      - 'v*'
 
 permissions: {}
 
@@ -31,7 +31,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          args: release --clean --snapshot
+          args: release --clean
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
