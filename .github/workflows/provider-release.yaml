@@ -3,8 +3,8 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - '12/automated-provider-build'
 
 permissions: {}
 
