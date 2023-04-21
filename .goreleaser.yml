@@ -2,7 +2,7 @@
 # behavior.
 before:
   hooks:
-    # this is just an example and not a requirement for provider building/publishing
+    # Add missing module reqs and remove reqs on modules that do not provide relevant pkgs
     - go mod tidy
 builds:
 - env:
