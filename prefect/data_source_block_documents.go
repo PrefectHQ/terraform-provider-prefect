@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	hc "terraform-provider-prefect/prefect_api"
+	hc "github.com/prefecthq/terraform-provider-prefect/prefect_api"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"

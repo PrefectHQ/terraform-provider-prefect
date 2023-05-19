@@ -2,7 +2,7 @@ package prefect
 
 import (
 	"fmt"
-	hc "terraform-provider-prefect/prefect_api"
+	hc "github.com/prefecthq/terraform-provider-prefect/prefect_api"
 )
 
 func getClient(m interface{}) (*hc.Client, error) {
