@@ -1,4 +1,4 @@
-module terraform-provider-prefect
+module github.com/prefecthq/terraform-provider-prefect
 
 go 1.20
 
