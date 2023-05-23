@@ -1,0 +1,52 @@
+name: Build and Test
+
+"on":
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  build:
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+    name: Build and Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Configure Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Build
+        run: make build
+      - name: Unit Test
+        run: make test
+
+  lint:
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          only-new-issues: true
