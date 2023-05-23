@@ -1,2 +1,2 @@
-examples/.terraform*
-examples/terraform*
+.terraform
+build/*
