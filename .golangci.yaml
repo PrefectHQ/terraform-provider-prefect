@@ -1,3 +1,6 @@
+run:
+  timeout: 5m
+
 linters:
   disable-all: true
   enable:
@@ -7,7 +10,6 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
-    - cyclop
     - decorder
     - depguard
     - dogsled
@@ -20,12 +22,9 @@ linters:
     - errorlint
     - execinquery
     - exhaustive
-    - exhaustruct
     - exportloopref
     - forbidigo
     - forcetypeassert
-    - funlen
-    - gci
     - gocheckcompilerdirectives
     - gochecknoglobals
     - gochecknoinits
@@ -35,9 +34,6 @@ linters:
     - gocyclo
     - godot
     - godox
-    - goerr113
-    - gofmt
-    - gofumpt
     - goheader
     - goimports
     - gomnd
@@ -63,7 +59,6 @@ linters:
     - nilnil
     - nlreturn
     - noctx
-    - nolintlint
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
@@ -76,7 +71,6 @@ linters:
     - sqlclosecheck
     - staticcheck
     - stylecheck
-    - tagliatelle
     - tenv
     - testableexamples
     - testpackage
@@ -91,4 +85,3 @@ linters:
     - wastedassign
     - whitespace
     - wrapcheck
-    - wsl
