@@ -1,11 +1,9 @@
 # terraform-provider-prefect
-Terraform provider for Prefect 2.0.
-This is on a draft/early state of what it should look like. But it works to deploy basic resources, like workspaces, work queues and blocks.
 
-Features included in this project work with the current state of the Prefect Cloud 2.0 REST API (as of 20/02/2023).
-For deployment instructions see the "Deployment" section below.
+Terraform provider for [Prefect 2](https://github.com/PrefectHQ/prefect) and [Prefect Cloud](https://app.prefect.cloud).
 
 ## Features:
+
 * Data Sources:
     - Workspaces
     - Work Queues
@@ -80,3 +78,38 @@ rm -rf examples/.terraform
 * The provider's implementation of `blocks` has been done generically. For a more granular infrastructure state control, consider changing the BlockDocument's `data` field to the target block type e.g: `s3`, `kubernetes job`. This would generate more work and duplication though.   
 * The GO Prefect 2.0 API (`prefect_api`) should be moved out of the provider, into its own project.  
 * Should authentication be handled with temporary tokens?  
+
+## Development
+
+This project uses the following tools to build:
+
+* The [Go programming language](https://go.dev/dl/)
+* GNU `make` to run the build and tests
+* `gotestsum` to generate test reports
+* `golangci-lint` for static code analysis
+* `goreleaser` to generate release binaries (optional for development)
+
+On MacOS, you can use `brew` to install necessary dependencies:
+
+```shell
+brew install \
+  gotestsum \
+  golangci-lint \
+  goreleaser
+```
+
+After installing these dependencies, run `make build` to compile.
+
+You can configure your local Terraform installation to use this provider, rather than downloading the provider from the Terraform Registry, by adding the following configuration to your `~/.terraformrc` file:
+
+```terraform
+provider_installation {
+  dev_overrides {
+    "prefecthq/prefect" = "/Users/jawnsy/projects/work/terraform-provider-prefect/build/terraform-provider-prefect"
+  }
+
+  direct {}
+}
+```
+
+See [Development Overrides for Provider Developers](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers) for details.
