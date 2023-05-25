@@ -21,6 +21,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
           - windows-latest
+      fail-fast: false
     name: Build and Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     steps:

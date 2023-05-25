@@ -100,12 +100,12 @@ brew install \
 
 After installing these dependencies, run `make build` to compile.
 
-You can configure your local Terraform installation to use this provider, rather than downloading the provider from the Terraform Registry, by adding the following configuration to your `~/.terraformrc` file:
+You can configure your local Terraform installation to use this provider, rather than downloading the provider from the Terraform Registry, by adding the following configuration to your `~/.terraformrc` file (be sure to update the path as needed):
 
 ```terraform
 provider_installation {
   dev_overrides {
-    "prefecthq/prefect" = "/Users/jawnsy/projects/work/terraform-provider-prefect/build/terraform-provider-prefect"
+    "prefecthq/prefect" = "/Users/jawnsy/projects/work/terraform-provider-prefect/build"
   }
 
   direct {}

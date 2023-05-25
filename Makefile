@@ -23,7 +23,7 @@ $(BINARY):
 .PHONY: $(BINARY)
 
 clean:
-	rm -rf build
+	rm -vrf build/
 .PHONY: clean
 
 test:

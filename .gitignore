@@ -1,2 +1,7 @@
+# Local Terraform provider cache and state
 .terraform
+terraform.tfstate
+terraform.tfstate.backup
+
+# Built artifacts
 build/*

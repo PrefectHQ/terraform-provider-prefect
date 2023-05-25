@@ -1,16 +1,22 @@
 package main
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
+	"fmt"
+	"os"
 
-	"github.com/prefecthq/terraform-provider-prefect/prefect"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
+const providerAddress = "registry.terraform.io/prefecthq/prefect"
+
 func main() {
-	plugin.Serve(&plugin.ServeOpts{
-		ProviderFunc: func() *schema.Provider {
-			return prefect.Provider()
-		},
-	})
+	provider := providerserver.NewProtocol6(&provider.Provider{})
+
+	err := tf6server.Serve(providerAddress, provider)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to start starting plugin server: %s", err)
+		os.Exit(1)
+	}
 }
