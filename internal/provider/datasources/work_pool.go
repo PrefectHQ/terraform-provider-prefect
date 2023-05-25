@@ -151,8 +151,8 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 	data.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
 
 	if pool.BaseJobTemplate != nil {
-		var sb strings.Builder
-		if err := json.NewEncoder(&sb).Encode(pool.BaseJobTemplate); err != nil {
+		var builder strings.Builder
+		if err := json.NewEncoder(&builder).Encode(pool.BaseJobTemplate); err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("base_job_template"),
 				"Failed to serialize Base Job Template",
@@ -162,7 +162,7 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 			return
 		}
 
-		data.BaseJobTemplate = types.StringValue(sb.String())
+		data.BaseJobTemplate = types.StringValue(builder.String())
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)

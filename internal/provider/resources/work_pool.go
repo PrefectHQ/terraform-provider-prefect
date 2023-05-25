@@ -17,7 +17,7 @@ import (
 
 var (
 	_ = resource.ResourceWithConfigure(&WorkPoolResource{})
-	// _ = resource.ResourceWithImportState(&WorkPoolResource{})
+	_ = resource.ResourceWithImportState(&WorkPoolResource{})
 )
 
 // WorkPoolResource contains state for the resource.
@@ -157,6 +157,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 			"Error creating work pool",
 			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
 		)
+
 		return
 	}
 
@@ -182,8 +183,8 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	resource.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
 
 	if pool.BaseJobTemplate != nil {
-		var sb strings.Builder
-		encoder := json.NewEncoder(&sb)
+		var builder strings.Builder
+		encoder := json.NewEncoder(&builder)
 		err := encoder.Encode(pool.BaseJobTemplate)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
@@ -195,7 +196,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 			return
 		}
 
-		resource.BaseJobTemplate = types.StringValue(sb.String())
+		resource.BaseJobTemplate = types.StringValue(builder.String())
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &resource)...)
@@ -207,12 +208,20 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 
 // Read refreshes the Terraform state with the latest data.
 func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	_ = ctx
+	_ = req
+	_ = resp
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *WorkPoolResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *WorkPoolResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+}
+
+// ImportState imports the resource into Terraform state.
+func (r *WorkPoolResource) ImportState(_ context.Context, _ resource.ImportStateRequest, _ *resource.ImportStateResponse) {
+
 }
