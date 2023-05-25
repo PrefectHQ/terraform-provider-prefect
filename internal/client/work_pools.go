@@ -30,10 +30,6 @@ func (c *Client) WorkPools() api.WorkPoolsClient {
 	}
 }
 
-func (c *WorkPoolsClient) List(_ context.Context, _ *int64, _ int64, _ *api.WorkPoolFilter) ([]api.WorkPool, error) {
-	return nil, nil
-}
-
 func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/work_pools/"+name, nil)
 	if err != nil {
@@ -47,7 +43,7 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
 	var pool api.WorkPool
@@ -76,7 +72,7 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
 	var pool api.WorkPool

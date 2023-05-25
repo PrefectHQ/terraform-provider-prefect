@@ -128,6 +128,7 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 	pool, err := d.client.Get(ctx, data.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("error", err.Error())
+		return
 	}
 
 	data.ID = types.StringValue(pool.ID.String())

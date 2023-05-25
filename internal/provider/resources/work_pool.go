@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -94,24 +96,29 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Description of the work pool",
 			},
 			"type": schema.StringAttribute{
-				Required:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("prefect-agent"),
 				Description: "Type of the work pool",
+				Optional:    true,
 			},
 			"paused": schema.BoolAttribute{
-				Required:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 				Description: "Whether this work pool is paused",
+				Optional:    true,
 			},
 			"concurrency_limit": schema.Int64Attribute{
-				Optional:    true,
 				Description: "The concurrency limit applied to this work pool",
+				Optional:    true,
 			},
 			"default_queue_id": schema.StringAttribute{
-				Optional:    true,
+				Computed:    true,
 				Description: "The UUID of the default queue associated with this work pool",
+				Optional:    true,
 			},
 			"base_job_template": schema.StringAttribute{
-				Optional:    true,
 				Description: "The base job template for the work pool, as a JSON string",
+				Optional:    true,
 			},
 		},
 	}
