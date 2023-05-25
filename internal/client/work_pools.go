@@ -75,6 +75,10 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
 	var pool api.WorkPool
 	if err := json.NewDecoder(resp.Body).Decode(&pool); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)

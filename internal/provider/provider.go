@@ -11,7 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
 var _ provider.Provider = &Provider{}
@@ -139,7 +142,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	}
 
 	prefectClient, err := client.New(
-		client.WithServer(endpoint),
+		client.WithEndpoint(endpoint),
 		client.WithAPIKey(apiKey),
 	)
 	if err != nil {
@@ -161,11 +164,13 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 // DataSources defines the data sources implemented in the provider.
 func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewWorkPoolDataSource,
+		datasources.NewWorkPoolDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		resources.NewWorkPoolResource,
+	}
 }

@@ -56,7 +56,7 @@ func WithClient(httpClient *http.Client) Option {
 
 // WithEndpoint configures the client to communicate with a self-hosted
 // Prefect server or Prefect Cloud.
-func WithServer(endpoint string) Option {
+func WithEndpoint(endpoint string) Option {
 	return func(client *Client) error {
 		_, err := url.Parse(endpoint)
 		if err != nil {
