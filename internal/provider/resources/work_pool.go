@@ -11,7 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -42,7 +44,9 @@ type WorkPoolResourceModel struct {
 	BaseJobTemplate  types.String `tfsdk:"base_job_template"`
 }
 
-//nolint:ireturn
+// New returns a new WorkPoolResource.
+//
+//nolint:ireturn // required by Terraform API
 func NewWorkPoolResource() resource.Resource {
 	return &WorkPoolResource{}
 }
@@ -78,6 +82,9 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Work pool UUID",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -85,7 +92,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
-				Description: "Date and time that the work pool was last updated un RFC 3339 format",
+				Description: "Date and time that the work pool was last updated in RFC 3339 format",
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -117,6 +124,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Optional:    true,
 			},
 			"base_job_template": schema.StringAttribute{
+				Computed:    true,
 				Description: "The base job template for the work pool, as a JSON string",
 				Optional:    true,
 			},
@@ -126,18 +134,18 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var resource WorkPoolResourceModel
+	var model WorkPoolResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &resource)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !resource.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(resource.BaseJobTemplate.ValueString())
+	if !model.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
 		decoder := json.NewDecoder(reader)
 		err := decoder.Decode(&baseJobTemplate)
 		if err != nil {
@@ -152,12 +160,12 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	pool, err := r.client.Create(ctx, api.WorkPoolCreate{
-		Name:             resource.Name.ValueString(),
-		Description:      resource.Description.ValueStringPointer(),
-		Type:             resource.Type.ValueString(),
+		Name:             model.Name.ValueString(),
+		Description:      model.Description.ValueStringPointer(),
+		Type:             model.Type.ValueString(),
 		BaseJobTemplate:  baseJobTemplate,
-		IsPaused:         resource.Paused.ValueBool(),
-		ConcurrencyLimit: resource.ConcurrencyLimit.ValueInt64Pointer(),
+		IsPaused:         model.Paused.ValueBool(),
+		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -168,26 +176,93 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resource.ID = types.StringValue(pool.ID.String())
-	resource.Name = types.StringValue(pool.Name)
+	model.ID = types.StringValue(pool.ID.String())
+	model.Name = types.StringValue(pool.Name)
 
 	if pool.Created == nil {
-		resource.Created = types.StringNull()
+		model.Created = types.StringNull()
 	} else {
-		resource.Created = types.StringValue(pool.Created.Format(time.RFC3339))
+		model.Created = types.StringValue(pool.Created.Format(time.RFC3339))
 	}
 
 	if pool.Updated == nil {
-		resource.Updated = types.StringNull()
+		model.Updated = types.StringNull()
 	} else {
-		resource.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
+		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
 	}
 
-	resource.Description = types.StringPointerValue(pool.Description)
-	resource.Type = types.StringValue(pool.Type)
-	resource.Paused = types.BoolValue(pool.IsPaused)
-	resource.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
-	resource.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
+	model.Description = types.StringPointerValue(pool.Description)
+	model.Type = types.StringValue(pool.Type)
+	model.Paused = types.BoolValue(pool.IsPaused)
+	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
+	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
+
+	if pool.BaseJobTemplate != nil {
+		var builder strings.Builder
+		encoder := json.NewEncoder(&builder)
+		encoder.SetIndent("", "  ")
+		err := encoder.Encode(pool.BaseJobTemplate)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("base_job_template"),
+				"Failed to serialize Base Job Template",
+				fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
+			)
+
+			return
+		}
+
+		model.BaseJobTemplate = types.StringValue(strings.TrimSuffix(builder.String(), "\n"))
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var model WorkPoolResourceModel
+
+	// Populate the model from state and emit diagnostics on error
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	pool, err := r.client.Get(ctx, model.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing work pool state",
+			fmt.Sprintf("Could not get work pool, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	model.ID = types.StringValue(pool.ID.String())
+	model.Name = types.StringValue(pool.Name)
+
+	if pool.Created == nil {
+		model.Created = types.StringNull()
+	} else {
+		model.Created = types.StringValue(pool.Created.Format(time.RFC3339))
+	}
+
+	if pool.Updated == nil {
+		model.Updated = types.StringNull()
+	} else {
+		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
+	}
+
+	model.Description = types.StringPointerValue(pool.Description)
+	model.Type = types.StringValue(pool.Type)
+	model.Paused = types.BoolValue(pool.IsPaused)
+	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
+	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
 
 	if pool.BaseJobTemplate != nil {
 		var builder strings.Builder
@@ -203,32 +278,84 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 			return
 		}
 
-		resource.BaseJobTemplate = types.StringValue(builder.String())
+		model.BaseJobTemplate = types.StringValue(builder.String())
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &resource)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 }
 
-// Read refreshes the Terraform state with the latest data.
-func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	_ = ctx
-	_ = req
-	_ = resp
-}
-
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *WorkPoolResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
+func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var model WorkPoolResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	baseJobTemplate := map[string]interface{}{}
+	if !model.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
+		decoder := json.NewDecoder(reader)
+		err := decoder.Decode(&baseJobTemplate)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("base_job_template"),
+				"Failed to deserialize Base Job Template",
+				fmt.Sprintf("Failed to deserialize Base Job Template as JSON object: %s", err),
+			)
+
+			return
+		}
+	}
+
+	err := r.client.Update(ctx, model.Name.ValueString(), api.WorkPoolUpdate{
+		Description:      model.Description.ValueStringPointer(),
+		IsPaused:         model.Paused.ValueBoolPointer(),
+		BaseJobTemplate:  baseJobTemplate,
+		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating work pool",
+			fmt.Sprintf("Could not update work pool, unexpected error: %s", err),
+		)
+
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *WorkPoolResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
+func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var model WorkPoolResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err := r.client.Delete(ctx, model.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting work pool",
+			fmt.Sprintf("Could not delete work pool, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // ImportState imports the resource into Terraform state.
-func (r *WorkPoolResource) ImportState(_ context.Context, _ resource.ImportStateRequest, _ *resource.ImportStateResponse) {
-
+func (r *WorkPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 }

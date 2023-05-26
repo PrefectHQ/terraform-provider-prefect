@@ -22,8 +22,8 @@ type WorkPoolDataSource struct {
 	client api.WorkPoolsClient
 }
 
-// WorkPoolSourceModel defines the Terraform data source model.
-type WorkPoolSourceModel struct {
+// WorkPoolDataSourceModel defines the Terraform data source model.
+type WorkPoolDataSourceModel struct {
 	ID      types.String `tfsdk:"id"`
 	Created types.String `tfsdk:"created"`
 	Updated types.String `tfsdk:"updated"`
@@ -37,7 +37,9 @@ type WorkPoolSourceModel struct {
 	BaseJobTemplate  types.String `tfsdk:"base_job_template"`
 }
 
-//nolint:ireturn
+// New returns a new WorkPoolDataSource.
+//
+//nolint:ireturn // required by Terraform API
 func NewWorkPoolDataSource() datasource.DataSource {
 	return &WorkPoolDataSource{}
 }
@@ -66,94 +68,102 @@ func (d *WorkPoolDataSource) Configure(_ context.Context, req datasource.Configu
 	d.client = client.WorkPools()
 }
 
+var workPoolAttributes = map[string]schema.Attribute{
+	"id": schema.StringAttribute{
+		Computed:    true,
+		Description: "Work pool UUID",
+	},
+	"created": schema.StringAttribute{
+		Computed:    true,
+		Description: "Date and time of the work pool creation in RFC 3339 format",
+	},
+	"updated": schema.StringAttribute{
+		Computed:    true,
+		Description: "Date and time that the work pool was last updated in RFC 3339 format",
+	},
+	"name": schema.StringAttribute{
+		Required:    true,
+		Description: "Name of the work pool",
+	},
+	"description": schema.StringAttribute{
+		Computed:    true,
+		Description: "Description of the work pool",
+	},
+	"type": schema.StringAttribute{
+		Computed:    true,
+		Description: "Type of the work pool",
+	},
+	"paused": schema.BoolAttribute{
+		Computed:    true,
+		Description: "Whether this work pool is paused",
+	},
+	"concurrency_limit": schema.Int64Attribute{
+		Computed:    true,
+		Description: "The concurrency limit applied to this work pool",
+	},
+	"default_queue_id": schema.StringAttribute{
+		Computed:    true,
+		Description: "The UUID of the default queue associated with this work pool",
+	},
+	"base_job_template": schema.StringAttribute{
+		Computed:    true,
+		Description: "The base job template for the work pool, as a JSON string",
+	},
+}
+
 // Schema defines the schema for the data source.
 func (d *WorkPoolDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Work pool UUID",
-			},
-			"created": schema.StringAttribute{
-				Computed:    true,
-				Description: "Date and time of the work pool creation in RFC 3339 format",
-			},
-			"updated": schema.StringAttribute{
-				Computed:    true,
-				Description: "Date and time that the work pool was last updated un RFC 3339 format",
-			},
-			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the work pool",
-			},
-			"description": schema.StringAttribute{
-				Computed:    true,
-				Description: "Description of the work pool",
-			},
-			"type": schema.StringAttribute{
-				Computed:    true,
-				Description: "Type of the work pool",
-			},
-			"paused": schema.BoolAttribute{
-				Computed:    true,
-				Description: "Whether this work pool is paused",
-			},
-			"concurrency_limit": schema.Int64Attribute{
-				Computed:    true,
-				Description: "The concurrency limit applied to this work pool",
-			},
-			"default_queue_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "The UUID of the default queue associated with this work pool",
-			},
-			"base_job_template": schema.StringAttribute{
-				Computed:    true,
-				Description: "The base job template for the work pool, as a JSON string",
-			},
-		},
+		Attributes: workPoolAttributes,
 	}
 }
 
 // Read refreshes the Terraform state with the latest data.
 func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var data WorkPoolSourceModel
+	var model WorkPoolDataSourceModel
 
 	// Populate the model from data source configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	pool, err := d.client.Get(ctx, data.Name.ValueString())
+	pool, err := d.client.Get(ctx, model.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("error", err.Error())
+		resp.Diagnostics.AddError(
+			"Error refreshing work pool state",
+			fmt.Sprintf("Could not read work pool, unexpected error: %s", err.Error()),
+		)
+
 		return
 	}
 
-	data.ID = types.StringValue(pool.ID.String())
+	model.ID = types.StringValue(pool.ID.String())
 
 	if pool.Created == nil {
-		data.Created = types.StringNull()
+		model.Created = types.StringNull()
 	} else {
-		data.Created = types.StringValue(pool.Created.Format(time.RFC3339))
+		model.Created = types.StringValue(pool.Created.Format(time.RFC3339))
 	}
 
 	if pool.Updated == nil {
-		data.Updated = types.StringNull()
+		model.Updated = types.StringNull()
 	} else {
-		data.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
+		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
 	}
 
-	data.Description = types.StringValue(pool.Name)
-	data.Type = types.StringValue(pool.Type)
-	data.Paused = types.BoolValue(pool.IsPaused)
-	data.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
-	data.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
+	model.Description = types.StringPointerValue(pool.Description)
+	model.Type = types.StringValue(pool.Type)
+	model.Paused = types.BoolValue(pool.IsPaused)
+	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
+	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
 
 	if pool.BaseJobTemplate != nil {
 		var builder strings.Builder
-		if err := json.NewEncoder(&builder).Encode(pool.BaseJobTemplate); err != nil {
+		encoder := json.NewEncoder(&builder)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(pool.BaseJobTemplate); err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("base_job_template"),
 				"Failed to serialize Base Job Template",
@@ -163,10 +173,10 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 			return
 		}
 
-		data.BaseJobTemplate = types.StringValue(builder.String())
+		model.BaseJobTemplate = types.StringValue(builder.String())
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
 	if resp.Diagnostics.HasError() {
 		return

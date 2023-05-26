@@ -1,7 +1,7 @@
 NAME=prefect
 BINARY=terraform-provider-${NAME}
 
-default: build test
+default: build
 .PHONY: default
 
 help:
@@ -10,6 +10,7 @@ help:
 	@echo "This project defines the following build targets:"
 	@echo ""
 	@echo "  build - compiles source code"
+	@echo "  lint - run static code analysis"
 	@echo "  test - run automated tests"
 	@echo "  clean - removes built artifacts"
 .PHONY: help
@@ -25,6 +26,10 @@ $(BINARY):
 clean:
 	rm -vrf build/
 .PHONY: clean
+
+lint:
+	golangci-lint run
+.PHONY: lint
 
 test:
 	gotestsum --max-fails=10 ./...

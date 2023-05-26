@@ -12,9 +12,9 @@ import (
 const providerAddress = "registry.terraform.io/prefecthq/prefect"
 
 func main() {
-	provider := providerserver.NewProtocol6(&provider.Provider{})
+	providerServer := providerserver.NewProtocol6(&provider.Provider{})
 
-	err := tf6server.Serve(providerAddress, provider)
+	err := tf6server.Serve(providerAddress, providerServer)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to start starting plugin server: %s", err)
 		os.Exit(1)

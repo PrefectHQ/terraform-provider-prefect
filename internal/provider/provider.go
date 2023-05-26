@@ -21,7 +21,7 @@ var _ provider.Provider = &Provider{}
 
 // New returns a new Prefect Provider instance.
 //
-//nolint:ireturn
+//nolint:ireturn // required by Terraform API
 func New() provider.Provider {
 	return &Provider{}
 }
@@ -86,8 +86,8 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	var endpoint string
 	if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
-	} else if url, ok := os.LookupEnv("PREFECT_API_URL"); ok {
-		endpoint = url
+	} else if u, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+		endpoint = u
 	} else {
 		endpoint = "http://localhost:4200/api"
 	}
@@ -164,13 +164,16 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 // DataSources defines the data sources implemented in the provider.
 func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		datasources.NewVariableDataSource,
 		datasources.NewWorkPoolDataSource,
+		datasources.NewWorkPoolsDataSource,
 	}
 }
 
 // Resources defines the resources implemented in the provider.
 func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
 	}
 }
