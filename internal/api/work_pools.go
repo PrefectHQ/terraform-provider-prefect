@@ -8,9 +8,10 @@ import (
 
 // WorkPoolsClient is a client for working with work pools.
 type WorkPoolsClient interface {
-	Get(ctx context.Context, name string) (*WorkPool, error)
 	Create(ctx context.Context, data WorkPoolCreate) (*WorkPool, error)
-	Update(ctx context.Context, data WorkPoolUpdate) error
+	List(ctx context.Context, filter WorkPoolFilter) ([]*WorkPool, error)
+	Get(ctx context.Context, name string) (*WorkPool, error)
+	Update(ctx context.Context, name string, data WorkPoolUpdate) error
 	Delete(ctx context.Context, name string) error
 }
 
@@ -42,4 +43,9 @@ type WorkPoolUpdate struct {
 	IsPaused         *bool                  `json:"is_paused"`
 	BaseJobTemplate  map[string]interface{} `json:"base_job_template"`
 	ConcurrencyLimit *int64                 `json:"concurrency_limit"`
+}
+
+// WorkPoolFilter defines filters when searching for work pools.
+type WorkPoolFilter struct {
+	Any []uuid.UUID `json:"any_"`
 }

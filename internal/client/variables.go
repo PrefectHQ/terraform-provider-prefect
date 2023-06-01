@@ -7,37 +7,39 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/uuid"
+
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
-var _ = api.WorkPoolsClient(&WorkPoolsClient{})
+var _ = api.VariablesClient(&VariablesClient{})
 
-// WorkPoolsClient is a client for working with work pools.
-type WorkPoolsClient struct {
+// VariablesClient is a client for working with variables.
+type VariablesClient struct {
 	hc       *http.Client
 	endpoint string
 	apiKey   string
 }
 
-// WorkPools returns a WorkPoolsClient.
+// Variables returns a VariablesClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) WorkPools() api.WorkPoolsClient {
-	return &WorkPoolsClient{
+func (c *Client) Variables() api.VariablesClient {
+	return &VariablesClient{
 		hc:       c.hc,
 		endpoint: c.endpoint,
 		apiKey:   c.apiKey,
 	}
 }
 
-// Create returns details for a new work pool.
-func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (*api.WorkPool, error) {
+// Create returns details for a new variable.
+func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (*api.Variable, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/work_pools", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/variables", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -52,22 +54,25 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var pool api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pool); err != nil {
+	var variable api.Variable
+	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &pool, nil
+	return &variable, nil
 }
 
-// List returns a list of work pools matching filter criteria.
-func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) ([]*api.WorkPool, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
-		return nil, fmt.Errorf("failed to encode filter: %w", err)
-	}
+// List returns a list of variables matching filter criteria.
+func (c *VariablesClient) List(ctx context.Context, filter api.VariableFilter) ([]api.Variable, error) {
+	_ = ctx
+	_ = filter
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/work_pools/filter", &buf)
+	return nil, nil
+}
+
+// Get returns details for a variable by ID.
+func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.Variable, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/variables/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -82,17 +87,17 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var pools []*api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pools); err != nil {
+	var variable api.Variable
+	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return pools, nil
+	return &variable, nil
 }
 
-// Get returns details for a work pool by name.
-func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/work_pools/"+name, http.NoBody)
+// GetByName returns details for a variable by name.
+func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Variable, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/variables/name/"+name, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -107,22 +112,22 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var pool api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pool); err != nil {
+	var variable api.Variable
+	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &pool, nil
+	return &variable, nil
 }
 
-// Update modifies an existing work pool by name.
-func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.WorkPoolUpdate) error {
+// Update modifies an existing variable by ID.
+func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data api.VariableUpdate) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.endpoint+"/work_pools/"+name, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.endpoint+"/variables/"+variableID.String(), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -140,9 +145,9 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 	return nil
 }
 
-// Delete removes a work pool by name.
-func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint+"/work_pools/"+name, http.NoBody)
+// Delete removes a variable by ID.
+func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint+"/variables/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

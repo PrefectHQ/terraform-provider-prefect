@@ -2,19 +2,16 @@
 
 Terraform provider for [Prefect 2](https://github.com/PrefectHQ/prefect) and [Prefect Cloud](https://app.prefect.cloud).
 
-## Features:
+## Resources
 
-* Data Sources:
-    - Workspaces
-    - Work Queues
-    - Block Types
-    - Block Schemas
-    - Block Documents
+* Variable (`prefect_variable`)
+* Work Pool (`prefect_work_pool`)
 
-* Resources:
-    - Workspace (Create)
-    - Work Queue (Create, Update, Delete)
-    - Block (Create, Update, Delete)
+## Data Sources
+
+* Variable (`prefect_variable`)
+* Work Pool (`prefect_work_pool`)
+* Work Pools (`prefect_work_pools`)
 
 ## Deployment:
 The "examples" folder makes use of this local provider.   
@@ -93,6 +90,7 @@ On MacOS, you can use `brew` to install necessary dependencies:
 
 ```shell
 brew install \
+  go \
   gotestsum \
   golangci-lint \
   goreleaser
