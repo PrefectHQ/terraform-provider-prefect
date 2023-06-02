@@ -32,7 +32,7 @@ type VariableDataSourceModel struct {
 	Tags  types.List   `tfsdk:"tags"`
 }
 
-// New returns a new VariableDataSource.
+// NewVariableDataSource returns a new VariableDataSource.
 //
 //nolint:ireturn // required by Terraform API
 func NewVariableDataSource() datasource.DataSource {

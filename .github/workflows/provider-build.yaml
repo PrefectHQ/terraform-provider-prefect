@@ -34,6 +34,8 @@ jobs:
           cache: true
       - name: Build
         run: make build
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
       - name: Unit Test
         run: make test
 

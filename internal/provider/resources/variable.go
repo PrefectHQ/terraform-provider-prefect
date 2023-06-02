@@ -1,4 +1,3 @@
-// +build: none
 package resources
 
 import (
@@ -40,7 +39,7 @@ type VariableResourceModel struct {
 	Tags  types.List   `tfsdk:"tags"`
 }
 
-// New returns a new VariableResource.
+// NewVariableResource returns a new VariableResource.
 //
 //nolint:ireturn // required by Terraform API
 func NewVariableResource() resource.Resource {

@@ -37,7 +37,7 @@ type WorkPoolDataSourceModel struct {
 	BaseJobTemplate  types.String `tfsdk:"base_job_template"`
 }
 
-// New returns a new WorkPoolDataSource.
+// NewWorkPoolDataSource returns a new WorkPoolDataSource.
 //
 //nolint:ireturn // required by Terraform API
 func NewWorkPoolDataSource() datasource.DataSource {

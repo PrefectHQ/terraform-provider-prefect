@@ -2,6 +2,8 @@
 
 Terraform provider for [Prefect 2](https://github.com/PrefectHQ/prefect) and [Prefect Cloud](https://app.prefect.cloud).
 
+**Note**: This provider is currently under active development and may have frequent breaking changes.
+
 ## Resources
 
 * Variable (`prefect_variable`)
