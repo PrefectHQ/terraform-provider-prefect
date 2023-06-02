@@ -29,7 +29,7 @@ type WorkPoolsSourceModel struct {
 	WorkPools types.List `tfsdk:"work_pools"`
 }
 
-// New returns a new WorkPoolsDataSource.
+// NewWorkPoolsDataSource returns a new WorkPoolsDataSource.
 //
 //nolint:ireturn // required by Terraform API
 func NewWorkPoolsDataSource() datasource.DataSource {

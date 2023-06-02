@@ -44,7 +44,7 @@ type WorkPoolResourceModel struct {
 	BaseJobTemplate  types.String `tfsdk:"base_job_template"`
 }
 
-// New returns a new WorkPoolResource.
+// NewWorkPoolResource returns a new WorkPoolResource.
 //
 //nolint:ireturn // required by Terraform API
 func NewWorkPoolResource() resource.Resource {
