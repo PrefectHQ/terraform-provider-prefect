@@ -16,20 +16,40 @@ var _ = api.VariablesClient(&VariablesClient{})
 
 // VariablesClient is a client for working with variables.
 type VariablesClient struct {
-	hc       *http.Client
-	endpoint string
-	apiKey   string
+	hc          *http.Client
+	endpoint    string
+	apiKey      string
+	accountID   uuid.UUID
+	workspaceID uuid.UUID
 }
 
 // Variables returns a VariablesClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) Variables() api.VariablesClient {
-	return &VariablesClient{
-		hc:       c.hc,
-		endpoint: c.endpoint,
-		apiKey:   c.apiKey,
+func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.VariablesClient, error) {
+	if accountID != uuid.Nil && workspaceID == uuid.Nil {
+		return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and workspaceID is nil", accountID)
 	}
+
+	if accountID == uuid.Nil {
+		accountID = c.defaultAccountID
+	}
+
+	if accountID != uuid.Nil && workspaceID == uuid.Nil {
+		if c.defaultWorkspaceID == uuid.Nil {
+			return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and supplied/default workspaceID are both nil", accountID)
+		}
+
+		workspaceID = c.defaultWorkspaceID
+	}
+
+	return &VariablesClient{
+		hc:          c.hc,
+		endpoint:    c.endpoint,
+		apiKey:      c.apiKey,
+		accountID:   accountID,
+		workspaceID: workspaceID,
+	}, nil
 }
 
 // Create returns details for a new variable.

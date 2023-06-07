@@ -11,7 +11,7 @@ require (
 require (
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/hashicorp/go-hclog v1.4.0 // indirect
+	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-plugin v1.4.9 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/terraform-plugin-log v0.8.0 // indirect

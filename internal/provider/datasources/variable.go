@@ -60,7 +60,7 @@ func (d *VariableDataSource) Configure(_ context.Context, req datasource.Configu
 		return
 	}
 
-	d.client = client.Variables()
+	d.client, _ = client.Variables(uuid.Nil, uuid.Nil)
 }
 
 var variableAttributes = map[string]schema.Attribute{
@@ -96,7 +96,8 @@ var variableAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *VariableDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: variableAttributes,
+		Description: "Data Source representing a Prefect variable",
+		Attributes:  variableAttributes,
 	}
 }
 
@@ -106,7 +107,6 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -181,7 +181,6 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	model.Tags = list
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}

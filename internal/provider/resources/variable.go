@@ -67,12 +67,14 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client = client.Variables()
+	r.client, _ = client.Variables(uuid.Nil, uuid.Nil)
 }
 
 // Schema defines the schema for the resource.
 func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Resource representing a Prefect variable",
+		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -90,17 +92,17 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Date and time that the variable was last updated in RFC 3339 format",
 			},
 			"name": schema.StringAttribute{
-				Required:    true,
 				Description: "Name of the variable",
+				Required:    true,
 			},
 			"value": schema.StringAttribute{
-				Required:    true,
 				Description: "Value of the variable",
+				Required:    true,
 			},
 			"tags": schema.ListAttribute{
-				Optional:    true,
 				Description: "Tags associated with the variable",
 				ElementType: types.StringType,
+				Optional:    true,
 			},
 		},
 	}
@@ -138,7 +140,6 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	model.ID = types.StringValue(variable.ID.String())
-	model.Name = types.StringValue(variable.Name)
 
 	if variable.Created == nil {
 		model.Created = types.StringNull()
@@ -151,6 +152,8 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	} else {
 		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
 	}
+
+	model.Name = types.StringValue(variable.Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 
@@ -210,8 +213,6 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	model.ID = types.StringValue(variable.ID.String())
-	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
 
 	if variable.Created == nil {
 		model.Created = types.StringNull()
@@ -224,6 +225,9 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	} else {
 		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
 	}
+
+	model.Name = types.StringValue(variable.Name)
+	model.Value = types.StringValue(variable.Value)
 
 	var diags diag.Diagnostics
 	model.Tags, diags = types.ListValueFrom(ctx, types.StringType, variable.Tags)
@@ -242,7 +246,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var model VariableResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -275,6 +279,15 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 			fmt.Sprintf("Could not update variable, unexpected error: %s", err),
 		)
 
+		return
+	}
+
+	variable, _ := r.client.Get(ctx, variableID)
+	model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
+	model.Updated = types.StringValue(variable.Created.Format(time.RFC3339))
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 }
@@ -310,7 +323,6 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}

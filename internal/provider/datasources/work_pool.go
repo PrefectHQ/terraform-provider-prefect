@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -65,13 +66,14 @@ func (d *WorkPoolDataSource) Configure(_ context.Context, req datasource.Configu
 		return
 	}
 
-	d.client = client.WorkPools()
+	d.client, _ = client.WorkPools(uuid.Nil, uuid.Nil)
 }
 
 var workPoolAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		Description: "Work pool UUID",
+		Optional:    true,
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
@@ -82,12 +84,14 @@ var workPoolAttributes = map[string]schema.Attribute{
 		Description: "Date and time that the work pool was last updated in RFC 3339 format",
 	},
 	"name": schema.StringAttribute{
-		Required:    true,
+		Computed:    true,
 		Description: "Name of the work pool",
+		Optional:    true,
 	},
 	"description": schema.StringAttribute{
 		Computed:    true,
 		Description: "Description of the work pool",
+		Optional:    true,
 	},
 	"type": schema.StringAttribute{
 		Computed:    true,
@@ -100,10 +104,12 @@ var workPoolAttributes = map[string]schema.Attribute{
 	"concurrency_limit": schema.Int64Attribute{
 		Computed:    true,
 		Description: "The concurrency limit applied to this work pool",
+		Optional:    true,
 	},
 	"default_queue_id": schema.StringAttribute{
 		Computed:    true,
 		Description: "The UUID of the default queue associated with this work pool",
+		Optional:    true,
 	},
 	"base_job_template": schema.StringAttribute{
 		Computed:    true,
@@ -114,7 +120,8 @@ var workPoolAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *WorkPoolDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Attributes: workPoolAttributes,
+		Description: "Data Source representing a Prefect Work Pool",
+		Attributes:  workPoolAttributes,
 	}
 }
 
@@ -124,7 +131,6 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -177,7 +183,6 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
