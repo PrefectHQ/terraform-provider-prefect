@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
@@ -75,8 +77,22 @@ func WithEndpoint(endpoint string) Option {
 
 // WithAPIKey configures the API Key to use to authenticate to Prefect.
 func WithAPIKey(apiKey string) Option {
-	return func(c *Client) error {
-		c.apiKey = apiKey
+	return func(client *Client) error {
+		client.apiKey = apiKey
+
+		return nil
+	}
+}
+
+// WithDefaults configures the default account and workspace ID.
+func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
+	return func(client *Client) error {
+		if accountID == uuid.Nil && workspaceID != uuid.Nil {
+			return fmt.Errorf("accountID and workspaceID are inconsistent: accountID is nil and workspaceID is %q", workspaceID)
+		}
+
+		client.defaultAccountID = accountID
+		client.defaultWorkspaceID = workspaceID
 
 		return nil
 	}

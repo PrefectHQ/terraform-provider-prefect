@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -57,12 +58,13 @@ func (d *WorkPoolsDataSource) Configure(_ context.Context, req datasource.Config
 		return
 	}
 
-	d.client = client.WorkPools()
+	d.client, _ = client.WorkPools(uuid.Nil, uuid.Nil)
 }
 
 // Schema defines the schema for the data source.
 func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Data Source for querying work pools",
 		Attributes: map[string]schema.Attribute{
 			"filter_any": schema.ListAttribute{
 				ElementType: types.StringType,
@@ -86,7 +88,6 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -177,7 +178,6 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 	model.WorkPools = list
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}

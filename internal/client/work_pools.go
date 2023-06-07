@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
@@ -14,20 +15,40 @@ var _ = api.WorkPoolsClient(&WorkPoolsClient{})
 
 // WorkPoolsClient is a client for working with work pools.
 type WorkPoolsClient struct {
-	hc       *http.Client
-	endpoint string
-	apiKey   string
+	hc          *http.Client
+	endpoint    string
+	apiKey      string
+	accountID   uuid.UUID
+	workspaceID uuid.UUID
 }
 
 // WorkPools returns a WorkPoolsClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) WorkPools() api.WorkPoolsClient {
-	return &WorkPoolsClient{
-		hc:       c.hc,
-		endpoint: c.endpoint,
-		apiKey:   c.apiKey,
+func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.WorkPoolsClient, error) {
+	if accountID != uuid.Nil && workspaceID == uuid.Nil {
+		return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and workspaceID is nil", accountID)
 	}
+
+	if accountID == uuid.Nil {
+		accountID = c.defaultAccountID
+	}
+
+	if accountID != uuid.Nil && workspaceID == uuid.Nil {
+		if c.defaultWorkspaceID == uuid.Nil {
+			return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and supplied/default workspaceID are both nil", accountID)
+		}
+
+		workspaceID = c.defaultWorkspaceID
+	}
+
+	return &WorkPoolsClient{
+		hc:          c.hc,
+		endpoint:    c.endpoint,
+		apiKey:      c.apiKey,
+		accountID:   accountID,
+		workspaceID: workspaceID,
+	}, nil
 }
 
 // Create returns details for a new work pool.
@@ -37,7 +58,7 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/work_pools", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/work_pools/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

@@ -164,6 +164,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 // DataSources defines the data sources implemented in the provider.
 func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		datasources.NewAccountDataSource,
 		datasources.NewVariableDataSource,
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
@@ -173,6 +174,7 @@ func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource
 // Resources defines the resources implemented in the provider.
 func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
+		resources.NewAccountResource,
 		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
 	}

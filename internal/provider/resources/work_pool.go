@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -72,12 +73,14 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client = client.WorkPools()
+	r.client, _ = client.WorkPools(uuid.Nil, uuid.Nil)
 }
 
 // Schema defines the schema for the resource.
 func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Resource representing a Prefect work pool",
+		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -138,7 +141,6 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -177,7 +179,6 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	model.ID = types.StringValue(pool.ID.String())
-	model.Name = types.StringValue(pool.Name)
 
 	if pool.Created == nil {
 		model.Created = types.StringNull()
@@ -191,11 +192,12 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
 	}
 
-	model.Description = types.StringPointerValue(pool.Description)
-	model.Type = types.StringValue(pool.Type)
-	model.Paused = types.BoolValue(pool.IsPaused)
 	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
 	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
+	model.Description = types.StringPointerValue(pool.Description)
+	model.Name = types.StringValue(pool.Name)
+	model.Paused = types.BoolValue(pool.IsPaused)
+	model.Type = types.StringValue(pool.Type)
 
 	if pool.BaseJobTemplate != nil {
 		var builder strings.Builder
@@ -216,7 +218,6 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -228,7 +229,6 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Populate the model from state and emit diagnostics on error
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -237,7 +237,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing work pool state",
-			fmt.Sprintf("Could not get work pool, unexpected error: %s", err),
+			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
 		)
 
 		return
@@ -282,7 +282,6 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -292,7 +291,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var model WorkPoolResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -327,6 +326,11 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 
 		return
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -349,7 +353,6 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
