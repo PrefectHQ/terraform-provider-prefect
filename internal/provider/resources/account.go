@@ -121,11 +121,11 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *AccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
 	resp.Diagnostics.AddError("Cannot create account", "Account is an import-only resource and cannot be created by Terraform.")
 }
 
-// copyAccountToModel copies an api.AccountResponse to an AccountResourceModel
+// copyAccountToModel copies an api.AccountResponse to an AccountResourceModel.
 func copyAccountToModel(account *api.AccountResponse, model *AccountResourceModel) error {
 	model.ID = types.StringValue(account.ID.String())
 

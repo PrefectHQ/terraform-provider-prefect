@@ -75,7 +75,6 @@ linters:
     - tparallel
     - typecheck
     - unconvert
-    - unparam
     - unused
     - usestdlibvars
     - varnamelen
@@ -139,7 +138,6 @@ linters-settings:
       - nilValReturn
       - octalLiteral
       - offBy1
-      - paramTypeCombine
       - preferDecodeRune
       - preferFilepathJoin
       - preferFprint
