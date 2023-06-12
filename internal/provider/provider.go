@@ -18,22 +18,22 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
-var _ = provider.Provider(&Provider{})
+var _ = provider.Provider(&PrefectProvider{})
 
 // New returns a new Prefect Provider instance.
 //
 //nolint:ireturn // required by Terraform API
 func New() provider.Provider {
-	return &Provider{}
+	return &PrefectProvider{}
 }
 
 // Metadata returns the provider type name.
-func (p *Provider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *PrefectProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "prefect"
 }
 
 // Schema defines the provider-level schema for configuration data.
-func (p *Provider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
@@ -58,8 +58,8 @@ func (p *Provider) Schema(_ context.Context, _ provider.SchemaRequest, resp *pro
 }
 
 // Configure configures the provider's internal client.
-func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	config := &ProviderModel{}
+func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	config := &PrefectProviderModel{}
 
 	// Populate the model from provider configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, config)...)
@@ -222,7 +222,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 }
 
 // DataSources defines the data sources implemented in the provider.
-func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
+func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
 		datasources.NewVariableDataSource,
@@ -233,7 +233,7 @@ func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource
 }
 
 // Resources defines the resources implemented in the provider.
-func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
+func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewAccountResource,
 		resources.NewVariableResource,

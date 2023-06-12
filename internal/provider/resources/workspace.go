@@ -113,7 +113,7 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 }
 
 // copyWorkspaceToModel copies an api.Workspace to a WorkspaceResourceModel.
-func copyWorkspaceToModel(ctx context.Context, workspace *api.Workspace, model *WorkspaceResourceModel) diag.Diagnostics {
+func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, model *WorkspaceResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(workspace.ID.String())
 
 	if workspace.Created == nil {
@@ -182,23 +182,10 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	model.ID = types.StringValue(workspace.ID.String())
-
-	if workspace.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(workspace.Created.Format(time.RFC3339))
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	if workspace.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(workspace.Updated.Format(time.RFC3339))
-	}
-
-	model.Name = types.StringValue(workspace.Name)
-	model.Handle = types.StringValue(workspace.Handle)
-	model.Description = types.StringPointerValue(workspace.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -245,23 +232,10 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	model.ID = types.StringValue(workspace.ID.String())
-
-	if workspace.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(workspace.Created.Format(time.RFC3339))
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	if workspace.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(workspace.Updated.Format(time.RFC3339))
-	}
-
-	model.Name = types.StringValue(workspace.Name)
-	model.Handle = types.StringValue(workspace.Handle)
-	model.Description = types.StringPointerValue(workspace.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -311,9 +285,20 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	workspace, _ := client.Get(ctx, workspaceID)
-	model.Created = types.StringValue(workspace.Created.Format(time.RFC3339))
-	model.Updated = types.StringValue(workspace.Created.Format(time.RFC3339))
+	workspace, err := client.Get(ctx, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Workspace state",
+			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

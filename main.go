@@ -12,7 +12,7 @@ import (
 const providerAddress = "registry.terraform.io/prefecthq/prefect"
 
 func main() {
-	providerServer := providerserver.NewProtocol6(&provider.Provider{})
+	providerServer := providerserver.NewProtocol6(&provider.PrefectProvider{})
 
 	err := tf6server.Serve(providerAddress, providerServer)
 	if err != nil {

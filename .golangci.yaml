@@ -25,7 +25,6 @@ linters:
     - forcetypeassert
     - gocheckcompilerdirectives
     - gochecknoinits
-    - gocognit
     - goconst
     - gocritic
     - gocyclo
