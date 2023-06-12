@@ -3,7 +3,6 @@ package datasources
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var _ = datasource.DataSourceWithConfigure(&WorkspaceDataSource{})
@@ -23,10 +23,10 @@ type WorkspaceDataSource struct {
 
 // WorkspaceDataSourceModel defines the Terraform data source model.
 type WorkspaceDataSourceModel struct {
-	ID        types.String `tfsdk:"id"`
-	Created   types.String `tfsdk:"created"`
-	Updated   types.String `tfsdk:"updated"`
-	AccountID types.String `tfsdk:"account_id"`
+	ID        types.String               `tfsdk:"id"`
+	Created   customtypes.TimestampValue `tfsdk:"created"`
+	Updated   customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID types.String               `tfsdk:"account_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Handle      types.String `tfsdk:"handle"`
@@ -71,10 +71,12 @@ var workspaceAttributes = map[string]schema.Attribute{
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time of the workspace creation in RFC 3339 format",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time that the workspace was last updated in RFC 3339 format",
 	},
 	"account_id": schema.StringAttribute{
@@ -169,18 +171,8 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	model.ID = types.StringValue(workspace.ID.String())
-
-	if workspace.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(workspace.Created.Format(time.RFC3339))
-	}
-
-	if workspace.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(workspace.Updated.Format(time.RFC3339))
-	}
+	model.Created = customtypes.NewTimestampPointerValue(workspace.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
 
 	model.Name = types.StringValue(workspace.Name)
 	model.Handle = types.StringValue(workspace.Handle)
