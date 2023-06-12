@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -17,7 +18,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
-var _ provider.Provider = &Provider{}
+var _ = provider.Provider(&Provider{})
 
 // New returns a new Prefect Provider instance.
 //
@@ -44,17 +45,24 @@ func (p *Provider) Schema(_ context.Context, _ provider.SchemaRequest, resp *pro
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"account_id": schema.StringAttribute{
+				Description: "Default account ID to act on (Prefect Cloud only)",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				Description: "Default workspace ID to act on (Prefect Cloud only)",
+				Optional:    true,
+			},
 		},
 	}
 }
 
 // Configure configures the provider's internal client.
 func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	config := &providerModel{}
+	config := &ProviderModel{}
 
 	// Populate the model from provider configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, config)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -78,6 +86,33 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		)
 	}
 
+	if config.APIKey.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Unknown Prefect API Key",
+			"The Prefect API Key is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
+		)
+	}
+
+	if config.AccountID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("account_id"),
+			"Unknown Prefect Account ID",
+			"The Prefect Account ID is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
+		)
+	}
+
+	if config.WorkspaceID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("workspace_id"),
+			"Unknown Prefect Workspace ID",
+			"The Prefect Workspace ID is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
+		)
+	}
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -90,13 +125,6 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		endpoint = u
 	} else {
 		endpoint = "http://localhost:4200/api"
-	}
-
-	var apiKey string
-	if !config.APIKey.IsUnknown() {
-		apiKey = config.APIKey.ValueString()
-	} else if key, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
-		apiKey = key
 	}
 
 	// Validate values (ensure that they are non-empty)
@@ -116,6 +144,37 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 			"Invalid Prefect API Endpoint",
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
+	}
+
+	var apiKey string
+	if !config.APIKey.IsUnknown() {
+		apiKey = config.APIKey.ValueString()
+	} else if key, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+		apiKey = key
+	}
+
+	accountID := uuid.Nil
+	if !config.AccountID.IsNull() && config.AccountID.ValueString() != "" {
+		accountID, err = uuid.Parse(config.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !config.WorkspaceID.IsNull() && config.WorkspaceID.ValueString() != "" {
+		workspaceID, err = uuid.Parse(config.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+		}
 	}
 
 	// If API Key is unset, check that we're running against Prefect Cloud
@@ -144,6 +203,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint),
 		client.WithAPIKey(apiKey),
+		client.WithDefaults(accountID, workspaceID),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -168,6 +228,7 @@ func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource
 		datasources.NewVariableDataSource,
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
+		datasources.NewWorkspaceDataSource,
 	}
 }
 
@@ -177,5 +238,6 @@ func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
 		resources.NewAccountResource,
 		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
+		resources.NewWorkspaceResource,
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -126,7 +127,7 @@ func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, re
 }
 
 // copyAccountToModel copies an api.AccountResponse to an AccountResourceModel.
-func copyAccountToModel(account *api.AccountResponse, model *AccountResourceModel) error {
+func copyAccountToModel(_ context.Context, account *api.AccountResponse, model *AccountResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(account.ID.String())
 
 	if account.Created == nil {
@@ -182,13 +183,8 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	err = copyAccountToModel(account, &model)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error mapping AccountResponse to Model",
-			fmt.Sprintf("This is an internal error in the Terraform provider, please report this to the maintainers: %s", err.Error()),
-		)
-
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -245,13 +241,8 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	err = copyAccountToModel(account, &model)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error mapping AccountResponse to Model",
-			fmt.Sprintf("This is an internal error in the Terraform provider, please report this to the maintainers: %s", err.Error()),
-		)
-
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
