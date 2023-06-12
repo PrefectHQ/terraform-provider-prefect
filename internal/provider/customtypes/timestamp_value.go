@@ -56,6 +56,7 @@ func NewTimestampPointerValue(value *time.Time) TimestampValue {
 	return NewTimestampValue(*value)
 }
 
+// Equal returns true if this timestamp is equal to o.
 func (v TimestampValue) Equal(o attr.Value) bool {
 	other, ok := o.(TimestampValue)
 	if !ok {
@@ -65,7 +66,10 @@ func (v TimestampValue) Equal(o attr.Value) bool {
 	return v.StringValue.Equal(other.StringValue)
 }
 
-func (v TimestampValue) Type(ctx context.Context) attr.Type {
+// Type returns an instance of the type.
+//
+//nolint:ireturn // required to implement StringValuable
+func (v TimestampValue) Type(_ context.Context) attr.Type {
 	return TimestampType{}
 }
 
@@ -75,7 +79,7 @@ func (v TimestampValue) String() string {
 
 // StringSemanticEquals checks if two TimestampValue objects have
 // equivalent values, even if they are not equal.
-func (v TimestampValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
+func (v TimestampValue) StringSemanticEquals(_ context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	newValue, ok := newValuable.(TimestampValue)
@@ -97,5 +101,6 @@ func (v TimestampValue) StringSemanticEquals(ctx context.Context, newValuable ba
 // ValueTime returns the timestamp as a time.Time.
 func (v TimestampValue) ValueTime() time.Time {
 	value, _ := time.Parse(time.RFC3339, v.StringValue.ValueString())
+
 	return value
 }

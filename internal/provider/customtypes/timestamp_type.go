@@ -36,7 +36,10 @@ func (t TimestampType) String() string {
 	return "TimestampType"
 }
 
-func (t TimestampType) ValueFromString(ctx context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+// ValueFromString converts a string value to a TimestampValue.
+//
+//nolint:ireturn // required to implement StringTypable
+func (t TimestampType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
 	value := TimestampValue{
 		StringValue: in,
 	}
@@ -44,10 +47,13 @@ func (t TimestampType) ValueFromString(ctx context.Context, in basetypes.StringV
 	return value, nil
 }
 
+// ValueFromTerraform converts a Terraform value to a TimestampValue.
+//
+//nolint:ireturn // required to implement StringTypable
 func (t TimestampType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unexpected error converting value from Terraform: %w", err)
 	}
 
 	stringValue, ok := attrValue.(basetypes.StringValue)
@@ -63,11 +69,12 @@ func (t TimestampType) ValueFromTerraform(ctx context.Context, in tftypes.Value)
 	return stringValuable, nil
 }
 
-func (t TimestampType) ValueType(ctx context.Context) attr.Value {
+//nolint:ireturn // required to implement StringTypable
+func (t TimestampType) ValueType(_ context.Context) attr.Value {
 	return TimestampValue{}
 }
 
-func (t TimestampType) Validate(ctx context.Context, value tftypes.Value, path path.Path) diag.Diagnostics {
+func (t TimestampType) Validate(_ context.Context, value tftypes.Value, valuePath path.Path) diag.Diagnostics {
 	if value.IsNull() || !value.IsKnown() {
 		return nil
 	}
@@ -76,7 +83,7 @@ func (t TimestampType) Validate(ctx context.Context, value tftypes.Value, path p
 	var timestampStr string
 	if err := value.As(&timestampStr); err != nil {
 		diags.AddAttributeError(
-			path,
+			valuePath,
 			"Invalid Terraform Value",
 			fmt.Sprintf("Failed to convert %T to string: %s. Please report this issue to the provider developers.", value, err.Error()),
 		)
@@ -86,7 +93,7 @@ func (t TimestampType) Validate(ctx context.Context, value tftypes.Value, path p
 
 	if _, err := time.Parse(time.RFC3339, timestampStr); err != nil {
 		diags.AddAttributeError(
-			path,
+			valuePath,
 			"Invalid RFC 3339 String Value",
 			fmt.Sprintf("Failed to parse string %q as RFC 3339 timestamp (YYYY-MM-DDTHH:MM:SSZ): %s", timestampStr, err.Error()),
 		)
