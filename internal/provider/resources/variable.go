@@ -108,13 +108,40 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	}
 }
 
+// copyVariableToModel copies an api.Variable to a VariableResourceModel.
+func copyVariableToModel(ctx context.Context, variable *api.Variable, model *VariableResourceModel) diag.Diagnostics {
+	model.ID = types.StringValue(variable.ID.String())
+
+	if variable.Created == nil {
+		model.Created = types.StringNull()
+	} else {
+		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
+	}
+
+	if variable.Updated == nil {
+		model.Updated = types.StringNull()
+	} else {
+		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
+	}
+
+	model.Name = types.StringValue(variable.Name)
+	model.Value = types.StringValue(variable.Value)
+
+	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
+	if diags.HasError() {
+		return diags
+	}
+	model.Tags = tags
+
+	return nil
+}
+
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var model VariableResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -139,24 +166,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	model.ID = types.StringValue(variable.ID.String())
-
-	if variable.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
-
-	if variable.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
-	}
-
-	model.Name = types.StringValue(variable.Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -168,7 +183,6 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	// Populate the model from state and emit diagnostics on error
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -282,9 +296,27 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	variable, _ := r.client.Get(ctx, variableID)
-	model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
-	model.Updated = types.StringValue(variable.Created.Format(time.RFC3339))
+	variable, err := r.client.Get(ctx, variableID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing variable state",
+			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	if variable.Created == nil {
+		model.Created = types.StringNull()
+	} else {
+		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
+	}
+
+	if variable.Updated == nil {
+		model.Updated = types.StringNull()
+	} else {
+		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
