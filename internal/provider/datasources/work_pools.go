@@ -21,11 +21,14 @@ var _ = datasource.DataSourceWithConfigure(&WorkPoolsDataSource{})
 
 // WorkPoolsDataSource contains state for the data source.
 type WorkPoolsDataSource struct {
-	client api.WorkPoolsClient
+	client api.PrefectClient
 }
 
 // WorkPoolsSourceModel defines the Terraform data source model.
 type WorkPoolsSourceModel struct {
+	AccountID   types.String `tfsdk:"account_id"`
+	WorkspaceID types.String `tfsdk:"workspace_id"`
+
 	FilterAny types.List `tfsdk:"filter_any"`
 	WorkPools types.List `tfsdk:"work_pools"`
 }
@@ -58,7 +61,7 @@ func (d *WorkPoolsDataSource) Configure(_ context.Context, req datasource.Config
 		return
 	}
 
-	d.client, _ = client.WorkPools(uuid.Nil, uuid.Nil)
+	d.client = client
 }
 
 // Schema defines the schema for the data source.
@@ -66,6 +69,14 @@ func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 	resp.Schema = schema.Schema{
 		Description: "Data Source for querying work pools",
 		Attributes: map[string]schema.Attribute{
+			"account_id": schema.StringAttribute{
+				Description: "Account UUID, defaults to the account set in the provider",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Optional:    true,
+			},
 			"filter_any": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
@@ -92,9 +103,49 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := d.client.WorkPools(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating variable client",
+			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
 	filter := api.WorkPoolFilter{}
 
-	pools, err := d.client.List(ctx, filter)
+	pools, err := client.List(ctx, filter)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing work pool state",

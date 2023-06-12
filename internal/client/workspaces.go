@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
@@ -21,7 +19,6 @@ type WorkspacesClient struct {
 	hc          *http.Client
 	routePrefix string
 	apiKey      string
-	accountID   uuid.UUID
 }
 
 // Workspaces returns a WorkspacesClient.
@@ -36,7 +33,6 @@ func (c *Client) Workspaces(accountID uuid.UUID) (api.WorkspacesClient, error) {
 		hc:          c.hc,
 		routePrefix: getAccountScopedURL(c.endpoint, accountID, "workspaces"),
 		apiKey:      c.apiKey,
-		accountID:   accountID,
 	}, nil
 }
 
@@ -52,7 +48,9 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -77,12 +75,9 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	reqStr, _ := httputil.DumpRequest(req, false)
-	tflog.Warn(ctx, "prefect client request contents", map[string]interface{}{
-		"request": string(reqStr),
-	})
+	setDefaultHeaders(req, c.apiKey)
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -112,7 +107,9 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
@@ -132,7 +129,9 @@ func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) er
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}

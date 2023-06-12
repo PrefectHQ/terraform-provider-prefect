@@ -17,10 +17,8 @@ var _ = api.VariablesClient(&VariablesClient{})
 // VariablesClient is a client for working with variables.
 type VariablesClient struct {
 	hc          *http.Client
-	endpoint    string
+	routePrefix string
 	apiKey      string
-	accountID   uuid.UUID
-	workspaceID uuid.UUID
 }
 
 // Variables returns a VariablesClient.
@@ -45,10 +43,7 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 
 	return &VariablesClient{
 		hc:          c.hc,
-		endpoint:    c.endpoint,
-		apiKey:      c.apiKey,
-		accountID:   accountID,
-		workspaceID: workspaceID,
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
 	}, nil
 }
 
@@ -59,12 +54,14 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint+"/variables", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/variables/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -92,12 +89,14 @@ func (c *VariablesClient) List(ctx context.Context, filter api.VariableFilter) (
 
 // Get returns details for a variable by ID.
 func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/variables/"+variableID.String(), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/variables/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -117,12 +116,14 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 
 // GetByName returns details for a variable by name.
 func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/variables/name/"+name, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/variables/name/"+name, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -147,12 +148,14 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.endpoint+"/variables/"+variableID.String(), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/variables/"+variableID.String(), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
@@ -167,12 +170,14 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 
 // Delete removes a variable by ID.
 func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint+"/variables/"+variableID.String(), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/variables/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}

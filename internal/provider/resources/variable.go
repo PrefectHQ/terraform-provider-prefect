@@ -25,14 +25,16 @@ var (
 
 // VariableResource contains state for the resource.
 type VariableResource struct {
-	client api.VariablesClient
+	client api.PrefectClient
 }
 
 // VariableResourceModel defines the Terraform resource model.
 type VariableResourceModel struct {
-	ID      types.String `tfsdk:"id"`
-	Created types.String `tfsdk:"created"`
-	Updated types.String `tfsdk:"updated"`
+	ID          types.String `tfsdk:"id"`
+	Created     types.String `tfsdk:"created"`
+	Updated     types.String `tfsdk:"updated"`
+	AccountID   types.String `tfsdk:"account_id"`
+	WorkspaceID types.String `tfsdk:"workspace_id"`
 
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
@@ -67,7 +69,7 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client, _ = client.Variables(uuid.Nil, uuid.Nil)
+	r.client = client
 }
 
 // Schema defines the schema for the resource.
@@ -90,6 +92,14 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				Description: "Date and time that the variable was last updated in RFC 3339 format",
+			},
+			"account_id": schema.StringAttribute{
+				Description: "Account UUID, defaults to the account set in the provider",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the variable",
@@ -152,7 +162,47 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	variable, err := r.client.Create(ctx, api.VariableCreate{
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Variables(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating variable client",
+			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	variable, err := client.Create(ctx, api.VariableCreate{
 		Name:  model.Name.ValueString(),
 		Value: model.Value.ValueString(),
 		Tags:  tags,
@@ -187,11 +237,50 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Variables(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating variable client",
+			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
 	// Always prefer to refresh state using the ID, if it is set.
 	//
 	// If we are importing by name, then we will need to load once using the name.
 	var variable *api.Variable
-	var err error
 	if !model.ID.IsNull() {
 		var variableID uuid.UUID
 		variableID, err = uuid.Parse(model.ID.ValueString())
@@ -205,9 +294,9 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 
-		variable, err = r.client.Get(ctx, variableID)
+		variable, err = client.Get(ctx, variableID)
 	} else if !model.Name.IsNull() {
-		variable, err = r.client.GetByName(ctx, model.Name.ValueString())
+		variable, err = client.GetByName(ctx, model.Name.ValueString())
 	} else {
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
@@ -226,26 +315,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	model.ID = types.StringValue(variable.ID.String())
-
-	if variable.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
-	}
-
-	if variable.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
-	}
-
-	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
-
-	var diags diag.Diagnostics
-	model.Tags, diags = types.ListValueFrom(ctx, types.StringType, variable.Tags)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -276,13 +346,53 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Variables(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating variable client",
+			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
 	var tags []string
 	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	err = r.client.Update(ctx, variableID, api.VariableUpdate{
+	err = client.Update(ctx, variableID, api.VariableUpdate{
 		Name:  model.Name.ValueString(),
 		Value: model.Value.ValueString(),
 		Tags:  tags,
@@ -296,7 +406,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	variable, err := r.client.Get(ctx, variableID)
+	variable, err := client.Get(ctx, variableID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing variable state",
@@ -306,16 +416,9 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	if variable.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
-	}
-
-	if variable.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
@@ -344,7 +447,47 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err = r.client.Delete(ctx, variableID)
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Variables(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating variable client",
+			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Delete(ctx, variableID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting variable",

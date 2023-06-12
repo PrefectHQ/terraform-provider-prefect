@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -51,16 +50,11 @@ func setAuthorizationHeader(request *http.Request, apiKey string) {
 	}
 }
 
-func doRequest(client *http.Client, apiKey string, request *http.Request) (*http.Response, error) {
-	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Accept", "application/json")
-
+// setDefaultHeaders will set Authorization, Content-Type, and Accept
+// headers that are common to most requests.
+func setDefaultHeaders(request *http.Request, apiKey string) {
 	setAuthorizationHeader(request, apiKey)
 
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-
-	return resp, nil
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Accept", "application/json")
 }

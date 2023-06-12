@@ -63,7 +63,16 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	d.client, _ = client.Accounts()
+	var err error
+	d.client, err = client.Accounts()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating account client",
+			fmt.Sprintf("Could not create account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
 }
 
 // Schema defines the schema for the data source.
