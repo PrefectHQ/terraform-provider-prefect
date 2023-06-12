@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var (
@@ -29,9 +29,9 @@ type AccountResource struct {
 
 // AccountResourceModel defines the Terraform resource model.
 type AccountResourceModel struct {
-	ID      types.String `tfsdk:"id"`
-	Created types.String `tfsdk:"created"`
-	Updated types.String `tfsdk:"updated"`
+	ID      types.String               `tfsdk:"id"`
+	Created customtypes.TimestampValue `tfsdk:"created"`
+	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	Name                  types.String `tfsdk:"name"`
 	Handle                types.String `tfsdk:"handle"`
@@ -87,10 +87,12 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time of the account creation in RFC 3339 format",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time that the account was last updated in RFC 3339 format",
 			},
 			"name": schema.StringAttribute{
@@ -129,18 +131,8 @@ func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, re
 // copyAccountToModel copies an api.AccountResponse to an AccountResourceModel.
 func copyAccountToModel(_ context.Context, account *api.AccountResponse, model *AccountResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(account.ID.String())
-
-	if account.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(account.Created.Format(time.RFC3339))
-	}
-
-	if account.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(account.Updated.Format(time.RFC3339))
-	}
+	model.Created = customtypes.NewTimestampPointerValue(account.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
 	model.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
 	model.BillingEmail = types.StringPointerValue(account.BillingEmail)

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -14,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var _ = datasource.DataSourceWithConfigure(&WorkPoolDataSource{})
@@ -25,11 +25,11 @@ type WorkPoolDataSource struct {
 
 // WorkPoolDataSourceModel defines the Terraform data source model.
 type WorkPoolDataSourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Created     types.String `tfsdk:"created"`
-	Updated     types.String `tfsdk:"updated"`
-	AccountID   types.String `tfsdk:"account_id"`
-	WorkspaceID types.String `tfsdk:"workspace_id"`
+	ID          types.String               `tfsdk:"id"`
+	Created     customtypes.TimestampValue `tfsdk:"created"`
+	Updated     customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID   types.String               `tfsdk:"account_id"`
+	WorkspaceID types.String               `tfsdk:"workspace_id"`
 
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
@@ -79,10 +79,12 @@ var workPoolAttributes = map[string]schema.Attribute{
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time of the work pool creation in RFC 3339 format",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time that the work pool was last updated in RFC 3339 format",
 	},
 	"account_id": schema.StringAttribute{
@@ -196,18 +198,8 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	model.ID = types.StringValue(pool.ID.String())
-
-	if pool.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(pool.Created.Format(time.RFC3339))
-	}
-
-	if pool.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
-	}
+	model.Created = customtypes.NewTimestampPointerValue(pool.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
 
 	model.Description = types.StringPointerValue(pool.Description)
 	model.Type = types.StringValue(pool.Type)

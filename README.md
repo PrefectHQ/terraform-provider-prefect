@@ -6,14 +6,18 @@ Terraform provider for [Prefect 2](https://github.com/PrefectHQ/prefect) and [Pr
 
 ## Resources
 
+* Account (`prefect_account`)
 * Variable (`prefect_variable`)
 * Work Pool (`prefect_work_pool`)
+* Workspace (`prefect_workspace`)
 
 ## Data Sources
 
+* Account (`prefect_account`)
 * Variable (`prefect_variable`)
 * Work Pool (`prefect_work_pool`)
 * Work Pools (`prefect_work_pools`)
+* Workspace (`prefect_workspace`)
 
 ## Deployment:
 The "examples" folder makes use of this local provider.   

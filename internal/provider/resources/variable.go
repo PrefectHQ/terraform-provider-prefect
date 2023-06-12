@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var (
@@ -30,11 +30,11 @@ type VariableResource struct {
 
 // VariableResourceModel defines the Terraform resource model.
 type VariableResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Created     types.String `tfsdk:"created"`
-	Updated     types.String `tfsdk:"updated"`
-	AccountID   types.String `tfsdk:"account_id"`
-	WorkspaceID types.String `tfsdk:"workspace_id"`
+	ID          types.String               `tfsdk:"id"`
+	Created     customtypes.TimestampValue `tfsdk:"created"`
+	Updated     customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID   types.String               `tfsdk:"account_id"`
+	WorkspaceID types.String               `tfsdk:"workspace_id"`
 
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
@@ -87,10 +87,12 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time of the variable creation in RFC 3339 format",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time that the variable was last updated in RFC 3339 format",
 			},
 			"account_id": schema.StringAttribute{
@@ -121,18 +123,8 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 // copyVariableToModel copies an api.Variable to a VariableResourceModel.
 func copyVariableToModel(ctx context.Context, variable *api.Variable, model *VariableResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(variable.ID.String())
-
-	if variable.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(variable.Created.Format(time.RFC3339))
-	}
-
-	if variable.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(variable.Updated.Format(time.RFC3339))
-	}
+	model.Created = customtypes.NewTimestampPointerValue(variable.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	model.Name = types.StringValue(variable.Name)
 	model.Value = types.StringValue(variable.Value)

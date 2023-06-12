@@ -3,7 +3,6 @@ package datasources
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var _ = datasource.DataSourceWithConfigure(&AccountDataSource{})
@@ -23,9 +23,9 @@ type AccountDataSource struct {
 
 // AccountDataSourceModel defines the Terraform data source model.
 type AccountDataSourceModel struct {
-	ID      types.String `tfsdk:"id"`
-	Created types.String `tfsdk:"created"`
-	Updated types.String `tfsdk:"updated"`
+	ID      types.String               `tfsdk:"id"`
+	Created customtypes.TimestampValue `tfsdk:"created"`
+	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	Name                  types.String `tfsdk:"name"`
 	Handle                types.String `tfsdk:"handle"`
@@ -86,10 +86,12 @@ func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time of the account creation in RFC 3339 format",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time that the account was last updated in RFC 3339 format",
 			},
 			"name": schema.StringAttribute{
@@ -153,17 +155,8 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	model.ID = types.StringValue(account.ID.String())
 
-	if account.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(account.Created.Format(time.RFC3339))
-	}
-
-	if account.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(account.Updated.Format(time.RFC3339))
-	}
+	model.Created = customtypes.NewTimestampPointerValue(account.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
 	model.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
 	model.BillingEmail = types.StringPointerValue(account.BillingEmail)
