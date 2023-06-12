@@ -214,7 +214,22 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	client, err := r.client.Workspaces(uuid.Nil)
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Workspaces(accountID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -263,7 +278,22 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	client, err := r.client.Workspaces(uuid.Nil)
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Workspaces(accountID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -326,7 +356,22 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	client, err := r.client.Workspaces(uuid.Nil)
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.Workspaces(accountID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",

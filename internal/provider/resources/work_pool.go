@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -27,14 +28,16 @@ var (
 
 // WorkPoolResource contains state for the resource.
 type WorkPoolResource struct {
-	client api.WorkPoolsClient
+	client api.PrefectClient
 }
 
 // WorkPoolResourceModel defines the Terraform resource model.
 type WorkPoolResourceModel struct {
-	ID      types.String `tfsdk:"id"`
-	Created types.String `tfsdk:"created"`
-	Updated types.String `tfsdk:"updated"`
+	ID          types.String `tfsdk:"id"`
+	Created     types.String `tfsdk:"created"`
+	Updated     types.String `tfsdk:"updated"`
+	AccountID   types.String `tfsdk:"account_id"`
+	WorkspaceID types.String `tfsdk:"workspace_id"`
 
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
@@ -73,7 +76,7 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 		return
 	}
 
-	r.client, _ = client.WorkPools(uuid.Nil, uuid.Nil)
+	r.client = client
 }
 
 // Schema defines the schema for the resource.
@@ -96,6 +99,14 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				Description: "Date and time that the work pool was last updated in RFC 3339 format",
+			},
+			"account_id": schema.StringAttribute{
+				Description: "Account UUID, defaults to the account set in the provider",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -135,48 +146,9 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model WorkPoolResourceModel
-
-	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	baseJobTemplate := map[string]interface{}{}
-	if !model.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
-		decoder := json.NewDecoder(reader)
-		err := decoder.Decode(&baseJobTemplate)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("base_job_template"),
-				"Failed to deserialize Base Job Template",
-				fmt.Sprintf("Failed to deserialize Base Job Template as JSON object: %s", err),
-			)
-
-			return
-		}
-	}
-
-	pool, err := r.client.Create(ctx, api.WorkPoolCreate{
-		Name:             model.Name.ValueString(),
-		Description:      model.Description.ValueStringPointer(),
-		Type:             model.Type.ValueString(),
-		BaseJobTemplate:  baseJobTemplate,
-		IsPaused:         model.Paused.ValueBool(),
-		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool",
-			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
-		)
-
-		return
-	}
+// copyWorkPoolToModel copies an api.WorkPool to a WorkPoolResourceModel.
+func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
 	model.ID = types.StringValue(pool.ID.String())
 
@@ -205,16 +177,107 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		encoder.SetIndent("", "  ")
 		err := encoder.Encode(pool.BaseJobTemplate)
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
+			diags.AddAttributeError(
 				path.Root("base_job_template"),
 				"Failed to serialize Base Job Template",
 				fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
 			)
 
-			return
+			return diags
 		}
 
 		model.BaseJobTemplate = types.StringValue(strings.TrimSuffix(builder.String(), "\n"))
+	}
+
+	return nil
+}
+
+// Create creates the resource and sets the initial Terraform state.
+func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var model WorkPoolResourceModel
+
+	// Populate the model from resource configuration and emit diagnostics on error
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	baseJobTemplate := map[string]interface{}{}
+	if !model.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
+		decoder := json.NewDecoder(reader)
+		err := decoder.Decode(&baseJobTemplate)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("base_job_template"),
+				"Failed to deserialize Base Job Template",
+				fmt.Sprintf("Failed to deserialize Base Job Template as JSON object: %s", err),
+			)
+
+			return
+		}
+	}
+
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.WorkPools(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating work pool client",
+			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	pool, err := client.Create(ctx, api.WorkPoolCreate{
+		Name:             model.Name.ValueString(),
+		Description:      model.Description.ValueStringPointer(),
+		Type:             model.Type.ValueString(),
+		BaseJobTemplate:  baseJobTemplate,
+		IsPaused:         model.Paused.ValueBool(),
+		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating work pool",
+			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
@@ -233,7 +296,47 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	pool, err := r.client.Get(ctx, model.Name.ValueString())
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.WorkPools(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating work pool client",
+			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	pool, err := client.Get(ctx, model.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing work pool state",
@@ -243,42 +346,9 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	model.ID = types.StringValue(pool.ID.String())
-	model.Name = types.StringValue(pool.Name)
-
-	if pool.Created == nil {
-		model.Created = types.StringNull()
-	} else {
-		model.Created = types.StringValue(pool.Created.Format(time.RFC3339))
-	}
-
-	if pool.Updated == nil {
-		model.Updated = types.StringNull()
-	} else {
-		model.Updated = types.StringValue(pool.Updated.Format(time.RFC3339))
-	}
-
-	model.Description = types.StringPointerValue(pool.Description)
-	model.Type = types.StringValue(pool.Type)
-	model.Paused = types.BoolValue(pool.IsPaused)
-	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
-	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
-
-	if pool.BaseJobTemplate != nil {
-		var builder strings.Builder
-		encoder := json.NewEncoder(&builder)
-		err := encoder.Encode(pool.BaseJobTemplate)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("base_job_template"),
-				"Failed to serialize Base Job Template",
-				fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
-			)
-
-			return
-		}
-
-		model.BaseJobTemplate = types.StringValue(builder.String())
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
@@ -312,7 +382,47 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
-	err := r.client.Update(ctx, model.Name.ValueString(), api.WorkPoolUpdate{
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.WorkPools(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating work pool client",
+			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Update(ctx, model.Name.ValueString(), api.WorkPoolUpdate{
 		Description:      model.Description.ValueStringPointer(),
 		IsPaused:         model.Paused.ValueBoolPointer(),
 		BaseJobTemplate:  baseJobTemplate,
@@ -324,6 +434,21 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 			fmt.Sprintf("Could not update work pool, unexpected error: %s", err),
 		)
 
+		return
+	}
+
+	pool, err := client.Get(ctx, model.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing work pool state",
+			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -342,7 +467,47 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err := r.client.Delete(ctx, model.Name.ValueString())
+	accountID := uuid.Nil
+	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
+		var err error
+		accountID, err = uuid.Parse(model.AccountID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Error parsing Account ID",
+				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	workspaceID := uuid.Nil
+	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
+		var err error
+		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+	}
+
+	client, err := r.client.WorkPools(accountID, workspaceID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating work pool client",
+			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Delete(ctx, model.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting work pool",

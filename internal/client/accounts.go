@@ -38,7 +38,9 @@ func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.Acc
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -68,7 +70,9 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
@@ -88,7 +92,9 @@ func (c *AccountsClient) Delete(ctx context.Context, accountID uuid.UUID) error 
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
-	resp, err := doRequest(c.hc, c.apiKey, req)
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
