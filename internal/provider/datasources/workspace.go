@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -23,10 +21,10 @@ type WorkspaceDataSource struct {
 
 // WorkspaceDataSourceModel defines the Terraform data source model.
 type WorkspaceDataSourceModel struct {
-	ID        types.String               `tfsdk:"id"`
+	ID        customtypes.UUIDValue      `tfsdk:"id"`
 	Created   customtypes.TimestampValue `tfsdk:"created"`
 	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID types.String               `tfsdk:"account_id"`
+	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Handle      types.String `tfsdk:"handle"`
@@ -66,6 +64,7 @@ func (d *WorkspaceDataSource) Configure(_ context.Context, req datasource.Config
 
 var workspaceAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
 		Description: "Workspace UUID",
 		Required:    true,
 	},
@@ -80,6 +79,7 @@ var workspaceAttributes = map[string]schema.Attribute{
 		Description: "Date and time that the workspace was last updated in RFC 3339 format",
 	},
 	"account_id": schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
 		Description: "Account UUID, defaults to the account set in the provider",
 		Optional:    true,
 	},
@@ -124,22 +124,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := d.client.Workspaces(accountID)
+	client, err := d.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -149,18 +134,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	workspace, err := client.Get(ctx, workspaceID)
+	workspace, err := client.Get(ctx, model.ID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing workspace state",
@@ -170,7 +144,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	model.ID = types.StringValue(workspace.ID.String())
+	model.ID = customtypes.NewUUIDValue(workspace.ID)
 	model.Created = customtypes.NewTimestampPointerValue(workspace.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
 

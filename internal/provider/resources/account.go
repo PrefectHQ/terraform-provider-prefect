@@ -79,7 +79,10 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed:    true,
+				Computed: true,
+				// We cannot use a CustomType due to a conflict with PlanModifiers; see
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
 				Description: "Account UUID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -158,7 +161,7 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
+			"Error parsing Account ID",
 			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 

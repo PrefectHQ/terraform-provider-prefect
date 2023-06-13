@@ -3,8 +3,8 @@ package customtypes
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -14,20 +14,20 @@ import (
 )
 
 var (
-	_ = basetypes.StringTypable(&TimestampType{})
-	_ = xattr.TypeWithValidate(&TimestampType{})
-	_ = fmt.Stringer(&TimestampType{})
+	_ = basetypes.StringTypable(&UUIDType{})
+	_ = xattr.TypeWithValidate(&UUIDType{})
+	_ = fmt.Stringer(&UUIDType{})
 )
 
-// TimestampType implements a custom Terraform type that represents
-// a valid RFC3339 timestamp.
-type TimestampType struct {
+// UUIDType implements a custom Terraform type that represents
+// a valid UUID.
+type UUIDType struct {
 	basetypes.StringType
 }
 
-// Equal returns true of this timestamp and o are equal.
-func (t TimestampType) Equal(o attr.Type) bool {
-	other, ok := o.(TimestampType)
+// Equal returns true of this UUID and o are equal.
+func (t UUIDType) Equal(o attr.Type) bool {
+	other, ok := o.(UUIDType)
 	if !ok {
 		return false
 	}
@@ -35,26 +35,26 @@ func (t TimestampType) Equal(o attr.Type) bool {
 	return t.StringType.Equal(other.StringType)
 }
 
-// String represents a string representation of TimestampType.
-func (t TimestampType) String() string {
-	return "TimestampType"
+// String represents a string representation of UUIDType.
+func (t UUIDType) String() string {
+	return "UUIDType"
 }
 
-// ValueFromString converts a string value to a TimestampValue.
+// ValueFromString converts a string value to a UUIDValue.
 //
 //nolint:ireturn // required to implement StringTypable
-func (t TimestampType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	value := TimestampValue{
+func (t UUIDType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
+	value := UUIDValue{
 		StringValue: in,
 	}
 
 	return value, nil
 }
 
-// ValueFromTerraform converts a Terraform value to a TimestampValue.
+// ValueFromTerraform converts a Terraform value to a UUIDValue.
 //
 //nolint:ireturn // required to implement StringTypable
-func (t TimestampType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
+func (t UUIDType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
 	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
 	if err != nil {
 		return nil, fmt.Errorf("unexpected error converting value from Terraform: %w", err)
@@ -76,19 +76,19 @@ func (t TimestampType) ValueFromTerraform(ctx context.Context, in tftypes.Value)
 // ValueType returns an instance of the value.
 //
 //nolint:ireturn // required to implement StringTypable
-func (t TimestampType) ValueType(_ context.Context) attr.Value {
-	return TimestampValue{}
+func (t UUIDType) ValueType(_ context.Context) attr.Value {
+	return UUIDValue{}
 }
 
-// Validate ensures that the string can be converted to a TimestampValue.
-func (t TimestampType) Validate(_ context.Context, value tftypes.Value, valuePath path.Path) diag.Diagnostics {
+// Validate ensures that the string can be converted to a UUIDValue.
+func (t UUIDType) Validate(_ context.Context, value tftypes.Value, valuePath path.Path) diag.Diagnostics {
 	if value.IsNull() || !value.IsKnown() {
 		return nil
 	}
 
 	var diags diag.Diagnostics
-	var timestampStr string
-	if err := value.As(&timestampStr); err != nil {
+	var uuidStr string
+	if err := value.As(&uuidStr); err != nil {
 		diags.AddAttributeError(
 			valuePath,
 			"Invalid Terraform Value",
@@ -98,11 +98,11 @@ func (t TimestampType) Validate(_ context.Context, value tftypes.Value, valuePat
 		return diags
 	}
 
-	if _, err := time.Parse(time.RFC3339, timestampStr); err != nil {
+	if _, err := uuid.Parse(uuidStr); err != nil {
 		diags.AddAttributeError(
 			valuePath,
-			"Invalid RFC 3339 String Value",
-			fmt.Sprintf("Failed to parse string %q as RFC 3339 timestamp (YYYY-MM-DDTHH:MM:SSZ): %s", timestampStr, err.Error()),
+			"Invalid UUID String Value",
+			fmt.Sprintf("Failed to parse string %q as a UUID: %s", uuidStr, err.Error()),
 		)
 
 		return diags
