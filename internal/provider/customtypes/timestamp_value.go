@@ -16,6 +16,8 @@ var (
 	_ = fmt.Stringer(&TimestampValue{})
 )
 
+// TimestampValue implements a custom Terraform value that represents
+// a valid RFC3339 timestamp.
 type TimestampValue struct {
 	basetypes.StringValue
 }
@@ -98,9 +100,26 @@ func (v TimestampValue) StringSemanticEquals(_ context.Context, newValuable base
 	return priorTime.Equal(newTime), nil
 }
 
-// ValueTime returns the timestamp as a time.Time.
+// ValueTime returns the timestamp as a time.Time. If the value
+// is unknown or null, this will return an empty time.Time{}.
 func (v TimestampValue) ValueTime() time.Time {
+	if v.IsNull() || v.IsUnknown() {
+		return time.Time{}
+	}
+
 	value, _ := time.Parse(time.RFC3339, v.StringValue.ValueString())
 
 	return value
+}
+
+// ValueTimePointer returns the timestamp as a *time.Time.
+// If the value is unknown or nil, the result will be nil.
+func (v TimestampValue) ValueTimePointer() *time.Time {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+
+	value := v.ValueTime()
+
+	return &value
 }

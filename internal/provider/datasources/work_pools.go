@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -15,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var _ = datasource.DataSourceWithConfigure(&WorkPoolsDataSource{})
@@ -26,8 +25,8 @@ type WorkPoolsDataSource struct {
 
 // WorkPoolsSourceModel defines the Terraform data source model.
 type WorkPoolsSourceModel struct {
-	AccountID   types.String `tfsdk:"account_id"`
-	WorkspaceID types.String `tfsdk:"workspace_id"`
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	FilterAny types.List `tfsdk:"filter_any"`
 	WorkPools types.List `tfsdk:"work_pools"`
@@ -70,10 +69,12 @@ func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 		Description: "Data Source for querying work pools",
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace UUID, defaults to the workspace set in the provider",
 				Optional:    true,
 			},
@@ -103,37 +104,7 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
-		var err error
-		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := d.client.WorkPools(accountID, workspaceID)
+	client, err := d.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -156,40 +127,30 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"id":                types.StringType,
-		"created":           types.StringType,
-		"updated":           types.StringType,
+		"id":                customtypes.UUIDType{},
+		"created":           customtypes.TimestampType{},
+		"updated":           customtypes.TimestampType{},
 		"name":              types.StringType,
 		"description":       types.StringType,
 		"type":              types.StringType,
 		"paused":            types.BoolType,
 		"concurrency_limit": types.Int64Type,
-		"default_queue_id":  types.StringType,
+		"default_queue_id":  customtypes.UUIDType{},
 		"base_job_template": types.StringType,
 	}
 
 	poolObjects := make([]attr.Value, 0, len(pools))
 	for _, pool := range pools {
 		attributeValues := map[string]attr.Value{
-			"id":                types.StringValue(pool.ID.String()),
+			"id":                customtypes.NewUUIDValue(pool.ID),
+			"created":           customtypes.NewTimestampPointerValue(pool.Created),
+			"updated":           customtypes.NewTimestampPointerValue(pool.Updated),
 			"name":              types.StringValue(pool.Name),
 			"description":       types.StringPointerValue(pool.Description),
 			"type":              types.StringValue(pool.Type),
 			"paused":            types.BoolValue(pool.IsPaused),
 			"concurrency_limit": types.Int64PointerValue(pool.ConcurrencyLimit),
 			"default_queue_id":  types.StringValue(pool.DefaultQueueID.String()),
-		}
-
-		if pool.Created == nil {
-			attributeValues["created"] = types.StringNull()
-		} else {
-			attributeValues["created"] = types.StringValue(pool.Created.Format(time.RFC3339))
-		}
-
-		if pool.Updated == nil {
-			attributeValues["updated"] = types.StringNull()
-		} else {
-			attributeValues["updated"] = types.StringValue(pool.Updated.Format(time.RFC3339))
 		}
 
 		if pool.BaseJobTemplate == nil {

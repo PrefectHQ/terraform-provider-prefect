@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -23,7 +21,7 @@ type AccountDataSource struct {
 
 // AccountDataSourceModel defines the Terraform data source model.
 type AccountDataSourceModel struct {
-	ID      types.String               `tfsdk:"id"`
+	ID      customtypes.UUIDValue      `tfsdk:"id"`
 	Created customtypes.TimestampValue `tfsdk:"created"`
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
@@ -81,8 +79,9 @@ func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 		Description: "Data Source representing a Prefect Cloud account",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Required:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account UUID",
+				Required:    true,
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -132,18 +131,7 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	account, err := d.client.Get(ctx, accountID)
+	account, err := d.client.Get(ctx, model.ID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing account state",
@@ -153,8 +141,7 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	model.ID = types.StringValue(account.ID.String())
-
+	model.ID = customtypes.NewUUIDValue(account.ID)
 	model.Created = customtypes.NewTimestampPointerValue(account.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 

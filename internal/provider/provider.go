@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -14,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
@@ -46,10 +46,12 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Sensitive:   true,
 			},
 			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Default account ID to act on (Prefect Cloud only)",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Default workspace ID to act on (Prefect Cloud only)",
 				Optional:    true,
 			},
@@ -153,30 +155,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiKey = key
 	}
 
-	accountID := uuid.Nil
-	if !config.AccountID.IsNull() && config.AccountID.ValueString() != "" {
-		accountID, err = uuid.Parse(config.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !config.WorkspaceID.IsNull() && config.WorkspaceID.ValueString() != "" {
-		workspaceID, err = uuid.Parse(config.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-		}
-	}
-
 	// If API Key is unset, check that we're running against Prefect Cloud
 	if endpointURL.Host == "api.prefect.cloud" || endpointURL.Host == "api.prefect.dev" || endpointURL.Host == "api.stg.prefect.dev" {
 		if apiKey == "" {
@@ -203,7 +181,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint),
 		client.WithAPIKey(apiKey),
-		client.WithDefaults(accountID, workspaceID),
+		client.WithDefaults(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID()),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(

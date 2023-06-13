@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,19 +32,19 @@ type WorkPoolResource struct {
 
 // WorkPoolResourceModel defines the Terraform resource model.
 type WorkPoolResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
+	ID          customtypes.UUIDValue      `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   types.String               `tfsdk:"account_id"`
-	WorkspaceID types.String               `tfsdk:"workspace_id"`
+	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	Type             types.String `tfsdk:"type"`
-	Paused           types.Bool   `tfsdk:"paused"`
-	ConcurrencyLimit types.Int64  `tfsdk:"concurrency_limit"`
-	DefaultQueueID   types.String `tfsdk:"default_queue_id"`
-	BaseJobTemplate  types.String `tfsdk:"base_job_template"`
+	Name             types.String          `tfsdk:"name"`
+	Description      types.String          `tfsdk:"description"`
+	Type             types.String          `tfsdk:"type"`
+	Paused           types.Bool            `tfsdk:"paused"`
+	ConcurrencyLimit types.Int64           `tfsdk:"concurrency_limit"`
+	DefaultQueueID   customtypes.UUIDValue `tfsdk:"default_queue_id"`
+	BaseJobTemplate  types.String          `tfsdk:"base_job_template"`
 }
 
 // NewWorkPoolResource returns a new WorkPoolResource.
@@ -87,6 +86,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Work pool UUID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -103,10 +103,12 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Date and time that the work pool was last updated in RFC 3339 format",
 			},
 			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace UUID, defaults to the workspace set in the provider",
 				Optional:    true,
 			},
@@ -136,6 +138,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"default_queue_id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "The UUID of the default queue associated with this work pool",
 				Optional:    true,
 			},
@@ -152,12 +155,12 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(pool.ID.String())
+	model.ID = customtypes.NewUUIDValue(pool.ID)
 	model.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
 
 	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
-	model.DefaultQueueID = types.StringValue(pool.DefaultQueueID.String())
+	model.DefaultQueueID = customtypes.NewUUIDValue(pool.DefaultQueueID)
 	model.Description = types.StringPointerValue(pool.Description)
 	model.Name = types.StringValue(pool.Name)
 	model.Paused = types.BoolValue(pool.IsPaused)
@@ -210,37 +213,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
-		var err error
-		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.WorkPools(accountID, workspaceID)
+	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating work pool client",
@@ -288,37 +261,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
-		var err error
-		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.WorkPools(accountID, workspaceID)
+	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating work pool client",
@@ -374,37 +317,7 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
-		var err error
-		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.WorkPools(accountID, workspaceID)
+	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating work pool client",
@@ -459,37 +372,7 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	workspaceID := uuid.Nil
-	if !model.WorkspaceID.IsNull() && model.WorkspaceID.ValueString() != "" {
-		var err error
-		workspaceID, err = uuid.Parse(model.WorkspaceID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("workspace_id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.WorkPools(accountID, workspaceID)
+	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating work pool client",

@@ -33,7 +33,7 @@ type WorkspaceResourceModel struct {
 	ID        types.String               `tfsdk:"id"`
 	Created   customtypes.TimestampValue `tfsdk:"created"`
 	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID types.String               `tfsdk:"account_id"`
+	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Handle      types.String `tfsdk:"handle"`
@@ -95,6 +95,7 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Description: "Date and time that the workspace was last updated in RFC 3339 format",
 			},
 			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
 				Optional:    true,
 			},
@@ -137,22 +138,7 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.Workspaces(accountID)
+	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -195,38 +181,23 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse Workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.Workspaces(accountID)
+	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
 			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+	}
+
+	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Variable ID",
+			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
 	}
 
 	workspace, err := client.Get(ctx, workspaceID)
@@ -259,33 +230,7 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse Workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.Workspaces(accountID)
+	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -293,7 +238,18 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		)
 	}
 
-	err = client.Update(ctx, workspaceID, api.WorkspaceUpdate{
+	accountID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Variable ID",
+			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Update(ctx, accountID, api.WorkspaceUpdate{
 		Name:        model.Name.ValueStringPointer(),
 		Handle:      model.Handle.ValueStringPointer(),
 		Description: model.Description.ValueStringPointer(),
@@ -302,6 +258,17 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError(
 			"Error updating workspace",
 			fmt.Sprintf("Could not update workspace, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Workspace ID",
+			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return
@@ -337,38 +304,23 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse Workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	accountID := uuid.Nil
-	if !model.AccountID.IsNull() && model.AccountID.ValueString() != "" {
-		var err error
-		accountID, err = uuid.Parse(model.AccountID.ValueString())
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("account_id"),
-				"Error parsing Account ID",
-				fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-			)
-
-			return
-		}
-	}
-
-	client, err := r.client.Workspaces(accountID)
+	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
 			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+	}
+
+	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Workspace ID",
+			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
 	}
 
 	err = client.Delete(ctx, workspaceID)
