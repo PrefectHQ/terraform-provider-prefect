@@ -32,7 +32,7 @@ type WorkPoolResource struct {
 
 // WorkPoolResourceModel defines the Terraform resource model.
 type WorkPoolResourceModel struct {
-	ID          customtypes.UUIDValue      `tfsdk:"id"`
+	ID          types.String               `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
@@ -85,8 +85,10 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
+				Computed: true,
+				// We cannot use a CustomType due to a conflict with PlanModifiers; see
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
 				Description: "Work pool UUID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -155,7 +157,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = customtypes.NewUUIDValue(pool.ID)
+	model.ID = types.StringValue(pool.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
 

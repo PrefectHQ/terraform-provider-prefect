@@ -79,7 +79,10 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed:    true,
+				Computed: true,
+				// We cannot use a CustomType due to a conflict with PlanModifiers; see
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
 				Description: "Account UUID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

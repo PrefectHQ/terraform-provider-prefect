@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -29,7 +30,7 @@ type VariableResource struct {
 
 // VariableResourceModel defines the Terraform resource model.
 type VariableResourceModel struct {
-	ID          customtypes.UUIDValue      `tfsdk:"id"`
+	ID          types.String               `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
@@ -78,8 +79,10 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
+				Computed: true,
+				// We cannot use a CustomType due to a conflict with PlanModifiers; see
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
 				Description: "Variable UUID",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -124,7 +127,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 // copyVariableToModel copies an api.Variable to a VariableResourceModel.
 func copyVariableToModel(ctx context.Context, variable *api.Variable, model *VariableResourceModel) diag.Diagnostics {
-	model.ID = customtypes.NewUUIDValue(variable.ID)
+	model.ID = types.StringValue(variable.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(variable.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
@@ -216,7 +219,19 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	// If we are importing by name, then we will need to load once using the name.
 	var variable *api.Variable
 	if !model.ID.IsNull() {
-		variable, err = client.Get(ctx, model.ID.ValueUUID())
+		var variableID uuid.UUID
+		variableID, err = uuid.Parse(model.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("id"),
+				"Error parsing Variable ID",
+				fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+
+		variable, err = client.Get(ctx, variableID)
 	} else if !model.Name.IsNull() {
 		variable, err = client.GetByName(ctx, model.Name.ValueString())
 	} else {
@@ -273,7 +288,18 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	err = client.Update(ctx, model.ID.ValueUUID(), api.VariableUpdate{
+	variableID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Variable ID",
+			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Update(ctx, variableID, api.VariableUpdate{
 		Name:  model.Name.ValueString(),
 		Value: model.Value.ValueString(),
 		Tags:  tags,
@@ -287,7 +313,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	variable, err := client.Get(ctx, model.ID.ValueUUID())
+	variable, err := client.Get(ctx, variableID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing variable state",
@@ -327,7 +353,18 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	err = client.Delete(ctx, model.ID.ValueUUID())
+	variableID, err := uuid.Parse(model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Variable ID",
+			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Delete(ctx, variableID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting variable",
