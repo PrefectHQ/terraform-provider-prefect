@@ -196,8 +196,8 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			"Error parsing Workspace ID",
+			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return
@@ -241,18 +241,18 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		)
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	workspaceID, err := uuid.Parse(model.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
+			"Error parsing Workspace ID",
+			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return
 	}
 
-	err = client.Update(ctx, accountID, api.WorkspaceUpdate{
+	err = client.Update(ctx, workspaceID, api.WorkspaceUpdate{
 		Name:        model.Name.ValueStringPointer(),
 		Handle:      model.Handle.ValueStringPointer(),
 		Description: model.Description.ValueStringPointer(),
@@ -261,17 +261,6 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError(
 			"Error updating workspace",
 			fmt.Sprintf("Could not update workspace, unexpected error: %s", err),
-		)
-
-		return
-	}
-
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return

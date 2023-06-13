@@ -161,7 +161,7 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
+			"Error parsing Account ID",
 			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 
@@ -202,7 +202,7 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
+			"Error parsing Account ID",
 			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 
@@ -260,7 +260,7 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Variable ID",
+			"Error parsing Account ID",
 			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
 		)
 
