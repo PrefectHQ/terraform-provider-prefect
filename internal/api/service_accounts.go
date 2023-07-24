@@ -1,3 +1,5 @@
+package api
+
 import (
 	"io/ioutil"
 	"net/http"

@@ -6,27 +6,45 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/google/uuid"
+	// @TODO: Update import path to parent repo
+	"github.com/armalite/terraform-provider-prefect/internal/api"
 )
 
-// Client - This is the main client
-type Client struct {
-	ServiceAccounts ServiceAccounts
-	HTTPClient      *http.Client
-	BaseURL         string
-	//other services
+type ServiceAccountsClient struct {
+	hc          *http.Client
+	apiKey      string
+	routePrefix string
 }
 
-type ServiceAccounts interface {
-	CreateServiceAccount(ctx context.Context, accountId string, request CreateServiceAccountRequest) (*CreateServiceAccountResponse, error)
-	ReadServiceAccount(ctx context.Context, accountId string, botId string) (*ReadServiceAccountResponse, error)
-	UpdateServiceAccount(ctx context.Context, accountId string, botId string, request UpdateServiceAccountRequest) (*UpdateServiceAccountResponse, error)
-	DeleteServiceAccount(ctx context.Context, accountId string, botId string) (*DeleteServiceAccountResponse, error)
-	RotateServiceAccountAPIKey(ctx context.Context, accountId string, botId string, request RotateServiceAccountAPIKeyRequest) (*RotateServiceAccountAPIKeyResponse, error)
+func getServiceAccountScopedURL(endpoint string, accountID uuid.UUID, resource string) string {
+    return fmt.Sprintf("%s/accounts/%s/%s", endpoint, accountID, resource)
 }
 
-type serviceAccounts struct {
-	client *Client
+
+func (c *Client) ServiceAccounts(accountID uuid.UUID) (*ServiceAccountsClient, error) {
+    if c.apiKey == "" {
+        return nil, fmt.Errorf("apiKey is not set")
+    }
+
+    if c.endpoint == "" {
+        return nil, fmt.Errorf("endpoint is not set")
+    }
+
+    if accountID == uuid.Nil {
+        return nil, fmt.Errorf("accountID is not set and no default accountID is available")
+    }
+
+    routePrefix := getServiceAccountScopedURL(c.endpoint, accountID, "service_accounts")
+
+    return &ServiceAccountsClient{
+        hc:          c.hc,
+        routePrefix: routePrefix,
+    }, nil
 }
+
+
 
 func (sa *serviceAccounts) CreateServiceAccount(ctx context.Context, accountId string, request CreateServiceAccountRequest) (*CreateServiceAccountResponse, error) {
 	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/"
