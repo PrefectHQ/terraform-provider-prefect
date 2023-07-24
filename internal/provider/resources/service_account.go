@@ -2,17 +2,30 @@ package prefect
 
 import (
 	"context"
-	"github.com/armalite/terraform-provider-prefect/internal/api"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/google/uuid"
+
+	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 type ServiceAccountResourceModel struct {
-	Name            types.String `tfsdk:"name"`
-	APIKeyExpiration types.String `tfsdk:"api_key_expiration"`
-	AccountRoleId   types.String `tfsdk:"account_role_id"`
-	ID              types.String `tfsdk:"id"`
+	Name            	types.String 			`tfsdk:"name"`
+	APIKeyExpiration 	types.String 			`tfsdk:"api_key_expiration"`
+	AccountRoleId   	types.String 			`tfsdk:"account_role_id"`
+	ID              	types.String 			`tfsdk:"id"`
+	AccountID			customtypes.UUIDValue   `tfsdk:"account_id"`
 }
 
 type ServiceAccountResourceType struct{}
@@ -49,7 +62,7 @@ func (r ServiceAccountResourceType) NewResource(_ context.Context, p tfsdk.Provi
 }
 
 type ServiceAccountResource struct {
-	client *api.Client
+	client api.PrefectClient
 }
 
 func (r *ServiceAccountResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
