@@ -11,9 +11,9 @@ import (
 )
 
 type ServiceAccountsClient interface {
-	Create(ctx context.Context, request CreateServiceAccountRequest) (*WorkPool, error)
-	List(ctx context.Context, filter WorkPoolFilter) ([]*WorkPool, error)
-	Get(ctx context.Context, name string) (*WorkPool, error)
+	Create(ctx context.Context, request CreateServiceAccountRequest) (*ServiceAccount, error)
+	List(ctx context.Context, filter WorkPoolFilter) ([]*ServiceAccount, error)
+	Get(ctx context.Context, name string) (*ServiceAccount, error)
 	Update(ctx context.Context, name string, data WorkPoolUpdate) error
 	Delete(ctx context.Context, name string) error
 }
