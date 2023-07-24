@@ -31,7 +31,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
         return nil, fmt.Errorf("accountID is not set and no default accountID is available")
     }
 
-    routePrefix := getServiceAccountScopedURL(c.endpoint, accountID, "service_accounts")
+    routePrefix := getAccountScopedURL(c.endpoint, accountID, "service_accounts")
 
     return &ServiceAccountsClient{
         hc:          c.hc,
