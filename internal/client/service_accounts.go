@@ -40,7 +40,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
     }, nil
 }
 
-func (sa *ServiceAccountsClient) CreateServiceAccount(ctx context.Context, request api.CreateServiceAccountRequest) (*api.CreateServiceAccountResponse, error) {
+func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.CreateServiceAccountRequest) (*api.ServiceAccount, error) {
 	path := sa.routePrefix + "/"
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -65,7 +65,7 @@ func (sa *ServiceAccountsClient) CreateServiceAccount(ctx context.Context, reque
 	return &response, nil
 }
 
-func (sa *ServiceAccountsClient) ReadServiceAccount(ctx context.Context, botId string) (*api.ReadServiceAccountResponse, error) {
+func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.ServiceAccount, error) {
 	path := sa.routePrefix + "/" + botId
 
 	req, err := http.NewRequest("GET", path, nil)
@@ -85,7 +85,7 @@ func (sa *ServiceAccountsClient) ReadServiceAccount(ctx context.Context, botId s
 	return &response, nil
 }
 
-func (sa *ServiceAccountsClient) UpdateServiceAccount(ctx context.Context, botId string, request api.UpdateServiceAccountRequest) (*api.UpdateServiceAccountResponse, error) {
+func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.UpdateServiceAccountRequest) error {
 	path := sa.routePrefix + "/" + botId
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -106,10 +106,10 @@ func (sa *ServiceAccountsClient) UpdateServiceAccount(ctx context.Context, botId
 
 	var response api.UpdateServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
-	return &response, nil
+	return nil
 }
 
-func (sa *ServiceAccountsClient) DeleteServiceAccount(ctx context.Context, botId string) (*api.DeleteServiceAccountResponse, error) {
+func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error {
 	path := sa.routePrefix + "/" + botId
 
 	req, err := http.NewRequest("DELETE", path, nil)
@@ -126,29 +126,6 @@ func (sa *ServiceAccountsClient) DeleteServiceAccount(ctx context.Context, botId
 
 	var response api.DeleteServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
-	return &response, nil
+	return nil
 }
 
-func (sa *ServiceAccountsClient) RotateServiceAccountAPIKey(ctx context.Context, botId string, request api.RotateServiceAccountAPIKeyRequest) (*api.RotateServiceAccountAPIKeyResponse, error) {
-	path := sa.routePrefix + "/" + botId + "/rotate_api_key"
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", path, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var response api.RotateServiceAccountAPIKeyResponse
-	json.NewDecoder(resp.Body).Decode(&response)
-	return &response, nil
-}
