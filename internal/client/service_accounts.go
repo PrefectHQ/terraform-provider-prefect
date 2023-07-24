@@ -8,20 +8,17 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	// @TODO: Update import path to parent repo
 	"github.com/armalite/terraform-provider-prefect/internal/api"
 )
 
 type ServiceAccountsClient struct {
 	hc          *http.Client
-	apiKey      string
 	routePrefix string
 }
 
 func getServiceAccountScopedURL(endpoint string, accountID uuid.UUID, resource string) string {
     return fmt.Sprintf("%s/accounts/%s/%s", endpoint, accountID, resource)
 }
-
 
 func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient, error) {
     if c.apiKey == "" {
@@ -44,9 +41,8 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
     }, nil
 }
 
-
-func (sa *serviceAccounts) CreateServiceAccount(ctx context.Context, accountId string, request CreateServiceAccountRequest) (*CreateServiceAccountResponse, error) {
-	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/"
+func (sa *ServiceAccountsClient) CreateServiceAccount(ctx context.Context, request api.CreateServiceAccountRequest) (*api.CreateServiceAccountResponse, error) {
+	path := sa.routePrefix + "/"
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -58,19 +54,19 @@ func (sa *serviceAccounts) CreateServiceAccount(ctx context.Context, accountId s
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sa.client.HTTPClient.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var response CreateServiceAccountResponse
+	var response api.CreateServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
 
-func (sa *serviceAccounts) ReadServiceAccount(ctx context.Context, accountId string, botId string) (*ReadServiceAccountResponse, error) {
-	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/" + botId
+func (sa *ServiceAccountsClient) ReadServiceAccount(ctx context.Context, botId string) (*api.ReadServiceAccountResponse, error) {
+	path := sa.routePrefix + "/" + botId
 
 	req, err := http.NewRequest("GET", path, nil)
 	if err != nil {
@@ -78,19 +74,19 @@ func (sa *serviceAccounts) ReadServiceAccount(ctx context.Context, accountId str
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sa.client.HTTPClient.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var response ReadServiceAccountResponse
+	var response api.ReadServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
 
-func (sa *serviceAccounts) UpdateServiceAccount(ctx context.Context, accountId string, botId string, request UpdateServiceAccountRequest) (*UpdateServiceAccountResponse, error) {
-	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/" + botId
+func (sa *ServiceAccountsClient) UpdateServiceAccount(ctx context.Context, botId string, request api.UpdateServiceAccountRequest) (*api.UpdateServiceAccountResponse, error) {
+	path := sa.routePrefix + "/" + botId
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -102,19 +98,19 @@ func (sa *serviceAccounts) UpdateServiceAccount(ctx context.Context, accountId s
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sa.client.HTTPClient.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var response UpdateServiceAccountResponse
+	var response api.UpdateServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
 
-func (sa *serviceAccounts) DeleteServiceAccount(ctx context.Context, accountId string, botId string) (*DeleteServiceAccountResponse, error) {
-	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/" + botId
+func (sa *ServiceAccountsClient) DeleteServiceAccount(ctx context.Context, botId string) (*api.DeleteServiceAccountResponse, error) {
+	path := sa.routePrefix + "/" + botId
 
 	req, err := http.NewRequest("DELETE", path, nil)
 	if err != nil {
@@ -122,19 +118,19 @@ func (sa *serviceAccounts) DeleteServiceAccount(ctx context.Context, accountId s
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sa.client.HTTPClient.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var response DeleteServiceAccountResponse
+	var response api.DeleteServiceAccountResponse
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
 
-func (sa *serviceAccounts) RotateServiceAccountAPIKey(ctx context.Context, accountId string, botId string, request RotateServiceAccountAPIKeyRequest) (*RotateServiceAccountAPIKeyResponse, error) {
-	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/" + botId + "/rotate_api_key"
+func (sa *ServiceAccountsClient) RotateServiceAccountAPIKey(ctx context.Context, botId string, request api.RotateServiceAccountAPIKeyRequest) (*api.RotateServiceAccountAPIKeyResponse, error) {
+	path := sa.routePrefix + "/" + botId + "/rotate_api_key"
 	body, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
@@ -146,13 +142,13 @@ func (sa *serviceAccounts) RotateServiceAccountAPIKey(ctx context.Context, accou
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := sa.client.HTTPClient.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	var response RotateServiceAccountAPIKeyResponse
+	var response api.RotateServiceAccountAPIKeyResponse
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
