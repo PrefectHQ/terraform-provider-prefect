@@ -46,4 +46,8 @@ type ServiceAccountAPIKey struct {
 	Key 		string `json:"key"`
 }
 
+type ServiceAccountFilter struct {
+	Any []uuid.UUID `json:"any_"`
+}
+
 

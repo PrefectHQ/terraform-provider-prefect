@@ -65,6 +65,40 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.CreateS
 	return &response, nil
 }
 
+
+func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilter) ([]*api.ServiceAccount, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
+		return nil, fmt.Errorf("failed to encode filter: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("status code %s", resp.Status)
+	}
+
+	var serviceAccounts []*api.ServiceAccount
+	if err := json.NewDecoder(resp.Body).Decode(&serviceAccounts); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return pools, nil
+}
+
+
+
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.ServiceAccount, error) {
 	path := sa.routePrefix + "/" + botId
 
