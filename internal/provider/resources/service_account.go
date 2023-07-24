@@ -1,177 +1,149 @@
-package resources
+package prefect
 
 import (
 	"context"
-	"fmt"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/schema"
+	"github.com/armalite/terraform-provider-prefect/internal/api"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/google/uuid"
 )
 
-// ServiceAccountResource contains state for the resource.
-type ServiceAccountResource struct {
-	client api.PrefectClient
-}
-
-// ServiceAccountResourceModel defines the Terraform resource model.
 type ServiceAccountResourceModel struct {
-	ID   types.String               `tfsdk:"id"`
-	Name types.String               `tfsdk:"name"`
-	// Add more properties of Service Account here...
+	Name            types.String `tfsdk:"name"`
+	APIKeyExpiration types.String `tfsdk:"api_key_expiration"`
+	AccountRoleId   types.String `tfsdk:"account_role_id"`
+	ID              types.String `tfsdk:"id"`
 }
 
-// NewServiceAccountResource returns a new ServiceAccountResource.
-func NewServiceAccountResource() resource.Resource {
-	return &ServiceAccountResource{}
-}
+type ServiceAccountResourceType struct{}
 
-// Metadata returns the resource type name.
-func (r *ServiceAccountResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_service_account"
-}
-
-// Configure initializes runtime state for the resource.
-func (r *ServiceAccountResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	if req.ProviderData == nil {
-		return
-	}
-
-	client, ok := req.ProviderData.(api.PrefectClient)
-	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
-
-		return
-	}
-
-	r.client = client
-}
-
-// Schema defines the schema for the resource.
-func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect service account",
-		Version:     1,
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
+func (r ServiceAccountResourceType) GetSchema(_ context.Context) (tfsdk.Schema, diagnostics.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
+			"name": {
+				Type:     types.StringType,
+				Required: true,
+			},
+			"api_key_expiration": {
+				Type:     types.StringType,
+				Required: true,
+			},
+			"account_role_id": {
+				Type:     types.StringType,
+				Required: true,
+			},
+			"id": {
+				Type:     types.StringType,
 				Computed: true,
-				Description: "Service account UUID",
 			},
-			"name": schema.StringAttribute{
-				Required:    true,
-				Description: "Name of the service account",
-			},
-			// Add more properties of Service Account here...
 		},
-	}
+	}, nil
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model ServiceAccountResourceModel
+func (r ServiceAccountResourceType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diagnostics.Diagnostics) {
+	client := p.(*provider).client
 
-	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	return &ServiceAccountResource{
+		client: client,
+	}, nil
+}
+
+type ServiceAccountResource struct {
+	client *api.Client
+}
+
+func (r *ServiceAccountResource) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	var plan ServiceAccountResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Call Service Account API to create a service account...
-	serviceAccount, err := r.client.CreateServiceAccount(ctx, model.Name.ValueString())
+	createRequest := api.CreateServiceAccountRequest{
+		Name: plan.Name.Value,
+		APIKeyExpiration: plan.APIKeyExpiration.Value,
+		AccountRoleId: plan.AccountRoleId.Value,
+	}
+
+	createdAccount, err := r.client.CreateServiceAccount(ctx, createRequest)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating service account",
-			fmt.Sprintf("Could not create service account, unexpected error: %s", err),
+			"Could not create service account",
+			"An unexpected error was encountered while creating the service account. The service account could not be created.",
 		)
-
 		return
 	}
 
-	// Set the ID of the created service account
-	model.ID = types.StringValue(serviceAccount.ID)
-
-	// Set the state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	plan.ID = types.String{Value: createdAccount.ID}
+	diags = resp.State.Set(ctx, plan)
+	resp.Diagnostics.Append(diags...)
 }
 
-// Read refreshes the Terraform state with the latest data.
-func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *ServiceAccountResource) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
 	var model ServiceAccountResourceModel
-
-	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	diags := req.State.Get(ctx, &model)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get the service account from API...
-	serviceAccount, err := r.client.GetServiceAccount(ctx, model.ID.ValueString())
+	account, err := r.client.ReadServiceAccount(ctx, model.ID.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error refreshing service account state",
-			fmt.Sprintf("Could not read service account, unexpected error: %s", err),
+			"Could not read service account",
+			"An unexpected error was encountered while reading the service account. The service account could not be read.",
 		)
-
 		return
 	}
 
-	// Update the model with the latest data
-	model.Name = types.StringValue(serviceAccount.Name)
+	model.Name = types.String{Value: account.Name}
+	model.APIKeyExpiration = types.String{Value: account.APIKey.Expiration}
+	model.AccountRoleId = types.String{Value: account.AccountRoleId}
 
-	// Set the state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	diags = resp.State.Set(ctx, &model)
+	resp.Diagnostics.Append(diags...)
 }
 
-
-// Update updates the resource with new data.
-func (r *ServiceAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model ServiceAccountResourceModel
-
-	// Populate the model from the new plan and emit diagnostics on error
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+func (r *ServiceAccountResource) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+	var plan ServiceAccountResourceModel
+	diags := req.Plan.Get(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Update the service account in API...
-	_, err := r.client.UpdateServiceAccount(ctx, model.ID.ValueString(), model.Name.ValueString())
+	updateRequest := api.UpdateServiceAccountRequest{
+		Name: plan.Name.Value,
+	}
+
+	_, err := r.client.UpdateServiceAccount(ctx, plan.ID.Value, updateRequest)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error updating service account",
-			fmt.Sprintf("Could not update service account, unexpected error: %s", err),
+			"Could not update service account",
+			"An unexpected error was encountered while updating the service account. The service account could not be updated.",
 		)
-
 		return
 	}
 
-	// Set the state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	diags = resp.State.Set(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
 }
 
-// Delete removes the resource.
-func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *ServiceAccountResource) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
 	var model ServiceAccountResourceModel
-
-	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	diags := req.State.Get(ctx, &model)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Delete the service account in API...
-	err := r.client.DeleteServiceAccount(ctx, model.ID.ValueString())
+	_, err := r.client.DeleteServiceAccount(ctx, model.ID.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting service account",
-			fmt.Sprintf("Could not delete service account, unexpected error: %s", err),
+			"Could not delete service account",
+			"An unexpected error was encountered while deleting the service account. The service account could not be deleted.",
 		)
-
 		return
 	}
 }
-
