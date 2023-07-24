@@ -79,7 +79,8 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req tfsdk.CreateRes
 		AccountRoleId: plan.AccountRoleId.Value,
 	}
 
-	createdAccount, err := r.client.CreateServiceAccount(ctx, createRequest)
+	// @TODO: Set values in CreateRequest
+	createdAccount, err := r.client.Create(ctx, createRequest)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Could not create service account",
@@ -101,7 +102,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req tfsdk.ReadResourc
 		return
 	}
 
-	account, err := r.client.ReadServiceAccount(ctx, model.ID.Value)
+	account, err := r.client.Get(ctx, model.ID.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Could not read service account",
@@ -130,7 +131,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req tfsdk.UpdateRes
 		Name: plan.Name.Value,
 	}
 
-	_, err := r.client.UpdateServiceAccount(ctx, plan.ID.Value, updateRequest)
+	_, err := r.client.Update(ctx, plan.ID.Value, updateRequest)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Could not update service account",
@@ -151,7 +152,7 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req tfsdk.DeleteRes
 		return
 	}
 
-	_, err := r.client.DeleteServiceAccount(ctx, model.ID.Value)
+	_, err := r.client.Delete(ctx, model.ID.Value)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Could not delete service account",
