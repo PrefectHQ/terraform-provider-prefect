@@ -23,7 +23,7 @@ func getServiceAccountScopedURL(endpoint string, accountID uuid.UUID, resource s
 }
 
 
-func (c *Client) ServiceAccounts(accountID uuid.UUID) (*ServiceAccountsClient, error) {
+func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient, error) {
     if c.apiKey == "" {
         return nil, fmt.Errorf("apiKey is not set")
     }
