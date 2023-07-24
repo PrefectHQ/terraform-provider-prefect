@@ -4,11 +4,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"bytes"
-    "fmt"
+	"fmt"
 	"log"
 	"encoding/json"
 	"context"
 )
+
 
 type CreateServiceAccountRequest struct {
 	Name            string `json:"name"`
@@ -24,50 +25,49 @@ type RotateServiceAccountAPIKeyRequest struct {
 	APIKeyExpiration string `json:"api_key_expiration"`
 }
 
-
 type ServiceAccountAPIKey struct {
-	Id 			string
-	Created 	string
-	Name 		string
-	Expiration 	string
-	key 		string
+	Id 			string `json:"id"`
+	Created 	string `json:"created"`
+	Name 		string `json:"name"`
+	Expiration 	string `json:"expiration"`
+	Key 		string `json:"key"`
 }
 
 type CreateServiceAccountResponse struct {
-	Id 			string
-	Created		string
-	Updated		string
-	AccountId	string
-	Name 		string
-	AccountRoleName string
-	APIKey		ServiceAccountAPIKey
+	Id 			string `json:"id"`
+	Created		string `json:"created"`
+	Updated		string `json:"updated"`
+	AccountId	string `json:"account_id"`
+	Name 		string `json:"name"`
+	AccountRoleName string `json:"account_role_name"`
+	APIKey		ServiceAccountAPIKey `json:"api_key"`
 }
 
 type ReadServiceAccountResponse struct {
-	Id 				string
-	ActorId			string
-	Created			string
-	Updated			string
-	AccountId		string
-	Name 			string
-	AccountRoleName string
-	APIKey			ServiceAccountAPIKey
+	Id 				string `json:"id"`
+	ActorId			string `json:"actor_id"`
+	Created			string `json:"created"`
+	Updated			string `json:"updated"`
+	AccountId		string `json:"account_id"`
+	Name 			string `json:"name"`
+	AccountRoleName string `json:"account_role_name"`
+	APIKey			ServiceAccountAPIKey `json:"api_key"`
 }
 
 type DeleteServiceAccountResponse struct {
-	Detail 	string
+	Detail 	string `json:"detail"`
 }
 
 type UpdateServiceAccountResponse struct {
-	Detail 	string
+	Detail 	string `json:"detail"`
 }
 
 type RotateServiceAccountAPIKeyResponse struct {
-	Id 			string
-	Created		string
-	Updated		string
-	AccountId	string
-	Name 		string
-	AccountRoleName string
-	APIKey		ServiceAccountAPIKey
+	Id 			string `json:"id"`
+	Created		string `json:"created"`
+	Updated		string `json:"updated"`
+	AccountId	string `json:"account_id"`
+	Name 		string `json:"name"`
+	AccountRoleName string `json:"account_role_name"`
+	APIKey		ServiceAccountAPIKey `json:"api_key"`
 }

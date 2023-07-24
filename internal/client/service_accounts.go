@@ -45,7 +45,6 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 }
 
 
-
 func (sa *serviceAccounts) CreateServiceAccount(ctx context.Context, accountId string, request CreateServiceAccountRequest) (*CreateServiceAccountResponse, error) {
 	path := sa.client.BaseURL + "/accounts/" + accountId + "/bots/"
 	body, err := json.Marshal(request)
