@@ -42,6 +42,23 @@ func getWorkspaceScopedURL(endpoint string, accountID uuid.UUID, workspaceID uui
 	return builder.String()
 }
 
+
+// getServiceAccountScopedURL constructs a URL for a service account-scoped route.
+func getServiceAccountScopedURL(endpoint string, accountID uuid.UUID, resource string) string {
+	var builder strings.Builder
+
+	builder.WriteString(endpoint)
+
+	builder.WriteString("/accounts/")
+	builder.WriteString(accountID.String())
+	builder.WriteRune('/')
+
+	builder.WriteString(resource)
+
+	return builder.String()
+}
+
+
 // setAuthorizationHeader will set the Authorization header to the
 // provided apiKey, if set.
 func setAuthorizationHeader(request *http.Request, apiKey string) {

@@ -13,12 +13,10 @@ import (
 
 type ServiceAccountsClient struct {
 	hc          *http.Client
+	apiKey      string
 	routePrefix string
 }
 
-func getServiceAccountScopedURL(endpoint string, accountID uuid.UUID, resource string) string {
-    return fmt.Sprintf("%s/accounts/%s/%s", endpoint, accountID, resource)
-}
 
 func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient, error) {
     if c.apiKey == "" {
@@ -37,6 +35,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 
     return &ServiceAccountsClient{
         hc:          c.hc,
+        apiKey:      c.apiKey,
         routePrefix: routePrefix,
     }, nil
 }
@@ -52,7 +51,8 @@ func (sa *ServiceAccountsClient) CreateServiceAccount(ctx context.Context, reque
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
@@ -72,7 +72,7 @@ func (sa *ServiceAccountsClient) ReadServiceAccount(ctx context.Context, botId s
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
@@ -96,7 +96,7 @@ func (sa *ServiceAccountsClient) UpdateServiceAccount(ctx context.Context, botId
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
@@ -116,7 +116,7 @@ func (sa *ServiceAccountsClient) DeleteServiceAccount(ctx context.Context, botId
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
@@ -140,7 +140,7 @@ func (sa *ServiceAccountsClient) RotateServiceAccountAPIKey(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
