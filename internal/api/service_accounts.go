@@ -8,6 +8,21 @@ import (
 	"context"
 )
 
+type CreateServiceAccountRequest struct {
+	Name            string `json:"name"`
+	APIKeyExpiration string `json:"api_key_expiration"`
+	AccountRoleId   string `json:"account_role_id"`
+}
+
+type UpdateServiceAccountRequest struct {
+	Name string `json:"name"`
+}
+
+type RotateServiceAccountAPIKeyRequest struct {
+	APIKeyExpiration string `json:"api_key_expiration"`
+}
+
+
 type ServiceAccountAPIKey struct {
 	Id 			string
 	Created 	string
