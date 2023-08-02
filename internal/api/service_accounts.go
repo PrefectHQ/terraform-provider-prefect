@@ -28,13 +28,13 @@ type ServiceAccount struct {
 
 }
 
-type CreateServiceAccountRequest struct {
+type ServiceAccountCreate struct {
 	Name            string `json:"name"`
 	APIKeyExpiration string `json:"api_key_expiration"`
 	AccountRoleId   string `json:"account_role_id"`
 }
 
-type UpdateServiceAccountRequest struct {
+type ServiceAccountUpdate struct {
 	Name string `json:"name"`
 }
 

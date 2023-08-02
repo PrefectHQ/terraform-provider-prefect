@@ -41,7 +41,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 }
 
 
-func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.CreateServiceAccountRequest) (*api.ServiceAccount, error) {
+func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreate) (*api.ServiceAccount, error) {
 	path := sa.routePrefix + "/"
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -120,7 +120,7 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 }
 
 
-func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.UpdateServiceAccountRequest) error {
+func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.ServiceAccountUpdate) error {
 	path := sa.routePrefix + "/" + botId
 	body, err := json.Marshal(request)
 	if err != nil {

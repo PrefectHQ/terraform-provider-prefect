@@ -73,7 +73,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req tfsdk.CreateRes
 		return
 	}
 
-	createRequest := api.CreateServiceAccountRequest{
+	createRequest := api.ServiceAccountCreate{
 		Name: plan.Name.Value,
 		APIKeyExpiration: plan.APIKeyExpiration.Value,
 		AccountRoleId: plan.AccountRoleId.Value,
@@ -127,7 +127,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req tfsdk.UpdateRes
 		return
 	}
 
-	updateRequest := api.UpdateServiceAccountRequest{
+	updateRequest := api.ServiceAccountUpdate{
 		Name: plan.Name.Value,
 	}
 
