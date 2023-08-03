@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/terraform-plugin-framework v1.3.2
-	github.com/hashicorp/terraform-plugin-go v0.17.0
+	github.com/hashicorp/terraform-plugin-framework v1.3.3
+	github.com/hashicorp/terraform-plugin-go v0.18.0
 )
 
 require (
