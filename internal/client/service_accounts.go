@@ -44,16 +44,16 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 
 
 func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
-	path := sa.routePrefix + "/"
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
+		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", path, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/", &buf)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
+
 	
 	setDefaultHeaders(req, sa.apiKey)
 
@@ -64,7 +64,9 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	defer resp.Body.Close()
 
 	var response api.ServiceAccount
-	json.NewDecoder(resp.Body).Decode(&response)
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
 	return &response, nil
 }
 
