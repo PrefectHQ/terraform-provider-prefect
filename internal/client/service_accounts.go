@@ -46,14 +46,13 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
-		return nil, fmt.Errorf("failed to encode data: %w", err)
+		return nil, fmt.Errorf("failed to encode request data: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
-
 	
 	setDefaultHeaders(req, sa.apiKey)
 
@@ -62,6 +61,10 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("status code %s", resp.Status)
+	}
 
 	var response api.ServiceAccount
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
@@ -104,12 +107,11 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 
 
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.ServiceAccount, error) {
-	path := sa.routePrefix + "/" + botId
-
-	req, err := http.NewRequest("GET", path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+botId, http.NoBody)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
+
 	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
@@ -118,23 +120,29 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("status code %s", resp.Status)
+	}
+
 	var response api.ServiceAccountNoKey
-	json.NewDecoder(resp.Body).Decode(&response)
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
 	return &response, nil
 }
 
 
 func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.ServiceAccountUpdateRequest) error {
-	path := sa.routePrefix + "/" + botId
-	body, err := json.Marshal(request)
-	if err != nil {
-		return nil, err
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
+		return fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequest("PATCH", path, bytes.NewBuffer(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+botId, &buf)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating request: %w", err)
 	}
+
 	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := c.hc.Do(req)
@@ -142,7 +150,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, reque
 		return fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
-
+	
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("status code %s", resp.Status)
 	}
