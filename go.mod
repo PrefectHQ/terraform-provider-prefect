@@ -34,4 +34,3 @@ require (
 
 // @TODO: Remove replace directive before merging PR
 replace github.com/prefecthq/terraform-provider-prefect => /Users/adeeb.rahman/Documents/dev/personal/terraform-provider-prefect
-

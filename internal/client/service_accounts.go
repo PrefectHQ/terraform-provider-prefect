@@ -102,7 +102,7 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return pools, nil
+	return serviceAccounts, nil
 }
 
 
