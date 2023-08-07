@@ -80,14 +80,14 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 		return nil, fmt.Errorf("failed to encode filter: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/filter", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	setDefaultHeaders(req, c.apiKey)
 
-	resp, err := c.hc.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}
@@ -107,7 +107,7 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 
 
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.ServiceAccount, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+botId, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botId, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -138,14 +138,14 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, reque
 		return fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+botId, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botId, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	setDefaultHeaders(req, sa.apiKey)
 
-	resp, err := c.hc.Do(req)
+	resp, err := sa.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error: %w", err)
 	}
@@ -159,11 +159,9 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, reque
 
 
 func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error {
-	path := sa.routePrefix + "/" + botId
-
-	req, err := http.NewRequest("DELETE", path, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botId, http.NoBody)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("error creating request: %w", err)
 	}
 	setDefaultHeaders(req, sa.apiKey)
 
@@ -173,8 +171,10 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error
 	}
 	defer resp.Body.Close()
 
-	var response api.DeleteServiceAccountResponse
-	json.NewDecoder(resp.Body).Decode(&response)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("status code %s", resp.Status)
+	}
+	
 	return nil
 }
 
