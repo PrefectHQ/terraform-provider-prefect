@@ -43,7 +43,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 }
 
 
-func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreate) (*api.ServiceAccount, error) {
+func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
 	path := sa.routePrefix + "/"
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -69,7 +69,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 }
 
 
-func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilter) ([]*api.ServiceAccount, error) {
+func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilterRequest) ([]*api.ServiceAccount, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
 		return nil, fmt.Errorf("failed to encode filter: %w", err)
@@ -92,7 +92,7 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var serviceAccounts []*api.ServiceAccount
+	var serviceAccounts []*api.ServiceAccountNoKey
 	if err := json.NewDecoder(resp.Body).Decode(&serviceAccounts); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -116,13 +116,13 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 	}
 	defer resp.Body.Close()
 
-	var response api.ReadServiceAccountResponse
+	var response api.ServiceAccountNoKey
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
 
 
-func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.ServiceAccountUpdate) error {
+func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.ServiceAccountUpdateRequest) error {
 	path := sa.routePrefix + "/" + botId
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -135,14 +135,15 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, reque
 	}
 	setDefaultHeaders(req, sa.apiKey)
 
-	resp, err := sa.hc.Do(req)
+	resp, err := c.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var response api.UpdateServiceAccountResponse
-	json.NewDecoder(resp.Body).Decode(&response)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+		return fmt.Errorf("status code %s", resp.Status)
+	}
 	return nil
 }
 

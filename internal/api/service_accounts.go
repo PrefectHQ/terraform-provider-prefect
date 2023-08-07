@@ -29,21 +29,21 @@ type ServiceAccount struct {
 }
 
 // ServiceAccountFromList is a reprsentation of Service Account details obtained from a List/Filter
-type ServiceAccountFromList struct {
+type ServiceAccountNoKey struct {
 	BaseModel
 	AccountId		string 					`json:"account_id"`
 	Name             string                 `json:"name"`	
 	AccountRoleName string 					`json:"account_role_name"`
-	APIKey			ServiceAccountAPIKeyFromList 	`json:"api_key"`
+	APIKey			ServiceAccountAPIKeyNoKey 	`json:"api_key"`
 }
 
-type ServiceAccountCreate struct {
+type ServiceAccountCreateRequest struct {
 	Name            string `json:"name"`
 	APIKeyExpiration string `json:"api_key_expiration"`
 	AccountRoleId   string `json:"account_role_id"`
 }
 
-type ServiceAccountUpdate struct {
+type ServiceAccountUpdateRequest struct {
 	Name string `json:"name"`
 }
 
@@ -56,14 +56,14 @@ type ServiceAccountAPIKey struct {
 }
 
 // Represents an api_key block received from a List/Filter response, which excludes the actual key
-type ServiceAccountAPIKeyFromList struct {
+type ServiceAccountAPIKeyNoKey struct {
 	Id 			string `json:"id"`
 	Created 	string `json:"created"`
 	Name 		string `json:"name"`
 	Expiration 	string `json:"expiration"`
 }
 
-type ServiceAccountFilter struct {
+type ServiceAccountFilterRequest struct {
 	Any []uuid.UUID `json:"any_"`
 }
 
