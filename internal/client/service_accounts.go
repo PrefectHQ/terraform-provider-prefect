@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/armalite/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
 type ServiceAccountsClient struct {
@@ -31,6 +31,8 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
         return nil, fmt.Errorf("accountID is not set and no default accountID is available")
     }
 
+	// Since service accounts are account scoped. Generate from util.getAccountScopedURL
+	// e.g. this will generate routePrefix ending in /accounts/bots
     routePrefix := getAccountScopedURL(c.endpoint, accountID, "bots")
 
     return &ServiceAccountsClient{
@@ -61,7 +63,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	}
 	defer resp.Body.Close()
 
-	var response api.CreateServiceAccountResponse
+	var response api.ServiceAccount
 	json.NewDecoder(resp.Body).Decode(&response)
 	return &response, nil
 }
