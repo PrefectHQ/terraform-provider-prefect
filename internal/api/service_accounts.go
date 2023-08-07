@@ -19,7 +19,7 @@ type ServiceAccountsClient interface {
 	Delete(ctx context.Context, name string) error
 }
 
-// ServiceAccount is a representation of a created service account
+// ServiceAccount is a representation of a created service account (from a Create response)
 type ServiceAccount struct {
 	BaseModel
 	AccountId		string 					`json:"account_id"`
@@ -28,7 +28,8 @@ type ServiceAccount struct {
 	APIKey			ServiceAccountAPIKey 	`json:"api_key"`
 }
 
-// ServiceAccountFromList is a reprsentation of Service Account details obtained from a List/Filter
+// ServiceAccountNoKey is a reprsentation of Service Account details obtained from a List/Filter
+// and excludes the actual key value for the api_key
 type ServiceAccountNoKey struct {
 	BaseModel
 	AccountId		string 					`json:"account_id"`
