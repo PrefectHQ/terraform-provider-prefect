@@ -31,3 +31,7 @@ require (
 	google.golang.org/grpc v1.56.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 )
+
+// @TODO: Remove replace directive before merging PR
+replace github.com/prefecthq/terraform-provider-prefect => /Users/adeeb.rahman/Documents/dev/personal/terraform-provider-prefect
+
