@@ -128,4 +128,25 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 	}
 }
 
+// Function that copies api.ServiceAccount to a ServiceAccountResourceModel
+func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model *ServiceAccountResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	model.ID = types.StringValue(pool.ID.String())
+	model.Name = types.StringValue(sa.name.String())
+	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
+	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
+
+	model.RoleName = types.StringValue(sa.AccountRoleName)
+	model.APIKeyID = types.StringValue(sa.APIKey.Id)
+	model.APIKeyName = types.StringValue(sa.APIKey.Name)
+	model.APIKeyCreated = customtypes.NewTimestampPointerValue(sa.APIKey.Created)
+	model.APIKeyExpires = customtypes.NewTimestampPointerValue(sa.APIKey.Expiration)
+	model.APIKey = types.StringValue(sa.APIKey.Key)
+
+	return nil
+}
+
+
 // @TODO Implement CRUD operations for tfsdk
