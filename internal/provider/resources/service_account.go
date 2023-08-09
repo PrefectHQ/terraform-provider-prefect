@@ -36,6 +36,7 @@ type ServiceAccountResourceModel struct {
 	Updated        customtypes.TimestampValue `tfsdk:"updated"`
 	AccountID      customtypes.UUIDValue      `tfsdk:"account_id"`
 
+	AccountRoleID  types.String				  `tfsdk:"account_role_id"`
 	RoleName       types.String               `tfsdk:"account_role_name"`
 	APIKeyID       types.String               `tfsdk:"api_key_id"`
 	APIKeyName     types.String               `tfsdk:"api_key_name"`
@@ -98,9 +99,13 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				CustomType: customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
 			},
+			"account_role_id": schema.StringAttribute{
+				Computed: true,
+				Description: "Account Role ID of the service account",
+			},
 			"account_role_name": schema.StringAttribute{
 				Computed: true,
-				Description: "Role name of the service account",
+				Description: "Account Role name of the service account",
 			},
 			"api_key_id": schema.StringAttribute{
 				Computed: true,
@@ -150,3 +155,49 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 
 
 // @TODO Implement CRUD operations for tfsdk
+
+// Create creates the resource and sets the initial Terraform state.
+func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var model ServiceAccountResourceModel
+
+	// Populate the model from resource configuration and emit diagnostics on error
+	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating Service Account client",
+			fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	sa, err := client.Create(ctx, api.ServiceAccountCreateRequest{
+		Name:              model.Name.ValueString(),
+		APIKeyExpiration:  model.APIKeyExpires.ValueString(),
+		AccountRoleId:     model.AccountRoleID,
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating service account",
+			fmt.Sprintf("Could not create service account, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	// @TODO: May need to pass in / assign the AccountRoleId to the model
+	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
