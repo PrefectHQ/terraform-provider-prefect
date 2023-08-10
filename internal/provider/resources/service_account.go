@@ -137,7 +137,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model *ServiceAccountResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(pool.ID.String())
+	model.ID = types.StringValue(sa.ID.String())
 	model.Name = types.StringValue(sa.name.String())
 	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
@@ -191,6 +191,48 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	// @TODO: May need to pass in / assign the AccountRoleId to the model
+	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+
+// Read refreshes the Terraform state with the latest data.
+func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var model ServiceAccountResourceModel
+
+	// Populate the model from state and emit diagnostics on error
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating Service Account client",
+			fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	sa, err := client.Get(ctx, model.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Service Account state",
+			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err),
+		)
+
+		return
+	}
+
 	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
