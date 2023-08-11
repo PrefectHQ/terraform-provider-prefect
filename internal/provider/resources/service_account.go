@@ -37,7 +37,7 @@ type ServiceAccountResourceModel struct {
 	AccountID      customtypes.UUIDValue      `tfsdk:"account_id"`
 
 	AccountRoleID  types.String				  `tfsdk:"account_role_id"`
-	RoleName       types.String               `tfsdk:"account_role_name"`
+	AccountRoleName       types.String               `tfsdk:"account_role_name"`
 	APIKeyID       types.String               `tfsdk:"api_key_id"`
 	APIKeyName     types.String               `tfsdk:"api_key_name"`
 	APIKeyCreated  customtypes.TimestampValue `tfsdk:"api_key_created"`
@@ -71,6 +71,7 @@ func (r *ServiceAccountResource) Configure(_ context.Context, req resource.Confi
 	r.client = client
 }
 
+
 func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Resource representing a Prefect service account",
@@ -99,6 +100,8 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				CustomType: customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
 			},
+			// @TODO: Do we actually need 'account_role_id' defined as an attribute here?
+			// or just only one of account_role_id or account_role_name?
 			"account_role_id": schema.StringAttribute{
 				Computed: true,
 				Description: "Account Role ID of the service account",
@@ -143,7 +146,7 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
 	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
 
-	model.RoleName = types.StringValue(sa.AccountRoleName)
+	model.AccountRoleName = types.StringValue(sa.AccountRoleName)
 	model.APIKeyID = types.StringValue(sa.APIKey.Id)
 	model.APIKeyName = types.StringValue(sa.APIKey.Name)
 	model.APIKeyCreated = customtypes.NewTimestampPointerValue(sa.APIKey.Created)
@@ -153,10 +156,11 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 	return nil
 }
 
+// @TODO later: May need to create a client for AccountRole endpoint and use that to fetch the name using the ID
 
 // @TODO Implement CRUD operations for tfsdk
 
-// Create creates the resource and sets the initial Terraform state.
+// 'Create' creates the resource and sets the initial Terraform state.
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var model ServiceAccountResourceModel
 
@@ -190,7 +194,8 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	// @TODO: May need to pass in / assign the AccountRoleId to the model
+	// @TODO: May need to pass in / assign the AccountRoleId to the model (required?)
+	// Because the response payload for Create does not contain an AccountRoleId
 	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -223,7 +228,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	sa, err := client.Get(ctx, model.Name.ValueString())
+	sa, err := client.Get(ctx, model.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
@@ -233,6 +238,63 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+
+// Update updates the resource and sets the updated Terraform state on success.
+func (r *ServiceAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var model ServiceAccountResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating Service Account client",
+			fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	// Update client method requires context, botId, request args
+	err = client.Update(ctx, model.ID.ValueString(), api.ServiceAccountUpdateRequest{
+		Name:      model.Name.ValueString(),
+	})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error updating Service Account",
+			fmt.Sprintf("Could not update Service Account, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	// 'Get' client method requires context, botId args
+	sa, err := client.Get(ctx, model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Service Account state",
+			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err),
+		)
+		return
+	}
+
+	// Update the model with latest service account details (from the Get call above)
+	// Note: As with the Create/Read operations, 'account role id' is not part of the response
+	// and does not get set in the model as part of this call to copyServiceAccountToModel
 	resp.Diagnostics.Append(copyServiceAccountToModel(ctx, sa, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
