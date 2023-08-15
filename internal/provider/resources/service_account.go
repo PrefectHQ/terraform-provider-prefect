@@ -1,4 +1,4 @@
-package prefect
+package resources
 
 import (
 	"context"
