@@ -8,6 +8,6 @@ type PrefectClient interface {
     Workspaces(accountID uuid.UUID) (WorkspacesClient, error)
     WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (WorkPoolsClient, error)
     Variables(accountID uuid.UUID, workspaceID uuid.UUID) (VariablesClient, error)
-    ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient, error)
+    ServiceAccounts(accountID uuid.UUID) (ServiceAccountsClient, error)
 }
 

@@ -305,3 +305,44 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 }
+
+
+// Delete deletes the resource and removes the Terraform state on success.
+func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var model ServiceAccountResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating Service Account client",
+			fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Delete(ctx, model.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error deleting Service Account",
+			fmt.Sprintf("Could not delete Service Account, unexpected error: %s", err),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// ImportState imports the resource into Terraform state.
+func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+}
