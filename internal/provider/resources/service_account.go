@@ -158,8 +158,6 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 
 // @TODO later: May need to create a client for AccountRole endpoint and use that to fetch the name using the ID
 
-// @TODO Implement CRUD operations for tfsdk
-
 // 'Create' creates the resource and sets the initial Terraform state.
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var model ServiceAccountResourceModel
