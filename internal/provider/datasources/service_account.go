@@ -29,7 +29,13 @@ type ServiceAccountSourceModel struct {
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 
-	// @TODO add remaining SA fields
+	// SA fields
+	AccountRoleName       types.String        `tfsdk:"account_role_name"`
+	APIKeyID       types.String               `tfsdk:"api_key_id"`
+	APIKeyName     types.String               `tfsdk:"api_key_name"`
+	APIKeyCreated  customtypes.TimestampValue `tfsdk:"api_key_created"`
+	APIKeyExpires  customtypes.TimestampValue `tfsdk:"api_key_expiration"`
+	APIKey         types.String               `tfsdk:"api_key"`
 }
 
 // NewServiceAccountDataSource returns a new ServiceAccountDataSource.
@@ -86,6 +92,36 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Optional:    true,
 	},
 	// @TODO: Add remaining SA attributes
+	"name": schema.StringAttribute{
+		Required: true,
+		Description: "Name of the service account",
+	},
+	"account_role_name": schema.StringAttribute{
+		Computed: true,
+		Description: "Account Role name of the service account",
+	},
+	"api_key_id": schema.StringAttribute{
+		Computed: true,
+		Description: "API Key ID associated with the service account",
+	},
+	"api_key_name": schema.StringAttribute{
+		Computed: true,
+		Description: "API Key Name associated with the service account",
+	},
+	"api_key_created": schema.StringAttribute{
+		Computed: true,
+		CustomType: customtypes.TimestampType{},
+		Description: "Date and time that the API Key was created in RFC 3339 format",
+	},
+	"api_key_expiration": schema.StringAttribute{
+		Computed: true,
+		CustomType: customtypes.TimestampType{},
+		Description: "Date and time that the API Key expires in RFC 3339 format",
+	},
+	"api_key": schema.StringAttribute{
+		Computed: true,
+		Description: "API Key associated with the service account",
+	},
 }
 
 // Schema defines the schema for the data source.
