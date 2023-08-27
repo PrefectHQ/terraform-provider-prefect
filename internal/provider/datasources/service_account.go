@@ -91,7 +91,6 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Description: "Account UUID, defaults to the account set in the provider",
 		Optional:    true,
 	},
-	// @TODO: Add remaining SA attributes
 	"name": schema.StringAttribute{
 		Required: true,
 		Description: "Name of the service account",
@@ -165,8 +164,16 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	model.ID = customtypes.NewUUIDValue(sa.ID)
 	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
-	// @TODO assign remaining SA attributes to the SA model
+	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
 
+	model.AccountRoleName = types.StringValue(sa.AccountRoleName)
+	model.APIKeyID = types.StringValue(sa.APIKey.Id)
+	model.APIKeyName = types.StringValue(sa.APIKey.Name)
+	model.APIKeyCreated = customtypes.NewTimestampPointerValue(sa.APIKey.Created)
+	model.APIKeyExpires = customtypes.NewTimestampPointerValue(sa.APIKey.Expiration)
+	model.APIKey = types.StringValue(sa.APIKey.Key)
+
+	if err != nil {
 		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
