@@ -1,18 +1,12 @@
 package api
 
 import (
-	"io/ioutil"
-	"net/http"
-	"bytes"
-	"fmt"
-	"log"
-	"encoding/json"
 	"context"
 	"github.com/google/uuid"
 )
 
 type ServiceAccountsClient interface {
-	Create(ctx context.Context, request CreateServiceAccountRequest) (*ServiceAccount, error)
+	Create(ctx context.Context, request ServiceAccountCreateRequest) (*ServiceAccount, error)
 	List(ctx context.Context, filter ServiceAccountFilterRequest) ([]*ServiceAccount, error)
 	Get(ctx context.Context, name string) (*ServiceAccount, error)
 	Update(ctx context.Context, name string, data ServiceAccountUpdateRequest) error
