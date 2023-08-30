@@ -1,40 +1,22 @@
 package main
 
 import (
-	"context"
-	"log"
-	"terraform-provider-prefect/internal/provider"
+	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6/tf6server"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
-// Run "go generate" to format example terraform files and generate the docs for the registry/website
-
-// If you do not have terraform installed, you can remove the formatting command, but its suggested to
-// ensure the documentation is formatted properly.
-//go:generate terraform fmt -recursive ./examples/
-
-// Run the docs generation tool, check its repository for more information on how it works and how docs
-// can be customized.
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-
-var (
-	// these will be set by the goreleaser configuration
-	// to appropriate values for the compiled binary
-	version = "dev"
-
-	// goreleaser can also pass the specific commit if you want
-	// commit  string = ""
-)
+const providerAddress = "registry.terraform.io/prefecthq/prefect"
 
 func main() {
-	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/PrefectHQ/prefect",
-	}
+	providerServer := providerserver.NewProtocol6(&provider.PrefectProvider{})
 
-	err := providerserver.Serve(context.Background(), provider.New(version), opts)
-
+	err := tf6server.Serve(providerAddress, providerServer)
 	if err != nil {
-		log.Fatal(err.Error())
+		fmt.Fprintf(os.Stderr, "failed to start starting plugin server: %s", err)
+		os.Exit(1)
 	}
 }

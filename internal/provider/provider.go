@@ -3,157 +3,219 @@ package provider
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
-	"terraform-provider-prefect/internal/prefect"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+
+	"github.com/prefecthq/terraform-provider-prefect/internal/client"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
-func New(version string) func() tfsdk.Provider {
-	return func() tfsdk.Provider {
-		return &provider{
-			version: version,
-		}
+var _ = provider.Provider(&PrefectProvider{})
+
+// New returns a new Prefect Provider instance.
+//
+//nolint:ireturn // required by Terraform API
+func New() provider.Provider {
+	return &PrefectProvider{}
+}
+
+// Metadata returns the provider type name.
+func (p *PrefectProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "prefect"
+}
+
+// Schema defines the provider-level schema for configuration data.
+func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"endpoint": schema.StringAttribute{
+				Description: "URL prefix for Prefect Server or Prefect Cloud",
+				Optional:    true,
+			},
+			"api_key": schema.StringAttribute{
+				Description: "API Key for authenticating to the server (Prefect Cloud only)",
+				Optional:    true,
+				Sensitive:   true,
+			},
+			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Description: "Default account ID to act on (Prefect Cloud only)",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Description: "Default workspace ID to act on (Prefect Cloud only)",
+				Optional:    true,
+			},
+		},
 	}
 }
 
-type provider struct {
-	configured bool
-	client     *prefect.Client
+// Configure configures the provider's internal client.
+func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	config := &PrefectProviderModel{}
 
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
-	version string
-}
-
-// GetSchema - defines the provider's attributes
-func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
-
-		MarkdownDescription: `
-Welcome to the [Prefect](https://prefect.io) provider!
-
-Use the navigation to the left to read about the available resources.
-`,
-
-		Attributes: map[string]tfsdk.Attribute{
-			"api_server": {
-				Type:     types.StringType,
-				Optional: true,
-				Computed: true,
-				MarkdownDescription: fmt.Sprintf("Prefect API url. If unspecified the env var `PREFECT__CLOUD__API` will be used. If neither are set will default to [%s](%s)",
-					prefect.DefaultAPIServer,
-					prefect.DefaultAPIServer),
-			},
-			"api_key": {
-				Type:                types.StringType,
-				Optional:            true,
-				Computed:            true,
-				Sensitive:           true,
-				MarkdownDescription: "Prefect API key. The api key used determines the Prefect tenant. If unspecified the env var `PREFECT__CLOUD__API_KEY` will be used.",
-			},
-		},
-	}, nil
-}
-
-// Provider schema struct
-type providerData struct {
-	APIServer types.String `tfsdk:"api_server"`
-	APIKey    types.String `tfsdk:"api_key"`
-}
-
-func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
-	// Retrieve provider data from configuration
-	var config providerData
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
+	// Populate the model from provider configuration and emit diagnostics on error
+	resp.Diagnostics.Append(req.Config.Get(ctx, config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var apiServer string
-	if config.APIServer.Null {
-		apiServer = os.Getenv("PREFECT__CLOUD__API")
-	} else {
-		apiServer = config.APIServer.Value
+	// Ensure that any values passed in to provider are known
+	if config.Endpoint.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("endpoint"),
+			"Unknown Prefect API Endpoint",
+			"The Prefect API Endpoint is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or set the PREFECT_API_URL environment variable.",
+		)
 	}
 
-	if apiServer == "" {
-		apiServer = prefect.DefaultAPIServer
+	if config.APIKey.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Unknown Prefect API Key",
+			"The Prefect API Key is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
+		)
+	}
+
+	if config.APIKey.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("api_key"),
+			"Unknown Prefect API Key",
+			"The Prefect API Key is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
+		)
+	}
+
+	if config.AccountID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("account_id"),
+			"Unknown Prefect Account ID",
+			"The Prefect Account ID is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
+		)
+	}
+
+	if config.WorkspaceID.IsUnknown() {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("workspace_id"),
+			"Unknown Prefect Workspace ID",
+			"The Prefect Workspace ID is not known at configuration time. "+
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
+		)
+	}
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Use provider values if supplied, otherwise fall back to environment variables
+	var endpoint string
+	if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() {
+		endpoint = config.Endpoint.ValueString()
+	} else if u, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+		endpoint = u
+	} else {
+		endpoint = "http://localhost:4200/api"
+	}
+
+	// Validate values (ensure that they are non-empty)
+	if endpoint == "" {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("endpoint"),
+			"Missing Prefect API Endpoint",
+			"The Prefect API Endpoint is set to an empty value. "+
+				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a non-empty value, or remove the value. "+fmt.Sprintf("endpoint %q unknown %t", endpoint, config.Endpoint.IsUnknown()),
+		)
+	}
+
+	endpointURL, err := url.Parse(endpoint)
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("endpoint"),
+			"Invalid Prefect API Endpoint",
+			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
+		)
 	}
 
 	var apiKey string
-	if config.APIKey.Null {
-		apiKey = os.Getenv("PREFECT__CLOUD__API_KEY")
-	} else {
-		apiKey = config.APIKey.Value
+	if !config.APIKey.IsUnknown() {
+		apiKey = config.APIKey.ValueString()
+	} else if key, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+		apiKey = key
 	}
 
-	if apiKey == "" {
-		resp.Diagnostics.AddError(
-			"Unable to find api key",
-			"api_key or the env var PREFECT__CLOUD__API_KEY must be specified",
+	// If API Key is unset, check that we're running against Prefect Cloud
+	if endpointURL.Host == "api.prefect.cloud" || endpointURL.Host == "api.prefect.dev" || endpointURL.Host == "api.stg.prefect.dev" {
+		if apiKey == "" {
+			resp.Diagnostics.AddAttributeWarning(
+				path.Root("api_key"),
+				"Missing Prefect API Key",
+				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect API Key is empty. "+
+					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_API_KEY environment variable, or configure the api_key attribute.",
+			)
+		}
+	} else if apiKey != "" {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("api_key"),
+			"Non-Empty Prefect API Key",
+			"The Prefect API Key is set, however, the Endpoint is set to a Prefect server installation. "+
+				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect Cloud endpoint, unset the PREFECT_API_KEY environment variable, or remove the api_key attribute.",
 		)
+	}
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Create a new Prefect client and set it to the provider client
-	c, err := prefect.NewClient(ctx, &apiKey, &apiServer)
+	prefectClient, err := client.New(
+		client.WithEndpoint(endpoint),
+		client.WithAPIKey(apiKey),
+		client.WithDefaults(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID()),
+	)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Unable to create prefect client",
-			err.Error(),
+			"Unable to create Prefect API Client",
+			fmt.Sprintf("An unexpected error occurred when creating the Prefect API client. This is a bug in the provider, please create an issue against https://github.com/PrefectHQ/terraform-provider-prefect unless it has already been reported. "+
+				"Error returned by the client: %s", err),
 		)
+
 		return
 	}
+	p.client = prefectClient
 
-	p.client = c
-	p.configured = true
+	// Pass client to DataSource and Resource type Configure methods
+	resp.DataSourceData = prefectClient
+	resp.ResourceData = prefectClient
 }
 
-// GetResources - Defines provider resources
-func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	return map[string]tfsdk.ResourceType{
-		"prefect_project":         projectResourceType{},
-		"prefect_service_account": serviceAccountResourceType{},
-	}, nil
-}
-
-// GetDataSources - Defines provider data sources
-func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return map[string]tfsdk.DataSourceType{}, nil
-}
-
-// convertProviderType is a helper function for NewResource and NewDataSource
-// implementations to associate the concrete provider type. Alternatively,
-// this helper can be skipped and the provider type can be directly type
-// asserted (e.g. provider: in.(*provider)), however using this can prevent
-// potential panics.
-func convertProviderType(in tfsdk.Provider) (provider, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	p, ok := in.(*provider)
-
-	if !ok {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			fmt.Sprintf(`While creating the data source or resource, an unexpected provider type (%T) was received.
- This is always a bug in the provider code and should be reported to the provider developers.`, p),
-		)
-		return provider{}, diags
+// DataSources defines the data sources implemented in the provider.
+func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return []func() datasource.DataSource{
+		datasources.NewAccountDataSource,
+		datasources.NewVariableDataSource,
+		datasources.NewWorkPoolDataSource,
+		datasources.NewWorkPoolsDataSource,
+		datasources.NewWorkspaceDataSource,
 	}
+}
 
-	if p == nil {
-		diags.AddError(
-			"Unexpected Provider Instance Type",
-			`While creating the data source or resource, an unexpected empty provider instance was received.
- This is always a bug in the provider code and should be reported to the provider developers.`,
-		)
-		return provider{}, diags
+// Resources defines the resources implemented in the provider.
+func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
+	return []func() resource.Resource{
+		resources.NewAccountResource,
+		resources.NewVariableResource,
+		resources.NewWorkPoolResource,
+		resources.NewWorkspaceResource,
 	}
-
-	return *p, diags
 }
