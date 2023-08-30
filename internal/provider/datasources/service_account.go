@@ -2,13 +2,9 @@ package datasources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
-
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -133,7 +129,7 @@ func (d *ServiceAccountDataSource) Schema(_ context.Context, _ datasource.Schema
 
 // Read refreshes the Terraform state with the latest data.
 func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model ServiceAccountDataSourceModel
+	var model ServiceAccountSourceModel
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
@@ -164,7 +160,6 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	model.ID = customtypes.NewUUIDValue(sa.ID)
 	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
-	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
 
 	model.AccountRoleName = types.StringValue(sa.AccountRoleName)
 	model.APIKeyID = types.StringValue(sa.APIKey.Id)
@@ -177,5 +172,6 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
+		}
 	}
 }
