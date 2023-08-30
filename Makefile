@@ -31,6 +31,9 @@ lint:
 	golangci-lint run
 .PHONY: lint
 
+install: build 
+	echo "@TODO Placeholder install - move built provider to ~.terraform.d/plugins/"
+
 test:
 	gotestsum --max-fails=10 ./...
 .PHONY: test
