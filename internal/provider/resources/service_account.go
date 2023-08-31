@@ -135,7 +135,7 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 	var diags diag.Diagnostics
 
 	model.ID = types.StringValue(sa.ID.String())
-	model.Name = types.StringValue(sa.name.String())
+	model.Name = types.StringValue(sa.Name)
 	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
 	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
