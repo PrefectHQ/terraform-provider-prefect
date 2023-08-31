@@ -132,7 +132,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 
 // Function that copies api.ServiceAccount to a ServiceAccountResourceModel
 func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model *ServiceAccountResourceModel) diag.Diagnostics {
-	var diags diag.Diagnostics
+	//var diags diag.Diagnostics
 
 	model.ID = types.StringValue(sa.ID.String())
 	model.Name = types.StringValue(sa.Name)
