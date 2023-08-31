@@ -74,7 +74,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 }
 
 
-func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilterRequest) ([]*api.ServiceAccount, error) {
+func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilterRequest) ([]*api.ServiceAccount, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
 		return nil, fmt.Errorf("failed to encode filter: %w", err)
@@ -85,7 +85,7 @@ func (c *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcco
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, c.apiKey)
+	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
