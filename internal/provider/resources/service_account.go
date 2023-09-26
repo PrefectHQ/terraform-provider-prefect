@@ -138,7 +138,7 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 	model.Name = types.StringValue(sa.Name)
 	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
-	model.AccountID = customtypes.NewUUIDValue(sa.AccountID)
+	model.AccountID = customtypes.NewUUIDValue(sa.AccountId)
 
 	model.AccountRoleName = types.StringValue(sa.AccountRoleName)
 	model.APIKeyID = types.StringValue(sa.APIKey.Id)

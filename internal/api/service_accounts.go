@@ -35,8 +35,8 @@ type ServiceAccountFilterRequest struct {
 // ServiceAccount is a representation of a created service account (from a Create response)
 type ServiceAccount struct {
 	BaseModel
-	AccountId		string 					`json:"account_id"`
-	Name             string                 `json:"name"`	
+	AccountId		uuid.UUID 				`json:"account_id"`
+	Name            string                 `json:"name"`	
 	AccountRoleName string 					`json:"account_role_name"`
 	APIKey			ServiceAccountAPIKey 	`json:"api_key"`
 }
