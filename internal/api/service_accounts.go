@@ -55,7 +55,7 @@ type ServiceAccountAPIKey struct {
 // and excludes the actual key value for the api_key
 type ServiceAccountNoKey struct {
 	BaseModel
-	AccountId		string 					`json:"account_id"`
+	AccountId		uuid.UUID 					`json:"account_id"`
 	Name             string                 `json:"name"`	
 	AccountRoleName string 					`json:"account_role_name"`
 	APIKey			ServiceAccountAPIKeyNoKey 	`json:"api_key"`

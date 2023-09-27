@@ -97,8 +97,8 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcc
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var serviceAccounts []*api.ServiceAccountNoKey
-	if err := json.NewDecoder(resp.Body).Decode(&serviceAccounts); err != nil {
+	var serviceAccounts []*api.ServiceAccount
+	if err := json.NewDecoder(resp.Body).Decode(&serviceAccounts); err != nil { // THIS IS THE RESPONSE
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -124,7 +124,7 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
-	var response api.ServiceAccountNoKey
+	var response api.ServiceAccount
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
@@ -167,7 +167,7 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
