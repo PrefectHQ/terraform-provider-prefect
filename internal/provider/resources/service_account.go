@@ -175,7 +175,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	sa, err := client.Create(ctx, api.ServiceAccountCreateRequest{
 		Name:              model.Name.ValueString(),
 		APIKeyExpiration:  model.APIKeyExpires.ValueString(),
-		AccountRoleId:     model.AccountRoleID,
+		AccountRoleId:     model.AccountRoleID.ValueString(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(

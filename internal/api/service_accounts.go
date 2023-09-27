@@ -1,6 +1,7 @@
 package api
 
 import (
+	"time"
 	"context"
 	"github.com/google/uuid"
 )
@@ -43,9 +44,9 @@ type ServiceAccount struct {
 
 type ServiceAccountAPIKey struct {
 	Id 			string `json:"id"`
-	Created 	string `json:"created"`
+	Created 	*time.Time `json:"created"`
 	Name 		string `json:"name"`
-	Expiration 	string `json:"expiration"`
+	Expiration 	*time.Time `json:"expiration"`
 	Key 		string `json:"key"`
 }
 
@@ -63,9 +64,9 @@ type ServiceAccountNoKey struct {
 // Represents an api_key block received from a List/Filter response, which excludes the actual key
 type ServiceAccountAPIKeyNoKey struct {
 	Id 			string `json:"id"`
-	Created 	string `json:"created"`
+	Created 	*time.Time `json:"created"`
 	Name 		string `json:"name"`
-	Expiration 	string `json:"expiration"`
+	Expiration 	*time.Time `json:"expiration"`
 }
 
 
