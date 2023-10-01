@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -99,6 +100,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"account_role_id": schema.StringAttribute{
 				Computed: true,
 				Description: "Account Role ID of the service account",
+				Optional:    true,
 			},
 			"account_role_name": schema.StringAttribute{
 				Computed: true,
@@ -121,6 +123,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed: true,
 				CustomType: customtypes.TimestampType{},
 				Description: "Date and time that the API Key expires in RFC 3339 format",
+				Optional:    true,
 			},
 			"api_key": schema.StringAttribute{
 				Computed: true,
@@ -153,37 +156,47 @@ func copyServiceAccountToModel(_ context.Context, sa *api.ServiceAccount, model 
 
 // 'Create' creates the resource and sets the initial Terraform state.
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model ServiceAccountResourceModel
+    var model ServiceAccountResourceModel
 
-	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
+    // Populate the model from resource configuration and emit diagnostics on error
+    resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+    if resp.Diagnostics.HasError() {
+        return
+    }
+
+    client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+    if err != nil {
+        resp.Diagnostics.AddError(
+            "Error creating Service Account client",
+            fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+        )
+        return
+    }
+
+    // Create a ServiceAccountCreateRequest
+    createReq := api.ServiceAccountCreateRequest{
+        Name: model.Name.ValueString(),
+    }
+
+    // Checking if the timestamp is not empty
+	if !model.APIKeyExpires.ValueTime().IsZero() {
+		expiration := model.APIKeyExpires.ValueTime().Format(time.RFC3339)
+		createReq.APIKeyExpiration = expiration
 	}
 
-	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Service Account client",
-			fmt.Sprintf("Could not create Service Account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+    // Conditionally set AccountRoleId if it's provided
+    if !model.AccountRoleID.IsNull() && !model.AccountRoleID.IsUnknown() {
+        createReq.AccountRoleId = model.AccountRoleID.ValueString()
+    }
 
-		return
-	}
-
-	sa, err := client.Create(ctx, api.ServiceAccountCreateRequest{
-		Name:              model.Name.ValueString(),
-		APIKeyExpiration:  model.APIKeyExpires.ValueString(),
-		AccountRoleId:     model.AccountRoleID.ValueString(),
-	})
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating service account",
-			fmt.Sprintf("Could not create service account, unexpected error: %s", err), // ERROR IS HERE
-		)
-
-		return
-	}
+    sa, err := client.Create(ctx, createReq)
+    if err != nil {
+        resp.Diagnostics.AddError(
+            "Error creating service account",
+            fmt.Sprintf("Could not create service account, unexpected error: %s", err),
+        )
+        return
+    }
 
 	// @TODO: May need to pass in / assign the AccountRoleId to the model (required?)
 	// Because the response payload for Create does not contain an AccountRoleId
