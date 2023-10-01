@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"io"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -53,7 +54,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
-	
+
 	setDefaultHeaders(req, sa.apiKey)
 
 	resp, err := sa.hc.Do(req)
@@ -63,7 +64,10 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		// Read the response body
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+		return nil, fmt.Errorf("status code: %s, response body: %s", resp.Status, bodyString)
 	}
 
 	var response api.ServiceAccount
