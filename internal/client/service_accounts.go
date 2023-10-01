@@ -124,8 +124,14 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// continue processing
+	case http.StatusNotFound:
+		return nil, fmt.Errorf("Service Account not found")
+	default:
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var response api.ServiceAccount
