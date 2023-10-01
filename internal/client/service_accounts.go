@@ -28,8 +28,8 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
     }
 
     if accountID == uuid.Nil {
-        return nil, fmt.Errorf("accountID is not set and no default accountID is available")
-    }
+		accountID = c.defaultAccountID
+	}
 
 	// Since service accounts are account scoped. Generate from util.getAccountScopedURL
 	// e.g. this will generate routePrefix ending in /accounts/bots

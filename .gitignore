@@ -3,6 +3,7 @@
 terraform.tfstate
 terraform.tfstate.*.backup
 terraform.tfstate.backup
+local.tfvars
 
 # Built artifacts
 build/*
