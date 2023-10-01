@@ -207,6 +207,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
 		datasources.NewWorkspaceDataSource,
+		datasources.NewServiceAccountDataSource,
 	}
 }
 
@@ -217,5 +218,6 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
 		resources.NewWorkspaceResource,
+		resources.NewServiceAccountResource,
 	}
 }
