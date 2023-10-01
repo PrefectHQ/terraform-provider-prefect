@@ -1,9 +1,9 @@
 package api
 
 import (
-	"time"
 	"context"
 	"github.com/google/uuid"
+	"time"
 )
 
 type ServiceAccountsClient interface {
@@ -14,13 +14,12 @@ type ServiceAccountsClient interface {
 	Delete(ctx context.Context, name string) error
 }
 
-
 /*** REQUEST DATA STRUCTS ***/
 
 type ServiceAccountCreateRequest struct {
-	Name            string `json:"name"`
+	Name             string `json:"name"`
 	APIKeyExpiration string `json:"api_key_expiration"`
-	AccountRoleId   string `json:"account_role_id"`
+	AccountRoleId    string `json:"account_role_id"`
 }
 
 type ServiceAccountUpdateRequest struct {
@@ -33,42 +32,37 @@ type ServiceAccountFilterRequest struct {
 
 /*** RESPONSE DATA STRUCTS ***/
 
-// ServiceAccount is a representation of a created service account (from a Create response)
+// ServiceAccount is a representation of a created service account (from a Create response).
 type ServiceAccount struct {
 	BaseModel
-	AccountId		uuid.UUID 				`json:"account_id"`
-	Name            string                 `json:"name"`	
-	AccountRoleName string 					`json:"account_role_name"`
-	APIKey			ServiceAccountAPIKey 	`json:"api_key"`
+	AccountId       uuid.UUID            `json:"account_id"`
+	Name            string               `json:"name"`
+	AccountRoleName string               `json:"account_role_name"`
+	APIKey          ServiceAccountAPIKey `json:"api_key"`
 }
 
 type ServiceAccountAPIKey struct {
-	Id 			string `json:"id"`
-	Created 	*time.Time `json:"created"`
-	Name 		string `json:"name"`
-	Expiration 	*time.Time `json:"expiration"`
-	Key 		string `json:"key"`
+	Id         string     `json:"id"`
+	Created    *time.Time `json:"created"`
+	Name       string     `json:"name"`
+	Expiration *time.Time `json:"expiration"`
+	Key        string     `json:"key"`
 }
-
 
 // ServiceAccountNoKey is a representation of Service Account details obtained from a List/Filter
-// and excludes the actual key value for the api_key
+// and excludes the actual key value for the api_key.
 type ServiceAccountNoKey struct {
 	BaseModel
-	AccountId		uuid.UUID 					`json:"account_id"`
-	Name             string                 `json:"name"`	
-	AccountRoleName string 					`json:"account_role_name"`
-	APIKey			ServiceAccountAPIKeyNoKey 	`json:"api_key"`
+	AccountId       uuid.UUID                 `json:"account_id"`
+	Name            string                    `json:"name"`
+	AccountRoleName string                    `json:"account_role_name"`
+	APIKey          ServiceAccountAPIKeyNoKey `json:"api_key"`
 }
 
-// Represents an api_key block received from a List/Filter response, which excludes the actual key
+// Represents an api_key block received from a List/Filter response, which excludes the actual key.
 type ServiceAccountAPIKeyNoKey struct {
-	Id 			string `json:"id"`
-	Created 	*time.Time `json:"created"`
-	Name 		string `json:"name"`
-	Expiration 	*time.Time `json:"expiration"`
+	Id         string     `json:"id"`
+	Created    *time.Time `json:"created"`
+	Name       string     `json:"name"`
+	Expiration *time.Time `json:"expiration"`
 }
-
-
-
-
