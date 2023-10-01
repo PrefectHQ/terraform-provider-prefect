@@ -178,7 +178,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
         Name: model.Name.ValueString(),
     }
 
-    // Checking if the timestamp is not empty
+    // Conditionally set APIKeyExpiration if it's provided
 	if !model.APIKeyExpires.ValueTime().IsZero() {
 		expiration := model.APIKeyExpires.ValueTime().Format(time.RFC3339)
 		createReq.APIKeyExpiration = expiration
