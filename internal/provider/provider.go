@@ -88,15 +88,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	if config.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("api_key"),
-			"Unknown Prefect API Key",
-			"The Prefect API Key is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
-		)
-	}
-
 	if config.AccountID.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("account_id"),
@@ -207,6 +198,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
 		datasources.NewWorkspaceDataSource,
+		datasources.NewBotDataSource,
 	}
 }
 
