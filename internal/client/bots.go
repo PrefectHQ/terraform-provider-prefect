@@ -20,6 +20,8 @@ type BotsClient struct {
 }
 
 // Bots returns a BotsClient.
+//
+//nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) Bots() (api.BotsClient, error) {
 	return &BotsClient{
 		hc:          c.hc,
@@ -28,7 +30,7 @@ func (c *Client) Bots() (api.BotsClient, error) {
 	}, nil
 }
 
-// Get a single bot by ID
+// Get a single bot by ID.
 func (c *BotsClient) Get(ctx context.Context, id uuid.UUID) (*api.Bot, error) {
 	path := fmt.Sprintf("%s/%s", c.routePrefix, id.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)

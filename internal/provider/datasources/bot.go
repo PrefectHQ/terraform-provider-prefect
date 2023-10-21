@@ -25,7 +25,7 @@ type BotDataSource struct {
 // AccountDataSourceModel defines the Terraform data source model.
 // the TF data source configuration will be unmarsheled into this struct
 // NOTE: the APIKey field is not included in bot fetches and
-// is excluded from this datasource model
+// is excluded from this datasource model.
 type BotDataSourceModel struct {
 	ID      customtypes.UUIDValue      `tfsdk:"id"`
 	Created customtypes.TimestampValue `tfsdk:"created"`
@@ -36,6 +36,10 @@ type BotDataSourceModel struct {
 	AccountRoleName types.String          `tfsdk:"account_role_name"`
 }
 
+// NewBotDataSource returns a new BotDataSource,
+// to be inserted into the provider during instantiation.
+//
+//nolint:ireturn // required by Terraform API
 func NewBotDataSource() datasource.DataSource {
 	return &BotDataSource{}
 }
@@ -115,6 +119,7 @@ func (d *BotDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 			"Error creating the Bots client",
 			fmt.Sprintf("Could not create Bots client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
 		return
 	}
 
@@ -124,6 +129,7 @@ func (d *BotDataSource) Read(ctx context.Context, req datasource.ReadRequest, re
 			"Failed to fetch Bot and refresh state",
 			fmt.Sprintf("Could not fetch Bot, unexpected error: %s", err.Error()),
 		)
+
 		return
 	}
 
