@@ -15,9 +15,9 @@ var _ = api.AccountsClient(&AccountsClient{})
 
 // AccountsClient is a client for working with accounts.
 type AccountsClient struct {
-	hc       *http.Client
-	endpoint string
-	apiKey   string
+	hc          *http.Client
+	apiKey      string
+	routePrefix string
 }
 
 // Accounts returns an AccountsClient.
@@ -25,15 +25,16 @@ type AccountsClient struct {
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) Accounts() (api.AccountsClient, error) {
 	return &AccountsClient{
-		hc:       c.hc,
-		endpoint: c.endpoint,
-		apiKey:   c.apiKey,
+		hc:          c.hc,
+		apiKey:      c.apiKey,
+		routePrefix: fmt.Sprintf("%s/api/accounts", c.endpoint),
 	}, nil
 }
 
 // Get returns details for an account by ID.
 func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.AccountResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.endpoint+"/accounts/"+accountID.String(), http.NoBody)
+	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -65,7 +66,8 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.endpoint+"/accounts/"+accountID.String(), &buf)
+	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, path, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -87,7 +89,8 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 
 // Delete removes an account by ID.
 func (c *AccountsClient) Delete(ctx context.Context, accountID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.endpoint+"/accounts/"+accountID.String(), http.NoBody)
+	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, path, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
