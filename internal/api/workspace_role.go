@@ -10,7 +10,7 @@ type WorkspaceRolesClient interface {
 	Create(ctx context.Context, data WorkspaceRoleUpsert) (*WorkspaceRole, error)
 	Update(ctx context.Context, id uuid.UUID, data WorkspaceRoleUpsert) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	List(ctx context.Context, filter WorkspaceRoleFilter) ([]*WorkspaceRole, error)
+	List(ctx context.Context, roleNames []string) ([]*WorkspaceRole, error)
 	Get(ctx context.Context, id uuid.UUID) (*WorkspaceRole, error)
 }
 
@@ -35,7 +35,13 @@ type WorkspaceRoleUpsert struct {
 }
 
 // WorkspaceRoleFilter defines the search filter payload
-// when searching for workspae roles by name.
+// when searching for workspace roles by name.
+// example request payload:
+// {"workspace_roles": {"name": {"any_": ["test"]}}}
 type WorkspaceRoleFilter struct {
-	Any []string `json:"any_"`
+	WorkspaceRoles struct {
+		Name struct {
+			Any []string `json:"any_"`
+		} `json:"name"`
+	} `json:"workspace_roles"`
 }

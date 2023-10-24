@@ -31,7 +31,7 @@ func (c *Client) WorkspaceRoles(accountID uuid.UUID) (api.WorkspaceRolesClient, 
 	return &WorkspaceRolesClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "workspace_roles"),
+		routePrefix: fmt.Sprintf("%s/api/accounts/%s/workspace_roles", c.endpoint, accountID.String()),
 	}, nil
 }
 
@@ -117,9 +117,12 @@ func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // List returns a list of workspace roles, based on the provided filter.
-func (c *WorkspaceRolesClient) List(ctx context.Context, filter api.WorkspaceRoleFilter) ([]*api.WorkspaceRole, error) {
+func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]*api.WorkspaceRole, error) {
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
+	filterQuery := api.WorkspaceRoleFilter{}
+	filterQuery.WorkspaceRoles.Name.Any = roleNames
+
+	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 

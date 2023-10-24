@@ -140,7 +140,7 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 	// Fetch an existing Workspace Role by name
 	// Here, we'd expect only 1 Role (or none) to be returned
 	// as we are querying a single Role name, not a list of names
-	workspaceRoles, err := client.List(ctx, api.WorkspaceRoleFilter{Any: []string{model.Name.String()}})
+	workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Workspace Role state",
