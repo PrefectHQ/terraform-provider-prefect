@@ -37,5 +37,5 @@ type WorkspaceRoleUpsert struct {
 // WorkspaceRoleFilter defines the search filter payload
 // when searching for workspae roles by name.
 type WorkspaceRoleFilter struct {
-	Any []uuid.UUID `json:"any_"`
+	Any []string `json:"any_"`
 }
