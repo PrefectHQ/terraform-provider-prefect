@@ -8,6 +8,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 	dataSourceName := "data.prefect_workspace_role.test"
 	// Default workspace role names - these exist in every account

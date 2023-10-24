@@ -10,6 +10,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_service_account(t *testing.T) {
 	dataSourceName := "data.prefect_service_account.bot"
 	// generate random resource name
