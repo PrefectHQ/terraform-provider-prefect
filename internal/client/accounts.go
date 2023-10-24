@@ -27,7 +27,7 @@ func (c *Client) Accounts() (api.AccountsClient, error) {
 	return &AccountsClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/api/accounts", c.endpoint),
+		routePrefix: fmt.Sprintf("%s/accounts", c.endpoint),
 	}, nil
 }
 
