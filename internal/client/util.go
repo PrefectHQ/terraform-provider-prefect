@@ -42,7 +42,6 @@ func getWorkspaceScopedURL(endpoint string, accountID uuid.UUID, workspaceID uui
 	return builder.String()
 }
 
-
 // setAuthorizationHeader will set the Authorization header to the
 // provided apiKey, if set.
 func setAuthorizationHeader(request *http.Request, apiKey string) {

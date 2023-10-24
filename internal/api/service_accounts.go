@@ -2,8 +2,9 @@ package api
 
 import (
 	"context"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ServiceAccountsClient interface {
@@ -19,7 +20,7 @@ type ServiceAccountsClient interface {
 type ServiceAccountCreateRequest struct {
 	Name             string `json:"name"`
 	APIKeyExpiration string `json:"api_key_expiration,omitempty"`
-	AccountRoleId    string `json:"account_role_id,omitempty"`
+	AccountRoleID    string `json:"account_role_id,omitempty"`
 }
 
 type ServiceAccountUpdateRequest struct {
@@ -35,14 +36,14 @@ type ServiceAccountFilterRequest struct {
 // ServiceAccount is a representation of a created service account (from a Create response).
 type ServiceAccount struct {
 	BaseModel
-	AccountId       uuid.UUID            `json:"account_id"`
+	AccountID       uuid.UUID            `json:"account_id"`
 	Name            string               `json:"name"`
 	AccountRoleName string               `json:"account_role_name"`
 	APIKey          ServiceAccountAPIKey `json:"api_key"`
 }
 
 type ServiceAccountAPIKey struct {
-	Id         string     `json:"id"`
+	ID         string     `json:"id"`
 	Created    *time.Time `json:"created"`
 	Name       string     `json:"name"`
 	Expiration *time.Time `json:"expiration"`
@@ -53,7 +54,7 @@ type ServiceAccountAPIKey struct {
 // and excludes the actual key value for the api_key.
 type ServiceAccountNoKey struct {
 	BaseModel
-	AccountId       uuid.UUID                 `json:"account_id"`
+	AccountID       uuid.UUID                 `json:"account_id"`
 	Name            string                    `json:"name"`
 	AccountRoleName string                    `json:"account_role_name"`
 	APIKey          ServiceAccountAPIKeyNoKey `json:"api_key"`
@@ -61,7 +62,7 @@ type ServiceAccountNoKey struct {
 
 // Represents an api_key block received from a List/Filter response, which excludes the actual key.
 type ServiceAccountAPIKeyNoKey struct {
-	Id         string     `json:"id"`
+	ID         string     `json:"id"`
 	Created    *time.Time `json:"created"`
 	Name       string     `json:"name"`
 	Expiration *time.Time `json:"expiration"`

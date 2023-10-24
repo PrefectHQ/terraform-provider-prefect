@@ -3,6 +3,7 @@ package datasources
 import (
 	"context"
 	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -20,18 +21,18 @@ type ServiceAccountDataSource struct {
 
 // ServiceAccountSourceModel defines the Terraform data source model.
 type ServiceAccountSourceModel struct {
-	ID          customtypes.UUIDValue      `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	ID        customtypes.UUIDValue      `tfsdk:"id"`
+	Created   customtypes.TimestampValue `tfsdk:"created"`
+	Updated   customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
 
 	// SA fields
-	AccountRoleName       types.String        `tfsdk:"account_role_name"`
-	APIKeyID       types.String               `tfsdk:"api_key_id"`
-	APIKeyName     types.String               `tfsdk:"api_key_name"`
-	APIKeyCreated  customtypes.TimestampValue `tfsdk:"api_key_created"`
-	APIKeyExpires  customtypes.TimestampValue `tfsdk:"api_key_expiration"`
-	APIKey         types.String               `tfsdk:"api_key"`
+	AccountRoleName types.String               `tfsdk:"account_role_name"`
+	APIKeyID        types.String               `tfsdk:"api_key_id"`
+	APIKeyName      types.String               `tfsdk:"api_key_name"`
+	APIKeyCreated   customtypes.TimestampValue `tfsdk:"api_key_created"`
+	APIKeyExpires   customtypes.TimestampValue `tfsdk:"api_key_expiration"`
+	APIKey          types.String               `tfsdk:"api_key"`
 }
 
 // NewServiceAccountDataSource returns a new ServiceAccountDataSource.
@@ -88,33 +89,33 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Optional:    true,
 	},
 	"name": schema.StringAttribute{
-		Required: true,
+		Required:    true,
 		Description: "Name of the service account",
 	},
 	"account_role_name": schema.StringAttribute{
-		Computed: true,
+		Computed:    true,
 		Description: "Account Role name of the service account",
 	},
 	"api_key_id": schema.StringAttribute{
-		Computed: true,
+		Computed:    true,
 		Description: "API Key ID associated with the service account",
 	},
 	"api_key_name": schema.StringAttribute{
-		Computed: true,
+		Computed:    true,
 		Description: "API Key Name associated with the service account",
 	},
 	"api_key_created": schema.StringAttribute{
-		Computed: true,
-		CustomType: customtypes.TimestampType{},
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time that the API Key was created in RFC 3339 format",
 	},
 	"api_key_expiration": schema.StringAttribute{
-		Computed: true,
-		CustomType: customtypes.TimestampType{},
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time that the API Key expires in RFC 3339 format",
 	},
 	"api_key": schema.StringAttribute{
-		Computed: true,
+		Computed:    true,
 		Description: "API Key associated with the service account",
 	},
 }
@@ -147,7 +148,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	sa, err := client.Get(ctx, model.ID.ValueString())
+	serviceAccount, err := client.Get(ctx, model.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
@@ -157,21 +158,21 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	model.ID = customtypes.NewUUIDValue(sa.ID)
-	model.Created = customtypes.NewTimestampPointerValue(sa.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(sa.Updated)
+	model.ID = customtypes.NewUUIDValue(serviceAccount.ID)
+	model.Created = customtypes.NewTimestampPointerValue(serviceAccount.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
 
-	model.AccountRoleName = types.StringValue(sa.AccountRoleName)
-	model.APIKeyID = types.StringValue(sa.APIKey.Id)
-	model.APIKeyName = types.StringValue(sa.APIKey.Name)
-	model.APIKeyCreated = customtypes.NewTimestampPointerValue(sa.APIKey.Created)
-	model.APIKeyExpires = customtypes.NewTimestampPointerValue(sa.APIKey.Expiration)
-	model.APIKey = types.StringValue(sa.APIKey.Key)
+	model.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
+	model.APIKeyID = types.StringValue(serviceAccount.APIKey.ID)
+	model.APIKeyName = types.StringValue(serviceAccount.APIKey.Name)
+	model.APIKeyCreated = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Created)
+	model.APIKeyExpires = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Expiration)
+	model.APIKey = types.StringValue(serviceAccount.APIKey.Key)
 
 	if err != nil {
 		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
+		if resp.Diagnostics.HasError() {
+			return
 		}
 	}
 }

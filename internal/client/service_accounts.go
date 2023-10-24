@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"io"
+	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -18,31 +18,30 @@ type ServiceAccountsClient struct {
 	routePrefix string
 }
 
-
+//nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient, error) {
-    if c.apiKey == "" {
-        return nil, fmt.Errorf("apiKey is not set")
-    }
+	if c.apiKey == "" {
+		return nil, fmt.Errorf("apiKey is not set")
+	}
 
-    if c.endpoint == "" {
-        return nil, fmt.Errorf("endpoint is not set")
-    }
+	if c.endpoint == "" {
+		return nil, fmt.Errorf("endpoint is not set")
+	}
 
-    if accountID == uuid.Nil {
+	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
 
 	// Since service accounts are account scoped. Generate from util.getAccountScopedURL
 	// e.g. this will generate routePrefix ending in /accounts/bots
-    routePrefix := getAccountScopedURL(c.endpoint, accountID, "bots")
+	routePrefix := getAccountScopedURL(c.endpoint, accountID, "bots")
 
-    return &ServiceAccountsClient{
-        hc:          c.hc,
-        apiKey:      c.apiKey,
-        routePrefix: routePrefix,
-    }, nil
+	return &ServiceAccountsClient{
+		hc:          c.hc,
+		apiKey:      c.apiKey,
+		routePrefix: routePrefix,
+	}, nil
 }
-
 
 func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
 	var buf bytes.Buffer
@@ -59,7 +58,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -67,6 +66,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 		// Read the response body
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		bodyString := string(bodyBytes)
+
 		return nil, fmt.Errorf("status code: %s, response body: %s", resp.Status, bodyString)
 	}
 
@@ -74,9 +74,9 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
+
 	return &response, nil
 }
-
 
 func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilterRequest) ([]*api.ServiceAccount, error) {
 	var buf bytes.Buffer
@@ -109,9 +109,8 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcc
 	return serviceAccounts, nil
 }
 
-
-func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.ServiceAccount, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botId, http.NoBody)
+func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.ServiceAccount, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botID, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -120,17 +119,17 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusOK:
-		// continue processing
 	case http.StatusNotFound:
-		return nil, fmt.Errorf("Service Account not found")
+		return nil, fmt.Errorf("could not find Service Account")
 	default:
 		bodyBytes, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
@@ -138,17 +137,17 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botId string) (*api.Se
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
+
 	return &response, nil
 }
 
-
-func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, request api.ServiceAccountUpdateRequest) error {
+func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, request api.ServiceAccountUpdateRequest) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
 		return fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botId, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botID, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -160,16 +159,16 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botId string, reque
 		return fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("status code %s", resp.Status)
 	}
+
 	return nil
 }
 
-
-func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botId, http.NoBody)
+func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botID, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -177,14 +176,13 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botId string) error
 
 	resp, err := sa.hc.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("status code %s", resp.Status)
 	}
-	
+
 	return nil
 }
-
