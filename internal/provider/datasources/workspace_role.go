@@ -148,7 +148,7 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 		)
 	}
 
-	if len(workspaceRoles) == 0 {
+	if len(workspaceRoles) != 1 {
 		resp.Diagnostics.AddError(
 			"Could not find Workspace Role",
 			fmt.Sprintf("Could not find Workspace Role with name %s", model.Name.String()),
