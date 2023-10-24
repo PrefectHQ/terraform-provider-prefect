@@ -19,20 +19,22 @@ type ServiceAccountDataSource struct {
 	client api.PrefectClient
 }
 
-// ServiceAccountSourceModel defines the Terraform data source model.
-type ServiceAccountSourceModel struct {
-	ID        customtypes.UUIDValue      `tfsdk:"id"`
-	Created   customtypes.TimestampValue `tfsdk:"created"`
-	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
+// ServiceAccountDataSourceModel defines the Terraform data source model.
+type ServiceAccountDataSourceModel struct {
+	ID      customtypes.UUIDValue      `tfsdk:"id"`
+	Created customtypes.TimestampValue `tfsdk:"created"`
+	Updated customtypes.TimestampValue `tfsdk:"updated"`
+
+	Name            types.String          `tfsdk:"name"`
+	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
+	AccountRoleName types.String          `tfsdk:"account_role_name"`
 
 	// SA fields
-	AccountRoleName types.String               `tfsdk:"account_role_name"`
-	APIKeyID        types.String               `tfsdk:"api_key_id"`
-	APIKeyName      types.String               `tfsdk:"api_key_name"`
-	APIKeyCreated   customtypes.TimestampValue `tfsdk:"api_key_created"`
-	APIKeyExpires   customtypes.TimestampValue `tfsdk:"api_key_expiration"`
-	APIKey          types.String               `tfsdk:"api_key"`
+	APIKeyID      types.String               `tfsdk:"api_key_id"`
+	APIKeyName    types.String               `tfsdk:"api_key_name"`
+	APIKeyCreated customtypes.TimestampValue `tfsdk:"api_key_created"`
+	APIKeyExpires customtypes.TimestampValue `tfsdk:"api_key_expiration"`
+	APIKey        types.String               `tfsdk:"api_key"`
 }
 
 // NewServiceAccountDataSource returns a new ServiceAccountDataSource.
@@ -68,10 +70,9 @@ func (d *ServiceAccountDataSource) Configure(_ context.Context, req datasource.C
 
 var serviceAccountAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
-		Computed:    true,
+		Required:    true,
 		CustomType:  customtypes.UUIDType{},
 		Description: "Service Account UUID",
-		Optional:    true,
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
@@ -89,7 +90,7 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Optional:    true,
 	},
 	"name": schema.StringAttribute{
-		Required:    true,
+		Computed:    true,
 		Description: "Name of the service account",
 	},
 	"account_role_name": schema.StringAttribute{
@@ -130,7 +131,7 @@ func (d *ServiceAccountDataSource) Schema(_ context.Context, _ datasource.Schema
 
 // Read refreshes the Terraform state with the latest data.
 func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model ServiceAccountSourceModel
+	var model ServiceAccountDataSourceModel
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
@@ -162,6 +163,9 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	model.Created = customtypes.NewTimestampPointerValue(serviceAccount.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
 
+	model.Name = types.StringValue(serviceAccount.Name)
+	model.AccountID = customtypes.NewUUIDValue(serviceAccount.AccountID)
+
 	model.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
 	model.APIKeyID = types.StringValue(serviceAccount.APIKey.ID)
 	model.APIKeyName = types.StringValue(serviceAccount.APIKey.Name)
@@ -169,10 +173,8 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	model.APIKeyExpires = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Expiration)
 	model.APIKey = types.StringValue(serviceAccount.APIKey.Key)
 
-	if err != nil {
-		resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 }
