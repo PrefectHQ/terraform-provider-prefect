@@ -207,6 +207,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
 		datasources.NewWorkspaceDataSource,
+		datasources.NewWorkspaceRoleDataSource,
 	}
 }
 
