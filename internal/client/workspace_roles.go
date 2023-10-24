@@ -11,7 +11,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
-// type assertion ensures that this client implements the interface
+// type assertion ensures that this client implements the interface.
 var _ = api.WorkspaceRolesClient(&WorkspaceRolesClient{})
 
 type WorkspaceRolesClient struct {
@@ -68,13 +68,13 @@ func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRol
 }
 
 // Update modifies an existing workspace role by ID.
-func (c *WorkspaceRolesClient) Update(ctx context.Context, id uuid.UUID, data api.WorkspaceRoleUpsert) error {
+func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.UUID, data api.WorkspaceRoleUpsert) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return fmt.Errorf("failed to encode update payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, workspaceRoleID.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

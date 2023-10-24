@@ -37,7 +37,7 @@ type WorkspaceRoleUpsert struct {
 // WorkspaceRoleFilter defines the search filter payload
 // when searching for workspace roles by name.
 // example request payload:
-// {"workspace_roles": {"name": {"any_": ["test"]}}}
+// {"workspace_roles": {"name": {"any_": ["test"]}}}.
 type WorkspaceRoleFilter struct {
 	WorkspaceRoles struct {
 		Name struct {

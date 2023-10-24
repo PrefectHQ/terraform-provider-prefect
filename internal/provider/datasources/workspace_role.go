@@ -35,6 +35,8 @@ type WorkspaceRoleDataSourceModel struct {
 }
 
 // NewWorkspaceRoleDataSource returns a new WorkspaceRoleDataSource.
+//
+//nolint:ireturn // required by Terraform API
 func NewWorkspaceRoleDataSource() datasource.DataSource {
 	return &WorkspaceRoleDataSource{}
 }
