@@ -57,6 +57,10 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
       - run: make acctest
+        env:
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
+          PREFECT_API_TOKEN: ${{ secrets.ACC_TEST_PREFECT_API_TOKEN }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
 
   lint:
     permissions:
