@@ -12,13 +12,14 @@ import (
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_workspace_role(t *testing.T) {
 	resourceName := "prefect_workspace_role.role"
-	randomName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the workspace role resource
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleResource(randomName),
+				Config: fixtureAccWorkspaceRoleResource(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("%s description", randomName)),
@@ -29,7 +30,7 @@ func TestAccResource_workspace_role(t *testing.T) {
 			},
 			{
 				// Check updates for the workspace role resource
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleReesourceUpdated(randomName),
+				Config: fixtureAccWorkspaceRoleReesourceUpdated(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("description for %s", randomName)),

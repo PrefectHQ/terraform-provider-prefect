@@ -14,13 +14,14 @@ import (
 func TestAccDatasource_service_account(t *testing.T) {
 	dataSourceName := "data.prefect_service_account.bot"
 	// generate random resource name
-	randomName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: testutils.ProviderConfig + fixtureAccServiceAccountDataSource(randomName),
+				Config: fixtureAccServiceAccountDataSource(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check the prefect_service_account datasource
 					resource.TestCheckResourceAttr(dataSourceName, "name", randomName),

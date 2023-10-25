@@ -39,6 +39,29 @@ jobs:
       - name: Unit Test
         run: make test
 
+  testacc:
+    permissions:
+      contents: read
+    name: Acceptance Tests
+    environment: Acceptance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.*'
+          terraform_wrapper: false
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+      - run: make testacc
+        env:
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
+          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
+
   lint:
     permissions:
       contents: read

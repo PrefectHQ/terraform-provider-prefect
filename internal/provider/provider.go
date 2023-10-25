@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -69,7 +71,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// Ensure that any values passed in to provider are known
+	// Ensure that all configuration values passed in to provider are known
+	// https://developer.hashicorp.com/terraform/plugin/framework/handling-data/terraform-concepts#unknown-values
 	if config.Endpoint.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("endpoint"),
@@ -84,16 +87,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			path.Root("api_key"),
 			"Unknown Prefect API Key",
 			"The Prefect API Key is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
-		)
-	}
-
-	if config.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("api_key"),
-			"Unknown Prefect API Key",
-			"The Prefect API Key is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_URL environment variable, or remove the value.",
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_KEY environment variable, or remove the value.",
 		)
 	}
 
@@ -119,24 +113,25 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// Use provider values if supplied, otherwise fall back to environment variables
+	// Extract endpoint from configuration or environment variable.
+	// If the endpoint is not set, or the value is not a valid URL, emit an error.
 	var endpoint string
-	if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() {
+	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
-	} else if u, ok := os.LookupEnv("PREFECT_API_URL"); ok {
-		endpoint = u
-	} else {
-		endpoint = "http://localhost:4200/api"
+	} else if apiURLEnvVar, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+		endpoint = apiURLEnvVar
 	}
-
-	// Validate values (ensure that they are non-empty)
 	if endpoint == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("endpoint"),
 			"Missing Prefect API Endpoint",
 			"The Prefect API Endpoint is set to an empty value. "+
-				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a non-empty value, or remove the value. "+fmt.Sprintf("endpoint %q unknown %t", endpoint, config.Endpoint.IsUnknown()),
+				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a non-empty value, or remove the value.",
 		)
+	}
+	// Here, we'll ensure that the /api suffix is present on the endpoint
+	if !strings.HasSuffix(endpoint, "/api") {
+		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
 	endpointURL, err := url.Parse(endpoint)
@@ -147,31 +142,68 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
 	}
+	isPrefectCloudEndpoint := endpointURL.Host == "api.prefect.cloud" || endpointURL.Host == "api.prefect.dev" || endpointURL.Host == "api.stg.prefect.dev"
 
+	// Extract the API Key from configuration or environment variable.
 	var apiKey string
-	if !config.APIKey.IsUnknown() {
+	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
-	} else if key, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
-		apiKey = key
+	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+		apiKey = apiKeyEnvVar
 	}
 
-	// If API Key is unset, check that we're running against Prefect Cloud
-	if endpointURL.Host == "api.prefect.cloud" || endpointURL.Host == "api.prefect.dev" || endpointURL.Host == "api.stg.prefect.dev" {
-		if apiKey == "" {
+	// Extract the Account ID from configuration or environment variable.
+	// If the ID is set to an invalid UUID, emit an error.
+	var accountID uuid.UUID
+	if !config.AccountID.IsNull() {
+		accountID = config.AccountID.ValueUUID()
+	} else if accountIDEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
+		accountID, err = uuid.Parse(accountIDEnvVar)
+		if err != nil {
 			resp.Diagnostics.AddAttributeWarning(
+				path.Root("account_id"),
+				"Invalid Prefect Account ID defined in PREFECT_CLOUD_ACCOUNT_ID ",
+				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", accountIDEnvVar, err),
+			)
+		}
+	}
+
+	// If the endpoint is pointed to Prefect Cloud, we will ensure
+	// that a valid API Key is passed.
+	// Additionally, we will warn if an Account ID is missing,
+	// as it's likely that this is a user misconfiguration.
+	if isPrefectCloudEndpoint {
+		if apiKey == "" {
+			resp.Diagnostics.AddAttributeError(
 				path.Root("api_key"),
 				"Missing Prefect API Key",
 				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect API Key is empty. "+
 					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_API_KEY environment variable, or configure the api_key attribute.",
 			)
 		}
-	} else if apiKey != "" {
-		resp.Diagnostics.AddAttributeWarning(
-			path.Root("api_key"),
-			"Non-Empty Prefect API Key",
-			"The Prefect API Key is set, however, the Endpoint is set to a Prefect server installation. "+
-				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect Cloud endpoint, unset the PREFECT_API_KEY environment variable, or remove the api_key attribute.",
-		)
+
+		if accountID == uuid.Nil {
+			resp.Diagnostics.AddAttributeWarning(
+				path.Root("account_id"),
+				"Missing Prefect Account ID",
+				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect Account ID is empty. "+
+					"Potential resolutions: set the PREFECT_CLOUD_ACCOUNT_ID environment variable, or configure the account_id attribute.",
+			)
+		}
+	}
+
+	// If the endpoint is pointed to a self-hosted Prefect Server installation,
+	// we will warn the practitioner if an API Key is set, as it's possible that
+	// this is a user misconfiguration.
+	if !isPrefectCloudEndpoint {
+		if apiKey != "" {
+			resp.Diagnostics.AddAttributeWarning(
+				path.Root("api_key"),
+				"Prefect API Key ",
+				"The Prefect API Key is set, however, the Endpoint is set to a Prefect server installation. "+
+					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect Cloud endpoint, unset the PREFECT_API_KEY environment variable, or remove the api_key attribute.",
+			)
+		}
 	}
 
 	if resp.Diagnostics.HasError() {
@@ -181,7 +213,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint),
 		client.WithAPIKey(apiKey),
-		client.WithDefaults(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID()),
+		client.WithDefaults(accountID, config.WorkspaceID.ValueUUID()),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
