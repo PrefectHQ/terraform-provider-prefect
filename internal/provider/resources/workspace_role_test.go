@@ -41,7 +41,6 @@ func TestAccResource_workspace_role(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func fixtureAccWorkspaceRoleResource(name string) string {

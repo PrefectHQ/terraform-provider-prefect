@@ -122,7 +122,7 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 }
 
 // copyWorkspaceRoleToModel copies an api.WorkspaceRole to a WorkspaceRoleDataSourceModel.
-func copyWorkspaceRoleToModel(ctx context.Context, role *api.WorkspaceRole, model *WorkspaceRoleResourceModel) diag.Diagnostics {
+func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model *WorkspaceRoleResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(role.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(role.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(role.Updated)
@@ -134,11 +134,12 @@ func copyWorkspaceRoleToModel(ctx context.Context, role *api.WorkspaceRole, mode
 
 	// NOTE: here, we'll omit updating the TF state with the scopes returned from the API
 	// as scopes in Prefect Cloud have a hierarchical structure. This means that children scopes
-	// can be returned based on what a practioner configures in TF / HCL, which will cause
+	// can be returned based on what a practitioner configures in TF / HCL, which will cause
 	// conflicts on apply, as the retrieved state from the API will vary slightly with
 	// the Terraform configuration. Therefore, the state will hold the user-defined scope parameters,
 	// which will include any children scopes on the Prefect Cloud side.
 
+	//nolint:gocritic
 	// scopes, diags := types.ListValueFrom(ctx, types.StringType, role.Scopes)
 	// if diags.HasError() {
 	// 	return diags
@@ -209,7 +210,6 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	// client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
 	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -368,7 +368,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 	}
 }
 
-// ImportState allows Terraform to start managing a Workspace Role resource
+// ImportState allows Terraform to start managing a Workspace Role resource.
 func (r *WorkspaceRoleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Retrieve import ID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
