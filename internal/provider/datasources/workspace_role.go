@@ -69,11 +69,6 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 		Optional:    true,
 		Description: "Description of the Workspace Role",
 	},
-	"permissions": schema.ListAttribute{
-		Computed:    true,
-		Description: "List of permissions linked to the Workspace Role",
-		ElementType: types.StringType,
-	},
 	"scopes": schema.ListAttribute{
 		Computed:    true,
 		Description: "List of scopes linked to the Workspace Role",
