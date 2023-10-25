@@ -39,6 +39,25 @@ jobs:
       - name: Unit Test
         run: make test
 
+  acctest:
+    permissions:
+      contents: read
+    name: Acceptance Tests
+    environment: Acceptance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: '1.5.*'
+          terraform_wrapper: false
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+      - run: make acctest
+
   lint:
     permissions:
       contents: read
