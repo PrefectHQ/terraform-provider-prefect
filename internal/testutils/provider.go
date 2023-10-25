@@ -32,6 +32,7 @@ var TestAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 // through the environment variables.
 // https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/testcase#precheck
 func AccTestPreCheck(t *testing.T) {
+	t.Helper()
 	neededVars := []string{"PREFECT_API_URL", "PREFECT_API_KEY", "PREFECT_CLOUD_ACCOUNT_ID"}
 	for _, key := range neededVars {
 		if v := os.Getenv(key); v == "" {

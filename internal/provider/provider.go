@@ -206,6 +206,13 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
+	fmt.Println()
+	fmt.Printf("endpointURL: %s\n", endpointURL)
+	fmt.Printf("endpointHost: %s\n", endpointURL.Host)
+	fmt.Printf("isPrefectCloudEndpoint: %t\n", isPrefectCloudEndpoint)
+	fmt.Printf("apiKey: %s\n", apiKey)
+	fmt.Println()
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
