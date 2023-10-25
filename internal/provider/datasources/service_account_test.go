@@ -18,6 +18,7 @@ func TestAccDatasource_service_account(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccServiceAccountDataSource(randomName),

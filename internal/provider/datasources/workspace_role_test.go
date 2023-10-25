@@ -20,6 +20,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccWorkspaceRoleDataSource(owner),

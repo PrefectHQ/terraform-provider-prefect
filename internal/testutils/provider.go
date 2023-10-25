@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -22,6 +23,15 @@ var TestAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"prefect": providerserver.NewProtocol6WithError(TestAccProvider),
 }
 
+// AccTestPreCheck is a utility hook, which every test suite will call
+// in order to verify if the necessary provider configurations are passed
+// through the environment variables.
+// https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/testcase#precheck
 func AccTestPreCheck(t *testing.T) {
-
+	neededVars := []string{"PREFECT_API_URL", "PREFECT_API_KEY", "PREFECT_CLOUD_ACCOUNT_ID"}
+	for _, key := range neededVars {
+		if v := os.Getenv(key); v == "" {
+			t.Fatalf("%s must be set for acceptance tests", key)
+		}
+	}
 }

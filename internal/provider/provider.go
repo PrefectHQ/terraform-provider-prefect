@@ -118,8 +118,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var endpoint string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
-	} else if url, ok := os.LookupEnv("PREFECT_API_URL"); ok {
-		endpoint = url
+	} else if apiURLEnvVar, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+		endpoint = apiURLEnvVar
 	}
 	if endpoint == "" {
 		resp.Diagnostics.AddAttributeError(
@@ -148,8 +148,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var apiKey string
 	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
-	} else if key, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
-		apiKey = key
+	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+		apiKey = apiKeyEnvVar
 	}
 
 	// Extract the Account ID from configuration or environment variable.
@@ -157,16 +157,15 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var accountID uuid.UUID
 	if !config.AccountID.IsNull() {
 		accountID = config.AccountID.ValueUUID()
-	} else if id, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
-		accountID, err = uuid.Parse(id)
+	} else if accountIDEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
+		accountID, err = uuid.Parse(accountIDEnvVar)
 		if err != nil {
 			resp.Diagnostics.AddAttributeWarning(
 				path.Root("account_id"),
 				"Invalid Prefect Account ID defined in PREFECT_CLOUD_ACCOUNT_ID ",
-				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", id, err),
+				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", accountIDEnvVar, err),
 			)
 		}
-
 	}
 
 	// If the endpoint is pointed to Prefect Cloud, we will ensure
