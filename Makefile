@@ -40,6 +40,6 @@ test:
 
 # NOTE: Acceptance Tests create real infrastructure
 # against a dedicated testing account
-acctest:
+testacc:
 	TF_ACC=1 make test
-.PHONY: acctest
+.PHONY: testacc
