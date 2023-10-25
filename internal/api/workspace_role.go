@@ -19,7 +19,6 @@ type WorkspaceRole struct {
 	BaseModel
 	Name            string     `json:"name"`
 	Description     *string    `json:"description"`
-	Permissions     []string   `json:"permissions"`
 	Scopes          []string   `json:"scopes"`
 	AccountID       *uuid.UUID `json:"account_id"` // this is null for the default roles
 	InheritedRoleID *uuid.UUID `json:"inherited_role_id"`

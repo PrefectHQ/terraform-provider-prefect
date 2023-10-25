@@ -28,7 +28,6 @@ type WorkspaceRoleDataSourceModel struct {
 
 	Name            types.String          `tfsdk:"name"`
 	Description     types.String          `tfsdk:"description"`
-	Permissions     types.List            `tfsdk:"permissions"`
 	Scopes          types.List            `tfsdk:"scopes"`
 	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
 	InheritedRoleID customtypes.UUIDValue `tfsdk:"inherited_role_id"`
@@ -69,11 +68,6 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 	"description": schema.StringAttribute{
 		Optional:    true,
 		Description: "Description of the Workspace Role",
-	},
-	"permissions": schema.ListAttribute{
-		Computed:    true,
-		Description: "List of permissions linked to the Workspace Role",
-		ElementType: types.StringType,
 	},
 	"scopes": schema.ListAttribute{
 		Computed:    true,
@@ -170,14 +164,7 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 	model.AccountID = customtypes.NewUUIDPointerValue(fetchedRole.AccountID)
 	model.InheritedRoleID = customtypes.NewUUIDPointerValue(fetchedRole.InheritedRoleID)
 
-	list, diags := types.ListValueFrom(ctx, types.StringType, fetchedRole.Permissions)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	model.Permissions = list
-
-	list, diags = types.ListValueFrom(ctx, types.StringType, fetchedRole.Scopes)
+	list, diags := types.ListValueFrom(ctx, types.StringType, fetchedRole.Scopes)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

@@ -220,5 +220,6 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewWorkPoolResource,
 		resources.NewWorkspaceResource,
 		resources.NewServiceAccountResource,
+		resources.NewWorkspaceRoleResource,
 	}
 }
