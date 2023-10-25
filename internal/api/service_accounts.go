@@ -27,6 +27,10 @@ type ServiceAccountUpdateRequest struct {
 	Name string `json:"name"`
 }
 
+type ServiceAccountRotateKeyRequest struct {
+	APIKeyExpiration string `json:"api_key_expiration"`
+}
+
 type ServiceAccountFilterRequest struct {
 	Any []uuid.UUID `json:"any_"`
 }
@@ -45,8 +49,8 @@ type ServiceAccount struct {
 type ServiceAccountAPIKey struct {
 	ID         string     `json:"id"`
 	Created    *time.Time `json:"created"`
-	Name       string     `json:"name"`
 	Expiration *time.Time `json:"expiration"`
+	Name       string     `json:"name"`
 	Key        string     `json:"key"`
 }
 
