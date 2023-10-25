@@ -18,7 +18,7 @@ func TestAccResource_workspace_role(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the workspace role resource
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleResource(randomName),
+				Config: fixtureAccWorkspaceRoleResource(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("%s description", randomName)),
@@ -29,7 +29,7 @@ func TestAccResource_workspace_role(t *testing.T) {
 			},
 			{
 				// Check updates for the workspace role resource
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleReesourceUpdated(randomName),
+				Config: fixtureAccWorkspaceRoleReesourceUpdated(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("description for %s", randomName)),

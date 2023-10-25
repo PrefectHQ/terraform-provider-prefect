@@ -20,7 +20,7 @@ func TestAccDatasource_service_account(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testutils.ProviderConfig + fixtureAccServiceAccountDataSource(randomName),
+				Config: fixtureAccServiceAccountDataSource(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check the prefect_service_account datasource
 					resource.TestCheckResourceAttr(dataSourceName, "name", randomName),

@@ -22,7 +22,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleDataSource(owner),
+				Config: fixtureAccWorkspaceRoleDataSource(owner),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", owner),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
@@ -32,7 +32,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 				),
 			},
 			{
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleDataSource(worker),
+				Config: fixtureAccWorkspaceRoleDataSource(worker),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", worker),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
@@ -42,7 +42,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 				),
 			},
 			{
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleDataSource(developer),
+				Config: fixtureAccWorkspaceRoleDataSource(developer),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", developer),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
@@ -52,7 +52,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 				),
 			},
 			{
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleDataSource(viewer),
+				Config: fixtureAccWorkspaceRoleDataSource(viewer),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", viewer),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
@@ -62,7 +62,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 				),
 			},
 			{
-				Config: testutils.ProviderConfig + fixtureAccWorkspaceRoleDataSource(runner),
+				Config: fixtureAccWorkspaceRoleDataSource(runner),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(dataSourceName, "name", runner),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
