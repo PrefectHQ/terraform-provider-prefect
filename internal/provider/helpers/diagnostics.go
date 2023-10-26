@@ -7,6 +7,11 @@ import (
 )
 
 // https://developer.hashicorp.com/terraform/plugin/framework/diagnostics#custom-diagnostics-types
+
+// CreateClientErrorDiagnostic returns an error diagnostic for when one of the
+// HTTP clients failed to be instantiated.
+//
+//nolint:ireturn // required by Terraform API
 func CreateClientErrorDiagnostic(clientName string, err error) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error creating %s client", clientName),

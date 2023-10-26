@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -38,6 +40,12 @@ type ServiceAccountResourceModel struct {
 	APIKeyCreated    customtypes.TimestampValue `tfsdk:"api_key_created"`
 	APIKeyExpiration customtypes.TimestampValue `tfsdk:"api_key_expiration"`
 	APIKey           types.String               `tfsdk:"api_key"`
+}
+
+// ArePointerTimesEqual is a helper to compare equality of two pointer times
+// as this can get verbose to do inline with the resource logic.
+func ArePointerTimesEqual(t1 *time.Time, t2 *time.Time) bool {
+	return t1 == t2 || (t1 != nil && t2 != nil && t1.Equal(*t2))
 }
 
 // NewServiceAccountResource returns a new AccountResource.
@@ -77,6 +85,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Service account UUID",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -118,13 +129,13 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			},
 			"api_key_expiration": schema.StringAttribute{
 				Optional:    true,
-				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time that the API Key expires in RFC 3339 format",
 			},
 			"api_key": schema.StringAttribute{
 				Computed:    true,
 				Description: "API Key associated with the service account",
+				Sensitive:   true,
 			},
 		},
 	}
@@ -241,14 +252,14 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *ServiceAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model ServiceAccountResourceModel
+	var plan ServiceAccountResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	client, err := r.client.ServiceAccounts(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
@@ -256,8 +267,8 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 	}
 
 	// Update client method requires context, botID, request args
-	err = client.Update(ctx, model.ID.ValueString(), api.ServiceAccountUpdateRequest{
-		Name: model.Name.ValueString(),
+	err = client.Update(ctx, plan.ID.ValueString(), api.ServiceAccountUpdateRequest{
+		Name: plan.Name.ValueString(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -268,8 +279,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// 'Get' client method requires context, botID args
-	serviceAccount, err := client.Get(ctx, model.ID.ValueString())
+	serviceAccount, err := client.Get(ctx, plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
@@ -279,18 +289,50 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// Update the model with latest service account details (from the Get call above)
-	// Note: As with the Create/Read operations, 'account role id' is not part of the response
-	// and does not get set in the model as part of this call to copyServiceAccountResponseToModel
-	copyServiceAccountResponseToModel(serviceAccount, &model)
+	// Here, we'll retrieve the API Key from the previous State, as it's
+	// not included in the Terraform Plan / user configuration, nor is it
+	// returned on any API response other than Create and RotateKey.
+	// Additionally, the Provider framework will throw an exception if we
+	// set the `api_key` property to use stringmodifier.UseStateForUnknown()
+	// during legitimate cases where the API Key State value will be updated
+	// during key rotation.
+	var state ServiceAccountResourceModel
+	req.State.Get(ctx, &state)
+	apiKey := state.APIKey.ValueString()
 
-	// TODO: call rotate-key and use the new key value here
+	// Practitioners can rotate their Service Account API Key my modifying the
+	// `api_key_expiration` attribute. If the provided value is different than the current
+	// value, we'll call the RotateKey method on the client, which returns the
+	// ServiceAccount object with the new API Key value included in the response.
+	providedExpiration := plan.APIKeyExpiration.ValueTimePointer()
+	currentExpiration := serviceAccount.APIKey.Expiration
+	if !ArePointerTimesEqual(providedExpiration, currentExpiration) {
+		serviceAccount, err = client.RotateKey(ctx, plan.ID.ValueString(), api.ServiceAccountRotateKeyRequest{
+			APIKeyExpiration: providedExpiration,
+		})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error rotating Service Account key",
+				fmt.Sprintf("Could not rotate Service Account key, unexpected error: %s", err),
+			)
+
+			return
+		}
+
+		// Upon successful key rotation, we'll update this local variable with the new API Key value,
+		// which will be used in the final State update below.
+		apiKey = serviceAccount.APIKey.Key
+	}
+
+	// Update the model with latest service account details (from the Get call above)
+	copyServiceAccountResponseToModel(serviceAccount, &plan)
+
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
 	// overwritten in state when this helper is used on Read operations.
-	// model.APIKey = types.StringValue(serviceAccount.APIKey.Key)
+	plan.APIKey = types.StringValue(apiKey)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
