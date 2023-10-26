@@ -6,6 +6,7 @@ import "github.com/google/uuid"
 type PrefectClient interface {
 	Accounts() (AccountsClient, error)
 	Workspaces(accountID uuid.UUID) (WorkspacesClient, error)
+	WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (WorkspaceAccessClient, error)
 	WorkspaceRoles(accountID uuid.UUID) (WorkspaceRolesClient, error)
 	WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (WorkPoolsClient, error)
 	Variables(accountID uuid.UUID, workspaceID uuid.UUID) (VariablesClient, error)
