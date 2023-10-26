@@ -186,3 +186,33 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 
 	return nil
 }
+
+func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID string, data api.ServiceAccountRotateKeyRequest) (*api.ServiceAccount, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
+		return nil, fmt.Errorf("failed to encode request data: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID), &buf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+	setDefaultHeaders(req, sa.apiKey)
+
+	resp, err := sa.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, fmt.Errorf("status code %s", resp.Status)
+	}
+
+	var serviceAccount api.ServiceAccount
+	if err := json.NewDecoder(resp.Body).Decode(&serviceAccount); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &serviceAccount, nil
+}

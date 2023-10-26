@@ -10,9 +10,10 @@ import (
 type ServiceAccountsClient interface {
 	Create(ctx context.Context, request ServiceAccountCreateRequest) (*ServiceAccount, error)
 	List(ctx context.Context, filter ServiceAccountFilterRequest) ([]*ServiceAccount, error)
-	Get(ctx context.Context, name string) (*ServiceAccount, error)
-	Update(ctx context.Context, name string, data ServiceAccountUpdateRequest) error
-	Delete(ctx context.Context, name string) error
+	Get(ctx context.Context, id string) (*ServiceAccount, error)
+	Update(ctx context.Context, id string, data ServiceAccountUpdateRequest) error
+	Delete(ctx context.Context, id string) error
+	RotateKey(ctx context.Context, id string, data ServiceAccountRotateKeyRequest) (*ServiceAccount, error)
 }
 
 /*** REQUEST DATA STRUCTS ***/
@@ -25,6 +26,10 @@ type ServiceAccountCreateRequest struct {
 
 type ServiceAccountUpdateRequest struct {
 	Name string `json:"name"`
+}
+
+type ServiceAccountRotateKeyRequest struct {
+	APIKeyExpiration *time.Time `json:"api_key_expiration"`
 }
 
 type ServiceAccountFilterRequest struct {
@@ -45,8 +50,8 @@ type ServiceAccount struct {
 type ServiceAccountAPIKey struct {
 	ID         string     `json:"id"`
 	Created    *time.Time `json:"created"`
-	Name       string     `json:"name"`
 	Expiration *time.Time `json:"expiration"`
+	Name       string     `json:"name"`
 	Key        string     `json:"key"`
 }
 
