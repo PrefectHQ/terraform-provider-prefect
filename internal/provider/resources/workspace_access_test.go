@@ -28,6 +28,7 @@ resource "prefect_workspace_access" "bot_access" {
 }`, botName)
 }
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_bot_workspace_access(t *testing.T) {
 	resourceName := "prefect_workspace_access.bot_access"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)

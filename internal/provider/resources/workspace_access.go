@@ -16,6 +16,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 var _ = resource.ResourceWithConfigure(&WorkspaceAccessResource{})
@@ -83,7 +84,7 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 				Required:    true,
 				Description: "USER or SERVICE_ACCOUNT",
 				Validators: []validator.String{
-					stringvalidator.OneOf("USER", "SERVICE_ACCOUNT"),
+					stringvalidator.OneOf(utils.ServiceAccount, utils.User),
 				},
 			},
 			"accessor_id": schema.StringAttribute{

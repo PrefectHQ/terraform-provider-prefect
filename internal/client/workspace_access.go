@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 // type assertion ensures that this client implements the interface.
@@ -47,13 +49,13 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		WorkspaceRoleID: roleID,
 	}
 	var requestPath string
-	if accessorType == "USER" {
+	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/", c.routePrefix)
-		payload.UserID = accessorID
+		payload.UserID = &accessorID
 	}
-	if accessorType == "SERVICE_ACCOUNT" {
+	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/", c.routePrefix)
-		payload.BotID = accessorID
+		payload.BotID = &accessorID
 	}
 
 	var buf bytes.Buffer
@@ -74,7 +76,8 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var workspaceAccess api.WorkspaceAccess
@@ -88,10 +91,10 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 // Get fetches workspace access for various accessor types via accessID.
 func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, accessID uuid.UUID) (*api.WorkspaceAccess, error) {
 	var requestPath string
-	if accessorType == "USER" {
+	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/%s", c.routePrefix, accessID.String())
 	}
-	if accessorType == "SERVICE_ACCOUNT" {
+	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
 	}
 
@@ -108,7 +111,8 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var workspaceAccess api.WorkspaceAccess
@@ -122,10 +126,10 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 // DeleteUserAccess deletes a service account's workspace access via accessID.
 func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string, accessID uuid.UUID) error {
 	var requestPath string
-	if accessorType == "USER" {
+	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/%s", c.routePrefix, accessID.String())
 	}
-	if accessorType == "SERVICE_ACCOUNT" {
+	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
 	}
 
@@ -142,7 +146,8 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil

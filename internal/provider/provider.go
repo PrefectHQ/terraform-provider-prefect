@@ -235,11 +235,11 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
+		datasources.NewServiceAccountDataSource,
 		datasources.NewVariableDataSource,
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
 		datasources.NewWorkspaceDataSource,
-		datasources.NewServiceAccountDataSource,
 		datasources.NewWorkspaceRoleDataSource,
 	}
 }
@@ -248,10 +248,11 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewAccountResource,
+		resources.NewServiceAccountResource,
 		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
+		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
-		resources.NewServiceAccountResource,
 		resources.NewWorkspaceRoleResource,
 	}
 }

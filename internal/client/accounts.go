@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -48,7 +49,8 @@ func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.Acc
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var account api.AccountResponse
@@ -81,7 +83,8 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
@@ -104,7 +107,8 @@ func (c *AccountsClient) Delete(ctx context.Context, accountID uuid.UUID) error 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil

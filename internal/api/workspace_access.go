@@ -32,6 +32,9 @@ type WorkspaceAccessUpsert struct {
 
 	// Only one of the follow IDs should be set on each call
 	// depending on the resource's AccessorType
-	UserID uuid.UUID `json:"user_id,omitempty"`
-	BotID  uuid.UUID `json:"bot_id,omitempty"`
+	// NOTE: omitempty normally excludes any zero value,
+	// for primitives, but complex types like structs
+	// and uuid.UUID require a pointer type to be omitted.
+	UserID *uuid.UUID `json:"user_id,omitempty"`
+	BotID  *uuid.UUID `json:"bot_id,omitempty"`
 }

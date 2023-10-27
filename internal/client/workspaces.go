@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -57,7 +58,8 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var workspace api.Workspace
@@ -84,7 +86,8 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var workspace api.Workspace
@@ -116,7 +119,8 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
@@ -138,7 +142,8 @@ func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) er
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
