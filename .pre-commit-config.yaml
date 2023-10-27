@@ -7,7 +7,7 @@ repos:
     - id: golangci-lint
       name: golangci-lint
       description: Fast linters runner for Go. Note that only modified files are linted, so linters like 'unused' that need to scan all files won't work as expected.
-      entry: golangci-lint run --new-from-rev HEAD --fix
+      entry: golangci-lint run
       types: [go]
       language: golang
       require_serial: true
