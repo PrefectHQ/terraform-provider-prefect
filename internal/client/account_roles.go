@@ -21,7 +21,7 @@ type AccountRolesClient struct {
 	routePrefix string
 }
 
-// accountRoles is a factory that initializes and returns a AccountRolesClient.
+// AccountRoles is a factory that initializes and returns a AccountRolesClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, error) {
@@ -36,7 +36,7 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 	}, nil
 }
 
-// List returns a list of account roles, based on the provided filter.
+// list returns a list of account roles, based on the provided filter.
 func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*api.AccountRole, error) {
 	var buf bytes.Buffer
 	filterQuery := api.AccountRoleFilter{}
