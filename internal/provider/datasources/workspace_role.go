@@ -86,7 +86,7 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 	},
 }
 
-// Schema defines the schema fro the data source.
+// Schema defines the schema for the data source.
 func (d *WorkspaceRoleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Data Source representing a Prefect Workspace Role",

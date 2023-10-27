@@ -16,6 +16,9 @@ type AccountRole struct {
 	BaseModel
 	Name        string   `json:"name"`
 	Permissions []string `json:"permissions"`
+
+	AccountID    *uuid.UUID `json:"account_id"`
+	IsSystemRole bool       `json:"is_system_role"`
 }
 
 // AccountRoleFilter defines the search filter payload
