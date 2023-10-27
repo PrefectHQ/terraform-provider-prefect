@@ -19,9 +19,9 @@ type ServiceAccountsClient interface {
 /*** REQUEST DATA STRUCTS ***/
 
 type ServiceAccountCreateRequest struct {
-	Name             string `json:"name"`
-	APIKeyExpiration string `json:"api_key_expiration,omitempty"`
-	AccountRoleID    string `json:"account_role_id,omitempty"`
+	Name             string     `json:"name"`
+	APIKeyExpiration string     `json:"api_key_expiration,omitempty"`
+	AccountRoleID    *uuid.UUID `json:"account_role_id,omitempty"`
 }
 
 type ServiceAccountUpdateRequest struct {

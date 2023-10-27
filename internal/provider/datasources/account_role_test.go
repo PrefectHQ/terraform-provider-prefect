@@ -8,30 +8,34 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkspaceRoleDataSource(name string) string {
+func fixtureAccAccountRoleDataSource(name string) string {
 	return fmt.Sprintf(`
-data "prefect_workspace_role" "test" {
+data "prefect_account_role" "test" {
 	name = "%s"
 }
 	`, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
-func TestAccDatasource_workspace_role_defaults(t *testing.T) {
-	dataSourceName := "data.prefect_workspace_role.test"
+func TestAccDatasource_account_role_defaults(t *testing.T) {
+	dataSourceName := "data.prefect_account_role.test"
 
-	// Default workspace role names - these exist in every account
-	defaultWorkspaceRoles := []string{"Owner", "Worker", "Developer", "Viewer", "Runner"}
+	type defaultAccountRole struct {
+		name            string
+		permissionCount string
+	}
+
+	// Default account role names - these exist in every account
+	defaultAccountRoles := []defaultAccountRole{{"Admin", "39"}, {"Member", "10"}}
 
 	testSteps := []resource.TestStep{}
 
-	for _, role := range defaultWorkspaceRoles {
+	for _, role := range defaultAccountRoles {
 		testSteps = append(testSteps, resource.TestStep{
-			Config: fixtureAccWorkspaceRoleDataSource(role),
+			Config: fixtureAccAccountRoleDataSource(role.name),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(dataSourceName, "name", role),
-				resource.TestCheckResourceAttrSet(dataSourceName, "created"),
-				resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
+				resource.TestCheckResourceAttr(dataSourceName, "name", role.name),
+				resource.TestCheckResourceAttr(dataSourceName, "permissions.#", role.permissionCount),
 				// Default roles should not be associated with an account
 				resource.TestCheckNoResourceAttr(dataSourceName, "account_id"),
 			),

@@ -47,15 +47,27 @@ resource "prefect_service_account" "bot" {
 
 func fixtureAccServiceAccountResourceUpdatedKey(name string, expiration time.Time) string {
 	return fmt.Sprintf(`
-	resource "prefect_service_account" "bot" {
-		name = "%s"
-		api_key_expiration = "%s"
-	}`, name, expiration.Format(time.RFC3339))
+resource "prefect_service_account" "bot" {
+	name = "%s"
+	api_key_expiration = "%s"
+}`, name, expiration.Format(time.RFC3339))
+}
+
+func fixtureAccServiceAccountResourceAccountRole(name string) string {
+	return fmt.Sprintf(`
+data "prefect_account_role" "admin" {
+	name = "Admin"
+}
+resource "prefect_service_account" "bot2" {
+	name = "%s"
+	account_role_name = "Admin"
+}`, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_service_account(t *testing.T) {
 	resourceName := "prefect_service_account.bot"
+	resourceName2 := "prefect_service_account.bot2"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
@@ -87,6 +99,14 @@ func TestAccResource_service_account(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountAPIKeyRotated(resourceName, &apiKey),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
+				),
+			},
+			{
+				Config: fixtureAccServiceAccountResourceAccountRole(randomName2),
+				Check: resource.ComposeTestCheckFunc(
+					// @TODO: This is a superficial test, until we can pull in the provider client
+					// and actually test the API call to Prefect Cloud
+					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.admin", "name"),
 				),
 			},
 		},
