@@ -63,11 +63,9 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		// Read the response body
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		bodyString := string(bodyBytes)
+		errorBody, _ := io.ReadAll(resp.Body)
 
-		return nil, fmt.Errorf("status code: %s, response body: %s", resp.Status, bodyString)
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var response api.ServiceAccount
@@ -98,7 +96,9 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcc
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var serviceAccounts []*api.ServiceAccount
@@ -161,7 +161,9 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
@@ -181,7 +183,9 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
@@ -206,7 +210,9 @@ func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var serviceAccount api.ServiceAccount

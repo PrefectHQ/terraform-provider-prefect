@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -68,7 +69,9 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var variable api.Variable
@@ -103,7 +106,9 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var variable api.Variable
@@ -130,7 +135,9 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	var variable api.Variable
@@ -162,7 +169,9 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
@@ -184,7 +193,9 @@ func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("status code %s", resp.Status)
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
 	return nil
