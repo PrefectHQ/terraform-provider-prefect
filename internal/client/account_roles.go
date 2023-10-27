@@ -21,7 +21,7 @@ type AccountRolesClient struct {
 	routePrefix string
 }
 
-// AccountRoles is a factory that initializes and returns a AccountRolesClient.
+// accountRoles is a factory that initializes and returns a AccountRolesClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, error) {
