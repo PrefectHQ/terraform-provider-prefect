@@ -2,7 +2,13 @@
 fail_fast: false
 
 repos:
-  - repo: https://github.com/dnephin/pre-commit-golang
-    rev: v0.5.1
+  - repo: local
     hooks:
-      - id: golangci-lint
+    - id: golangci-lint
+      name: golangci-lint
+      description: Fast linters runner for Go. Note that only modified files are linted, so linters like 'unused' that need to scan all files won't work as expected.
+      entry: golangci-lint run --new-from-rev HEAD --fix
+      types: [go]
+      language: golang
+      require_serial: true
+      pass_filenames: false
