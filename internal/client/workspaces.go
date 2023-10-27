@@ -59,6 +59,7 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -87,6 +88,7 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -120,6 +122,7 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -143,6 +146,7 @@ func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) er
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

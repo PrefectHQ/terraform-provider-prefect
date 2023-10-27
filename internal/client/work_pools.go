@@ -69,6 +69,7 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -102,6 +103,7 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -130,6 +132,7 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -163,6 +166,7 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -186,6 +190,7 @@ func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

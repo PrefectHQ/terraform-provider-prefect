@@ -64,6 +64,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -96,6 +97,7 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAcc
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -160,6 +162,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -181,6 +184,7 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -207,6 +211,7 @@ func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

@@ -58,6 +58,7 @@ func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRol
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -91,6 +92,7 @@ func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.
 
 	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -114,6 +116,7 @@ func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -145,6 +148,7 @@ func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -173,6 +177,7 @@ func (c *WorkspaceRolesClient) Get(ctx context.Context, id uuid.UUID) (*api.Work
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

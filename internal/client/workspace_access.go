@@ -77,6 +77,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -112,6 +113,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -147,6 +149,7 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 
 	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

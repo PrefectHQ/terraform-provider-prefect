@@ -70,6 +70,7 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 
 	if resp.StatusCode != http.StatusCreated {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -106,6 +107,7 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -134,6 +136,7 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -167,6 +170,7 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -190,6 +194,7 @@ func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) erro
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 

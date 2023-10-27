@@ -50,6 +50,7 @@ func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.Acc
 
 	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -84,6 +85,7 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
@@ -108,6 +110,7 @@ func (c *AccountsClient) Delete(ctx context.Context, accountID uuid.UUID) error 
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
