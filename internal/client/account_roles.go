@@ -36,7 +36,7 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 	}, nil
 }
 
-// List returns a list of account roles, based on the provided filter.
+// list returns a list of account roles, based on the provided filter.
 func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*api.AccountRole, error) {
 	var buf bytes.Buffer
 	filterQuery := api.AccountRoleFilter{}
