@@ -8,6 +8,6 @@ terraform {
 }
 
 provider "prefect" {
-  api_key = var.PREFECT_API_KEY
+  api_key    = var.PREFECT_API_KEY
   account_id = var.PREFECT_ACCOUNT_ID
 }
