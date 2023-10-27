@@ -47,10 +47,21 @@ resource "prefect_service_account" "bot" {
 
 func fixtureAccServiceAccountResourceUpdatedKey(name string, expiration time.Time) string {
 	return fmt.Sprintf(`
-	resource "prefect_service_account" "bot" {
-		name = "%s"
-		api_key_expiration = "%s"
-	}`, name, expiration.Format(time.RFC3339))
+resource "prefect_service_account" "bot" {
+	name = "%s"
+	api_key_expiration = "%s"
+}`, name, expiration.Format(time.RFC3339))
+}
+
+func fixtureAccServiceAccountResourceAccountRole(name string) string {
+	return fmt.Sprintf(`
+data "prefect_account_role" "member" {
+	name = "Member"
+}
+resource "prefect_service_account" "bot" {
+	name = "%s"
+	account_role_name = "Member"
+}`, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -87,6 +98,14 @@ func TestAccResource_service_account(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountAPIKeyRotated(resourceName, &apiKey),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
+				),
+			},
+			{
+				Config: fixtureAccServiceAccountResourceAccountRole(randomName),
+				Check: resource.ComposeTestCheckFunc(
+					// @TODO: This is a superficial test, until we can pull in the provider client
+					// and actually test the API call to Prefect Cloud
+					resource.TestCheckResourceAttrPair(resourceName, "account_role_name", "data.prefect_account_role.member", "name"),
 				),
 			},
 		},

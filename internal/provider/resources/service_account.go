@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -113,6 +115,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:    true,
 				Computed:    true,
 				Description: "Account Role name of the service account",
+				Validators: []validator.String{
+					stringvalidator.OneOf("Admin", "Member"),
+				},
 			},
 			"api_key_id": schema.StringAttribute{
 				Computed:    true,
@@ -169,7 +174,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	serviceAccountClient, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
@@ -180,19 +185,45 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		Name: model.Name.ValueString(),
 	}
 
+	// If the Account Role Name is provided, we'll need to fetch the Account Role ID
+	// and attach it to the Create request.
+	if !model.AccountRoleName.IsNull() && !model.AccountRoleName.IsUnknown() {
+		accountRoleClient, err := r.client.AccountRoles(model.AccountID.ValueUUID())
+		if err != nil {
+			resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account Role", err))
+
+			return
+		}
+
+		accountRoles, err := accountRoleClient.List(ctx, []string{model.AccountRoleName.ValueString()})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error fetching Account Role",
+				fmt.Sprintf("Could not fetch Account Role, unexpected error: %s", err),
+			)
+
+			return
+		}
+
+		if len(accountRoles) != 1 {
+			resp.Diagnostics.AddError(
+				"Could not find Account Role",
+				fmt.Sprintf("Could not find Account Role with name %s", model.AccountRoleName.String()),
+			)
+
+			return
+		}
+
+		createReq.AccountRoleID = &accountRoles[0].ID
+	}
+
 	// Conditionally set APIKeyExpiration if it's provided
 	if !model.APIKeyExpiration.ValueTime().IsZero() {
 		expiration := model.APIKeyExpiration.ValueTime().Format(time.RFC3339)
 		createReq.APIKeyExpiration = expiration
 	}
 
-	// @TODO
-	// Using the account_roles client, fetch the account role ID using the name
-	// that is passed into the service account resource
-	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/39
-	// createReq.AccountRoleID = "0000-0000-0000-0000-0000"
-
-	serviceAccount, err := client.Create(ctx, createReq)
+	serviceAccount, err := serviceAccountClient.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating service account",
@@ -266,10 +297,12 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// Update client method requires context, botID, request args
-	err = client.Update(ctx, plan.ID.ValueString(), api.ServiceAccountUpdateRequest{
+	updateReq := api.ServiceAccountUpdateRequest{
 		Name: plan.Name.ValueString(),
-	})
+	}
+
+	// Update client method requires context, botID, request args
+	err = client.Update(ctx, plan.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating Service Account",
