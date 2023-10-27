@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -68,6 +70,9 @@ func (d *AccountRoleDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the Account Role",
+				Validators: []validator.String{
+					stringvalidator.OneOf("Admin", "Member"),
+				},
 			},
 			"permissions": schema.ListAttribute{
 				Computed:    true,
