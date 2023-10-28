@@ -25,7 +25,8 @@ type ServiceAccountCreateRequest struct {
 }
 
 type ServiceAccountUpdateRequest struct {
-	Name string `json:"name"`
+	Name          string     `json:"name"`
+	AccountRoleID *uuid.UUID `json:"account_role_id,omitempty"`
 }
 
 type ServiceAccountRotateKeyRequest struct {

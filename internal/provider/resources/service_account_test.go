@@ -53,15 +53,15 @@ resource "prefect_service_account" "bot" {
 }`, name, expiration.Format(time.RFC3339))
 }
 
-func fixtureAccServiceAccountResourceAccountRole(name string) string {
+func fixtureAccServiceAccountResourceAccountRole(name string, roleName string) string {
 	return fmt.Sprintf(`
-data "prefect_account_role" "admin" {
-	name = "Admin"
+data "prefect_account_role" "role" {
+	name = "%s"
 }
 resource "prefect_service_account" "bot2" {
 	name = "%s"
-	account_role_name = "Admin"
-}`, name)
+	account_role_name = "%s"
+}`, roleName, name, roleName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -102,11 +102,27 @@ func TestAccResource_service_account(t *testing.T) {
 				),
 			},
 			{
-				Config: fixtureAccServiceAccountResourceAccountRole(randomName2),
+				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Admin"),
 				Check: resource.ComposeTestCheckFunc(
 					// @TODO: This is a superficial test, until we can pull in the provider client
 					// and actually test the API call to Prefect Cloud
-					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.admin", "name"),
+					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
+				),
+			},
+			// @TODO: These two tests are superficial, until we can pull in the provider client
+			// and actually test the API call to Prefect Cloud
+			{
+				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Admin"),
+				// Ensure that setting the account role name successfully applies
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
+				),
+			},
+			{
+				// Ensure that updating the account role name successfully applies
+				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Member"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
 				),
 			},
 		},
