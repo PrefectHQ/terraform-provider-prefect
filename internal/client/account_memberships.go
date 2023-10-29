@@ -36,8 +36,10 @@ func (c *Client) AccountMemberships(accountID uuid.UUID) (api.AccountMemberships
 }
 
 // List returns a list of account memberships, based on the provided filter.
-func (c *AccountMembershipsClient) List(ctx context.Context, filterQuery api.AccountMembershipFilter) ([]*api.AccountMembership, error) {
+func (c *AccountMembershipsClient) List(ctx context.Context, emails []string) ([]*api.AccountMembership, error) {
 	var buf bytes.Buffer
+	filterQuery := api.AccountMembershipFilter{}
+	filterQuery.AccountMemberships.Email.Any = emails
 
 	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)

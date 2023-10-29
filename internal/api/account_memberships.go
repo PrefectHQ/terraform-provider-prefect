@@ -8,7 +8,7 @@ import (
 )
 
 type AccountMembershipsClient interface {
-	List(ctx context.Context, filterQuery AccountMembershipFilter) ([]*AccountMembership, error)
+	List(ctx context.Context, emails []string) ([]*AccountMembership, error)
 }
 
 type AccountMembership struct {
@@ -30,7 +30,7 @@ type AccountMembership struct {
 // {"account_memberships": {"email": {"any_": ["test"]}}}.
 type AccountMembershipFilter struct {
 	AccountMemberships struct {
-		Email *struct {
+		Email struct {
 			Any []string `json:"any_"`
 		} `json:"email,omitempty"`
 	} `json:"account_memberships"`
