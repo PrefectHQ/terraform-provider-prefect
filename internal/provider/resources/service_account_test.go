@@ -1,13 +1,16 @@
 package resources_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
@@ -45,7 +48,7 @@ resource "prefect_service_account" "bot" {
 }`, name)
 }
 
-func fixtureAccServiceAccountResourceUpdatedKey(name string, expiration time.Time) string {
+func fixtureAccServiceAccountResourceUpdateKeyExpiration(name string, expiration time.Time) string {
 	return fmt.Sprintf(`
 resource "prefect_service_account" "bot" {
 	name = "%s"
@@ -53,25 +56,25 @@ resource "prefect_service_account" "bot" {
 }`, name, expiration.Format(time.RFC3339))
 }
 
-func fixtureAccServiceAccountResourceAccountRole(name string, roleName string) string {
+func fixtureAccServiceAccountResourceUpdateAccountRoleName(name string, roleName string) string {
 	return fmt.Sprintf(`
-data "prefect_account_role" "role" {
-	name = "%s"
-}
-resource "prefect_service_account" "bot2" {
+resource "prefect_service_account" "bot" {
 	name = "%s"
 	account_role_name = "%s"
-}`, roleName, name, roleName)
+}`, name, roleName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_service_account(t *testing.T) {
-	resourceName := "prefect_service_account.bot"
-	resourceName2 := "prefect_service_account.bot2"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	botResourceName := "prefect_service_account.bot"
+
+	botRandomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	botRandomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	expiration := time.Now().AddDate(0, 0, 1)
 
 	var apiKey string
+	var bot api.ServiceAccount
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -79,64 +82,102 @@ func TestAccResource_service_account(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the service account resource
-				Config: fixtureAccServiceAccountResource(randomName),
+				Config: fixtureAccServiceAccountResource(botRandomName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceAccountResourceExists(resourceName, &apiKey),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
+					textAccCheckServiceAccountAPIKeyStored(botResourceName, &apiKey),
+					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
 			},
 			{
-				// Ensure non-expiration time change does not trigger a key rotation
-				Config: fixtureAccServiceAccountResource(randomName2),
+				// Ensure non-expiration time change DOESN'T trigger a key rotation
+				Config: fixtureAccServiceAccountResource(botRandomName),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceAccountAPIKeyUnchanged(resourceName, &apiKey),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
+					testAccCheckServiceAccountAPIKeyUnchanged(botResourceName, &apiKey),
+					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
 			},
 			{
-				// Ensure that expiration time change does trigger a key rotation
-				Config: fixtureAccServiceAccountResourceUpdatedKey(randomName, time.Now().AddDate(0, 0, 1)),
+				// Ensure that expiration time change DOES trigger a key rotation
+				Config: fixtureAccServiceAccountResourceUpdateKeyExpiration(botRandomName, expiration),
 				Check: resource.ComposeTestCheckFunc(
-					testAccCheckServiceAccountAPIKeyRotated(resourceName, &apiKey),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
+					testAccCheckServiceAccountAPIKeyRotated(botResourceName, &apiKey),
+					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
 			},
 			{
-				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Admin"),
+				// Ensure updates of the account role
+				Config: fixtureAccServiceAccountResourceUpdateAccountRoleName(botRandomName, "Admin"),
 				Check: resource.ComposeTestCheckFunc(
-					// @TODO: This is a superficial test, until we can pull in the provider client
-					// and actually test the API call to Prefect Cloud
-					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
-				),
-			},
-			// @TODO: These two tests are superficial, until we can pull in the provider client
-			// and actually test the API call to Prefect Cloud
-			{
-				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Admin"),
-				// Ensure that setting the account role name successfully applies
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Admin"}),
+					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
 			},
 			{
-				// Ensure that updating the account role name successfully applies
-				Config: fixtureAccServiceAccountResourceAccountRole(randomName2, "Member"),
+				// Ensure updates of the service account name
+				Config: fixtureAccServiceAccountResourceUpdateAccountRoleName(botRandomName2, "Admin"),
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(resourceName2, "account_role_name", "data.prefect_account_role.role", "name"),
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName2, AccountRoleName: "Admin"}),
+					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
 			},
 		},
 	})
 }
 
-func testAccCheckServiceAccountResourceExists(n string, passedKey *string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+func testAccCheckServiceAccountResourceExists(serviceAccountResourceName string, bot *api.ServiceAccount) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
 		// find the corresponding state object
-		rs, ok := s.RootModule().Resources[n]
+		serviceAccountResource, ok := state.RootModule().Resources[serviceAccountResourceName]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return fmt.Errorf("Resource not found in state: %s", serviceAccountResourceName)
 		}
 
+		// Create a new client, and use the default accountID from environment
+		c, _ := testutils.NewTestClient()
+		serviceAccountClient, _ := c.ServiceAccounts(uuid.Nil)
+		fetchedServiceAccount, err := serviceAccountClient.Get(context.Background(), serviceAccountResource.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Error fetching Service Account: %w", err)
+		}
+		if fetchedServiceAccount == nil {
+			return fmt.Errorf("Service Account not found for ID: %s", serviceAccountResource.Primary.ID)
+		}
+
+		*bot = *fetchedServiceAccount
+
+		return nil
+	}
+}
+
+func testAccCheckServiceAccountValues(fetchedBot *api.ServiceAccount, valuesToCheck *api.ServiceAccount) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if fetchedBot.Name != valuesToCheck.Name {
+			return fmt.Errorf("Expected Service Account name %s, got: %s", fetchedBot.Name, valuesToCheck.Name)
+		}
+
+		if fetchedBot.AccountRoleName != valuesToCheck.AccountRoleName {
+			return fmt.Errorf("Expected Service Account role name %s, got: %s", fetchedBot.AccountRoleName, valuesToCheck.AccountRoleName)
+		}
+
+		return nil
+	}
+}
+
+func textAccCheckServiceAccountAPIKeyStored(resourceName string, passedKey *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// find the corresponding state object
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Resource not found in state: %s", resourceName)
+		}
 		key := rs.Primary.Attributes["api_key"]
 		*passedKey = key
 
@@ -149,7 +190,7 @@ func testAccCheckServiceAccountAPIKeyUnchanged(n string, passedKey *string) reso
 		// find the corresponding state object
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return fmt.Errorf("Resource not found in state: %s", n)
 		}
 
 		key := rs.Primary.Attributes["api_key"]
@@ -166,7 +207,7 @@ func testAccCheckServiceAccountAPIKeyRotated(n string, passedKey *string) resour
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[n]
 		if !ok {
-			return fmt.Errorf("Not found: %s", n)
+			return fmt.Errorf("Resource not found in state: %s", n)
 		}
 
 		key := rs.Primary.Attributes["api_key"]
