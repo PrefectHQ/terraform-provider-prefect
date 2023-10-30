@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -115,6 +116,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:    true,
 				Computed:    true,
 				Description: "Account Role name of the service account",
+				Default:     stringdefault.StaticString("Member"),
 				Validators: []validator.String{
 					stringvalidator.OneOf("Admin", "Member"),
 				},
@@ -284,8 +286,10 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *ServiceAccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan ServiceAccountResourceModel
-
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+
+	var state ServiceAccountResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -297,8 +301,54 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
+	// Here, we'll retrieve the API Key from the previous State, as it's
+	// not included in the Terraform Plan / user configuration, nor is it
+	// returned on any API response other than Create and RotateKey.
+	// This means that we'll want to grab + persist the value in State
+	// if no rotation takes place. If a rotation does take place, we'll
+	// update this variable with the new API Key value returned from that call,
+	// and persist that into State.
+	// Note that using the stringplanmodifier.UseStateForUnknown() helper for
+	// this attribute will not work in this case, as the Provider will throw an
+	// error upon key rotation, as the value coming back will be different with
+	// the previous value held in State.
+	apiKey := state.APIKey.ValueString()
+
 	updateReq := api.ServiceAccountUpdateRequest{
 		Name: plan.Name.ValueString(),
+	}
+
+	// Check if the Account Role Name was specifically changed in the plan,
+	// so we can only perform the Account Role lookup if we need to.
+	accountRoleName := state.AccountRoleName.ValueString()
+	if accountRoleName != plan.AccountRoleName.ValueString() {
+		accountRoleClient, err := r.client.AccountRoles(plan.AccountID.ValueUUID())
+		if err != nil {
+			resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account Role", err))
+
+			return
+		}
+
+		accountRoles, err := accountRoleClient.List(ctx, []string{plan.AccountRoleName.ValueString()})
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error fetching Account Role",
+				fmt.Sprintf("Could not fetch Account Role, unexpected error: %s", err),
+			)
+
+			return
+		}
+
+		if len(accountRoles) != 1 {
+			resp.Diagnostics.AddError(
+				"Could not find Account Role",
+				fmt.Sprintf("Could not find Account Role with name %s", plan.AccountRoleName.String()),
+			)
+
+			return
+		}
+
+		updateReq.AccountRoleID = &accountRoles[0].ID
 	}
 
 	// Update client method requires context, botID, request args
@@ -321,17 +371,6 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 
 		return
 	}
-
-	// Here, we'll retrieve the API Key from the previous State, as it's
-	// not included in the Terraform Plan / user configuration, nor is it
-	// returned on any API response other than Create and RotateKey.
-	// Additionally, the Provider framework will throw an exception if we
-	// set the `api_key` property to use stringmodifier.UseStateForUnknown()
-	// during legitimate cases where the API Key State value will be updated
-	// during key rotation.
-	var state ServiceAccountResourceModel
-	req.State.Get(ctx, &state)
-	apiKey := state.APIKey.ValueString()
 
 	// Practitioners can rotate their Service Account API Key my modifying the
 	// `api_key_expiration` attribute. If the provided value is different than the current
