@@ -1,12 +1,17 @@
 package testutils
 
 import (
+	"fmt"
 	"os"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	prefectProvider "github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
@@ -39,4 +44,31 @@ func AccTestPreCheck(t *testing.T) {
 			t.Fatalf("%s must be set for acceptance tests", key)
 		}
 	}
+}
+
+// NewTestClient returns a new Prefect API client instance
+// to be used in acceptance tests.
+// The plugin-framework does not currently expose a way to extract
+// the provider-configured client - so instead, we duplicate some
+// of the client initiatlization logic that also happens in Provider.Configure().
+// https://github.com/hashicorp/terraform-plugin-testing/issues/11
+//
+//nolint:ireturn // required by Terraform API
+func NewTestClient() (api.PrefectClient, error) {
+	endpoint := os.Getenv("PREFECT_API_URL")
+	apiKey := os.Getenv("PREFECT_API_KEY")
+	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+	accountID, _ := uuid.Parse(aID)
+
+	if !strings.HasSuffix(endpoint, "/api") {
+		endpoint = fmt.Sprintf("%s/api", endpoint)
+	}
+
+	prefectClient, _ := client.New(
+		client.WithEndpoint(endpoint),
+		client.WithAPIKey(apiKey),
+		client.WithDefaults(accountID, uuid.Nil),
+	)
+
+	return prefectClient, nil
 }

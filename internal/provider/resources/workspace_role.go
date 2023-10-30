@@ -133,8 +133,9 @@ func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model 
 	model.InheritedRoleID = customtypes.NewUUIDPointerValue(role.InheritedRoleID)
 
 	// NOTE: here, we'll omit updating the TF state with the scopes returned from the API
-	// as scopes in Prefect Cloud have a hierarchical structure. This means that children scopes
-	// can be returned based on what a practitioner configures in TF / HCL, which will cause
+	// as scopes in Prefect Cloud have a hierarchical structure. For example, setting `manage_blocks`
+	// will grant the subordinate `see_blocks` and `write_blocks` on the API side.  This means that
+	// children scopes like this will be returned if you configure a `manage_*` scope, which will cause
 	// conflicts on apply, as the retrieved state from the API will vary slightly with
 	// the Terraform configuration. Therefore, the state will hold the user-defined scope parameters,
 	// which will include any children scopes on the Prefect Cloud side.
