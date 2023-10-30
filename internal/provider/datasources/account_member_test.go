@@ -25,9 +25,9 @@ func TestAccDatasource_account_member(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccAccountMember("marvin@prefect.io"),
+				Config: fixtureAccAccountMember("marvin-test@prefect.io"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "email", "marvin@prefect.io"),
+					resource.TestCheckResourceAttr(dataSourceName, "email", "marvin-test@prefect.io"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "account_role_id"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "account_role_name"),

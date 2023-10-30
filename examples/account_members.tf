@@ -1,5 +1,5 @@
 data "prefect_account_member" "marvin" {
-  email = "marvin@prefect.io"
+  email = "marvin-test@prefect.io"
 }
 data "prefect_workspace" "prd" {
   id = "<workspace uuid>"
