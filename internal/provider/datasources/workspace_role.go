@@ -66,7 +66,7 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 		Description: "Name of the Workspace Role",
 	},
 	"description": schema.StringAttribute{
-		Optional:    true,
+		Computed:    true,
 		Description: "Description of the Workspace Role",
 	},
 	"scopes": schema.ListAttribute{
@@ -80,7 +80,7 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 		Description: "Account UUID where Workspace Role resides",
 	},
 	"inherited_role_id": schema.StringAttribute{
-		Optional:    true,
+		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
 		Description: "Workspace Role UUID, whose permissions are inherited by this Workspace Role",
 	},

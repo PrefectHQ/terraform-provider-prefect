@@ -1,0 +1,176 @@
+package datasources
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+)
+
+// Ensure the implementation satisfies the expected interfaces.
+var _ datasource.DataSource = &AccountMemberDataSource{}
+var _ datasource.DataSourceWithConfigure = &AccountMemberDataSource{}
+
+type AccountMemberDataSource struct {
+	client api.PrefectClient
+}
+
+type AccountMemberDataSourceModel struct {
+	ID              customtypes.UUIDValue `tfsdk:"id"`
+	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
+	UserID          customtypes.UUIDValue `tfsdk:"user_id"`
+	FirstName       types.String          `tfsdk:"first_name"`
+	LastName        types.String          `tfsdk:"last_name"`
+	Handle          types.String          `tfsdk:"handle"`
+	Email           types.String          `tfsdk:"email"`
+	AccountRoleID   customtypes.UUIDValue `tfsdk:"account_role_id"`
+	AccountRoleName types.String          `tfsdk:"account_role_name"`
+
+	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
+}
+
+// NewAccountMemberDataSource returns a new AccountMemberDataSource.
+//
+//nolint:ireturn // required by Terraform API
+func NewAccountMemberDataSource() datasource.DataSource {
+	return &AccountMemberDataSource{}
+}
+
+// Metadata returns the data source type name.
+func (d *AccountMemberDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_account_member"
+}
+
+// Schema defines the schema for the data source.
+func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	resp.Schema = schema.Schema{
+		Description: "Data Source representing a Prefect Account Member",
+		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Account Member UUID",
+			},
+			"actor_id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Actor ID UUID",
+			},
+			"user_id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "User ID UUID",
+			},
+			"first_name": schema.StringAttribute{
+				Computed:    true,
+				Description: "Member First Name",
+			},
+			"last_name": schema.StringAttribute{
+				Computed:    true,
+				Description: "Member Last Name",
+			},
+			"handle": schema.StringAttribute{
+				Computed:    true,
+				Description: "Member Handle",
+			},
+			"email": schema.StringAttribute{
+				Required:    true,
+				Description: "Member Email",
+			},
+			"account_role_id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Account Role ID UUID",
+			},
+			"account_role_name": schema.StringAttribute{
+				Computed:    true,
+				Description: "Member Account Role Name",
+			},
+			"account_id": schema.StringAttribute{
+				Optional:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Account UUID where the Account Member resides",
+			},
+		},
+	}
+}
+
+// Configure adds the provider-configured client to the data source.
+func (d *AccountMemberDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(api.PrefectClient)
+	if !ok {
+		resp.Diagnostics.AddError(
+			"Unexpected Data Source Configure Type",
+			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
+		)
+
+		return
+	}
+
+	d.client = client
+}
+
+// Read refreshes the Terraform state with the latest data.
+func (d *AccountMemberDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var config AccountMemberDataSourceModel
+
+	// Populate the model from data source configuration and emit diagnostics on error
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := d.client.AccountMemberships(config.AccountID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account Memberships", err))
+
+		return
+	}
+
+	// Fetch an existing Account Member by email
+	// Here, we'd expect only 1 Member (or none) to be returned
+	// as we are querying a single Member email, not a list of emails
+	// workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
+	accountMembers, err := client.List(ctx, []string{config.Email.ValueString()})
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Account Member state",
+			fmt.Sprintf("Could not search for Account Members, unexpected error: %s", err.Error()),
+		)
+	}
+
+	if len(accountMembers) != 1 {
+		resp.Diagnostics.AddError(
+			"Could not find Account Member",
+			fmt.Sprintf("Could not find Account Member with email %s", config.Email.ValueString()),
+		)
+
+		return
+	}
+
+	fetchedAccountMember := accountMembers[0]
+
+	config.ID = customtypes.NewUUIDValue(fetchedAccountMember.ID)
+	config.ActorID = customtypes.NewUUIDValue(fetchedAccountMember.ActorID)
+	config.UserID = customtypes.NewUUIDValue(fetchedAccountMember.UserID)
+	config.FirstName = types.StringValue(fetchedAccountMember.FirstName)
+	config.LastName = types.StringValue(fetchedAccountMember.LastName)
+	config.Handle = types.StringValue(fetchedAccountMember.Handle)
+	config.Email = types.StringValue(fetchedAccountMember.Email)
+	config.AccountRoleID = customtypes.NewUUIDValue(fetchedAccountMember.AccountRoleID)
+	config.AccountRoleName = types.StringValue(fetchedAccountMember.AccountRoleName)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
