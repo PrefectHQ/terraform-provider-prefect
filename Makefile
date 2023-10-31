@@ -43,3 +43,8 @@ test:
 testacc:
 	TF_ACC=1 make test
 .PHONY: testacc
+
+docs:
+	mkdir -p docs
+	go generate ./...
+.PHONY: docs
