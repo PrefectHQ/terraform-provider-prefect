@@ -133,3 +133,17 @@ make testacc
 **Note:** Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account when running locally
 
 See [Development Overrides for Provider Developers](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers) for details.
+
+## Build Documentation
+
+This provider repository uses the [`tfplugindocs`](https://github.com/hashicorp/terraform-plugin-docs) CLI utility to generate markdown documentation.
+
+```shell
+make docs
+```
+
+The `tfplugindocs` CLI will:
+
+1. Parse all `Schema` objects for the provider, datasources, and resources
+2. Create and populate `.md` files for each page of documentation for the objects mentioned in (1)
+3. Crawl and extract all named examples in `examples/**` + add those HCL configurations into the examples section of each `.md`
