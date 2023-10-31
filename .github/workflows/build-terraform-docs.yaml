@@ -1,0 +1,38 @@
+name: Build Terraform Docs
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'examples/**'
+
+permissions: {}
+
+jobs:
+  build_tf_docs:
+    name: Build Terraform Docs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+      - name: Install tfplugindocs
+        run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+      - name: Build Terraform Docs
+        run: make docs
+      - name: Commit changes
+        run: |
+          git add .
+          if [[ $(git diff --staged) != '' ]]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git commit -m "Generate Terraform Docs"
+            git push --set-upstream origin ${{ github.event.pull_request.head.ref }}
+          else
+            echo "No changes to commit"
+          fi
