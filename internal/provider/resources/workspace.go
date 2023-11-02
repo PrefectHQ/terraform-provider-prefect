@@ -185,6 +185,15 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if model.ID.IsNull() && model.Handle.IsNull() {
+		resp.Diagnostics.AddError(
+			"Both ID and Handle are unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+
+		return
+	}
+
 	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -214,18 +223,15 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		var workspaces []*api.Workspace
 		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
 
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific workspace is not returned
 		if err == nil && len(workspaces) != 1 {
 			err = fmt.Errorf("a workspace with the handle=%s could not be found", model.Handle.ValueString())
 		}
 
-		workspace = workspaces[0]
-	} else {
-		resp.Diagnostics.AddError(
-			"Both ID and Handle are unset",
-			"This is a bug in the Terraform provider. Please report it to the maintainers.",
-		)
-
-		return
+		if len(workspaces) == 1 {
+			workspace = workspaces[0]
+		}
 	}
 
 	if err != nil {

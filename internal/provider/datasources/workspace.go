@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -66,7 +68,8 @@ var workspaceAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Workspace UUID",
-		Required:    true,
+		Computed:    true,
+		Optional:    true,
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
@@ -89,6 +92,7 @@ var workspaceAttributes = map[string]schema.Attribute{
 	},
 	"handle": schema.StringAttribute{
 		Computed:    true,
+		Optional:    true,
 		Description: "Unique handle for the workspace",
 	},
 	"description": schema.StringAttribute{
@@ -115,10 +119,10 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	if !model.ID.IsNull() && !model.Name.IsNull() {
+	if model.ID.IsNull() && model.Handle.IsNull() {
 		resp.Diagnostics.AddError(
-			"Conflicting workspace lookup keys",
-			"Workspaces can be identified by their unique name or ID, but not both.",
+			"Both ID and Handle are unset",
+			"Either a Workspace ID or Handle are required to read a workspace.",
 		)
 
 		return
@@ -134,7 +138,39 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	workspace, err := client.Get(ctx, model.ID.ValueUUID())
+	// A workspace can be read by either ID or Handle
+	// If both are set, we prefer the ID
+	// If neither are set, we will fail early.
+	var workspace *api.Workspace
+	if !model.ID.IsNull() {
+		var workspaceID uuid.UUID
+		workspaceID, err = uuid.Parse(model.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+
+		workspace, err = client.Get(ctx, workspaceID)
+	} else if !model.Handle.IsNull() {
+		var workspaces []*api.Workspace
+		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
+
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific workspace is not returned
+		if err == nil && len(workspaces) != 1 {
+			err = fmt.Errorf("a workspace with the handle=%s could not be found", model.Handle.ValueString())
+		}
+
+		if len(workspaces) == 1 {
+			workspace = workspaces[0]
+		}
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing workspace state",
