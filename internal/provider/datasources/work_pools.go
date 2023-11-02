@@ -2,14 +2,11 @@ package datasources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -127,50 +124,50 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	attributeTypes := map[string]attr.Type{
-		"id":                customtypes.UUIDType{},
-		"created":           customtypes.TimestampType{},
-		"updated":           customtypes.TimestampType{},
-		"name":              types.StringType,
-		"description":       types.StringType,
-		"type":              types.StringType,
-		"paused":            types.BoolType,
-		"concurrency_limit": types.Int64Type,
-		"default_queue_id":  customtypes.UUIDType{},
-		"base_job_template": types.StringType,
+		// "id":                customtypes.UUIDType{},
+		// "created":           customtypes.TimestampType{},
+		// "updated":           customtypes.TimestampType{},
+		// "name":              types.StringType,
+		// "description":       types.StringType,
+		// "type":              types.StringType,
+		// "paused":            types.BoolType,
+		// "concurrency_limit": types.Int64Type,
+		"default_queue_id": customtypes.UUIDType{},
+		// "base_job_template": types.StringType,
 	}
 
 	poolObjects := make([]attr.Value, 0, len(pools))
 	for _, pool := range pools {
 		attributeValues := map[string]attr.Value{
-			"id":                customtypes.NewUUIDValue(pool.ID),
-			"created":           customtypes.NewTimestampPointerValue(pool.Created),
-			"updated":           customtypes.NewTimestampPointerValue(pool.Updated),
-			"name":              types.StringValue(pool.Name),
-			"description":       types.StringPointerValue(pool.Description),
-			"type":              types.StringValue(pool.Type),
-			"paused":            types.BoolValue(pool.IsPaused),
-			"concurrency_limit": types.Int64PointerValue(pool.ConcurrencyLimit),
-			"default_queue_id":  types.StringValue(pool.DefaultQueueID.String()),
+			// "id":                customtypes.NewUUIDValue(pool.ID),
+			// "created":           customtypes.NewTimestampPointerValue(pool.Created),
+			// "updated":           customtypes.NewTimestampPointerValue(pool.Updated),
+			// "name":              types.StringValue(pool.Name),
+			// "description":       types.StringPointerValue(pool.Description),
+			// "type":              types.StringValue(pool.Type),
+			// "paused":            types.BoolValue(pool.IsPaused),
+			// "concurrency_limit": types.Int64PointerValue(pool.ConcurrencyLimit),
+			"default_queue_id": types.StringValue(pool.DefaultQueueID.String()),
 		}
 
-		if pool.BaseJobTemplate == nil {
-			attributeValues["base_job_template"] = types.StringNull()
-		} else {
-			var builder strings.Builder
-			encoder := json.NewEncoder(&builder)
-			encoder.SetIndent("", "  ")
-			if err := encoder.Encode(pool.BaseJobTemplate); err != nil {
-				resp.Diagnostics.AddAttributeError(
-					path.Root("base_job_template"),
-					"Failed to serialize Base Job Template",
-					fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
-				)
+		// if pool.BaseJobTemplate == nil {
+		// 	attributeValues["base_job_template"] = types.StringNull()
+		// } else {
+		// 	var builder strings.Builder
+		// 	encoder := json.NewEncoder(&builder)
+		// 	encoder.SetIndent("", "  ")
+		// 	if err := encoder.Encode(pool.BaseJobTemplate); err != nil {
+		// 		resp.Diagnostics.AddAttributeError(
+		// 			path.Root("base_job_template"),
+		// 			"Failed to serialize Base Job Template",
+		// 			fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
+		// 		)
 
-				return
-			}
+		// 		return
+		// 	}
 
-			attributeValues["base_job_template"] = types.StringValue(builder.String())
-		}
+		// 	attributeValues["base_job_template"] = types.StringValue(builder.String())
+		// }
 
 		poolObject, diag := types.ObjectValue(attributeTypes, attributeValues)
 		resp.Diagnostics.Append(diag...)
