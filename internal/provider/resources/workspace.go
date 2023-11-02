@@ -112,7 +112,8 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"description": schema.StringAttribute{
 				Description: "Description for the workspace",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 			},
 		},
 	}
@@ -184,6 +185,15 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if model.ID.IsNull() && model.Handle.IsNull() {
+		resp.Diagnostics.AddError(
+			"Both ID and Handle are unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+
+		return
+	}
+
 	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -192,18 +202,38 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		)
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
+	// A workspace can be imported + read by either ID or Handle
+	// If both are set, we prefer the ID
+	var workspace *api.Workspace
+	if !model.ID.IsNull() {
+		var workspaceID uuid.UUID
+		workspaceID, err = uuid.Parse(model.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("id"),
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
 
-		return
+			return
+		}
+
+		workspace, err = client.Get(ctx, workspaceID)
+	} else if !model.Handle.IsNull() {
+		var workspaces []*api.Workspace
+		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
+
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific workspace is not returned
+		if err == nil && len(workspaces) != 1 {
+			err = fmt.Errorf("a workspace with the handle=%s could not be found", model.Handle.ValueString())
+		}
+
+		if len(workspaces) == 1 {
+			workspace = workspaces[0]
+		}
 	}
 
-	workspace, err := client.Get(ctx, workspaceID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Workspace state",
@@ -252,11 +282,13 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	err = client.Update(ctx, workspaceID, api.WorkspaceUpdate{
+	payload := api.WorkspaceUpdate{
 		Name:        model.Name.ValueStringPointer(),
 		Handle:      model.Handle.ValueStringPointer(),
 		Description: model.Description.ValueStringPointer(),
-	})
+	}
+	err = client.Update(ctx, workspaceID, payload)
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating workspace",
@@ -333,9 +365,9 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 // ImportState imports the resource into Terraform state.
 func (r *WorkspaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "name/") {
-		name := strings.TrimPrefix(req.ID, "name/")
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	if strings.HasPrefix(req.ID, "handle/") {
+		handle := strings.TrimPrefix(req.ID, "handle/")
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("handle"), handle)...)
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 	}

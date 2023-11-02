@@ -43,6 +43,7 @@ func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.Work
 
 	return &WorkPoolsClient{
 		hc:          c.hc,
+		apiKey:      c.apiKey,
 		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
 	}, nil
 }

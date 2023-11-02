@@ -122,12 +122,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		endpoint = apiURLEnvVar
 	}
 	if endpoint == "" {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("endpoint"),
-			"Missing Prefect API Endpoint",
-			"The Prefect API Endpoint is set to an empty value. "+
-				"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a non-empty value, or remove the value.",
-		)
+		endpoint = "https://api.prefect.cloud"
 	}
 	// Here, we'll ensure that the /api suffix is present on the endpoint
 	if !strings.HasSuffix(endpoint, "/api") {

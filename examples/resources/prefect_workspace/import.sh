@@ -1,5 +1,5 @@
-# Prefect Workspaces can be imported via name in the form `name/name-of-workspace`
-terraform import prefect_workspace.example name/name-of-workspace
+# Prefect Workspaces can be imported via handle in the form `handle/workspace-handle`
+terraform import prefect_workspace.example handle/workspace-handle
 
 # Prefect Workspaces can also be imported via UUID
 terraform import prefect_workspace.example workspace-uuid

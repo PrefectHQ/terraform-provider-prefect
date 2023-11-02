@@ -10,6 +10,7 @@ import (
 type WorkspacesClient interface {
 	Create(ctx context.Context, data WorkspaceCreate) (*Workspace, error)
 	Get(ctx context.Context, workspaceID uuid.UUID) (*Workspace, error)
+	List(ctx context.Context, handleNames []string) ([]*Workspace, error)
 	Update(ctx context.Context, workspaceID uuid.UUID, data WorkspaceUpdate) error
 	Delete(ctx context.Context, workspaceID uuid.UUID) error
 }
@@ -38,4 +39,16 @@ type WorkspaceUpdate struct {
 	Description            *string    `json:"description"`
 	Handle                 *string    `json:"handle"`
 	DefaultWorkspaceRoleID *uuid.UUID `json:"default_workspace_role_id"`
+}
+
+// WorkspaceFilter defines the search filter payload
+// when searching for workspaces by name.
+// example request payload:
+// {"workspaces": {"handle": {"any_": ["test"]}}}.
+type WorkspaceFilter struct {
+	Workspaces struct {
+		Handle struct {
+			Any []string `json:"any_"`
+		} `json:"handle"`
+	} `json:"workspaces"`
 }

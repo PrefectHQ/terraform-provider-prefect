@@ -71,6 +71,43 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 	return &workspace, nil
 }
 
+// List returns a list of Workspaces, based on the provided list of handle names.
+func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*api.Workspace, error) {
+	var buf bytes.Buffer
+	filterQuery := api.WorkspaceFilter{}
+	filterQuery.Workspaces.Handle.Any = handleNames
+
+	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
+		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	}
+
+	var workspaces []*api.Workspace
+	if err := json.NewDecoder(resp.Body).Decode(&workspaces); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return workspaces, nil
+}
+
 // Get returns details for a Workspace by ID.
 func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api.Workspace, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
@@ -107,7 +144,8 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+workspaceID.String(), &buf)
+	endpoint := c.routePrefix + "/" + workspaceID.String()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

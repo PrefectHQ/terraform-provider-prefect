@@ -20,7 +20,7 @@ data "prefect_workspace_role" "developer" {
 	name = "Developer"
 }
 data "prefect_workspace" "evergreen" {
-	id = "45cfa7c6-e136-471c-859b-3be89d0a99ce"
+	handle = "evergreen-workspace"
 }
 resource "prefect_service_account" "bot" {
 	name = "%s"
@@ -39,7 +39,7 @@ data "prefect_workspace_role" "runner" {
 	name = "Runner"
 }
 data "prefect_workspace" "evergreen" {
-	id = "45cfa7c6-e136-471c-859b-3be89d0a99ce"
+	handle = "evergreen-workspace"
 }
 resource "prefect_service_account" "bot" {
 	name = "%s"

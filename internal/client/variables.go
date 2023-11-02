@@ -44,6 +44,7 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 
 	return &VariablesClient{
 		hc:          c.hc,
+		apiKey:      c.apiKey,
 		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
 	}, nil
 }

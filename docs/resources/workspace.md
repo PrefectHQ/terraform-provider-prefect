@@ -24,13 +24,13 @@ resource "prefect_workspace" "example" {
 
 ### Required
 
-- `description` (String) Description for the workspace
 - `handle` (String) Unique handle for the workspace
 - `name` (String) Name of the workspace
 
 ### Optional
 
 - `account_id` (String) Account UUID, defaults to the account set in the provider
+- `description` (String) Description for the workspace
 
 ### Read-Only
 
@@ -43,8 +43,8 @@ resource "prefect_workspace" "example" {
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Workspaces can be imported via name in the form `name/name-of-workspace`
-terraform import prefect_workspace.example name/name-of-workspace
+# Prefect Workspaces can be imported via handle in the form `handle/workspace-handle`
+terraform import prefect_workspace.example handle/workspace-handle
 
 # Prefect Workspaces can also be imported via UUID
 terraform import prefect_workspace.example workspace-uuid
