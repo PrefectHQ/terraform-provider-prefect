@@ -35,13 +35,11 @@ data "prefect_work_pools" "all_pools" {}
 
 Optional:
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
 - `default_queue_id` (String) The UUID of the default queue associated with this work pool
 - `description` (String) Description of the work pool
 - `id` (String) Work pool UUID
 - `name` (String) Name of the work pool
-- `workspace_id` (String) Workspace UUID, defaults to the workspace set in the provider
 
 Read-Only:
 

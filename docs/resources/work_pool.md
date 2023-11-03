@@ -54,7 +54,6 @@ resource "prefect_work_pool" "example" {
 - `account_id` (String) Account UUID, defaults to the account set in the provider
 - `base_job_template` (String) The base job template for the work pool, as a JSON string
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
-- `default_queue_id` (String) The UUID of the default queue associated with this work pool
 - `description` (String) Description of the work pool
 - `paused` (Boolean) Whether this work pool is paused
 - `type` (String) Type of the work pool
@@ -63,6 +62,7 @@ resource "prefect_work_pool" "example" {
 ### Read-Only
 
 - `created` (String) Date and time of the work pool creation in RFC 3339 format
+- `default_queue_id` (String) The UUID of the default queue associated with this work pool
 - `id` (String) Work pool UUID
 - `updated` (String) Date and time that the work pool was last updated in RFC 3339 format
 
