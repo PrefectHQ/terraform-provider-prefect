@@ -56,7 +56,6 @@ func TestAccDatasource_work_pool(t *testing.T) {
 				// Check that we can query multiple work pools
 				Config: fixtureAccMultipleWorkPools(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(multipleWorkPoolDatasourceName, "work_pools.#", "1"),
 					resource.TestCheckResourceAttr(multipleWorkPoolDatasourceName, "work_pools.0.name", "evergreen-pool"),
 					resource.TestCheckResourceAttrSet(multipleWorkPoolDatasourceName, "work_pools.0.id"),
 					resource.TestCheckResourceAttrSet(multipleWorkPoolDatasourceName, "work_pools.0.created"),

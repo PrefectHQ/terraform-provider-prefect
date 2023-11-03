@@ -14,9 +14,31 @@ Resource representing a Prefect work pool
 
 ```terraform
 resource "prefect_work_pool" "example" {
-  name   = "My Work Pool"
-  type   = "Kubernetes"
-  paused = false
+  name         = "my-work-pool"
+  type         = "kubernetes"
+  paused       = false
+  workspace_id = "my-workspace-id"
+}
+
+# Use a JSON file to load a base job configuration
+resource "prefect_work_pool" "example" {
+  name              = "test-k8s-pool"
+  type              = "kubernetes"
+  workspace_id      = data.prefect_workspace.prd.id
+  paused            = false
+  base_job_template = file("./base-job-template.json")
+}
+
+# Or use the prefect_worker_metadata datasource
+# to load a default base job configuration
+data "prefect_worker_metadata" "d" {}
+
+resource "prefect_work_pool" "example" {
+  name              = "test-k8s-pool"
+  type              = "kubernetes"
+  workspace_id      = data.prefect_workspace.prd.id
+  paused            = false
+  base_job_template = data.prefect_worker_metadata.d.base_job_configs.kubernetes
 }
 ```
 
@@ -32,7 +54,6 @@ resource "prefect_work_pool" "example" {
 - `account_id` (String) Account UUID, defaults to the account set in the provider
 - `base_job_template` (String) The base job template for the work pool, as a JSON string
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
-- `default_queue_id` (String) The UUID of the default queue associated with this work pool
 - `description` (String) Description of the work pool
 - `paused` (Boolean) Whether this work pool is paused
 - `type` (String) Type of the work pool
@@ -41,6 +62,7 @@ resource "prefect_work_pool" "example" {
 ### Read-Only
 
 - `created` (String) Date and time of the work pool creation in RFC 3339 format
+- `default_queue_id` (String) The UUID of the default queue associated with this work pool
 - `id` (String) Work pool UUID
 - `updated` (String) Date and time that the work pool was last updated in RFC 3339 format
 
