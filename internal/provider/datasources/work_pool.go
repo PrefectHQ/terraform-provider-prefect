@@ -70,7 +70,10 @@ func (d *WorkPoolDataSource) Configure(_ context.Context, req datasource.Configu
 	d.client = client
 }
 
-var workPoolAttributes = map[string]schema.Attribute{
+// Shared set of schema attributes between work_pool (singular)
+// and work_pools (plural) datasources. Any work_pool (singular)
+// specific attributes will be added to a deep copy in the Schema method.
+var workPoolAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
@@ -86,16 +89,6 @@ var workPoolAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
 		Description: "Date and time that the work pool was last updated in RFC 3339 format",
-	},
-	"account_id": schema.StringAttribute{
-		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID, defaults to the account set in the provider",
-		Optional:    true,
-	},
-	"workspace_id": schema.StringAttribute{
-		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace UUID, defaults to the workspace set in the provider",
-		Optional:    true,
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,
@@ -134,6 +127,24 @@ var workPoolAttributes = map[string]schema.Attribute{
 
 // Schema defines the schema for the data source.
 func (d *WorkPoolDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+	// Create a copy of the base attributes
+	// and add the account/workspace ID overrides here
+	// as they are not needed in the work_pools (plural) list
+	workPoolAttributes := make(map[string]schema.Attribute)
+	for k, v := range workPoolAttributesBase {
+		workPoolAttributes[k] = v
+	}
+	workPoolAttributes["account_id"] = schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "Account UUID, defaults to the account set in the provider",
+		Optional:    true,
+	}
+	workPoolAttributes["workspace_id"] = schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "Workspace UUID, defaults to the workspace set in the provider",
+		Optional:    true,
+	}
+
 	resp.Schema = schema.Schema{
 		Description: "Data Source representing a Prefect Work Pool",
 		Attributes:  workPoolAttributes,

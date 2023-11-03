@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -44,7 +45,7 @@ type WorkPoolResourceModel struct {
 	Paused           types.Bool            `tfsdk:"paused"`
 	ConcurrencyLimit types.Int64           `tfsdk:"concurrency_limit"`
 	DefaultQueueID   customtypes.UUIDValue `tfsdk:"default_queue_id"`
-	BaseJobTemplate  types.String          `tfsdk:"base_job_template"`
+	BaseJobTemplate  jsontypes.Normalized  `tfsdk:"base_job_template"`
 }
 
 // NewWorkPoolResource returns a new WorkPoolResource.
@@ -98,6 +99,13 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time of the work pool creation in RFC 3339 format",
+				// In general, we can use UseStateForUnknown() to avoid unnecessary
+				// cases of `known after apply` states during plans. Mostly, this planmodifier
+				// is suitable for Computed attributes that do not change often and
+				// do not have a default value set here in the Schema.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -117,6 +125,12 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Name of the work pool",
+				// Work Pool names are the identifier on the API side, so
+				// we do not support modifying this value. Therefore, any changes
+				// to this attribute will force a replacement.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
@@ -127,6 +141,12 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Default:     stringdefault.StaticString("prefect-agent"),
 				Description: "Type of the work pool",
 				Optional:    true,
+				// Work Pool types are also only set on create, and
+				// we do not support modifying this value. Therefore, any changes
+				// to this attribute will force a replacement.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"paused": schema.BoolAttribute{
 				Computed:    true,
@@ -142,10 +162,14 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "The UUID of the default queue associated with this work pool",
-				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"base_job_template": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
+				Default:     stringdefault.StaticString("{}"),
 				Description: "The base job template for the work pool, as a JSON string",
 				Optional:    true,
 			},
@@ -183,7 +207,7 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolR
 			return diags
 		}
 
-		model.BaseJobTemplate = types.StringValue(strings.TrimSuffix(builder.String(), "\n"))
+		model.BaseJobTemplate = jsontypes.NewNormalizedValue(strings.TrimSuffix(builder.String(), "\n"))
 	}
 
 	return nil
