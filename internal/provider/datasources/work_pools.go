@@ -87,7 +87,7 @@ func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Computed:    true,
 				Description: "Work pools returned by the server",
 				NestedObject: schema.NestedAttributeObject{
-					Attributes: workPoolAttributes,
+					Attributes: workPoolAttributesBase,
 				},
 			},
 		},
@@ -150,7 +150,7 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 			"type":              types.StringValue(pool.Type),
 			"paused":            types.BoolValue(pool.IsPaused),
 			"concurrency_limit": types.Int64PointerValue(pool.ConcurrencyLimit),
-			"default_queue_id":  types.StringValue(pool.DefaultQueueID.String()),
+			"default_queue_id":  customtypes.NewUUIDValue(pool.DefaultQueueID),
 		}
 
 		if pool.BaseJobTemplate == nil {
