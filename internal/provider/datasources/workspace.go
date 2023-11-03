@@ -171,6 +171,15 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		}
 	}
 
+	if workspace == nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing workspace state",
+			fmt.Sprintf("Could not find workspace with ID=%s and Handle=%s", model.ID.ValueString(), model.Handle.ValueString()),
+		)
+
+		return
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing workspace state",
