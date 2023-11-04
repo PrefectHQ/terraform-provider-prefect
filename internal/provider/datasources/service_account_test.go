@@ -49,7 +49,7 @@ data "prefect_service_account" "bot_by_id" {
 	id = prefect_service_account.bot.id
 }
 data "prefect_service_account" "bot_by_name" {
-	name = "%s"
+	name = prefect_service_account.bot.name
 }
-	`, name, name)
+	`, name)
 }
