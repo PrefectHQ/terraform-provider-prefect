@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -258,6 +259,15 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	if model.ID.IsNull() && model.Name.IsNull() {
+		resp.Diagnostics.AddError(
+			"Both ID and Name are unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+
+		return
+	}
+
 	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
@@ -265,11 +275,39 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	serviceAccount, err := client.Get(ctx, model.ID.ValueString())
+	// A Service Account can be read by either ID or Name.
+	// If both are set, we prefer the ID
+	var serviceAccount *api.ServiceAccount
+	if !model.ID.IsNull() {
+		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
+	} else if !model.Name.IsNull() {
+		var serviceAccounts []*api.ServiceAccount
+		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
+
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific service account is not returned
+		if err == nil && len(serviceAccounts) != 1 {
+			err = fmt.Errorf("a Service Account with the name=%s could not be found", model.Name.ValueString())
+		}
+
+		if len(serviceAccounts) == 1 {
+			serviceAccount = serviceAccounts[0]
+		}
+	}
+
+	if serviceAccount == nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Service Account state",
+			fmt.Sprintf("Could not find Service Account with ID=%s and Name=%s", model.ID.ValueString(), model.Name.ValueString()),
+		)
+
+		return
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err),
+			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err.Error()),
 		)
 
 		return
@@ -444,5 +482,10 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 
 // ImportState imports the resource into Terraform state.
 func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	if strings.HasPrefix(req.ID, "name/") {
+		name := strings.TrimPrefix(req.ID, "name/")
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	} else {
+		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	}
 }

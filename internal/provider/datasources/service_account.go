@@ -70,7 +70,8 @@ func (d *ServiceAccountDataSource) Configure(_ context.Context, req datasource.C
 
 var serviceAccountAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
-		Required:    true,
+		Computed:    true,
+		Optional:    true,
 		CustomType:  customtypes.UUIDType{},
 		Description: "Service Account UUID",
 	},
@@ -91,6 +92,7 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,
+		Optional:    true,
 		Description: "Name of the service account",
 	},
 	"account_role_name": schema.StringAttribute{
@@ -139,6 +141,15 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
+	if model.ID.IsNull() && model.Name.IsNull() {
+		resp.Diagnostics.AddError(
+			"Both ID and Name are unset",
+			"Either a Service Account ID or Name are required to read a Service Account.",
+		)
+
+		return
+	}
+
 	client, err := d.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -149,7 +160,35 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	serviceAccount, err := client.Get(ctx, model.ID.ValueString())
+	// A Service Account can be read by either ID or Name.
+	// If both are set, we prefer the ID
+	var serviceAccount *api.ServiceAccount
+	if !model.ID.IsNull() {
+		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
+	} else if !model.Name.IsNull() {
+		var serviceAccounts []*api.ServiceAccount
+		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
+
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific service account is not returned
+		if err == nil && len(serviceAccounts) != 1 {
+			err = fmt.Errorf("a Service Account with the name=%s could not be found", model.Name.ValueString())
+		}
+
+		if len(serviceAccounts) == 1 {
+			serviceAccount = serviceAccounts[0]
+		}
+	}
+
+	if serviceAccount == nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Service Account state",
+			fmt.Sprintf("Could not find Service Account with ID=%s and Name=%s", model.ID.ValueString(), model.Name.ValueString()),
+		)
+
+		return
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",

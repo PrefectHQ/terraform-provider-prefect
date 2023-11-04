@@ -9,7 +9,7 @@ import (
 
 type ServiceAccountsClient interface {
 	Create(ctx context.Context, request ServiceAccountCreateRequest) (*ServiceAccount, error)
-	List(ctx context.Context, filter ServiceAccountFilterRequest) ([]*ServiceAccount, error)
+	List(ctx context.Context, names []string) ([]*ServiceAccount, error)
 	Get(ctx context.Context, id string) (*ServiceAccount, error)
 	Update(ctx context.Context, id string, data ServiceAccountUpdateRequest) error
 	Delete(ctx context.Context, id string) error
@@ -33,8 +33,16 @@ type ServiceAccountRotateKeyRequest struct {
 	APIKeyExpiration *time.Time `json:"api_key_expiration"`
 }
 
-type ServiceAccountFilterRequest struct {
-	Any []uuid.UUID `json:"any_"`
+// ServiceAccountFilter defines the search filter payload
+// when searching for service accounts by name.
+// example request payload:
+// {"service_accounts": {"name": {"any_": ["test"]}}}.
+type ServiceAccountFilter struct {
+	ServiceAccounts struct {
+		Name struct {
+			Any []string `json:"any_"`
+		} `json:"name,omitempty"`
+	} `json:"service_accounts"`
 }
 
 /*** RESPONSE DATA STRUCTS ***/
