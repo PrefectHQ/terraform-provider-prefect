@@ -100,6 +100,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Date and time of the service account creation in RFC 3339 format",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -111,6 +114,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account UUID, defaults to the account set in the provider",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,
