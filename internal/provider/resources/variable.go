@@ -6,13 +6,16 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -74,6 +77,8 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 
 // Schema defines the schema for the resource.
 func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+
 	resp.Schema = schema.Schema{
 		Description: "Resource representing a Prefect variable",
 		Version:     0,
@@ -120,6 +125,8 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Tags associated with the variable",
 				ElementType: types.StringType,
 				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyTagList),
 			},
 		},
 	}
