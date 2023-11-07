@@ -28,7 +28,7 @@ type WorkspaceRole struct {
 // when creating or updating a workspace role.
 type WorkspaceRoleUpsert struct {
 	Name            string     `json:"name"`
-	Description     *string    `json:"description"`
+	Description     string     `json:"description"`
 	Scopes          []string   `json:"scopes"`
 	InheritedRoleID *uuid.UUID `json:"inherited_role_id"`
 }

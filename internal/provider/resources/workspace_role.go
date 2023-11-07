@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -100,7 +101,9 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Description of the Workspace Role",
+				Default:     stringdefault.StaticString(""),
 			},
 			"scopes": schema.ListAttribute{
 				Description: "List of scopes linked to the Workspace Role",
@@ -177,7 +180,7 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 
 	role, err := client.Create(ctx, api.WorkspaceRoleUpsert{
 		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueStringPointer(),
+		Description:     model.Description.ValueString(),
 		Scopes:          scopes,
 		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
 	})
@@ -289,7 +292,7 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 	err = client.Update(ctx, roleID, api.WorkspaceRoleUpsert{
 		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueStringPointer(),
+		Description:     model.Description.ValueString(),
 		Scopes:          scopes,
 		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
 	})
