@@ -99,7 +99,7 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				Description: "Name of the Workspace Role",
 			},
 			"description": schema.StringAttribute{
-				Optional:    true,
+				Required:    true,
 				Description: "Description of the Workspace Role",
 			},
 			"scopes": schema.ListAttribute{
