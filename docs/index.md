@@ -37,8 +37,8 @@ provider "prefect" {}
 # You also have the option to link the provider instance
 # to your specific workspace, if this fits your use case.
 provider "prefect" {
-  api_key    = var.prefect_api_key
-  account_id = var.prefect_account_id
+  api_key      = var.prefect_api_key
+  account_id   = var.prefect_account_id
   workspace_id = var.prefect_workspace_id
 }
 
@@ -46,7 +46,7 @@ provider "prefect" {
 # to point the provider to a locally running Prefect Server,
 # with a limited set of functionality from the provider.
 provider "prefect" {
-  endpoint    = "http://localhost:4200"
+  endpoint = "http://localhost:4200"
 }
 ```
 
