@@ -3,12 +3,15 @@
 page_title: "prefect_account Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing a Prefect Cloud account
+  The resource account represents a Prefect Cloud account. It is used to manage the account's attributes, such as the name, handle, and location.
+  Note that this resource can only be imported, as account creation is not currently supportedvia the API. Additionally, be aware that account deletion is possible once it is imported,so be attentive to any destroy plans or unlink the resource through terraform state rm.
 ---
 
 # prefect_account (Resource)
 
-Resource representing a Prefect Cloud account
+The resource `account` represents a Prefect Cloud account. It is used to manage the account's attributes, such as the name, handle, and location.
+
+Note that this resource can only be imported, as account creation is not currently supportedvia the API. Additionally, be aware that account deletion is possible once it is imported,so be attentive to any destroy plans or unlink the resource through `terraform state rm`.
 
 ## Example Usage
 
@@ -27,7 +30,7 @@ resource "prefect_account" "example" {
 ### Required
 
 - `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
-- `billing_email` (String) Billing email to apply to the account's stripe customer
+- `billing_email` (String) Billing email to apply to the account's Stripe customer
 - `handle` (String) Unique handle of the account
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
@@ -35,9 +38,9 @@ resource "prefect_account" "example" {
 
 ### Read-Only
 
-- `created` (String) Date and time of the account creation in RFC 3339 format
-- `id` (String) Account UUID
-- `updated` (String) Date and time that the account was last updated in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `id` (String) Account ID (UUID)
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
 

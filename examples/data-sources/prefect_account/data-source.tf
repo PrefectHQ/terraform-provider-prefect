@@ -1,3 +1,3 @@
 data "prefect_account" "my_organization" {
-  id = "account-UUID"
+  id = "00000000-0000-0000-0000-000000000000"
 }

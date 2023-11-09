@@ -3,12 +3,16 @@
 page_title: "prefect_workspace_role Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect Workspace Role
+  Get information about an existing Workspace Role.
+  
+  Use this data source read down the pre-defined Roles, to manage User and Service Account access.
 ---
 
 # prefect_workspace_role (Data Source)
 
-Data Source representing a Prefect Workspace Role
+Get information about an existing Workspace Role.
+<br>
+Use this data source read down the pre-defined Roles, to manage User and Service Account access.
 
 ## Example Usage
 
@@ -48,13 +52,13 @@ data "prefect_workspace_role" "runner" {
 
 ### Optional
 
-- `account_id` (String) Account UUID where Workspace Role resides
+- `account_id` (String) Account ID (UUID) where Workspace Role resides
 
 ### Read-Only
 
-- `created` (String) Date and time of the Workspace Role creation in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
 - `description` (String) Description of the Workspace Role
-- `id` (String) Workspace Role UUID
-- `inherited_role_id` (String) Workspace Role UUID, whose permissions are inherited by this Workspace Role
+- `id` (String) Workspace Role ID (UUID)
+- `inherited_role_id` (String) Workspace Role ID (UUID), whose permissions are inherited by this Workspace Role
 - `scopes` (List of String) List of scopes linked to the Workspace Role
-- `updated` (String) Date and time that the Workspace Role was last updated in RFC 3339 format
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)

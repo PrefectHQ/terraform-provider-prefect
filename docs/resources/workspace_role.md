@@ -3,12 +3,12 @@
 page_title: "prefect_workspace_role Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing a Prefect Workspace Role
+  The resource workspace_role represents a Prefect Cloud Workspace Role. Workspace Roles hold a set of permissions to a specific Workspace, and can be attached to an accessor (User or Service Account) to grant access to the Workspace.
 ---
 
 # prefect_workspace_role (Resource)
 
-Resource representing a Prefect Workspace Role
+The resource `workspace_role` represents a Prefect Cloud Workspace Role. Workspace Roles hold a set of permissions to a specific Workspace, and can be attached to an accessor (User or Service Account) to grant access to the Workspace.
 
 ## Example Usage
 
@@ -32,15 +32,15 @@ resource "prefect_workspace_role" "example" {
 ### Optional
 
 - `description` (String) Description of the Workspace Role
-- `inherited_role_id` (String) Workspace Role UUID, whose permissions are inherited by this Workspace Role
+- `inherited_role_id` (String) Workspace Role ID (UUID), whose permissions are inherited by this Workspace Role
 - `scopes` (List of String) List of scopes linked to the Workspace Role
 
 ### Read-Only
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
-- `created` (String) Date and time of the Workspace Role creation in RFC 3339 format
-- `id` (String) Workspace Role UUID
-- `updated` (String) Date and time that the Workspace Role was last updated in RFC 3339 format
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `id` (String) Workspace Role ID (UUID)
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
 

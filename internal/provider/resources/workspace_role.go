@@ -73,12 +73,15 @@ func (r *WorkspaceRoleResource) Configure(_ context.Context, req resource.Config
 
 func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect Workspace Role",
-		Version:     0,
+		// Description: "Resource representing a Prefect Workspace Role",
+		Description: "The resource `workspace_role` represents a Prefect Cloud Workspace Role. " +
+			"Workspace Roles hold a set of permissions to a specific Workspace, and can be attached to " +
+			"an accessor (User or Service Account) to grant access to the Workspace.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Workspace Role UUID",
+				Description: "Workspace Role ID (UUID)",
 				// attributes which are not configurable + should not show updates from the existing state value
 				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
@@ -88,12 +91,12 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the Workspace Role creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the Workspace Role was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -112,12 +115,12 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Computed:    true,
 			},
 			"inherited_role_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace Role UUID, whose permissions are inherited by this Workspace Role",
+				Description: "Workspace Role ID (UUID), whose permissions are inherited by this Workspace Role",
 				Optional:    true,
 			},
 		},

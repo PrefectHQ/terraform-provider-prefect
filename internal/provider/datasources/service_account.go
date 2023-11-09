@@ -73,21 +73,21 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		Optional:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Service Account UUID",
+		Description: "Service Account ID (UUID)",
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time of the Service Account creation in RFC 3339 format",
+		Description: "Timestamp of when the resource was created (RFC3339)",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time that the Service Account was last updated in RFC 3339 format",
+		Description: "Timestamp of when the resource was updated (RFC3339)",
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID, defaults to the account set in the provider",
+		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
 	},
 	"name": schema.StringAttribute{
@@ -101,7 +101,7 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 	},
 	"api_key_id": schema.StringAttribute{
 		Computed:    true,
-		Description: "API Key ID associated with the service account",
+		Description: "API Key ID associated with the service account. NOTE: this is always null for reads. If you need the API Key ID, use the `prefect_service_account` resource instead.",
 	},
 	"api_key_name": schema.StringAttribute{
 		Computed:    true,
@@ -126,8 +126,12 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *ServiceAccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Service Account",
-		Attributes:  serviceAccountAttributes,
+		Description: `
+Get information about an existing Service Account, by name or ID.
+<br>
+Use this data source to obtain service account-level attributes, such as ID.
+`,
+		Attributes: serviceAccountAttributes,
 	}
 }
 

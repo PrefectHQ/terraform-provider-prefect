@@ -3,18 +3,22 @@
 page_title: "prefect_workspace Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect workspace
+  Get information about an existing Workspace by handle.
+  
+  Use this data source to obtain Workspace IDs
 ---
 
 # prefect_workspace (Data Source)
 
-Data Source representing a Prefect workspace
+Get information about an existing Workspace by handle.
+<br>
+Use this data source to obtain Workspace IDs
 
 ## Example Usage
 
 ```terraform
 data "prefect_workspace" "production_environment" {
-  id = "workspace-UUID"
+  id = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -23,13 +27,13 @@ data "prefect_workspace" "production_environment" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `handle` (String) Unique handle for the workspace
-- `id` (String) Workspace UUID
+- `id` (String) Workspace ID (UUID)
 
 ### Read-Only
 
-- `created` (String) Date and time of the workspace creation in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
 - `description` (String) Description for the workspace
 - `name` (String) Name of the workspace
-- `updated` (String) Date and time that the workspace was last updated in RFC 3339 format
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)

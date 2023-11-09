@@ -67,27 +67,27 @@ var variableAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Variable UUID",
+		Description: "Variable ID (UUID)",
 		Optional:    true,
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time of the variable creation in RFC 3339 format",
+		Description: "Timestamp of when the resource was created (RFC3339)",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time that the variable was last updated in RFC 3339 format",
+		Description: "Timestamp of when the resource was updated (RFC3339)",
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID, defaults to the account set in the provider",
+		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
 	},
 	"workspace_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace UUID, defaults to the workspace set in the provider",
+		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 		Optional:    true,
 	},
 	"name": schema.StringAttribute{
@@ -109,8 +109,12 @@ var variableAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *VariableDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect variable",
-		Attributes:  variableAttributes,
+		Description: `
+Get information about an existing Variable by name or ID.
+<br>
+Use this data source to obtain Variable-specific attributes, such as the value.
+`,
+		Attributes: variableAttributes,
 	}
 }
 

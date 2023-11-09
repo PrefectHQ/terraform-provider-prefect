@@ -49,52 +49,56 @@ func (d *AccountMemberDataSource) Metadata(_ context.Context, req datasource.Met
 // Schema defines the schema for the data source.
 func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Account Member",
+		Description: `
+Get information about an existing Account Member (user)	by their email.
+<br>
+Use this data source to obtain user or actor IDs to manage Workspace Access.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account Member UUID",
+				Description: "Account Member ID (UUID)",
 			},
 			"actor_id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Actor ID UUID",
+				Description: "Actor ID (UUID)",
 			},
 			"user_id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "User ID UUID",
+				Description: "User ID (UUID)",
 			},
 			"first_name": schema.StringAttribute{
 				Computed:    true,
-				Description: "Member First Name",
+				Description: "Member's first name",
 			},
 			"last_name": schema.StringAttribute{
 				Computed:    true,
-				Description: "Member Last Name",
+				Description: "Member's last name",
 			},
 			"handle": schema.StringAttribute{
 				Computed:    true,
-				Description: "Member Handle",
+				Description: "Member handle, or a human-readable identifier",
 			},
 			"email": schema.StringAttribute{
 				Required:    true,
-				Description: "Member Email",
+				Description: "Member email",
 			},
 			"account_role_id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account Role ID UUID",
+				Description: "Acount Role ID (UUID)",
 			},
 			"account_role_name": schema.StringAttribute{
 				Computed:    true,
-				Description: "Member Account Role Name",
+				Description: "Name of Account Role assigned to member",
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID where the Account Member resides",
+				Description: "Account ID (UUID) where the member resides",
 			},
 		},
 	}
