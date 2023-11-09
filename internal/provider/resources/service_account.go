@@ -88,7 +88,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"\n" +
 			"Service Accounts are used to configure API access for workers or programs. Use this resource to provision " +
 			"and rotate Keys as well as assign Account and Workspace Access through Roles.\n" +
-			"n" +
+			"\n" +
 			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.",
 		Version: 1,
 		Attributes: map[string]schema.Attribute{

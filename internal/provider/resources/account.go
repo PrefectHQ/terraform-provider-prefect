@@ -78,8 +78,8 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Description: "The resource `account` represents a Prefect Cloud account. " +
 			"It is used to manage the account's attributes, such as the name, handle, and location.\n" +
 			"\n" +
-			"Note that this resource can only be imported, as account creation is not currently supported" +
-			"via the API. Additionally, be aware that account deletion is possible once it is imported," +
+			"Note that this resource can only be imported, as account creation is not currently supported " +
+			"via the API. Additionally, be aware that account deletion is possible once it is imported, " +
 			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
