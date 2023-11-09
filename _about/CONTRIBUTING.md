@@ -97,7 +97,7 @@ will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/
 ```shell
 export PREFECT_API_URL=https://api.prefect.cloud
 export PREFECT_CLOUD_API_KEY=<secret>
-export PREFECT_CLOUD_ACCOUNTID=<uuid>
+export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 
 make testacc
 ```
