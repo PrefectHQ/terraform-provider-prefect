@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   The resource service_account represents a Prefect Cloud Service Account. A Service Account allows you to create an API Key that is not associated with a user account.
   Service Accounts are used to configure API access for workers or programs. Use this resource to provision and rotate Keys as well as assign Account and Workspace Access through Roles.
-  nAPI Keys for service_account resources can be rotated by modifying the api_key_expiration attribute.
+  API Keys for service_account resources can be rotated by modifying the api_key_expiration attribute.
 ---
 
 # prefect_service_account (Resource)
@@ -13,7 +13,8 @@ description: |-
 The resource `service_account` represents a Prefect Cloud Service Account. A Service Account allows you to create an API Key that is not associated with a user account.
 
 Service Accounts are used to configure API access for workers or programs. Use this resource to provision and rotate Keys as well as assign Account and Workspace Access through Roles.
-nAPI Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.
+
+API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.
 
 ## Example Usage
 
