@@ -45,5 +45,6 @@ testacc:
 
 docs:
 	mkdir -p docs
+	rm -rf ./docs/images
 	go generate ./...
 .PHONY: docs
