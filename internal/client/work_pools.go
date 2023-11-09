@@ -25,20 +25,15 @@ type WorkPoolsClient struct {
 //
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.WorkPoolsClient, error) {
-	if accountID != uuid.Nil && workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and workspaceID is nil", accountID)
-	}
-
 	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
-
-	if accountID != uuid.Nil && workspaceID == uuid.Nil {
-		if c.defaultWorkspaceID == uuid.Nil {
-			return nil, fmt.Errorf("accountID and workspaceID are inconsistent: accountID is %q and supplied/default workspaceID are both nil", accountID)
-		}
-
+	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
+	}
+
+	if accountID != uuid.Nil || workspaceID != uuid.Nil {
+		return nil, fmt.Errorf("both accountID and workspaceID must be set: accountID is %q and workspaceID is %q", accountID, workspaceID)
 	}
 
 	return &WorkPoolsClient{

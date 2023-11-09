@@ -88,7 +88,7 @@ func WithAPIKey(apiKey string) Option {
 func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 	return func(client *Client) error {
 		if accountID == uuid.Nil && workspaceID != uuid.Nil {
-			return fmt.Errorf("accountID and workspaceID are inconsistent: accountID is nil and workspaceID is %q", workspaceID)
+			return fmt.Errorf("an accountID must be set if a workspaceID is set: accountID is %q and workspaceID is %q", accountID, workspaceID)
 		}
 
 		client.defaultAccountID = accountID
