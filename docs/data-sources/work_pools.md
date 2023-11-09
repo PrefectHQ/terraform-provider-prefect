@@ -3,12 +3,16 @@
 page_title: "prefect_work_pools Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source for querying work pools
+  Get information about an multiple Work Pools.
+  
+  Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
 ---
 
 # prefect_work_pools (Data Source)
 
-Data Source for querying work pools
+Get information about an multiple Work Pools.
+<br>
+Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
 
 ## Example Usage
 
@@ -22,9 +26,9 @@ data "prefect_work_pools" "all_pools" {}
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
-- `filter_any` (List of String) Work pool UUIDs to search for (work pools with any matching UUID are returned)
-- `workspace_id` (String) Workspace UUID, defaults to the workspace set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `filter_any` (List of String) Work pool IDs (UUID) to search for (work pools with any matching UUID are returned)
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only
 
@@ -36,9 +40,9 @@ data "prefect_work_pools" "all_pools" {}
 Optional:
 
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
-- `default_queue_id` (String) The UUID of the default queue associated with this work pool
+- `default_queue_id` (String) The ID (UUID) of the default queue associated with this work pool
 - `description` (String) Description of the work pool
-- `id` (String) Work pool UUID
+- `id` (String) Work pool ID (UUID)
 - `name` (String) Name of the work pool
 
 Read-Only:

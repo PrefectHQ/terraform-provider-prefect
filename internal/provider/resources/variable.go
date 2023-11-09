@@ -80,15 +80,16 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect variable",
-		Version:     0,
+		Description: "The resource `variable` represents a Prefect Cloud Variable. " +
+			"Variables enable you to store and reuse non-sensitive information in your flows. ",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				// We cannot use a CustomType due to a conflict with PlanModifiers; see
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Variable UUID",
+				Description: "Variable ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -96,21 +97,21 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the variable creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the variable was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{

@@ -2,16 +2,17 @@
 fail_fast: false
 
 repos:
-  - repo: local
-    hooks:
-    - id: golangci-lint
-      name: golangci-lint
-      entry: golangci-lint run
-      types: [go]
-      language: golang
-      require_serial: true
-      pass_filenames: false
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.83.5
     hooks:
       - id: terraform_fmt
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+      - id: go-imports
+      - id: validate-toml
+      - id: golangci-lint
+      - id: go-unit-tests
+      - id: go-mod-tidy

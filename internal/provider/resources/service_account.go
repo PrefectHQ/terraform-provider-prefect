@@ -83,12 +83,18 @@ func (r *ServiceAccountResource) Configure(_ context.Context, req resource.Confi
 
 func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect service account",
-		Version:     1,
+		Description: "The resource `service_account` represents a Prefect Cloud Service Account. " +
+			"A Service Account allows you to create an API Key that is not associated with a user account.\n" +
+			"\n" +
+			"Service Accounts are used to configure API access for workers or programs. Use this resource to provision " +
+			"and rotate Keys as well as assign Account and Workspace Access through Roles.\n" +
+			"n" +
+			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.",
+		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Service account UUID",
+				Description: "Service account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -100,18 +106,18 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the service account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the service account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,
@@ -133,12 +139,12 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"api_key_created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the API Key was created in RFC 3339 format",
+				Description: "Timestamp of the API Key creation (RFC3339)",
 			},
 			"api_key_expiration": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the API Key expires in RFC 3339 format",
+				Description: "Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.",
 			},
 			"api_key": schema.StringAttribute{
 				Computed:    true,

@@ -49,17 +49,17 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace Role UUID",
+		Description: "Workspace Role ID (UUID)",
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time of the Workspace Role creation in RFC 3339 format",
+		Description: "Timestamp of when the resource was created (RFC3339)",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time that the Workspace Role was last updated in RFC 3339 format",
+		Description: "Timestamp of when the resource was updated (RFC3339)",
 	},
 	"name": schema.StringAttribute{
 		Required:    true,
@@ -77,20 +77,24 @@ var workspaceRoleAttributes = map[string]schema.Attribute{
 	"account_id": schema.StringAttribute{
 		Optional:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID where Workspace Role resides",
+		Description: "Account ID (UUID) where Workspace Role resides",
 	},
 	"inherited_role_id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace Role UUID, whose permissions are inherited by this Workspace Role",
+		Description: "Workspace Role ID (UUID), whose permissions are inherited by this Workspace Role",
 	},
 }
 
 // Schema defines the schema for the data source.
 func (d *WorkspaceRoleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Workspace Role",
-		Attributes:  workspaceRoleAttributes,
+		Description: `
+Get information about an existing Workspace Role.
+<br>
+Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+`,
+		Attributes: workspaceRoleAttributes,
 	}
 }
 

@@ -76,22 +76,27 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 // Schema defines the schema for the data source.
 func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Cloud account",
+		// Description: "Data Source representing a Prefect Cloud account",
+		Description: `
+Get information about an existing Account.
+<br>
+Use this data source to obtain account-level attributes
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID",
+				Description: "Account ID (UUID)",
 				Required:    true,
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Computed:    true,
@@ -115,7 +120,7 @@ func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			},
 			"billing_email": schema.StringAttribute{
 				Computed:    true,
-				Description: "Billing email to apply to the account's stripe customer",
+				Description: "Billing email to apply to the account's Stripe customer",
 			},
 		},
 	}

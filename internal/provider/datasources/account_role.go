@@ -50,22 +50,26 @@ func (d *AccountRoleDataSource) Metadata(_ context.Context, req datasource.Metad
 // Schema defines the schema for the data source.
 func (d *AccountRoleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Workspace Role",
+		Description: `
+Get information about an existing Workspace Role.
+<br>
+Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account Role UUID",
+				Description: "Account Role ID (UUID)",
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the Account Role creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the Account Role was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -82,11 +86,11 @@ func (d *AccountRoleDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID where Account Role resides",
+				Description: "Account ID (UUID) where the resource resides",
 			},
 			"is_system_role": schema.BoolAttribute{
 				Computed:    true,
-				Description: "Account UUID where Account Role resides",
+				Description: "Boolean specifying if the Account Role is a system role",
 			},
 		},
 	}

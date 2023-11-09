@@ -3,18 +3,22 @@
 page_title: "prefect_account Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect Cloud account
+  Get information about an existing Account.
+  
+  Use this data source to obtain account-level attributes
 ---
 
 # prefect_account (Data Source)
 
-Data Source representing a Prefect Cloud account
+Get information about an existing Account.
+<br>
+Use this data source to obtain account-level attributes
 
 ## Example Usage
 
 ```terraform
 data "prefect_account" "my_organization" {
-  id = "account-UUID"
+  id = "00000000-0000-0000-0000-000000000000"
 }
 ```
 
@@ -23,15 +27,15 @@ data "prefect_account" "my_organization" {
 
 ### Required
 
-- `id` (String) Account UUID
+- `id` (String) Account ID (UUID)
 
 ### Read-Only
 
 - `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
-- `billing_email` (String) Billing email to apply to the account's stripe customer
-- `created` (String) Date and time of the account creation in RFC 3339 format
+- `billing_email` (String) Billing email to apply to the account's Stripe customer
+- `created` (String) Timestamp of when the resource was created (RFC3339)
 - `handle` (String) Unique handle of the account
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
 - `name` (String) Name of the account
-- `updated` (String) Date and time that the account was last updated in RFC 3339 format
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)

@@ -75,15 +75,20 @@ func (r *AccountResource) Configure(_ context.Context, req resource.ConfigureReq
 // Schema defines the schema for the resource.
 func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect Cloud account",
-		Version:     0,
+		Description: "The resource `account` represents a Prefect Cloud account. " +
+			"It is used to manage the account's attributes, such as the name, handle, and location.\n" +
+			"\n" +
+			"Note that this resource can only be imported, as account creation is not currently supported" +
+			"via the API. Additionally, be aware that account deletion is possible once it is imported," +
+			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				// We cannot use a CustomType due to a conflict with PlanModifiers; see
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Account UUID",
+				Description: "Account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -91,12 +96,12 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the account",
@@ -119,7 +124,7 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Required:    true,
 			},
 			"billing_email": schema.StringAttribute{
-				Description: "Billing email to apply to the account's stripe customer",
+				Description: "Billing email to apply to the account's Stripe customer",
 				Required:    true,
 			},
 		},

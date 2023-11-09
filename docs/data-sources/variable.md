@@ -3,18 +3,22 @@
 page_title: "prefect_variable Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect variable
+  Get information about an existing Variable by name or ID.
+  
+  Use this data source to obtain Variable-specific attributes, such as the value.
 ---
 
 # prefect_variable (Data Source)
 
-Data Source representing a Prefect variable
+Get information about an existing Variable by name or ID.
+<br>
+Use this data source to obtain Variable-specific attributes, such as the value.
 
 ## Example Usage
 
 ```terraform
 data "prefect_variable" "existing_by_id" {
-  id = "variable-UUID"
+  id = "00000000-0000-0000-0000-000000000000"
 }
 
 data "prefect_variable" "existing_by_name" {
@@ -27,14 +31,14 @@ data "prefect_variable" "existing_by_name" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
-- `id` (String) Variable UUID
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `id` (String) Variable ID (UUID)
 - `name` (String) Name of the variable
-- `workspace_id` (String) Workspace UUID, defaults to the workspace set in the provider
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only
 
-- `created` (String) Date and time of the variable creation in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
 - `tags` (List of String) Tags associated with the variable
-- `updated` (String) Date and time that the variable was last updated in RFC 3339 format
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 - `value` (String) Value of the variable

@@ -3,12 +3,16 @@
 page_title: "prefect_account_member Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect Account Member
+  Get information about an existing Account Member (user) by their email.
+  
+  Use this data source to obtain user or actor IDs to manage Workspace Access.
 ---
 
 # prefect_account_member (Data Source)
 
-Data Source representing a Prefect Account Member
+Get information about an existing Account Member (user)	by their email.
+<br>
+Use this data source to obtain user or actor IDs to manage Workspace Access.
 
 ## Example Usage
 
@@ -24,19 +28,19 @@ data "prefect_account_member" "marvin" {
 
 ### Required
 
-- `email` (String) Member Email
+- `email` (String) Member email
 
 ### Optional
 
-- `account_id` (String) Account UUID where the Account Member resides
+- `account_id` (String) Account ID (UUID) where the member resides
 
 ### Read-Only
 
-- `account_role_id` (String) Account Role ID UUID
-- `account_role_name` (String) Member Account Role Name
-- `actor_id` (String) Actor ID UUID
-- `first_name` (String) Member First Name
-- `handle` (String) Member Handle
-- `id` (String) Account Member UUID
-- `last_name` (String) Member Last Name
-- `user_id` (String) User ID UUID
+- `account_role_id` (String) Acount Role ID (UUID)
+- `account_role_name` (String) Name of Account Role assigned to member
+- `actor_id` (String) Actor ID (UUID)
+- `first_name` (String) Member's first name
+- `handle` (String) Member handle, or a human-readable identifier
+- `id` (String) Account Member ID (UUID)
+- `last_name` (String) Member's last name
+- `user_id` (String) User ID (UUID)

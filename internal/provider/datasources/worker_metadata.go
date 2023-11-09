@@ -56,7 +56,11 @@ func (d *WorkerMetadataDataSource) Configure(_ context.Context, req datasource.C
 // Schema defines the schema for the data source.
 func (d *WorkerMetadataDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source for metdata for common Worker types",
+		Description: `
+Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
+<br>
+Use this data source to get the default base job configurations for those common Worker types.
+`,
 		Attributes: map[string]schema.Attribute{
 			"base_job_configs": schema.SingleNestedAttribute{
 				Computed:    true,
