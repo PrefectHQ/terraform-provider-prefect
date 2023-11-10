@@ -1,5 +1,5 @@
 # Terraform Provider release workflow.
-name: Release
+name: Release to Registry
 
 on:
   push:
