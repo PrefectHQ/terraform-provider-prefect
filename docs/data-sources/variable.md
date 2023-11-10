@@ -22,7 +22,7 @@ data "prefect_variable" "existing_by_id" {
 }
 
 data "prefect_variable" "existing_by_name" {
-  name = "my-variable-name"
+  name = "my_variable_name"
 }
 ```
 
