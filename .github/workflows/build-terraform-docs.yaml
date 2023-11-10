@@ -8,7 +8,7 @@ on:
       - 'docs/**'
       - 'templates/**'
       - 'examples/**'
-      - .github/workflows/build-terraform-docs.yml
+      - .github/workflows/build-terraform-docs.yaml
 
 permissions: {}
 
