@@ -73,6 +73,13 @@ func TestAccResource_workspace_role(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "scopes.2", "see_work_queues"),
 				),
 			},
+			// Import State checks - import by ID (default)
+			{
+				ImportState:             true,
+				ResourceName:            resourceName,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scopes"},
+			},
 		},
 	})
 }
