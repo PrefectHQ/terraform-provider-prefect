@@ -3,12 +3,12 @@
 page_title: "prefect_workspace Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing a Prefect Workspace
+  The resource workspace represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using work_pool and workspace_access resources.
 ---
 
 # prefect_workspace (Resource)
 
-Resource representing a Prefect Workspace
+The resource `workspace` represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources.
 
 ## Example Usage
 
@@ -29,14 +29,14 @@ resource "prefect_workspace" "example" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `description` (String) Description for the workspace
 
 ### Read-Only
 
-- `created` (String) Date and time of the workspace creation in RFC 3339 format
-- `id` (String) Workspace UUID
-- `updated` (String) Date and time that the workspace was last updated in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `id` (String) Workspace ID (UUID)
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
 
@@ -47,5 +47,5 @@ Import is supported using the following syntax:
 terraform import prefect_workspace.example handle/workspace-handle
 
 # Prefect Workspaces can also be imported via UUID
-terraform import prefect_workspace.example workspace-uuid
+terraform import prefect_workspace.example 00000000-0000-0000-0000-000000000000
 ```

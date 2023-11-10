@@ -39,22 +39,22 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				Description: "URL prefix for Prefect Server or Prefect Cloud",
+				Description: "Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud`",
 				Optional:    true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "API Key for authenticating to the server (Prefect Cloud only)",
+				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_CLOUD_API_KEY` environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Default account ID to act on (Prefect Cloud only)",
+				Description: "Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Default workspace ID to act on (Prefect Cloud only)",
+				Description: "Default Prefect Cloud Workspace ID.",
 				Optional:    true,
 			},
 		},

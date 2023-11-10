@@ -3,12 +3,16 @@
 page_title: "prefect_worker_metadata Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source for metdata for common Worker types
+  Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
+  
+  Use this data source to get the default base job configurations for those common Worker types.
 ---
 
 # prefect_worker_metadata (Data Source)
 
-Data Source for metdata for common Worker types
+Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
+<br>
+Use this data source to get the default base job configurations for those common Worker types.
 
 ## Example Usage
 

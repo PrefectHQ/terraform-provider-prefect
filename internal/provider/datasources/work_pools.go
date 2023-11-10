@@ -66,22 +66,26 @@ func (d *WorkPoolsDataSource) Configure(_ context.Context, req datasource.Config
 // Schema defines the schema for the data source.
 func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source for querying work pools",
+		Description: `
+Get information about an multiple Work Pools.
+<br>
+Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
+`,
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 				Optional:    true,
 			},
 			"filter_any": schema.ListAttribute{
 				ElementType: types.StringType,
 				Optional:    true,
-				Description: "Work pool UUIDs to search for (work pools with any matching UUID are returned)",
+				Description: "Work pool IDs (UUID) to search for (work pools with any matching UUID are returned)",
 			},
 			"work_pools": schema.ListNestedAttribute{
 				Computed:    true,

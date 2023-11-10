@@ -15,6 +15,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 
 // AccountResource contains state for the resource.
 type AccountResource struct {
-	client api.AccountsClient
+	client api.PrefectClient
 }
 
 // AccountResourceModel defines the Terraform resource model.
@@ -69,21 +70,26 @@ func (r *AccountResource) Configure(_ context.Context, req resource.ConfigureReq
 		return
 	}
 
-	r.client, _ = client.Accounts()
+	r.client = client
 }
 
 // Schema defines the schema for the resource.
 func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect Cloud account",
-		Version:     0,
+		Description: "The resource `account` represents a Prefect Cloud account. " +
+			"It is used to manage the account's attributes, such as the name, handle, and location.\n" +
+			"\n" +
+			"Note that this resource can only be imported, as account creation is not currently supported " +
+			"via the API. Additionally, be aware that account deletion is possible once it is imported, " +
+			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				// We cannot use a CustomType due to a conflict with PlanModifiers; see
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Account UUID",
+				Description: "Account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -91,12 +97,12 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the account",
@@ -108,19 +114,19 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"location": schema.StringAttribute{
 				Description: "An optional physical location for the account, e.g. Washington, D.C.",
-				Required:    true,
+				Optional:    true,
 			},
 			"link": schema.StringAttribute{
 				Description: "An optional for an external url associated with the account, e.g. https://prefect.io/",
-				Required:    true,
+				Optional:    true,
 			},
 			"allow_public_workspaces": schema.BoolAttribute{
 				Description: "Whether or not this account allows public workspaces",
-				Required:    true,
+				Optional:    true,
 			},
 			"billing_email": schema.StringAttribute{
-				Description: "Billing email to apply to the account's stripe customer",
-				Required:    true,
+				Description: "Billing email to apply to the account's Stripe customer",
+				Optional:    true,
 			},
 		},
 	}
@@ -168,7 +174,12 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	account, err := r.client.Get(ctx, accountID)
+	client, err := r.client.Accounts(accountID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+	}
+
+	account, err := client.Get(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing account state",
@@ -209,7 +220,12 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	err = r.client.Update(ctx, accountID, api.AccountUpdate{
+	client, err := r.client.Accounts(accountID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+	}
+
+	err = client.Update(ctx, api.AccountUpdate{
 		Name:                  model.Name.ValueStringPointer(),
 		Handle:                model.Handle.ValueStringPointer(),
 		Location:              model.Location.ValueStringPointer(),
@@ -226,7 +242,7 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	account, err := r.client.Get(ctx, accountID)
+	account, err := client.Get(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing account state",
@@ -267,7 +283,12 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	err = r.client.Delete(ctx, accountID)
+	client, err := r.client.Accounts(accountID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+	}
+
+	err = client.Delete(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting account",

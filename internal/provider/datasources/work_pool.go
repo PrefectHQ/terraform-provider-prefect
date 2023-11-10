@@ -77,7 +77,7 @@ var workPoolAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Work pool UUID",
+		Description: "Work pool ID (UUID)",
 		Optional:    true,
 	},
 	"created": schema.StringAttribute{
@@ -116,7 +116,7 @@ var workPoolAttributesBase = map[string]schema.Attribute{
 	"default_queue_id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "The UUID of the default queue associated with this work pool",
+		Description: "The ID (UUID) of the default queue associated with this work pool",
 		Optional:    true,
 	},
 	"base_job_template": schema.StringAttribute{
@@ -136,18 +136,22 @@ func (d *WorkPoolDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 	}
 	workPoolAttributes["account_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID, defaults to the account set in the provider",
+		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
 	}
 	workPoolAttributes["workspace_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace UUID, defaults to the workspace set in the provider",
+		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 		Optional:    true,
 	}
 
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Work Pool",
-		Attributes:  workPoolAttributes,
+		Description: `
+Get information about an existing Work Pool by name.
+<br>
+Use this data source to obtain Work Pool-specific attributes.
+`,
+		Attributes: workPoolAttributes,
 	}
 }
 

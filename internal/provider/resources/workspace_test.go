@@ -69,6 +69,20 @@ func TestAccResource_workspace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", randomDescription),
 				),
 			},
+			// Import State checks - import by handle
+			{
+				ImportState:         true,
+				ResourceName:        resourceName,
+				ImportStateId:       randomName2,
+				ImportStateIdPrefix: "handle/",
+				ImportStateVerify:   true,
+			},
+			// Import State checks - import by ID (default)
+			{
+				ImportState:       true,
+				ResourceName:      resourceName,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }

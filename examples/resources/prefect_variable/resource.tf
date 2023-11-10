@@ -1,4 +1,4 @@
 resource "prefect_variable" "example" {
-  name  = "My Variable"
+  name  = "my_variable_name"
   value = "variable value goes here"
 }

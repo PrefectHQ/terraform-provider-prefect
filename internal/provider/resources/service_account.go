@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -82,12 +83,18 @@ func (r *ServiceAccountResource) Configure(_ context.Context, req resource.Confi
 
 func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect service account",
-		Version:     1,
+		Description: "The resource `service_account` represents a Prefect Cloud Service Account. " +
+			"A Service Account allows you to create an API Key that is not associated with a user account.\n" +
+			"\n" +
+			"Service Accounts are used to configure API access for workers or programs. Use this resource to provision " +
+			"and rotate Keys as well as assign Account and Workspace Access through Roles.\n" +
+			"\n" +
+			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.",
+		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Service account UUID",
+				Description: "Service account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -99,18 +106,18 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the service account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the service account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,
@@ -132,12 +139,12 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"api_key_created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the API Key was created in RFC 3339 format",
+				Description: "Timestamp of the API Key creation (RFC3339)",
 			},
 			"api_key_expiration": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the API Key expires in RFC 3339 format",
+				Description: "Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.",
 			},
 			"api_key": schema.StringAttribute{
 				Computed:    true,
@@ -258,6 +265,15 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	if model.ID.IsNull() && model.Name.IsNull() {
+		resp.Diagnostics.AddError(
+			"Both ID and Name are unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+
+		return
+	}
+
 	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
@@ -265,11 +281,39 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	serviceAccount, err := client.Get(ctx, model.ID.ValueString())
+	// A Service Account can be read by either ID or Name.
+	// If both are set, we prefer the ID
+	var serviceAccount *api.ServiceAccount
+	if !model.ID.IsNull() {
+		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
+	} else if !model.Name.IsNull() {
+		var serviceAccounts []*api.ServiceAccount
+		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
+
+		// The error from the API call should take precedence
+		// followed by this custom error if a specific service account is not returned
+		if err == nil && len(serviceAccounts) != 1 {
+			err = fmt.Errorf("a Service Account with the name=%s could not be found", model.Name.ValueString())
+		}
+
+		if len(serviceAccounts) == 1 {
+			serviceAccount = serviceAccounts[0]
+		}
+	}
+
+	if serviceAccount == nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing Service Account state",
+			fmt.Sprintf("Could not find Service Account with ID=%s and Name=%s", model.ID.ValueString(), model.Name.ValueString()),
+		)
+
+		return
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err),
+			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err.Error()),
 		)
 
 		return
@@ -444,5 +488,10 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 
 // ImportState imports the resource into Terraform state.
 func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	if strings.HasPrefix(req.ID, "name/") {
+		name := strings.TrimPrefix(req.ID, "name/")
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	} else {
+		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	}
 }

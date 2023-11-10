@@ -3,12 +3,15 @@
 page_title: "prefect_work_pool Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing a Prefect work pool
+  The resource work_pool represents a Prefect Cloud Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
+  Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the prefect_worker_metadata data source to bootstrap new Work Pools quickly.
 ---
 
 # prefect_work_pool (Resource)
 
-Resource representing a Prefect work pool
+The resource `work_pool` represents a Prefect Cloud Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
+
+Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.
 
 ## Example Usage
 
@@ -51,26 +54,29 @@ resource "prefect_work_pool" "example" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `base_job_template` (String) The base job template for the work pool, as a JSON string
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
 - `description` (String) Description of the work pool
 - `paused` (Boolean) Whether this work pool is paused
-- `type` (String) Type of the work pool
-- `workspace_id` (String) Workspace UUID, defaults to the workspace set in the provider
+- `type` (String) Type of the work pool, eg. kubernetes, ecs, process, etc.
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only
 
-- `created` (String) Date and time of the work pool creation in RFC 3339 format
-- `default_queue_id` (String) The UUID of the default queue associated with this work pool
-- `id` (String) Work pool UUID
-- `updated` (String) Date and time that the work pool was last updated in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `default_queue_id` (String) The ID (UUID) of the default queue associated with this work pool
+- `id` (String) Work pool ID (UUID)
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Work Pools can be imported using the work pool's name
-terraform import prefect_work_pool.example name-of-work-pool
+# Prefect Work Pools can be imported using the format `workspace_id,name`
+terraform import prefect_work_pool.example 00000000-0000-0000-0000-000000000000,kubernetes-work-pool
+
+# You can also import by name only if you have a workspace_id set in your provider
+terraform import prefect_work_pool.example kubernetes-work-pool
 ```

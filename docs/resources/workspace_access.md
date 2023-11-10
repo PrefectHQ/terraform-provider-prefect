@@ -3,12 +3,15 @@
 page_title: "prefect_workspace_access Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing Prefect Workspace Access for a User or Service Account
+  The resource workspace_access represents a connection between an accessor (User or Service Account) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
+  Use this resource in conjunction with the workspace_role resource or data source to manage access to Workspaces.
 ---
 
 # prefect_workspace_access (Resource)
 
-Resource representing Prefect Workspace Access for a User or Service Account
+The resource `workspace_access` represents a connection between an accessor (User or Service Account) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
+
+Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.
 
 ## Example Usage
 
@@ -28,7 +31,7 @@ data "prefect_account_member" "marvin" {
 resource "prefect_workspace_access" "marvin_developer" {
   accessor_type     = "USER"
   accessor_id       = prefect_account_member.marvin.user_id
-  workspace_id      = "workspace-UUID"
+  workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }
 
@@ -42,7 +45,7 @@ resource "prefect_service_account" "bot" {
 resource "prefect_workspace_access" "bot_developer" {
   accessor_type     = "SERVICE_ACCOUNT"
   accessor_id       = prefect_service_account.bot.id
-  workspace_id      = "workspace-UUID"
+  workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }
 ```
@@ -52,15 +55,15 @@ resource "prefect_workspace_access" "bot_developer" {
 
 ### Required
 
-- `accessor_id` (String) ID of accessor to the workspace
+- `accessor_id` (String) ID (UUID) of accessor to the workspace. This can be an `account_member.user_id` or `service_account.id`
 - `accessor_type` (String) USER or SERVICE_ACCOUNT
-- `workspace_role_id` (String) Workspace Role ID to grant to accessor
+- `workspace_role_id` (String) Workspace Role ID (UUID) to grant to accessor
 
 ### Optional
 
-- `account_id` (String) Account ID where the workspace is located
-- `workspace_id` (String) Workspace ID to grant access to
+- `account_id` (String) Account ID (UUID) where the workspace is located
+- `workspace_id` (String) Workspace ID (UUID) to grant access to
 
 ### Read-Only
 
-- `id` (String) Workspace Access UUID
+- `id` (String) Workspace Access ID (UUID)

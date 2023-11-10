@@ -9,10 +9,12 @@ help:
 	@echo ""
 	@echo "This project defines the following build targets:"
 	@echo ""
-	@echo "  build - compiles source code"
-	@echo "  lint - run static code analysis"
-	@echo "  test - run automated tests"
+	@echo "  build - compiles source code to build/"
 	@echo "  clean - removes built artifacts"
+	@echo "  lint - run static code analysis"
+	@echo "  test - run automated unit tests"
+	@echo "  testacc - run automated acceptance tests"
+	@echo "  docs - builds Terraform documentation"
 .PHONY: help
 
 build: $(BINARY)
@@ -31,9 +33,6 @@ lint:
 	golangci-lint run
 .PHONY: lint
 
-install: clean build
-	echo "@TODO Placeholder install - move built provider to ~.terraform.d/plugins/"
-
 test:
 	gotestsum --max-fails=50 ./...
 .PHONY: test
@@ -46,5 +45,6 @@ testacc:
 
 docs:
 	mkdir -p docs
+	rm -rf ./docs/images
 	go generate ./...
 .PHONY: docs

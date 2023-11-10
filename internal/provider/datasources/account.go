@@ -10,13 +10,14 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = datasource.DataSourceWithConfigure(&AccountDataSource{})
 
 // AccountDataSource contains state for the data source.
 type AccountDataSource struct {
-	client api.AccountsClient
+	client api.PrefectClient
 }
 
 // AccountDataSourceModel defines the Terraform data source model.
@@ -61,37 +62,33 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	var err error
-	d.client, err = client.Accounts()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating account client",
-			fmt.Sprintf("Could not create account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
-
-		return
-	}
+	d.client = client
 }
 
 // Schema defines the schema for the data source.
 func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect Cloud account",
+		// Description: "Data Source representing a Prefect Cloud account",
+		Description: `
+Get information about an existing Account.
+<br>
+Use this data source to obtain account-level attributes
+`,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID",
-				Required:    true,
+				Description: "Account ID (UUID)",
+				Optional:    true,
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the account creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the account was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"name": schema.StringAttribute{
 				Computed:    true,
@@ -115,7 +112,7 @@ func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			},
 			"billing_email": schema.StringAttribute{
 				Computed:    true,
-				Description: "Billing email to apply to the account's stripe customer",
+				Description: "Billing email to apply to the account's Stripe customer",
 			},
 		},
 	}
@@ -131,7 +128,18 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	account, err := d.client.Get(ctx, model.ID.ValueUUID())
+	// The ID value will be validated at the Schema level,
+	// so we can safely convert + extract the UUID value here
+	// without checking for an error. If a null value is passed,
+	// we'll fall back to the account_id set in the Accounts client.
+	accountID := model.ID.ValueUUID()
+
+	client, err := d.client.Accounts(accountID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+	}
+
+	account, err := client.Get(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing account state",

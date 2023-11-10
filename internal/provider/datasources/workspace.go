@@ -67,23 +67,23 @@ func (d *WorkspaceDataSource) Configure(_ context.Context, req datasource.Config
 var workspaceAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace UUID",
+		Description: "Workspace ID (UUID)",
 		Computed:    true,
 		Optional:    true,
 	},
 	"created": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time of the workspace creation in RFC 3339 format",
+		Description: "Timestamp of when the resource was created (RFC3339)",
 	},
 	"updated": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time that the workspace was last updated in RFC 3339 format",
+		Description: "Timestamp of when the resource was updated (RFC3339)",
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account UUID, defaults to the account set in the provider",
+		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
 	},
 	"name": schema.StringAttribute{
@@ -104,8 +104,12 @@ var workspaceAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *WorkspaceDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Data Source representing a Prefect workspace",
-		Attributes:  workspaceAttributes,
+		Description: `
+Get information about an existing Workspace by handle.
+<br>
+Use this data source to obtain Workspace IDs
+`,
+		Attributes: workspaceAttributes,
 	}
 }
 
@@ -169,6 +173,15 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 		if len(workspaces) == 1 {
 			workspace = workspaces[0]
 		}
+	}
+
+	if workspace == nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing workspace state",
+			fmt.Sprintf("Could not find workspace with ID=%s and Handle=%s", model.ID.ValueString(), model.Handle.ValueString()),
+		)
+
+		return
 	}
 
 	if err != nil {

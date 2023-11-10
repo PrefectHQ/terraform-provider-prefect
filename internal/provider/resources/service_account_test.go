@@ -128,6 +128,23 @@ func TestAccResource_service_account(t *testing.T) {
 					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
 			},
+			// Import State checks - import by name
+			{
+				ImportState:                          true,
+				ImportStateId:                        botRandomName2,
+				ImportStateIdPrefix:                  "name/",
+				ResourceName:                         botResourceName,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "name",
+				ImportStateVerifyIgnore:              []string{"api_key"},
+			},
+			// Import State checks - import by ID (default)
+			{
+				ImportState:             true,
+				ResourceName:            botResourceName,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"api_key"},
+			},
 		},
 	})
 }

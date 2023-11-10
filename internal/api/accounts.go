@@ -2,15 +2,13 @@ package api
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 // AccountsClient is a client for working with accounts.
 type AccountsClient interface {
-	Get(ctx context.Context, id uuid.UUID) (*AccountResponse, error)
-	Update(ctx context.Context, id uuid.UUID, data AccountUpdate) error
-	Delete(ctx context.Context, id uuid.UUID) error
+	Get(ctx context.Context) (*AccountResponse, error)
+	Update(ctx context.Context, data AccountUpdate) error
+	Delete(ctx context.Context) error
 }
 
 // Account is a representation of an account.

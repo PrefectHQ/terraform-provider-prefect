@@ -3,12 +3,16 @@
 page_title: "prefect_work_pool Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect Work Pool
+  Get information about an existing Work Pool by name.
+  
+  Use this data source to obtain Work Pool-specific attributes.
 ---
 
 # prefect_work_pool (Data Source)
 
-Data Source representing a Prefect Work Pool
+Get information about an existing Work Pool by name.
+<br>
+Use this data source to obtain Work Pool-specific attributes.
 
 ## Example Usage
 
@@ -23,13 +27,13 @@ data "prefect_work_pool" "my_pool" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `concurrency_limit` (Number) The concurrency limit applied to this work pool
-- `default_queue_id` (String) The UUID of the default queue associated with this work pool
+- `default_queue_id` (String) The ID (UUID) of the default queue associated with this work pool
 - `description` (String) Description of the work pool
-- `id` (String) Work pool UUID
+- `id` (String) Work pool ID (UUID)
 - `name` (String) Name of the work pool
-- `workspace_id` (String) Workspace UUID, defaults to the workspace set in the provider
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only
 

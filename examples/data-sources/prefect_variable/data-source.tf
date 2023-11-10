@@ -1,7 +1,7 @@
 data "prefect_variable" "existing_by_id" {
-  id = "variable-UUID"
+  id = "00000000-0000-0000-0000-000000000000"
 }
 
 data "prefect_variable" "existing_by_name" {
-  name = "my-variable-name"
+  name = "my_variable_name"
 }

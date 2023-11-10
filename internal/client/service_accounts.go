@@ -76,7 +76,10 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 	return &response, nil
 }
 
-func (sa *ServiceAccountsClient) List(ctx context.Context, filter api.ServiceAccountFilterRequest) ([]*api.ServiceAccount, error) {
+func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*api.ServiceAccount, error) {
+	filter := api.ServiceAccountFilter{}
+	filter.ServiceAccounts.Name.Any = names
+
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
 		return nil, fmt.Errorf("failed to encode filter: %w", err)

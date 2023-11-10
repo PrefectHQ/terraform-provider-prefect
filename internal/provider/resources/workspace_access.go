@@ -68,12 +68,17 @@ func (r *WorkspaceAccessResource) Configure(_ context.Context, req resource.Conf
 
 func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing Prefect Workspace Access for a User or Service Account",
-		Version:     0,
+		// Description: "Resource representing Prefect Workspace Access for a User or Service Account",
+		Description: "The resource `workspace_access` represents a connection between an accessor " +
+			"(User or Service Account) with a Workspace Role. This resource specifies an actor's access level " +
+			"to a specific Workspace in the Account.\n" +
+			"\n" +
+			"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Workspace Access UUID",
+				Description: "Workspace Access ID (UUID)",
 				// attributes which are not configurable + should not show updates from the existing state value
 				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
@@ -90,22 +95,22 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 			"accessor_id": schema.StringAttribute{
 				Required:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "ID of accessor to the workspace",
+				Description: "ID (UUID) of accessor to the workspace. This can be an `account_member.user_id` or `service_account.id`",
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account ID where the workspace is located",
+				Description: "Account ID (UUID) where the workspace is located",
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID to grant access to",
+				Description: "Workspace ID (UUID) to grant access to",
 			},
 			"workspace_role_id": schema.StringAttribute{
 				Required:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace Role ID to grant to accessor",
+				Description: "Workspace Role ID (UUID) to grant to accessor",
 			},
 		},
 	}

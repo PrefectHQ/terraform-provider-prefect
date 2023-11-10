@@ -82,15 +82,19 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 // Schema defines the schema for the resource.
 func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Resource representing a Prefect work pool",
-		Version:     0,
+		Description: "The resource `work_pool` represents a Prefect Cloud Work Pool. " +
+			"Work Pools represent infrastructure configurations for jobs across several common environments.\n" +
+			"\n" +
+			"Work Pools can be set up with default base job configurations, based on which type. " +
+			"Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
 				// We cannot use a CustomType due to a conflict with PlanModifiers; see
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Work pool UUID",
+				Description: "Work pool ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -98,7 +102,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"created": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time of the work pool creation in RFC 3339 format",
+				Description: "Timestamp of when the resource was created (RFC3339)",
 				// In general, we can use UseStateForUnknown() to avoid unnecessary
 				// cases of `known after apply` states during plans. Mostly, this planmodifier
 				// is suitable for Computed attributes that do not change often and
@@ -110,16 +114,16 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"updated": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Date and time that the work pool was last updated in RFC 3339 format",
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account UUID, defaults to the account set in the provider",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace UUID, defaults to the workspace set in the provider",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{
@@ -139,7 +143,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"type": schema.StringAttribute{
 				Computed:    true,
 				Default:     stringdefault.StaticString("prefect-agent"),
-				Description: "Type of the work pool",
+				Description: "Type of the work pool, eg. kubernetes, ecs, process, etc.",
 				Optional:    true,
 				// Work Pool types are also only set on create, and
 				// we do not support modifying this value. Therefore, any changes
@@ -161,7 +165,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"default_queue_id": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "The UUID of the default queue associated with this work pool",
+				Description: "The ID (UUID) of the default queue associated with this work pool",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -426,5 +430,39 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 
 // ImportState imports the resource into Terraform state.
 func (r *WorkPoolResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	// we'll allow input values in the form of:
+	// - "workspace_id,name"
+	// - "name"
+	maxInputCount := 2
+	inputParts := strings.Split(req.ID, ",")
+
+	// eg. "foo,bar,baz"
+	if len(inputParts) > maxInputCount {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+		)
+
+		return
+	}
+
+	// eg. ",foo" or "foo,"
+	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+		)
+
+		return
+	}
+
+	if len(inputParts) == maxInputCount {
+		workspaceID := inputParts[0]
+		name := inputParts[1]
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	} else {
+		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	}
 }

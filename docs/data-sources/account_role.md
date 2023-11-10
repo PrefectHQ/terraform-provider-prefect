@@ -3,12 +3,16 @@
 page_title: "prefect_account_role Data Source - prefect"
 subcategory: ""
 description: |-
-  Data Source representing a Prefect Workspace Role
+  Get information about an existing Workspace Role.
+  
+  Use this data source read down the pre-defined Roles, to manage User and Service Account access.
 ---
 
 # prefect_account_role (Data Source)
 
-Data Source representing a Prefect Workspace Role
+Get information about an existing Workspace Role.
+<br>
+Use this data source read down the pre-defined Roles, to manage User and Service Account access.
 
 ## Example Usage
 
@@ -33,12 +37,12 @@ data "prefect_account_role" "member" {
 
 ### Optional
 
-- `account_id` (String) Account UUID where Account Role resides
+- `account_id` (String) Account ID (UUID) where the resource resides
 
 ### Read-Only
 
-- `created` (String) Date and time of the Account Role creation in RFC 3339 format
-- `id` (String) Account Role UUID
-- `is_system_role` (Boolean) Account UUID where Account Role resides
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `id` (String) Account Role ID (UUID)
+- `is_system_role` (Boolean) Boolean specifying if the Account Role is a system role
 - `permissions` (List of String) List of permissions linked to the Account Role
-- `updated` (String) Date and time that the Account Role was last updated in RFC 3339 format
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)

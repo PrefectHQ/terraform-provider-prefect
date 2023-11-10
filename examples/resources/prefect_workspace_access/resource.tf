@@ -13,7 +13,7 @@ data "prefect_account_member" "marvin" {
 resource "prefect_workspace_access" "marvin_developer" {
   accessor_type     = "USER"
   accessor_id       = prefect_account_member.marvin.user_id
-  workspace_id      = "workspace-UUID"
+  workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }
 
@@ -27,6 +27,6 @@ resource "prefect_service_account" "bot" {
 resource "prefect_workspace_access" "bot_developer" {
   accessor_type     = "SERVICE_ACCOUNT"
   accessor_id       = prefect_service_account.bot.id
-  workspace_id      = "workspace-UUID"
+  workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }

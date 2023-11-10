@@ -4,7 +4,7 @@ import "github.com/google/uuid"
 
 // PrefectClient returns clients for different aspects of our API.
 type PrefectClient interface {
-	Accounts() (AccountsClient, error)
+	Accounts(accountID uuid.UUID) (AccountsClient, error)
 	AccountMemberships(accountID uuid.UUID) (AccountMembershipsClient, error)
 	AccountRoles(accountID uuid.UUID) (AccountRolesClient, error)
 	Collections() (CollectionsClient, error)

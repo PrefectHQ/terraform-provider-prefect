@@ -3,12 +3,18 @@
 page_title: "prefect_service_account Resource - prefect"
 subcategory: ""
 description: |-
-  Resource representing a Prefect service account
+  The resource service_account represents a Prefect Cloud Service Account. A Service Account allows you to create an API Key that is not associated with a user account.
+  Service Accounts are used to configure API access for workers or programs. Use this resource to provision and rotate Keys as well as assign Account and Workspace Access through Roles.
+  API Keys for service_account resources can be rotated by modifying the api_key_expiration attribute.
 ---
 
 # prefect_service_account (Resource)
 
-Resource representing a Prefect service account
+The resource `service_account` represents a Prefect Cloud Service Account. A Service Account allows you to create an API Key that is not associated with a user account.
+
+Service Accounts are used to configure API access for workers or programs. Use this resource to provision and rotate Keys as well as assign Account and Workspace Access through Roles.
+
+API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.
 
 ## Example Usage
 
@@ -41,25 +47,28 @@ resource "prefect_service_account" "example" {
 
 ### Optional
 
-- `account_id` (String) Account UUID, defaults to the account set in the provider
+- `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `account_role_name` (String) Account Role name of the service account
-- `api_key_expiration` (String) Date and time that the API Key expires in RFC 3339 format
+- `api_key_expiration` (String) Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.
 
 ### Read-Only
 
 - `api_key` (String, Sensitive) API Key associated with the service account
-- `api_key_created` (String) Date and time that the API Key was created in RFC 3339 format
+- `api_key_created` (String) Timestamp of the API Key creation (RFC3339)
 - `api_key_id` (String) API Key ID associated with the service account
 - `api_key_name` (String) API Key Name associated with the service account
-- `created` (String) Date and time of the service account creation in RFC 3339 format
-- `id` (String) Service account UUID
-- `updated` (String) Date and time that the service account was last updated in RFC 3339 format
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `id` (String) Service account ID (UUID)
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
 
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Service Accounts can be imported using the service account's name
-terraform import prefect_service_account.example name-of-service-account
+# Prefect Service Accounts can be imported via name in the form `name/my-bot-name`
+terraform import prefect_service_account.example name/my-bot-name
+
+# Prefect Service Accounts can also be imported via UUID
+terraform import prefect_service_account.example 00000000-0000-0000-0000-000000000000
 ```
