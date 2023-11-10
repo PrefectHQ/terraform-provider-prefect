@@ -1,5 +1,5 @@
 ---
-page_title: "Getting Started with the Prefect Cloud provider"
+page_title: "Getting started with the provider"
 description: |-
   This guide walks through the necessary provider configurations,
   how to generate a Prefect API Key, as well as a brief introduction
@@ -54,13 +54,13 @@ provider "prefect" {
 
 Navigate to your Account settings in Prefect Cloud
 
-<img src="../images/account-settings-location.png" alt="Account settings location" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/account-settings-location.png" alt="Account settings location" align="center" width="400">
 
 <br>
 
 From here, you can locate the `Account ID` value that you will pass into the provider's `account_id` attribute
 
-<img src="../images/account-id-location.png" alt="Account ID location" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/account-id-location.png" alt="Account ID location" align="center" width="400">
 
 ## Generating an API Key
 
@@ -70,7 +70,7 @@ The provider can be configured with a [Prefect API Key](https://docs.prefect.io/
 
 Most production use-cases will call for using a dedicated Service Account's API Key when invoking Terraform, as the API Key can be managed as a team - independent of any one User.
 
-<img src="../images/service-account-api-key-example.png" alt="Service Account API Key Example" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/service-account-api-key-example.png" alt="Service Account API Key Example" align="center" width="400">
 
 <br>
 
@@ -80,13 +80,13 @@ m
 
 API Keys can also be generated to represent a User - look to this option if you want to use the provider to manage a Personal Account, where the Service Account feature is not available.
 
-<img src="../images/user-api-key-location.png" alt="User API Key Location" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/user-api-key-location.png" alt="User API Key Location" align="center" width="400">
 
 <br>
 
 Note that any User API Keys will inherit the Account/Organization Role of the User (eg. `Admin` or `Member`)
 
-<img src="../images/user-api-key-example.png" alt="User API Key Example" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/user-api-key-example.png" alt="User API Key Example" align="center" width="400">
 
 
 ## RBAC + Permissions
@@ -111,10 +111,10 @@ This is more likely to impact Service Account actors, as Users will already know
 
 To invite the Terraform provider actor to an existing Workspace, so that it can be managed in Terraform:
 
-<img src="../images/workspace-sharing-location.png" alt="Workspace Sharing Location" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/workspace-sharing-location.png" alt="Workspace Sharing Location" align="center" width="400">
 
 <br>
 
 Grant your Terraform provider actor (which is a Service Account in this case) the appropriate [Workspace Role](https://docs.prefect.io/latest/cloud/users/roles/#workspace-level-roles), based on your anticipated use case.
 
-<img src="../images/service-account-share-example.png" alt="Service Account Share Example" align="center" width="400">
+<img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/service-account-share-example.png" alt="Service Account Share Example" align="center" width="400">
