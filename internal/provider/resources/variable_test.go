@@ -13,31 +13,31 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccVariableResource(name string, value string, workspaceDatsourceName string) string {
+func fixtureAccVariableResource(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
 	handle = "evergreen-workspace"
 }
 resource "prefect_variable" "test" {
-	workspace_id = %s.id
+	workspace_id = data.prefect_workspace.evergreen.id
 	name = "%s"
 	value = "%s"
 }
-	`, workspaceDatsourceName, name, value)
+	`, name, value)
 }
 
-func fixtureAccVariableResourceWithTags(name string, value string, workspaceDatsourceName string) string {
+func fixtureAccVariableResourceWithTags(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
 	handle = "evergreen-workspace"
 }
 resource "prefect_variable" "test" {
-	workspace_id = %s.id
+	workspace_id = data.prefect_workspace.evergreen.id
 	name = "%s"
 	value = "%s"
 	tags = ["foo", "bar"]
 }
-	`, workspaceDatsourceName, name, value)
+	`, name, value)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -61,7 +61,7 @@ func TestAccResource_variable(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the variable resource
-				Config: fixtureAccVariableResource(randomName, randomValue, workspaceDatsourceName),
+				Config: fixtureAccVariableResource(randomName, randomValue),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceDatsourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue}),
@@ -71,7 +71,7 @@ func TestAccResource_variable(t *testing.T) {
 			},
 			{
 				// Check updating name + value of the variable resource
-				Config: fixtureAccVariableResource(randomName2, randomValue2, workspaceDatsourceName),
+				Config: fixtureAccVariableResource(randomName2, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceDatsourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
@@ -81,7 +81,7 @@ func TestAccResource_variable(t *testing.T) {
 			},
 			{
 				// Check adding tags
-				Config: fixtureAccVariableResourceWithTags(randomName2, randomValue2, workspaceDatsourceName),
+				Config: fixtureAccVariableResourceWithTags(randomName2, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceDatsourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
