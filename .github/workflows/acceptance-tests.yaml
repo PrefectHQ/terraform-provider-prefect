@@ -1,0 +1,46 @@
+name: Acceptance Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - .github/workflows/acceptance-tests.yaml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - .github/workflows/acceptance-tests.yaml
+
+permissions: {}
+
+jobs:
+  acceptance_tests:
+    permissions:
+      contents: read
+    name: Acceptance Tests
+    environment: Acceptance Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: 'go.mod'
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.5.*'
+          terraform_wrapper: false
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+      - name: Run acceptance tests
+        run: make testacc
+        env:
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
+          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}

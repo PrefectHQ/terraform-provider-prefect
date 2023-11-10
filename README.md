@@ -11,7 +11,7 @@
     <img src=".github/tf.png" alt="Terraform logo" title="Terraform" align="left" height="50" />
 </a>
 
-# Terraform Provider for Prefect Cloud [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/prefecthq/terraform-provider-prefect?label=release)](https://github.com/prefecthq/terraform-provider-prefect/releases) ![Acceptance tests](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/provider-build.yaml/badge.svg)
+# Terraform Provider for Prefect Cloud [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/prefecthq/terraform-provider-prefect?label=release)](https://github.com/prefecthq/terraform-provider-prefect/releases) ![Acceptance tests](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/acceptance-tests.yaml/badge.svg) ![Provider Release](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/provider-release.yaml/badge.svg)
 
 - [Documentation](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs)
 - [Examples](https://github.com/PrefectHQ/terraform-provider-prefect/tree/main/examples)
