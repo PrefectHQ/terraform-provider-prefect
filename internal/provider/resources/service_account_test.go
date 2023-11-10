@@ -128,6 +128,27 @@ func TestAccResource_service_account(t *testing.T) {
 					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
 			},
+			// Import State checks
+			{
+				ImportState:                          true,
+				ImportStateId:                        botRandomName2,
+				ImportStateIdPrefix:                  "name/",
+				ResourceName:                         botResourceName,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "name",
+				ImportStateVerifyIgnore:              []string{"api_key"},
+			},
+			// Not entirely sure why, but `bot` shows up un-initialized here
+			// even if we're successfully assigning it to the fetched resource above.
+			// I suspect this has something to do with closures / order of when
+			// the custom TestCheckFunc functions are run.
+			// {
+			// 	ImportState:             true,
+			// 	ImportStateId:           bot.ID.String(),
+			// 	ResourceName:            "prefect_service_account.bot",
+			// 	ImportStateVerify:       true,
+			// 	ImportStateVerifyIgnore: []string{"api_key"},
+			// },
 		},
 	})
 }

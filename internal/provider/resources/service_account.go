@@ -492,6 +492,6 @@ func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.I
 		name := strings.TrimPrefix(req.ID, "name/")
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	}
 }
