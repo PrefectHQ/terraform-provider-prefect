@@ -4,10 +4,19 @@ name: Build and Test
   push:
     branches:
       - main
-
+    paths:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - .github/workflows/provider-build.yml
   pull_request:
     branches:
       - main
+    paths:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - .github/workflows/provider-build.yml
 
 permissions: {}
 

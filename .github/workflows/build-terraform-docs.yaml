@@ -6,7 +6,9 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'templates/**'
       - 'examples/**'
+      - .github/workflows/build-terraform-docs.yml
 
 permissions: {}
 
