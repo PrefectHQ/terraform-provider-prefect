@@ -74,6 +74,9 @@ resource "prefect_work_pool" "example" {
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Work Pools can be imported using the work pool's name
-terraform import prefect_work_pool.example name-of-work-pool
+# Prefect Work Pools can be imported using the format `workspace_id,name`
+terraform import prefect_work_pool.example 00000000-0000-0000-0000-000000000000,kubernetes-work-pool
+
+# You can also import by name only if you have a workspace_id set in your provider
+terraform import prefect_work_pool.example kubernetes-work-pool
 ```

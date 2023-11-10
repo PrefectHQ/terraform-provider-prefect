@@ -85,6 +85,13 @@ func TestAccResource_work_pool(t *testing.T) {
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, IsPaused: false}),
 				),
 			},
+			// Import State checks - import by workspace_id,name (dynamic)
+			{
+				ImportState:       true,
+				ResourceName:      resourceName,
+				ImportStateIdFunc: getWorkPoolImportStateID(resourceName, workspaceDatsourceName),
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
@@ -171,5 +178,23 @@ func testAccCheckIDsNotEqual(resourceName string, fetchedWorkPool *api.WorkPool)
 		}
 
 		return nil
+	}
+}
+
+func getWorkPoolImportStateID(workPoolResourceName string, workspaceDatsourceName string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		workspaceDatsource, exists := state.RootModule().Resources[workspaceDatsourceName]
+		if !exists {
+			return "", fmt.Errorf("Resource not found in state: %s", workspaceDatsourceName)
+		}
+		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)
+
+		workPoolResource, exists := state.RootModule().Resources[workPoolResourceName]
+		if !exists {
+			return "", fmt.Errorf("Resource not found in state: %s", workPoolResourceName)
+		}
+		workPoolName := workPoolResource.Primary.Attributes["name"]
+
+		return fmt.Sprintf("%s,%s", workspaceID, workPoolName), nil
 	}
 }
