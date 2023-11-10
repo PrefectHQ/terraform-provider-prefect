@@ -10,13 +10,14 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = datasource.DataSourceWithConfigure(&AccountDataSource{})
 
 // AccountDataSource contains state for the data source.
 type AccountDataSource struct {
-	client api.AccountsClient
+	client api.PrefectClient
 }
 
 // AccountDataSourceModel defines the Terraform data source model.
@@ -61,16 +62,7 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 		return
 	}
 
-	var err error
-	d.client, err = client.Accounts()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating account client",
-			fmt.Sprintf("Could not create account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
-
-		return
-	}
+	d.client = client
 }
 
 // Schema defines the schema for the data source.
@@ -86,7 +78,7 @@ Use this data source to obtain account-level attributes
 			"id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID)",
-				Required:    true,
+				Optional:    true,
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -136,7 +128,18 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	account, err := d.client.Get(ctx, model.ID.ValueUUID())
+	// The ID value will be validated at the Schema level,
+	// so we can safely convert + extract the UUID value here
+	// without checking for an error. If a null value is passed,
+	// we'll fall back to the account_id set in the Accounts client.
+	accountID := model.ID.ValueUUID()
+
+	client, err := d.client.Accounts(accountID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+	}
+
+	account, err := client.Get(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing account state",

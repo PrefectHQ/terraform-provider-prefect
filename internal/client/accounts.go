@@ -24,18 +24,25 @@ type AccountsClient struct {
 // Accounts returns an AccountsClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) Accounts() (api.AccountsClient, error) {
+func (c *Client) Accounts(accountID uuid.UUID) (api.AccountsClient, error) {
+	if accountID == uuid.Nil {
+		accountID = c.defaultAccountID
+	}
+
+	if accountID == uuid.Nil {
+		return nil, fmt.Errorf("accountID must be set: accountID is %q", accountID)
+	}
+
 	return &AccountsClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/accounts", c.endpoint),
+		routePrefix: fmt.Sprintf("%s/accounts/%s", c.endpoint, accountID.String()),
 	}, nil
 }
 
 // Get returns details for an account by ID.
-func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.AccountResponse, error) {
-	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, path, http.NoBody)
+func (c *AccountsClient) Get(ctx context.Context) (*api.AccountResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -63,14 +70,13 @@ func (c *AccountsClient) Get(ctx context.Context, accountID uuid.UUID) (*api.Acc
 }
 
 // Update modifies an existing account by ID.
-func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data api.AccountUpdate) error {
+func (c *AccountsClient) Update(ctx context.Context, data api.AccountUpdate) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, path, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -93,9 +99,8 @@ func (c *AccountsClient) Update(ctx context.Context, accountID uuid.UUID, data a
 }
 
 // Delete removes an account by ID.
-func (c *AccountsClient) Delete(ctx context.Context, accountID uuid.UUID) error {
-	path := fmt.Sprintf("%s/%s", c.routePrefix, accountID.String())
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, path, http.NoBody)
+func (c *AccountsClient) Delete(ctx context.Context) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
