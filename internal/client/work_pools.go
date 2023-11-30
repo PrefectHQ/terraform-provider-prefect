@@ -32,10 +32,6 @@ func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.Work
 		workspaceID = c.defaultWorkspaceID
 	}
 
-	if accountID == uuid.Nil || workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("both accountID and workspaceID must be set: accountID is %q and workspaceID is %q", accountID, workspaceID)
-	}
-
 	return &WorkPoolsClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,

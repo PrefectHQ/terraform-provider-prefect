@@ -32,7 +32,7 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 	return &AccountRolesClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/accounts/%s/account_roles", c.endpoint, accountID.String()),
+		routePrefix: getAccountScopedURL(c.endpoint, accountID, "account_roles"),
 	}, nil
 }
 

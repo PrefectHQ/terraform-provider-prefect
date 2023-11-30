@@ -33,10 +33,6 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 		workspaceID = c.defaultWorkspaceID
 	}
 
-	if accountID == uuid.Nil || workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("both accountID and workspaceID must be set: accountID is %q and workspaceID is %q", accountID, workspaceID)
-	}
-
 	return &VariablesClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,

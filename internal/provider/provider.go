@@ -187,20 +187,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
-	// If the endpoint is pointed to a self-hosted Prefect Server installation,
-	// we will warn the practitioner if an API Key is set, as it's possible that
-	// this is a user misconfiguration.
-	if !isPrefectCloudEndpoint {
-		if apiKey != "" {
-			resp.Diagnostics.AddAttributeWarning(
-				path.Root("api_key"),
-				"Prefect API Key ",
-				"The Prefect API Key is set, however, the Endpoint is set to a Prefect server installation. "+
-					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect Cloud endpoint, unset the PREFECT_API_KEY environment variable, or remove the api_key attribute.",
-			)
-		}
-	}
-
 	if resp.Diagnostics.HasError() {
 		return
 	}
