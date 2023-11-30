@@ -32,7 +32,7 @@ func (c *Client) WorkspaceRoles(accountID uuid.UUID) (api.WorkspaceRolesClient, 
 	return &WorkspaceRolesClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/accounts/%s/workspace_roles", c.endpoint, accountID.String()),
+		routePrefix: getAccountScopedURL(c.endpoint, accountID, "workspace_roles"),
 	}, nil
 }
 

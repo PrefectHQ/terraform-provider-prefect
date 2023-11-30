@@ -31,7 +31,7 @@ func (c *Client) AccountMemberships(accountID uuid.UUID) (api.AccountMemberships
 	return &AccountMembershipsClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/accounts/%s/account_memberships", c.endpoint, accountID.String()),
+		routePrefix: getAccountScopedURL(c.endpoint, accountID, "account_memberships"),
 	}, nil
 }
 
