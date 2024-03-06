@@ -1,3 +1,6 @@
+# MacOS
+.DS_Store
+
 # Local Terraform provider cache and state
 .terraform
 terraform.tfstate
