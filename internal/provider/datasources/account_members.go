@@ -14,14 +14,14 @@ import (
 )
 
 // Ensure the implementation satisfies the expected interfaces.
-var _ datasource.DataSource = &AccountMembershipsDataSource{}
-var _ datasource.DataSourceWithConfigure = &AccountMembershipsDataSource{}
+var _ datasource.DataSource = &AccountMembersDataSource{}
+var _ datasource.DataSourceWithConfigure = &AccountMembersDataSource{}
 
-type AccountMembershipsDataSource struct {
+type AccountMembersDataSource struct {
 	client api.PrefectClient
 }
 
-type AccountMembershipsDataSourceModel struct {
+type AccountMembersDataSourceModel struct {
 	Members types.List `tfsdk:"members"`
 
 	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
@@ -30,17 +30,17 @@ type AccountMembershipsDataSourceModel struct {
 // NewAccountMemberDataSource returns a new AccountMemberDataSource.
 //
 //nolint:ireturn // required by Terraform API
-func NewAccountMembershipsDataSource() datasource.DataSource {
-	return &AccountMembershipsDataSource{}
+func NewAccountMembersDataSource() datasource.DataSource {
+	return &AccountMembersDataSource{}
 }
 
 // Metadata returns the data source type name.
-func (d *AccountMembershipsDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
+func (d *AccountMembersDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_account_members"
 }
 
 // Schema defines the schema for the data source.
-func (d *AccountMembershipsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+func (d *AccountMembersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: `
 Get information about all members of account.
@@ -65,7 +65,7 @@ Use this data source to obtain user or actor IDs to manage Workspace Access.
 }
 
 // Configure adds the provider-configured client to the data source.
-func (d *AccountMembershipsDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
+func (d *AccountMembersDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -84,8 +84,8 @@ func (d *AccountMembershipsDataSource) Configure(_ context.Context, req datasour
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (d *AccountMembershipsDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
-	var model AccountMembershipsDataSourceModel
+func (d *AccountMembersDataSource) Read(ctx context.Context, req datasource.ReadRequest, resp *datasource.ReadResponse) {
+	var model AccountMembersDataSourceModel
 
 	// Populate the model from data source configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
