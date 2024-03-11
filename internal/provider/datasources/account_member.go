@@ -46,61 +46,74 @@ func (d *AccountMemberDataSource) Metadata(_ context.Context, req datasource.Met
 	resp.TypeName = req.ProviderTypeName + "_account_member"
 }
 
+// Shared set of schema attributes between account_member (singular)
+// and account_members (plural) datasources. Any account_member (singular)
+// specific attributes will be added to a deep copy in the Schema method.
+var accountMemberAttributesBase = map[string]schema.Attribute{
+	"id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "Account Member ID (UUID)",
+	},
+	"actor_id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "Actor ID (UUID)",
+	},
+	"user_id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "User ID (UUID)",
+	},
+	"first_name": schema.StringAttribute{
+		Computed:    true,
+		Description: "Member's first name",
+	},
+	"last_name": schema.StringAttribute{
+		Computed:    true,
+		Description: "Member's last name",
+	},
+	"handle": schema.StringAttribute{
+		Computed:    true,
+		Description: "Member handle, or a human-readable identifier",
+	},
+	"email": schema.StringAttribute{
+		Required:    true,
+		Description: "Member email",
+	},
+	"account_role_id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "Acount Role ID (UUID)",
+	},
+	"account_role_name": schema.StringAttribute{
+		Computed:    true,
+		Description: "Name of Account Role assigned to member",
+	},
+}
+
 // Schema defines the schema for the data source.
 func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
+
+	// Create a copy of the base attributes
+	// and add the account ID overrides here
+	accountMemberAttributes := make(map[string]schema.Attribute)
+	for k, v := range accountMemberAttributesBase {
+		accountMemberAttributes[k] = v
+	}
+	accountMemberAttributes["account_id"] = schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "Account ID (UUID) where the member resides",
+		Optional:    true,
+	}
+
 	resp.Schema = schema.Schema{
 		Description: `
 Get information about an existing Account Member (user)	by their email.
 <br>
 Use this data source to obtain user or actor IDs to manage Workspace Access.
 `,
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "Account Member ID (UUID)",
-			},
-			"actor_id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "Actor ID (UUID)",
-			},
-			"user_id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "User ID (UUID)",
-			},
-			"first_name": schema.StringAttribute{
-				Computed:    true,
-				Description: "Member's first name",
-			},
-			"last_name": schema.StringAttribute{
-				Computed:    true,
-				Description: "Member's last name",
-			},
-			"handle": schema.StringAttribute{
-				Computed:    true,
-				Description: "Member handle, or a human-readable identifier",
-			},
-			"email": schema.StringAttribute{
-				Required:    true,
-				Description: "Member email",
-			},
-			"account_role_id": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "Acount Role ID (UUID)",
-			},
-			"account_role_name": schema.StringAttribute{
-				Computed:    true,
-				Description: "Name of Account Role assigned to member",
-			},
-			"account_id": schema.StringAttribute{
-				Optional:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "Account ID (UUID) where the member resides",
-			},
-		},
+		Attributes: accountMemberAttributes,
 	}
 }
 
