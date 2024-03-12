@@ -23,7 +23,7 @@ type TeamsClient struct {
 // Teams is a factory that initializes and returns a TeamsClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) TeamsClient(accountID uuid.UUID) (api.TeamsClient, error) {
+func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
