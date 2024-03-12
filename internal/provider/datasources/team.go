@@ -21,9 +21,11 @@ type TeamDataSource struct {
 }
 
 type TeamDataSourceModel struct {
-	ID          customtypes.UUIDValue `tfsdk:"id"`
-	Name        types.String          `tfsdk:"first_name"`
-	Description types.String          `tfsdk:"last_name"`
+	ID          customtypes.UUIDValue      `tfsdk:"id"`
+	Created     customtypes.TimestampValue `tfsdk:"created"`
+	Updated     customtypes.TimestampValue `tfsdk:"updated"`
+	Name        types.String               `tfsdk:"first_name"`
+	Description types.String               `tfsdk:"last_name"`
 
 	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 }
@@ -48,6 +50,16 @@ var teamAttributesBase = map[string]schema.Attribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
 		Description: "Team ID (UUID)",
+	},
+	"created": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
+		Description: "Date and time of the team creation in RFC 3339 format",
+	},
+	"updated": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
+		Description: "Date and time that the team was last updated in RFC 3339 format",
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,
@@ -145,6 +157,8 @@ func (d *TeamDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	fetchedTeam := teams[0]
 
 	config.ID = customtypes.NewUUIDValue(fetchedTeam.ID)
+	config.Created = customtypes.NewTimestampPointerValue(fetchedTeam.Created)
+	config.Updated = customtypes.NewTimestampPointerValue(fetchedTeam.Updated)
 	config.Name = types.StringValue(fetchedTeam.Name)
 	config.Description = types.StringValue(fetchedTeam.Description)
 
