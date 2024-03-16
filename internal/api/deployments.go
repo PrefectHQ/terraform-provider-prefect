@@ -80,11 +80,6 @@ type DeploymentAccessSet struct {
 	AccessControl DeploymentAccessControlSet `json:"access_control"`
 }
 
-// DeploymentAccessRead is a subset of DeploymentAccess used when Reading deployment access control.
-// type DeploymentAccessRead struct {
-// 	AccessControl DeploymentAccessControlRead `json:"access_control"`
-// }
-
 // DeploymentAccessControlSet is a defintion of deployment access control.
 type DeploymentAccessControlSet struct {
 	ManageActorIDs []string `json:"manage_actor_ids"`
