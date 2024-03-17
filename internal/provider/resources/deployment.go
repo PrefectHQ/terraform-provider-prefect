@@ -36,9 +36,9 @@ type DeploymentResourceModel struct {
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 
-	Name        types.String `tfsdk:"name"`
-	Handle      types.String `tfsdk:"handle"`
-	Description types.String `tfsdk:"description"`
+	Name types.String `tfsdk:"name"`
+	// Handle      types.String `tfsdk:"handle"`
+	// Description types.String `tfsdk:"description"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -50,7 +50,7 @@ func NewDeploymentResource() resource.Resource {
 
 // Metadata returns the resource type name.
 func (r *DeploymentResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_workspace"
+	resp.TypeName = req.ProviderTypeName + "_deployment"
 }
 
 // Configure initializes runtime state for the resource.
@@ -110,28 +110,34 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Name of the workspace",
 				Required:    true,
 			},
-			"handle": schema.StringAttribute{
-				Description: "Unique handle for the workspace",
-				Required:    true,
-			},
-			"description": schema.StringAttribute{
-				Description: "Description for the workspace",
+			"workspace_id": schema.StringAttribute{
 				Optional:    true,
-				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Workspace ID (UUID) to associate deployment to",
 			},
+			// "handle": schema.StringAttribute{
+			// 	Description: "Unique handle for the workspace",
+			// 	Required:    true,
+			// },
+			// "description": schema.StringAttribute{
+			// 	Description: "Description for the workspace",
+			// 	Optional:    true,
+			// 	Computed:    true,
+			// },
 		},
 	}
 }
 
-// copyDeploymentToModel copies an api.Workspace to a WorkspaceResourceModel.
-func copyDeploymentToModel(_ context.Context, workspace *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(workspace.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(workspace.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
+// copyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
+func copyDeploymentToModel(_ context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
+	model.ID = types.StringValue(deployment.ID.String())
+	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
-	model.Name = types.StringValue(workspace.Name)
-	model.Handle = types.StringValue(workspace.Handle)
-	model.Description = types.StringValue(*workspace.Description)
+	model.Name = types.StringValue(deployment.Name)
+	model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
+	// model.Handle = types.StringValue(workspace.Handle)
+	// model.Description = types.StringValue(*workspace.Description)
 
 	return nil
 }
@@ -146,23 +152,23 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
+	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating deployment client",
+			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		Name:        model.Name.ValueString(),
-		Handle:      model.Handle.ValueString(),
-		Description: model.Description.ValueStringPointer(),
+		Name: model.Name.ValueString(),
+		// Handle:      model.Handle.ValueString(),
+		// Description: model.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating workspace",
-			fmt.Sprintf("Could not create workspace, unexpected error: %s", err),
+			"Error creating deployment",
+			fmt.Sprintf("Could not create deployment, unexpected error: %s", err),
 		)
 
 		return
@@ -189,14 +195,14 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	if model.ID.IsNull() && model.Handle.IsNull() {
-		resp.Diagnostics.AddError(
-			"Both ID and Handle are unset",
-			"This is a bug in the Terraform provider. Please report it to the maintainers.",
-		)
+	// if model.ID.IsNull() && model.Handle.IsNull() {
+	// 	resp.Diagnostics.AddError(
+	// 		"Both ID and Handle are unset",
+	// 		"This is a bug in the Terraform provider. Please report it to the maintainers.",
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
 	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
 	if err != nil {
@@ -223,20 +229,21 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		}
 
 		deployment, err = client.Get(ctx, deploymentID)
-	} else if !model.Handle.IsNull() {
-		var deployments []*api.Deployment
-		deployments, err = client.List(ctx, []string{model.Handle.ValueString()})
-
-		// The error from the API call should take precedence
-		// followed by this custom error if a specific deployment is not returned
-		if err == nil && len(deployments) != 1 {
-			err = fmt.Errorf("a deployment with the handle=%s could not be found", model.Handle.ValueString())
-		}
-
-		if len(deployments) == 1 {
-			deployment = deployments[0]
-		}
 	}
+	// } else if !model.Handle.IsNull() {
+	// 	var deployments []*api.Deployment
+	// 	deployments, err = client.List(ctx, []string{model.Handle.ValueString()})
+
+	// 	// The error from the API call should take precedence
+	// 	// followed by this custom error if a specific deployment is not returned
+	// 	if err == nil && len(deployments) != 1 {
+	// 		err = fmt.Errorf("a deployment with the handle=%s could not be found", model.Handle.ValueString())
+	// 	}
+
+	// 	if len(deployments) == 1 {
+	// 		deployment = deployments[0]
+	// 	}
+	// }
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -287,9 +294,9 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		Name:        model.Name.ValueStringPointer(),
-		Handle:      model.Handle.ValueStringPointer(),
-		Description: model.Description.ValueStringPointer(),
+		Name: model.Name.ValueStringPointer(),
+		// Handle:      model.Handle.ValueStringPointer(),
+		// Description: model.Description.ValueStringPointer(),
 	}
 	err = client.Update(ctx, deploymentID, payload)
 

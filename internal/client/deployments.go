@@ -30,9 +30,13 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 		accountID = c.defaultAccountID
 	}
 
+	if workspaceID == uuid.Nil {
+		workspaceID = c.defaultWorkspaceID
+	}
+
 	return &DeploymentsClient{
 		hc:          c.hc,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "workspaces"),
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
 		apiKey:      c.apiKey,
 	}, nil
 }

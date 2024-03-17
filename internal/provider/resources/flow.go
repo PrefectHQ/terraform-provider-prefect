@@ -12,7 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+<<<<<<< HEAD
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
+=======
+>>>>>>> 8697512 (add support for flows)
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -65,7 +68,11 @@ func (r *FlowResource) Configure(_ context.Context, req resource.ConfigureReques
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
 		resp.Diagnostics.AddError(
+<<<<<<< HEAD
 			"Unexpected provider client type",
+=======
+			"Unexpected Data Source Configure Type",
+>>>>>>> 8697512 (add support for flows)
 			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
