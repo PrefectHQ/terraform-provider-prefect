@@ -18,27 +18,28 @@ type DeploymentsClient interface {
 // Deployment is a representation of a deployment.
 type Deployment struct {
 	BaseModel
-	AccountID              uuid.UUID `json:"account_id"`
-	Name                   string    `json:"name"`
-	Description            *string   `json:"description"`
-	Handle                 string    `json:"handle"`
-	DefaultWorkspaceRoleID uuid.UUID `json:"default_workspace_role_id"`
-	IsPublic               bool      `json:"is_public"`
+	AccountID   uuid.UUID `json:"account_id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+	Name        string    `json:"name"`
+	// Description            *string   `json:"description"`
+	// Handle                 string    `json:"handle"`
+	// DefaultWorkspaceRoleID uuid.UUID `json:"default_workspace_role_id"`
+	// IsPublic               bool      `json:"is_public"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-	Handle      string  `json:"handle"`
+	Name string `json:"name"`
+	// Description *string `json:"description"`
+	// Handle      string  `json:"handle"`
 }
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	Name                   *string    `json:"name"`
-	Description            *string    `json:"description"`
-	Handle                 *string    `json:"handle"`
-	DefaultWorkspaceRoleID *uuid.UUID `json:"default_workspace_role_id"`
+	Name *string `json:"name"`
+	// Description            *string    `json:"description"`
+	// Handle                 *string    `json:"handle"`
+	// DefaultWorkspaceRoleID *uuid.UUID `json:"default_workspace_role_id"`
 }
 
 // DeploymentFilter defines the search filter payload

@@ -11,6 +11,7 @@ type PrefectClient interface {
 	AccountRoles(accountID uuid.UUID) (AccountRolesClient, error)
 	Collections() (CollectionsClient, error)
 	Teams(accountID uuid.UUID) (TeamsClient, error)
+	Flows(accountID uuid.UUID, workspaceID uuid.UUID) (FlowsClient, error)
 	Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentsClient, error)
 	Workspaces(accountID uuid.UUID) (WorkspacesClient, error)
 	WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (WorkspaceAccessClient, error)
