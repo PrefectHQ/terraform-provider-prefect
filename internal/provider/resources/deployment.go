@@ -237,6 +237,15 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyTagList),
 			},
+			// "handle": schema.StringAttribute{
+			// 	Description: "Unique handle for the workspace",
+			// 	Required:    true,
+			// },
+			// "description": schema.StringAttribute{
+			// 	Description: "Description for the workspace",
+			// 	Optional:    true,
+			// 	Computed:    true,
+			// },
 		},
 	}
 }
@@ -363,6 +372,20 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 
 		deployment, err = client.Get(ctx, deploymentID)
 	}
+	// } else if !model.Handle.IsNull() {
+	// 	var deployments []*api.Deployment
+	// 	deployments, err = client.List(ctx, []string{model.Handle.ValueString()})
+
+	// 	// The error from the API call should take precedence
+	// 	// followed by this custom error if a specific deployment is not returned
+	// 	if err == nil && len(deployments) != 1 {
+	// 		err = fmt.Errorf("a deployment with the handle=%s could not be found", model.Handle.ValueString())
+	// 	}
+
+	// 	if len(deployments) == 1 {
+	// 		deployment = deployments[0]
+	// 	}
+	// }
 
 	if err != nil {
 		resp.Diagnostics.AddError(
