@@ -6,30 +6,33 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
 var (
-	_ = resource.ResourceWithConfigure(&DeploymentResource{})
-	_ = resource.ResourceWithImportState(&DeploymentResource{})
+	_ = resource.ResourceWithConfigure(&FlowResource{})
+	_ = resource.ResourceWithImportState(&FlowResource{})
 )
 
-// DeploymentResource contains state for the resource.
-type DeploymentResource struct {
+// FlowResource contains state for the resource.
+type FlowResource struct {
 	client api.PrefectClient
 }
 
-// DeploymentResourceModel defines the Terraform resource model.
-type DeploymentResourceModel struct {
+// FlowResourceModel defines the Terraform resource model.
+type FlowResourceModel struct {
 	ID          types.String               `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
@@ -37,24 +40,23 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 
 	Name types.String `tfsdk:"name"`
-	// Handle      types.String `tfsdk:"handle"`
-	// Description types.String `tfsdk:"description"`
+	Tags types.List   `tfsdk:"tags"`
 }
 
-// NewDeploymentResource returns a new DeploymentResource.
+// NewFlowResource returns a new FlowResource.
 //
 //nolint:ireturn // required by Terraform API
-func NewDeploymentResource() resource.Resource {
-	return &DeploymentResource{}
+func NewFlowResource() resource.Resource {
+	return &FlowResource{}
 }
 
 // Metadata returns the resource type name.
-func (r *DeploymentResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_deployment"
+func (r *FlowResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_flow"
 }
 
 // Configure initializes runtime state for the resource.
-func (r *DeploymentResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *FlowResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -73,7 +75,9 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 // Schema defines the schema for the resource.
-func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+
 	resp.Schema = schema.Schema{
 		// Description: "Resource representing a Prefect Workspace",
 		Description: "The resource `workspace` represents a Prefect Cloud Workspace. " +
@@ -115,36 +119,38 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) to associate deployment to",
 			},
-			// "handle": schema.StringAttribute{
-			// 	Description: "Unique handle for the workspace",
-			// 	Required:    true,
-			// },
-			// "description": schema.StringAttribute{
-			// 	Description: "Description for the workspace",
-			// 	Optional:    true,
-			// 	Computed:    true,
-			// },
+			"tags": schema.ListAttribute{
+				Description: "Tags associated with the flow",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyTagList),
+			},
 		},
 	}
 }
 
-// copyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
-func copyDeploymentToModel(_ context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(deployment.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
+// copyFlowToModel copies an api.Flow to a FlowResourceModel.
+func copyFlowToModel(ctx context.Context, flow *api.Flow, model *FlowResourceModel) diag.Diagnostics {
+	model.ID = types.StringValue(flow.ID.String())
+	model.Created = customtypes.NewTimestampPointerValue(flow.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(flow.Updated)
+	// model.WorkspaceID = customtypes.NewUUIDValue(flow.WorkspaceID)
 
-	model.Name = types.StringValue(deployment.Name)
-	model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
-	// model.Handle = types.StringValue(workspace.Handle)
-	// model.Description = types.StringValue(*workspace.Description)
+	model.Name = types.StringValue(flow.Name)
+
+	tags, diags := types.ListValueFrom(ctx, types.StringType, flow.Tags)
+	if diags.HasError() {
+		return diags
+	}
+	model.Tags = tags
 
 	return nil
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model DeploymentResourceModel
+func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var model FlowResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
@@ -152,18 +158,23 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	var tags []string
+	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating deployment client",
-			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating flows client",
+			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 	}
 
-	deployment, err := client.Create(ctx, api.DeploymentCreate{
+	flow, err := client.Create(ctx, api.FlowCreate{
 		Name: model.Name.ValueString(),
-		// Handle:      model.Handle.ValueString(),
-		// Description: model.Description.ValueStringPointer(),
+		Tags: tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -174,7 +185,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
+	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -186,8 +197,8 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model DeploymentResourceModel
+func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var model FlowResourceModel
 
 	// Populate the model from state and emit diagnostics on error
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
@@ -204,7 +215,7 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	// 	return
 	// }
 
-	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
+	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment client",
@@ -214,21 +225,21 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	// A deployment can be imported + read by either ID or Handle
 	// If both are set, we prefer the ID
-	var deployment *api.Deployment
+	var flow *api.Flow
 	if !model.ID.IsNull() {
-		var deploymentID uuid.UUID
-		deploymentID, err = uuid.Parse(model.ID.ValueString())
+		var flowID uuid.UUID
+		flowID, err = uuid.Parse(model.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("id"),
-				"Error parsing Deployment ID",
-				fmt.Sprintf("Could not parse deployment ID to UUID, unexpected error: %s", err.Error()),
+				"Error parsing Flow ID",
+				fmt.Sprintf("Could not parse Flow ID to UUID, unexpected error: %s", err.Error()),
 			)
 
 			return
 		}
 
-		deployment, err = client.Get(ctx, deploymentID)
+		flow, err = client.Get(ctx, flowID)
 	}
 	// } else if !model.Handle.IsNull() {
 	// 	var deployments []*api.Deployment
@@ -247,14 +258,14 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error refreshing deployment state",
-			fmt.Sprintf("Could not read Deployment, unexpected error: %s", err.Error()),
+			"Error refreshing flow state",
+			fmt.Sprintf("Could not read Flow, unexpected error: %s", err.Error()),
 		)
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
+	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -266,103 +277,43 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model DeploymentResourceModel
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating deployment client",
-			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
-	}
-
-	deploymentID, err := uuid.Parse(model.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Deployment ID",
-			fmt.Sprintf("Could not parse deployment ID to UUID, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	payload := api.DeploymentUpdate{
-		Name: model.Name.ValueStringPointer(),
-		// Handle:      model.Handle.ValueStringPointer(),
-		// Description: model.Description.ValueStringPointer(),
-	}
-	err = client.Update(ctx, deploymentID, payload)
-
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating deployment",
-			fmt.Sprintf("Could not update deployment, unexpected error: %s", err),
-		)
-
-		return
-	}
-
-	deployment, err := client.Get(ctx, deploymentID)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Deployment state",
-			fmt.Sprintf("Could not read Deployment, unexpected error: %s", err.Error()),
-		)
-
-		return
-	}
-
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	// Unsupported
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model DeploymentResourceModel
+func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var model FlowResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating flows client",
+			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	flowID, err := uuid.Parse(model.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			"Error parsing Flow ID",
+			fmt.Sprintf("Could not parse flow ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return
 	}
 
-	err = client.Delete(ctx, workspaceID)
+	err = client.Delete(ctx, flowID)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting Workspace",
-			fmt.Sprintf("Could not delete Workspace, unexpected error: %s", err),
+			fmt.Sprintf("Could not delete Flow, unexpected error: %s", err),
 		)
 
 		return
@@ -375,11 +326,20 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 // ImportState imports the resource into Terraform state.
-func (r *DeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "handle/") {
-		handle := strings.TrimPrefix(req.ID, "handle/")
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("handle"), handle)...)
-	} else {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	idParts := strings.Split(req.ID, ",")
+
+	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected import identifier with format: workspace_id,flow_id. Got: %q", req.ID),
+		)
+		return
 	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), idParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...)
+
+	// resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	// resp.Diagnostics.Append(resp.State.SetAttribute(ctx, attrPath, req.ID)...)
 }

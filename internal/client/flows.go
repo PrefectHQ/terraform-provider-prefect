@@ -13,19 +13,19 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
-var _ = api.DeploymentsClient(&DeploymentsClient{})
+var _ = api.FlowsClient(&FlowsClient{})
 
-// DeploymentsClient is a client for working with Deployments.
-type DeploymentsClient struct {
+// FlowsClient is a client for working with Deployments.
+type FlowsClient struct {
 	hc          *http.Client
 	routePrefix string
 	apiKey      string
 }
 
-// Deployments returns a DeploymentsClient.
+// Flows returns a FlowsClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
-func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.DeploymentsClient, error) {
+func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsClient, error) {
 	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
@@ -34,15 +34,15 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 		workspaceID = c.defaultWorkspaceID
 	}
 
-	return &DeploymentsClient{
+	return &FlowsClient{
 		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),
 		apiKey:      c.apiKey,
 	}, nil
 }
 
 // Create returns details for a new Workspace.
-func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreate) (*api.Deployment, error) {
+func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flow, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return nil, fmt.Errorf("failed to encode data: %w", err)
@@ -67,16 +67,16 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var deployment api.Deployment
-	if err := json.NewDecoder(resp.Body).Decode(&deployment); err != nil {
+	var flow api.Flow
+	if err := json.NewDecoder(resp.Body).Decode(&flow); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &deployment, nil
+	return &flow, nil
 }
 
-// List returns a list of Workspaces, based on the provided list of handle names.
-func (c *DeploymentsClient) List(ctx context.Context, handleNames []string) ([]*api.Deployment, error) {
+// List returns a list of Flows, based on the provided list of handle names.
+func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Flow, error) {
 	var buf bytes.Buffer
 	filterQuery := api.WorkspaceFilter{}
 	filterQuery.Workspaces.Handle.Any = handleNames
@@ -104,17 +104,17 @@ func (c *DeploymentsClient) List(ctx context.Context, handleNames []string) ([]*
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var deployments []*api.Deployment
-	if err := json.NewDecoder(resp.Body).Decode(&deployments); err != nil {
+	var flows []*api.Flow
+	if err := json.NewDecoder(resp.Body).Decode(&flows); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return deployments, nil
+	return flows, nil
 }
 
-// Get returns details for a Workspace by ID.
-func (c *DeploymentsClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api.Deployment, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
+// Get returns details for a Flow by ID.
+func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+flowID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -133,22 +133,22 @@ func (c *DeploymentsClient) Get(ctx context.Context, workspaceID uuid.UUID) (*ap
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var deployment api.Deployment
-	if err := json.NewDecoder(resp.Body).Decode(&deployment); err != nil {
+	var flow api.Flow
+	if err := json.NewDecoder(resp.Body).Decode(&flow); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &deployment, nil
+	return &flow, nil
 }
 
-// Update modifies an existing Workspace by ID.
-func (c *DeploymentsClient) Update(ctx context.Context, workspaceID uuid.UUID, data api.DeploymentUpdate) error {
+// Update modifies an existing Flow by ID.
+func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.FlowUpdate) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	endpoint := c.routePrefix + "/" + workspaceID.String()
+	endpoint := c.routePrefix + "/" + flowID.String()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
@@ -171,9 +171,9 @@ func (c *DeploymentsClient) Update(ctx context.Context, workspaceID uuid.UUID, d
 	return nil
 }
 
-// Delete removes a Deployment by ID.
-func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
+// Delete removes a Flow by ID.
+func (c *FlowsClient) Delete(ctx context.Context, flowID uuid.UUID) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+flowID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
