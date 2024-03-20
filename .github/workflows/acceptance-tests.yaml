@@ -11,11 +11,11 @@ name: Acceptance Tests
       - .github/workflows/acceptance-tests.yaml
   # test
   pull_request_target:
-    paths:
-      - go.mod
-      - go.sum
-      - "**/*.go"
-      - .github/workflows/acceptance-tests.yaml
+    # paths:
+    #   - go.mod
+    #   - go.sum
+    #   - "**/*.go"
+    #   - .github/workflows/acceptance-tests.yaml
 
 permissions: {}
 
