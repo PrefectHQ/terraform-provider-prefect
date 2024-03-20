@@ -81,6 +81,7 @@ linters:
     - whitespace
     - wrapcheck
 
+# test
 linters-settings:
   gocritic:
     enabled-checks:
