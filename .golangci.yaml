@@ -165,7 +165,6 @@ linters-settings:
       - stringXbytes
       - switchTrue
       - syncMapLoadAndDelete
-      - timeCmpSimplify
       - timeExprSimplify
       - todoCommentWithoutDetail
       - tooManyResultsChecker
