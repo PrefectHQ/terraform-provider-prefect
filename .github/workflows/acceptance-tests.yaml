@@ -10,12 +10,12 @@ name: Acceptance Tests
       - "**/*.go"
       - .github/workflows/acceptance-tests.yaml
   # test
-  pull_request:
-    # paths:
-    #   - go.mod
-    #   - go.sum
-    #   - "**/*.go"
-    #   - .github/workflows/acceptance-tests.yaml
+  pull_request_target:
+    paths:
+      - go.mod
+      - go.sum
+      - "**/*.go"
+      - .github/workflows/acceptance-tests.yaml
 
 permissions: {}
 
@@ -27,15 +27,14 @@ jobs:
     environment: Acceptance Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      # - if: |
-      #     github.event_name == 'pull_request_target'
-      #   uses: actions/checkout@v4
-      #   with:
-      #     ref: ${{ github.event.pull_request.head.sha }}
-      # - if: |
-      #     github.event_name == 'push'
-      #   uses: actions/checkout@v4
+      - if: |
+          github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - if: |
+          github.event_name == 'push'
+        uses: actions/checkout@v4
 
       - uses: actions/setup-go@v4
         with:
