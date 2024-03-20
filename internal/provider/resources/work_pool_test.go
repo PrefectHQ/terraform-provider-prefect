@@ -16,7 +16,7 @@ import (
 func fixtureAccWorkPoolCreate(name string, poolType string, paused bool) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_work_pool" "test" {
 	name = "%s"

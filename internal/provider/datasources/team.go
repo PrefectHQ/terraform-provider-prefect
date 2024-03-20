@@ -24,8 +24,8 @@ type TeamDataSourceModel struct {
 	ID          customtypes.UUIDValue      `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	Name        types.String               `tfsdk:"first_name"`
-	Description types.String               `tfsdk:"last_name"`
+	Name        types.String               `tfsdk:"name"`
+	Description types.String               `tfsdk:"description"`
 
 	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 }
@@ -73,7 +73,6 @@ var teamAttributesBase = map[string]schema.Attribute{
 
 // Schema defines the schema for the data source.
 func (d *TeamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-
 	// Create a copy of the base attributes
 	// and add the account ID overrides here
 	// as they are not needed in the teams (plural) list

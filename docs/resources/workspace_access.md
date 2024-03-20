@@ -3,13 +3,13 @@
 page_title: "prefect_workspace_access Resource - prefect"
 subcategory: ""
 description: |-
-  The resource workspace_access represents a connection between an accessor (User or Service Account) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
+  The resource workspace_access represents a connection between an accessor (User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
   Use this resource in conjunction with the workspace_role resource or data source to manage access to Workspaces.
 ---
 
 # prefect_workspace_access (Resource)
 
-The resource `workspace_access` represents a connection between an accessor (User or Service Account) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
+The resource `workspace_access` represents a connection between an accessor (User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
 
 Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.
 
@@ -48,6 +48,8 @@ resource "prefect_workspace_access" "bot_developer" {
   workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }
+
+# ASSIGNING WORKSPACE ACCESS TO A TEAM
 
 # Assign the Workspace Role to the Team
 resource "prefect_workspace_access" "team_developer" {
