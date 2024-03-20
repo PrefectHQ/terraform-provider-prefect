@@ -24,8 +24,8 @@ type TeamDataSourceModel struct {
 	ID          customtypes.UUIDValue      `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	Name        types.String               `tfsdk:"first_name"`
-	Description types.String               `tfsdk:"last_name"`
+	Name        types.String               `tfsdk:"name"`
+	Description types.String               `tfsdk:"description"`
 
 	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 }
