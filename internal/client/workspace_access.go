@@ -57,6 +57,10 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		requestPath = fmt.Sprintf("%s/bot_access/", c.routePrefix)
 		payload.BotID = &accessorID
 	}
+	if accessorType == utils.Team {
+		requestPath = fmt.Sprintf("%s/team_access/", c.routePrefix)
+		payload.TeamID = &accessorID
+	}
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
@@ -98,6 +102,9 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
 	}
+	if accessorType == utils.Team {
+		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessID.String())
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestPath, http.NoBody)
 	if err != nil {
@@ -133,6 +140,9 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 	}
 	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
+	}
+	if accessorType == utils.Team {
+		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessID.String())
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, requestPath, http.NoBody)
