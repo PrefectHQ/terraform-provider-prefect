@@ -13,6 +13,7 @@ The resource `variable` represents a Prefect Cloud Variable. Variables enable yo
 ## Example Usage
 
 ```terraform
+# tests
 resource "prefect_variable" "example" {
   name  = "my_variable_name"
   value = "variable value goes here"
