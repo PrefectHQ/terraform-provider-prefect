@@ -73,7 +73,6 @@ var teamAttributesBase = map[string]schema.Attribute{
 
 // Schema defines the schema for the data source.
 func (d *TeamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-
 	// Create a copy of the base attributes
 	// and add the account ID overrides here
 	// as they are not needed in the teams (plural) list

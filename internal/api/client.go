@@ -3,6 +3,8 @@ package api
 import "github.com/google/uuid"
 
 // PrefectClient returns clients for different aspects of our API.
+//
+//nolint:interfacebloat // we'll accept a larger PrefectClient interface
 type PrefectClient interface {
 	Accounts(accountID uuid.UUID) (AccountsClient, error)
 	AccountMemberships(accountID uuid.UUID) (AccountMembershipsClient, error)
