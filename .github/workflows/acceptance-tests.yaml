@@ -9,8 +9,9 @@ name: Acceptance Tests
       - go.sum
       - "**/*.go"
       - .github/workflows/acceptance-tests.yaml
-  # test
   pull_request_target:
+    branches:
+      - main
     paths:
       - go.mod
       - go.sum
