@@ -22,6 +22,7 @@ type WorkspaceAccess struct {
 
 	ActorID *uuid.UUID `json:"actor_id"`
 	BotID   *uuid.UUID `json:"bot_id"`
+	TeamID  *uuid.UUID `json:"team_id"`
 	UserID  *uuid.UUID `json:"user_id"`
 }
 
@@ -35,6 +36,7 @@ type WorkspaceAccessUpsert struct {
 	// NOTE: omitempty normally excludes any zero value,
 	// for primitives, but complex types like structs
 	// and uuid.UUID require a pointer type to be omitted.
+	TeamID *uuid.UUID `json:"team_id,omitempty"`
 	UserID *uuid.UUID `json:"user_id,omitempty"`
 	BotID  *uuid.UUID `json:"bot_id,omitempty"`
 }

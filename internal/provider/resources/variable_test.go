@@ -16,7 +16,7 @@ import (
 func fixtureAccVariableResource(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_variable" "test" {
 	workspace_id = data.prefect_workspace.evergreen.id
@@ -29,7 +29,7 @@ resource "prefect_variable" "test" {
 func fixtureAccVariableResourceWithTags(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_variable" "test" {
 	workspace_id = data.prefect_workspace.evergreen.id

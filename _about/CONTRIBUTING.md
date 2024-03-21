@@ -57,7 +57,7 @@ To aid local development, we can use [development overrides for Terraform provid
 # ~/.terraformrc
 provider_installation {
   dev_overrides {
-    "prefecthq/prefect" = "/Users/johnsmith/code/terraform-provider-prefect/build"
+    "hashicorp/prefect" = "/Users/johnsmith/code/terraform-provider-prefect/build"
   }
 
   direct {}
@@ -65,6 +65,8 @@ provider_installation {
 ```
 
 With development overrides, `terraform init` will still initialize the dependency lock, but `terraform apply` commands will disregard the lockfile + use the executable located in the path you specify here (which is keyed off by the provider name).
+
+Note that with `dev_overrides`, you do not need a `required_providers` block
 
 If you ever want to start fresh, go ahead and run:
 

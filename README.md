@@ -31,6 +31,7 @@ Check back with us to see new additions and improvements - and please don't hesi
 | Account Role         |       &check;       |                   |                 |
 | Account              |       &check;       |      &check;      |     &check;     |
 | Service Account      |       &check;       |      &check;      |     &check;     |
+| Team                 |       &check;       |                   |                 |
 | Variable             |       &check;       |      &check;      |     &check;     |
 | Work Pool            |       &check;       |      &check;      |     &check;     |
 | Workspace Access     |       &check;       |      &check;      |                 |

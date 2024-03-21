@@ -11,7 +11,7 @@ import (
 func fixtureAccVariableByName(name string) string {
 	return fmt.Sprintf(`
 	data "prefect_workspace" "evergreen" {
-		handle = "evergreen-workspace"
+		handle = "github-ci-tests"
 	}
 	data "prefect_variable" "test" {
 		name = "%s"
