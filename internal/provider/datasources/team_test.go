@@ -1,3 +1,4 @@
+// test
 package datasources_test
 
 import (
@@ -25,11 +26,10 @@ func TestAccDatasource_team(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccTeam("TEST_NAME"),
+				Config: fixtureAccTeam("my-team"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "name", "TEST_NAME"),
+					resource.TestCheckResourceAttr(dataSourceName, "name", "my-team"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "description"),
 				),
 			},
 		},

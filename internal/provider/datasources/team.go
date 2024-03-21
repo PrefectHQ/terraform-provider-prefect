@@ -63,6 +63,7 @@ var teamAttributesBase = map[string]schema.Attribute{
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,
+		Optional:    true,
 		Description: "Name of Team",
 	},
 	"description": schema.StringAttribute{
@@ -77,7 +78,7 @@ func (d *TeamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	// and add the account ID overrides here
 	// as they are not needed in the teams (plural) list
 	teamAttributes := make(map[string]schema.Attribute)
-	for k, v := range workPoolAttributesBase {
+	for k, v := range teamAttributesBase {
 		teamAttributes[k] = v
 	}
 	teamAttributes["account_id"] = schema.StringAttribute{
