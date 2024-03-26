@@ -28,16 +28,11 @@ data "prefect_team" "my_team" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `concurrency_limit` (Number) The concurrency limit applied to this work pool
-- `default_queue_id` (String) The ID (UUID) of the default queue associated with this work pool
-- `description` (String) Description of the work pool
-- `id` (String) Work pool ID (UUID)
-- `name` (String) Name of the work pool
+- `name` (String) Name of Team
 
 ### Read-Only
 
-- `base_job_template` (String) The base job template for the work pool, as a JSON string
-- `created` (String) Date and time of the work pool creation in RFC 3339 format
-- `paused` (Boolean) Whether this work pool is paused
-- `type` (String) Type of the work pool
-- `updated` (String) Date and time that the work pool was last updated in RFC 3339 format
+- `created` (String) Date and time of the team creation in RFC 3339 format
+- `description` (String) Description of team
+- `id` (String) Team ID (UUID)
+- `updated` (String) Date and time that the team was last updated in RFC 3339 format

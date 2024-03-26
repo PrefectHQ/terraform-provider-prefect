@@ -35,10 +35,13 @@ data "prefect_teams" "all_teams" {}
 <a id="nestedatt--teams"></a>
 ### Nested Schema for `teams`
 
+Optional:
+
+- `name` (String) Name of Team
+
 Read-Only:
 
 - `created` (String) Date and time of the team creation in RFC 3339 format
 - `description` (String) Description of team
 - `id` (String) Team ID (UUID)
-- `name` (String) Name of Team
 - `updated` (String) Date and time that the team was last updated in RFC 3339 format
