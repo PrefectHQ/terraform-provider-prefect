@@ -217,6 +217,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
 		datasources.NewAccountMemberDataSource,
+		datasources.NewAccountMembersDataSource,
 		datasources.NewAccountRoleDataSource,
 		datasources.NewServiceAccountDataSource,
 		datasources.NewTeamDataSource,
