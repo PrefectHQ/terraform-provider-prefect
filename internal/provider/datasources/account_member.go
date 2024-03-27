@@ -94,7 +94,6 @@ var accountMemberAttributesBase = map[string]schema.Attribute{
 
 // Schema defines the schema for the data source.
 func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
-
 	// Create a copy of the base attributes
 	// and add the account ID overrides here
 	accountMemberAttributes := make(map[string]schema.Attribute)
