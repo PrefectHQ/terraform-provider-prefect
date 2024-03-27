@@ -160,7 +160,7 @@ func (c *WorkQueuesClient) Update(ctx context.Context, name string, data api.Wor
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
 
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
@@ -184,7 +184,7 @@ func (c *WorkQueuesClient) Delete(ctx context.Context, name string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
 
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
