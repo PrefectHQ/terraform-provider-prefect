@@ -30,3 +30,13 @@ resource "prefect_workspace_access" "bot_developer" {
   workspace_id      = "00000000-0000-0000-0000-000000000000"
   workspace_role_id = data.prefect_workspace_role.developer.id
 }
+
+# ASSIGNING WORKSPACE ACCESS TO A TEAM
+
+# Assign the Workspace Role to the Team
+resource "prefect_workspace_access" "team_developer" {
+  accessor_type     = "TEAM"
+  accessor_id       = "11111111-1111-1111-1111-111111111111"
+  workspace_id      = "00000000-0000-0000-0000-000000000000"
+  workspace_role_id = data.prefect_workspace_role.developer.id
+}
