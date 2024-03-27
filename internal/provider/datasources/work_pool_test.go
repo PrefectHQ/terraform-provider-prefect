@@ -10,7 +10,7 @@ import (
 func fixtureAccSingleWorkPool() string {
 	return `
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 data "prefect_work_pool" "evergreen" {
 	name = "evergreen-pool"
@@ -21,7 +21,7 @@ data "prefect_work_pool" "evergreen" {
 func fixtureAccMultipleWorkPools() string {
 	return `
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 data "prefect_work_pools" "evergreen" {
 	workspace_id = data.prefect_workspace.evergreen.id

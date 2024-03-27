@@ -1,4 +1,5 @@
 ---
+# https://github.com/actions/labeler?tab=readme-ov-file#create-githublabeleryml
 docs:
-  - examples/**
-  - docs/**
+  - changed-files:
+    - any-glob-to-any-file: ['examples/**', 'docs/**']
