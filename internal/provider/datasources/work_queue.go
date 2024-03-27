@@ -33,11 +33,6 @@ type WorkQueueDataSourceModel struct {
 	IsPaused         types.Bool   `tfsdk:"is_paused"`
 	ConcurrencyLimit types.Int64  `tfsdk:"concurrency_limit"`
 	Priority         types.Int64  `tfsdk:"priority"`
-	// not yet required by the api
-	// WorkPoolID customtypes.UUIDValue  `tfsdk:"work_pool_id"`
-	// LastPolled types.String    		  `tfsdk:"last_polled"`
-	// Status     types.String           `tfsdk:"status"`
-	// // WorkPool   *WorkPool              `tfsdk:"work_pool"`
 }
 
 // NewWorkQueueDataSource returns a new WorkQueueDataSource.
