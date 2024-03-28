@@ -64,7 +64,7 @@ func (r *FlowResource) Configure(_ context.Context, req resource.ConfigureReques
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected provider client type",
 			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -80,9 +80,10 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 
 	resp.Schema = schema.Schema{
 		// Description: "Resource representing a Prefect Workspace",
-		Description: "The resource `workspace` represents a Prefect Cloud Workspace. " +
-			"Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. " +
-			"Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources.",
+		Description: "The resource `flow` represents a Prefect Cloud Flow. " +
+			"Flows are the most central Prefect object. " +
+			"A flow is a container for workflow logic as-code and allows users to configure how their workflows behave. " +
+			"Flows are defined as Python functions, and any Python function is eligible to be a flow.",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -90,7 +91,7 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				// We cannot use a CustomType due to a conflict with PlanModifiers; see
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
 				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Workspace ID (UUID)",
+				Description: "Flow ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -110,15 +111,16 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
-			"name": schema.StringAttribute{
-				Description: "Name of the workspace",
-				Required:    true,
-			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID) to associate deployment to",
+				Description: "Workspace ID (UUID)",
 			},
+			"name": schema.StringAttribute{
+				Description: "Name of the flow",
+				Required:    true,
+			},
+
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the flow",
 				ElementType: types.StringType,
@@ -178,8 +180,8 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating deployment",
-			fmt.Sprintf("Could not create deployment, unexpected error: %s", err),
+			"Error creating flow",
+			fmt.Sprintf("Could not create flow, unexpected error: %s", err),
 		)
 
 		return
@@ -312,7 +314,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	err = client.Delete(ctx, flowID)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting Workspace",
+			"Error deleting Flow",
 			fmt.Sprintf("Could not delete Flow, unexpected error: %s", err),
 		)
 
