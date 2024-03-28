@@ -139,8 +139,8 @@ func (d *WorkQueueDataSource) Read(ctx context.Context, req datasource.ReadReque
 	client, err := d.client.WorkQueues(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID(), model.WorkPoolName.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating work queue client",
+			fmt.Sprintf("Could not create work queue client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 
 		return
