@@ -76,16 +76,8 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 }
 
 // List returns a list of Workspaces, based on the provided list of handle names.
-func (c *DeploymentsClient) List(ctx context.Context, handleNames []string) ([]*api.Deployment, error) {
-	var buf bytes.Buffer
-	filterQuery := api.WorkspaceFilter{}
-	filterQuery.Workspaces.Handle.Any = handleNames
-
-	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
-		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+func (c *DeploymentsClient) List(ctx context.Context, names []string) ([]*api.Deployment, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -113,8 +105,8 @@ func (c *DeploymentsClient) List(ctx context.Context, handleNames []string) ([]*
 }
 
 // Get returns details for a Workspace by ID.
-func (c *DeploymentsClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api.Deployment, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
+func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*api.Deployment, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

@@ -3,16 +3,19 @@ package resources
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -36,9 +39,39 @@ type DeploymentResourceModel struct {
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 
-	Name types.String `tfsdk:"name"`
-	// Handle      types.String `tfsdk:"handle"`
-	// Description types.String `tfsdk:"description"`
+	Name                     types.String          `tfsdk:"name"`
+	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
+	IsScheduleActive         types.Bool            `tfsdk:"is_schedule_active"`
+	Paused                   types.Bool            `tfsdk:"paused"`
+	EnforceParameterSchema   types.Bool            `tfsdk:"enforce_parameter_schema"`
+	ManifestPath             types.String          `tfsdk:"manifest_path"`
+	WorkQueueName            types.String          `tfsdk:"work_queue_name"`
+	WorkPoolName             types.String          `tfsdk:"work_pool_name"`
+	StorageDocumentID        types.String          `tfsdk:"storage_document_id"`
+	InfrastructureDocumentID types.String          `tfsdk:"infrastructure_document_id"`
+	Description              types.String          `tfsdk:"description"`
+	Path                     types.String          `tfsdk:"path"`
+	Version                  types.String          `tfsdk:"version"`
+	Entrypoint               types.String          `tfsdk:"entrypoint"`
+	Tags                     types.List            `tfsdk:"tags"`
+	// schedules
+	// Array of objects (Schedules)
+	// A list of schedules for the deployment.
+	// parameter_openapi_schema
+	// object (Parameter Openapi Schema)
+	// The parameter schema of the flow, including defaults.
+	// parameters
+	// object (Parameters)
+	// Parameters for flow runs scheduled by the deployment.
+	// pull_steps
+	// Array of objects (Pull Steps)
+	// The steps required to pull this deployment's project to a remote location.
+	// schedule
+	// IntervalSchedule (object) or CronSchedule (object) or RRuleSchedule (object) (Schedule)
+	// A schedule for the deployment.
+	// infra_overrides
+	// object (Infra Overrides)
+	// Overrides to apply to the base infrastructure block at runtime.
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -74,6 +107,8 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 
 // Schema defines the schema for the resource.
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+
 	resp.Schema = schema.Schema{
 		// Description: "Resource representing a Prefect Workspace",
 		Description: "The resource `workspace` represents a Prefect Cloud Workspace. " +
@@ -106,38 +141,132 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
+			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Description: "Workspace ID (UUID) to associate deployment to",
+				Required:    true,
+			},
 			"name": schema.StringAttribute{
 				Description: "Name of the workspace",
 				Required:    true,
 			},
-			"workspace_id": schema.StringAttribute{
-				Optional:    true,
+			"flow_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID) to associate deployment to",
+				Description: "Flow ID (UUID) to associate deployment to",
+				Required:    true,
 			},
-			// "handle": schema.StringAttribute{
-			// 	Description: "Unique handle for the workspace",
-			// 	Required:    true,
-			// },
-			// "description": schema.StringAttribute{
-			// 	Description: "Description for the workspace",
-			// 	Optional:    true,
-			// 	Computed:    true,
-			// },
+			"is_schedule_active": schema.BoolAttribute{
+				Description: "Is Schedule Active",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+			},
+			"paused": schema.BoolAttribute{
+				Description: "Whether or not the deployment is paused.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			// schedules
+			// Array of objects (Schedules)
+			// A list of schedules for the deployment.
+			"enforce_parameter_schema": schema.BoolAttribute{
+				Description: "Whether or not the deployment should enforce the parameter schema.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			// parameter_openapi_schema
+			// object (Parameter Openapi Schema)
+			// The parameter schema of the flow, including defaults.
+			// parameters
+			// object (Parameters)
+			// Parameters for flow runs scheduled by the deployment.
+			// pull_steps
+			// Array of objects (Pull Steps)
+			// The steps required to pull this deployment's project to a remote location.
+			"manifest_path": schema.StringAttribute{
+				Description: "The path to the flow's manifest file, relative to the chosen storage.",
+				Computed:    true,
+			},
+			"work_queue_name": schema.StringAttribute{
+				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
+				Optional:    true,
+			},
+			"work_pool_name": schema.StringAttribute{
+				Description: "The name of the deployment's work pool.",
+				Optional:    true,
+			},
+			"storage_document_id": schema.StringAttribute{
+				Description: "The block document defining storage used for this flow.",
+				Optional:    true,
+			},
+			"infrastructure_document_id": schema.StringAttribute{
+				Description: "The block document defining infrastructure to use for flow runs.",
+				Optional:    true,
+			},
+			// schedule
+			// IntervalSchedule (object) or CronSchedule (object) or RRuleSchedule (object) (Schedule)
+			// A schedule for the deployment.
+			"description": schema.StringAttribute{
+				Description: "A description for the deployment.",
+				Optional:    true,
+			},
+			"path": schema.StringAttribute{
+				Description: "The path to the working directory for the workflow, relative to remote storage or an absolute path.",
+				Optional:    true,
+				Computed:    true,
+				// Default: stringdefault.StaticString("."),
+			},
+			"version": schema.StringAttribute{
+				Description: "An optional version for the deployment.",
+				Optional:    true,
+			},
+			"entrypoint": schema.StringAttribute{
+				Description: "The path to the entrypoint for the workflow, relative to the path.",
+				Required:    true,
+			},
+			// infra_overrides
+			// object (Infra Overrides)
+			// Overrides to apply to the base infrastructure block at runtime.
+			"tags": schema.ListAttribute{
+				Description: "Tags associated with the deployment",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyTagList),
+			},
 		},
 	}
 }
 
 // copyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
-func copyDeploymentToModel(_ context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
+func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(deployment.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
 	model.Name = types.StringValue(deployment.Name)
-	model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
-	// model.Handle = types.StringValue(workspace.Handle)
-	// model.Description = types.StringValue(*workspace.Description)
+	// model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
+	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
+	model.IsScheduleActive = types.BoolValue(deployment.IsScheduleActive)
+	model.Paused = types.BoolValue(deployment.Paused)
+	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
+	// model.ManifestPath = types.StringValue(deployment.ManifestPath)
+	// model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
+	// model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
+	// model.StorageDocumentID = types.StringValue(deployment.StorageDocumentID)
+	// model.InfrastructureDocumentID = types.StringValue(deployment.InfrastructureDocumentID)
+	model.Description = types.StringValue(deployment.Description)
+	model.Path = types.StringValue(deployment.Path)
+	// model.Version = types.StringValue(deployment.Version)
+	model.Entrypoint = types.StringValue(deployment.Entrypoint)
+
+	tags, diags := types.ListValueFrom(ctx, types.StringType, deployment.Tags)
+	if diags.HasError() {
+		return diags
+	}
+	model.Tags = tags
 
 	return nil
 }
@@ -160,10 +289,22 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		)
 	}
 
+	var tags []string
+	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		Name: model.Name.ValueString(),
-		// Handle:      model.Handle.ValueString(),
-		// Description: model.Description.ValueStringPointer(),
+		Name:                   model.Name.ValueString(),
+		FlowID:                 model.FlowID.ValueUUID(),
+		IsScheduleActive:       model.IsScheduleActive.ValueBool(),
+		Paused:                 model.Paused.ValueBool(),
+		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
+		Path:                   model.Path.ValueString(),
+		Entrypoint:             model.Entrypoint.ValueString(),
+		Description:            model.Description.ValueString(),
+		Tags:                   tags,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -195,16 +336,7 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	// if model.ID.IsNull() && model.Handle.IsNull() {
-	// 	resp.Diagnostics.AddError(
-	// 		"Both ID and Handle are unset",
-	// 		"This is a bug in the Terraform provider. Please report it to the maintainers.",
-	// 	)
-
-	// 	return
-	// }
-
-	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
+	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment client",
@@ -230,20 +362,6 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 
 		deployment, err = client.Get(ctx, deploymentID)
 	}
-	// } else if !model.Handle.IsNull() {
-	// 	var deployments []*api.Deployment
-	// 	deployments, err = client.List(ctx, []string{model.Handle.ValueString()})
-
-	// 	// The error from the API call should take precedence
-	// 	// followed by this custom error if a specific deployment is not returned
-	// 	if err == nil && len(deployments) != 1 {
-	// 		err = fmt.Errorf("a deployment with the handle=%s could not be found", model.Handle.ValueString())
-	// 	}
-
-	// 	if len(deployments) == 1 {
-	// 		deployment = deployments[0]
-	// 	}
-	// }
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -339,30 +457,30 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating deployment client",
+			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	deploymentID, err := uuid.Parse(model.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			"Error parsing Deployment ID",
+			fmt.Sprintf("Could not parse deployment ID to UUID, unexpected error: %s", err.Error()),
 		)
 
 		return
 	}
 
-	err = client.Delete(ctx, workspaceID)
+	err = client.Delete(ctx, deploymentID)
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error deleting Workspace",
-			fmt.Sprintf("Could not delete Workspace, unexpected error: %s", err),
+			"Error deleting Deployment",
+			fmt.Sprintf("Could not delete Deployment, unexpected error: %s", err),
 		)
 
 		return
@@ -376,10 +494,5 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 // ImportState imports the resource into Terraform state.
 func (r *DeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "handle/") {
-		handle := strings.TrimPrefix(req.ID, "handle/")
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("handle"), handle)...)
-	} else {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
 }
