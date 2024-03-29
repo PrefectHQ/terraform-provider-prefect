@@ -130,7 +130,7 @@ func testAccCheckWorkPoolExists(workPoolResourceName string, workspaceDatasource
 }
 
 func testAccCheckWorkPoolValues(fetchedWorkPool *api.WorkPool, valuesToCheck *api.WorkPool) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedWorkPool.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected work pool name to be %s, got %s", valuesToCheck.Name, fetchedWorkPool.Name)
 		}

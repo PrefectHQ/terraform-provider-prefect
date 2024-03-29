@@ -130,7 +130,7 @@ func testAccCheckVariableExists(variableResourceName string, workspaceDatasource
 	}
 }
 func testAccCheckVariableValues(fetchedVariable *api.Variable, valuesToCheck *api.Variable) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedVariable.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected variable name to be %s, got %s", valuesToCheck.Name, fetchedVariable.Name)
 		}

@@ -148,11 +148,13 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	var variable *api.Variable
-	if !model.ID.IsNull() {
+
+	switch {
+	case !model.ID.IsNull():
 		variable, err = client.Get(ctx, model.ID.ValueUUID())
-	} else if !model.Name.IsNull() {
+	case !model.Name.IsNull():
 		variable, err = client.GetByName(ctx, model.Name.ValueString())
-	} else {
+	default:
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
 			"This is a bug in the Terraform provider. Please report it to the maintainers.",
