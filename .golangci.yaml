@@ -155,6 +155,7 @@ linters-settings:
       - sliceClear
       - sloppyLen
       - sloppyReassign
+      # - sloppyTestFuncName
       - sloppyTypeAssert
       - sortSlice
       - sprintfQuotedString
@@ -164,6 +165,7 @@ linters-settings:
       - stringXbytes
       - switchTrue
       - syncMapLoadAndDelete
+      # - timeCmpSimplify
       - timeExprSimplify
       - todoCommentWithoutDetail
       - tooManyResultsChecker
