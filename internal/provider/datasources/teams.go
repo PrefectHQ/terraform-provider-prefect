@@ -96,8 +96,8 @@ func (d *TeamsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	client, err := d.client.Teams(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating teams client",
+			fmt.Sprintf("Could not create teams client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 
 		return

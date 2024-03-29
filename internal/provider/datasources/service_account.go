@@ -157,8 +157,8 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	client, err := d.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating service account client",
+			fmt.Sprintf("Could not create service account client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 
 		return
