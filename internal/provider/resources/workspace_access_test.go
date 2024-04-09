@@ -20,7 +20,7 @@ data "prefect_workspace_role" "developer" {
 	name = "Developer"
 }
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_service_account" "bot" {
 	name = "%s"
@@ -39,7 +39,7 @@ data "prefect_workspace_role" "runner" {
 	name = "Runner"
 }
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_service_account" "bot" {
 	name = "%s"

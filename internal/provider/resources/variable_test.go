@@ -16,7 +16,7 @@ import (
 func fixtureAccVariableResource(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_variable" "test" {
 	workspace_id = data.prefect_workspace.evergreen.id
@@ -29,7 +29,7 @@ resource "prefect_variable" "test" {
 func fixtureAccVariableResourceWithTags(name string, value string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
-	handle = "evergreen-workspace"
+	handle = "github-ci-tests"
 }
 resource "prefect_variable" "test" {
 	workspace_id = data.prefect_workspace.evergreen.id
@@ -130,7 +130,7 @@ func testAccCheckVariableExists(variableResourceName string, workspaceDatasource
 	}
 }
 func testAccCheckVariableValues(fetchedVariable *api.Variable, valuesToCheck *api.Variable) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedVariable.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected variable name to be %s, got %s", valuesToCheck.Name, fetchedVariable.Name)
 		}

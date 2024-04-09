@@ -15,7 +15,7 @@ The resource `workspace` represents a Prefect Cloud Workspace. Workspaces are di
 ```terraform
 resource "prefect_workspace" "example" {
   name   = "My Workspace"
-  Handle = "my-workspace"
+  handle = "my-workspace"
 }
 ```
 

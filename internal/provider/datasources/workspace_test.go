@@ -26,7 +26,7 @@ data "prefect_workspace" "evergreen" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_workspace(t *testing.T) {
 	dataSourceName := "data.prefect_workspace.evergreen"
-	workspaceHandle := "evergreen-workspace"
+	workspaceHandle := "github-ci-tests"
 	workspaceID := "45cfa7c6-e136-471c-859b-3be89d0a99ce"
 
 	resource.ParallelTest(t, resource.TestCase{

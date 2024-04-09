@@ -1,6 +1,6 @@
 name: Acceptance Tests
 
-on:
+"on":
   push:
     branches:
       - main
@@ -9,7 +9,7 @@ on:
       - go.sum
       - "**/*.go"
       - .github/workflows/acceptance-tests.yaml
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
@@ -28,7 +28,15 @@ jobs:
     environment: Acceptance Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - if: |
+          github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - if: |
+          github.event_name == 'push'
+        uses: actions/checkout@v4
+
       - uses: actions/setup-go@v4
         with:
           go-version-file: 'go.mod'

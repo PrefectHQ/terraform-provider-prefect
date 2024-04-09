@@ -175,7 +175,7 @@ func testAccCheckServiceAccountResourceExists(serviceAccountResourceName string,
 }
 
 func testAccCheckServiceAccountValues(fetchedBot *api.ServiceAccount, valuesToCheck *api.ServiceAccount) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedBot.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected Service Account name %s, got: %s", fetchedBot.Name, valuesToCheck.Name)
 		}
