@@ -117,17 +117,17 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 					"manage_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant manage access to.",
 						ElementType: types.StringType,
-						Optional:    true,
+						Required:    true,
 					},
 					"run_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant run access to.",
 						ElementType: types.StringType,
-						Optional:    true,
+						Required:    true,
 					},
 					"view_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant view access to.",
 						ElementType: types.StringType,
-						Optional:    true,
+						Required:    true,
 					},
 					"manage_team_ids": schema.ListAttribute{
 						Description: "The list of team IDs to grant manage access to.",
