@@ -41,7 +41,7 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 	}, nil
 }
 
-// Create returns details for a new Workspace.
+// Create returns details for a new Deployment.
 func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreate) (*api.Deployment, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
@@ -185,4 +185,72 @@ func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) 
 	}
 
 	return nil
+}
+
+// Sets Deployment Access Control.
+func (c *DeploymentsClient) SetAccess(ctx context.Context, data api.DeploymentAccessSet) (*api.DeploymentAccess, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
+		return nil, fmt.Errorf("failed to encode data: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.routePrefix+"/"+data.DeploymentID.String()+"/access", &buf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	}
+
+	var access api.DeploymentAccess
+	if err := json.NewDecoder(resp.Body).Decode(&access); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &access, nil
+}
+
+// Reads Deployment Access Control.
+func (c *DeploymentsClient) ReadAccess(ctx context.Context, data api.DeploymentAccessRead) (*api.DeploymentAccess, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
+		return nil, fmt.Errorf("failed to encode data: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/", &buf)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	}
+
+	var access api.DeploymentAccess
+	if err := json.NewDecoder(resp.Body).Decode(&access); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &access, nil
 }

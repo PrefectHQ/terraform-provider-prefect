@@ -19,8 +19,12 @@ resource "prefect_flow" "flow" {
 
 resource "prefect_deployment" "deployment" {
 	name = "%s"
+	description = "string"
 	workspace_id = "7e6f15bf-487a-4811-83ef-f074ec6c5484"
 	flow_id = prefect_flow.flow.id
+	entrypoint = "hello_world.py:hello_world"
+	tags = ["test"]
+
 	// "schedules": [
 	// 	{
 	// 		"active": true,
@@ -42,9 +46,6 @@ resource "prefect_deployment" "deployment" {
 	// 		'goodbye': {...}
 	// 	}
 	// }
-	entrypoint = "hello_world.py:hello_world"
-
-	tags = ["test"]
 
 	// is_schedule_active = true
 	// paused = false
@@ -65,12 +66,9 @@ resource "prefect_deployment" "deployment" {
 	// 	anchor_date = "2019-08-24T14:15:22Z"
 	// 	timezone = "America/New_York"
 	// },
-	description = "string"
 	// path = "string"
 	// version = "string"
 	// infra_overrides = { }
-
-
 }
 `, name, name)
 }
