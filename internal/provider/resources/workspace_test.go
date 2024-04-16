@@ -114,7 +114,7 @@ func testAccCheckWorkspaceExists(workspaceResourceName string, workspace *api.Wo
 }
 
 func testAccCheckWorkspaceValues(fetchedWorkspace *api.Workspace, valuesToCheck *api.Workspace) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedWorkspace.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected workspace name %s, got: %s", fetchedWorkspace.Name, valuesToCheck.Name)
 		}

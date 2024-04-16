@@ -43,7 +43,7 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional:    true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_CLOUD_API_KEY` environment variable.",
+				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -217,8 +217,11 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 	return []func() datasource.DataSource{
 		datasources.NewAccountDataSource,
 		datasources.NewAccountMemberDataSource,
+		datasources.NewAccountMembersDataSource,
 		datasources.NewAccountRoleDataSource,
 		datasources.NewServiceAccountDataSource,
+		datasources.NewTeamDataSource,
+		datasources.NewTeamsDataSource,
 		datasources.NewVariableDataSource,
 		datasources.NewWorkerMetadataDataSource,
 		datasources.NewWorkPoolDataSource,

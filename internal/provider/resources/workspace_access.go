@@ -70,7 +70,7 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 	resp.Schema = schema.Schema{
 		// Description: "Resource representing Prefect Workspace Access for a User or Service Account",
 		Description: "The resource `workspace_access` represents a connection between an accessor " +
-			"(User or Service Account) with a Workspace Role. This resource specifies an actor's access level " +
+			"(User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level " +
 			"to a specific Workspace in the Account.\n" +
 			"\n" +
 			"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.",
@@ -87,9 +87,9 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 			},
 			"accessor_type": schema.StringAttribute{
 				Required:    true,
-				Description: "USER or SERVICE_ACCOUNT",
+				Description: "USER | SERVICE_ACCOUNT | TEAM",
 				Validators: []validator.String{
-					stringvalidator.OneOf(utils.ServiceAccount, utils.User),
+					stringvalidator.OneOf(utils.ServiceAccount, utils.User, utils.Team),
 				},
 			},
 			"accessor_id": schema.StringAttribute{

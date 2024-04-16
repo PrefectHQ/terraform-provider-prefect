@@ -16,7 +16,7 @@ provider "prefect" {
 
 # You can also pass in your API key and account ID
 # implicitly via environment variables, such as
-# PREFECT_CLOUD_API_KEY and PREFECT_CLOUD_ACCOUNT_ID.
+# PREFECT_API_KEY and PREFECT_CLOUD_ACCOUNT_ID.
 provider "prefect" {}
 
 # You also have the option to link the provider instance

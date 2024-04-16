@@ -111,7 +111,7 @@ func testAccCheckWorkspaceRoleExists(roleResourceName string, role *api.Workspac
 }
 
 func testAccCheckWorkspaceRoleValues(fetchedRole *api.WorkspaceRole, valuesToCheck *api.WorkspaceRole) resource.TestCheckFunc {
-	return func(state *terraform.State) error {
+	return func(_ *terraform.State) error {
 		if fetchedRole.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected Workspace Role name %s, got: %s", fetchedRole.Name, valuesToCheck.Name)
 		}

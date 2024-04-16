@@ -226,7 +226,9 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	//
 	// If we are importing by name, then we will need to load once using the name.
 	var variable *api.Variable
-	if !model.ID.IsNull() {
+
+	switch {
+	case !model.ID.IsNull():
 		var variableID uuid.UUID
 		variableID, err = uuid.Parse(model.ID.ValueString())
 		if err != nil {
@@ -238,11 +240,10 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 			return
 		}
-
 		variable, err = client.Get(ctx, variableID)
-	} else if !model.Name.IsNull() {
+	case !model.Name.IsNull():
 		variable, err = client.GetByName(ctx, model.Name.ValueString())
-	} else {
+	default:
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
 			"This is a bug in the Terraform provider. Please report it to the maintainers.",
