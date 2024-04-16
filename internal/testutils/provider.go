@@ -17,7 +17,7 @@ import (
 
 // TestAccPrefix is the prefix set for all resources created via acceptance testing,
 // so that we can easily identify and clean them up in case of flakiness/failures.
-const TestAccPrefix = "terraform_acc_"
+const TestAccPrefix = "terraformacc"
 
 // TestAccProvider defines the actual Provider, which is used during acceptance testing.
 // This is the same Provider that is used by the CLI, and is used by
