@@ -1,6 +1,8 @@
 module github.com/prefecthq/terraform-provider-prefect
 
-go 1.20
+go 1.21
+
+toolchain go1.22.1
 
 require (
 	github.com/google/uuid v1.6.0
