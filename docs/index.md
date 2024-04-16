@@ -31,7 +31,7 @@ provider "prefect" {
 
 # You can also pass in your API key and account ID
 # implicitly via environment variables, such as
-# PREFECT_CLOUD_API_KEY and PREFECT_CLOUD_ACCOUNT_ID.
+# PREFECT_API_KEY and PREFECT_CLOUD_ACCOUNT_ID.
 provider "prefect" {}
 
 # You also have the option to link the provider instance
@@ -56,6 +56,6 @@ provider "prefect" {
 ### Optional
 
 - `account_id` (String) Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.
-- `api_key` (String, Sensitive) Prefect Cloud API Key. Can also be set via the `PREFECT_CLOUD_API_KEY` environment variable.
+- `api_key` (String, Sensitive) Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.
 - `endpoint` (String) Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud`
 - `workspace_id` (String) Default Prefect Cloud Workspace ID.
