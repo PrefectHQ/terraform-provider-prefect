@@ -32,7 +32,7 @@ provider "prefect" {
 You can optionally configure your provider through environment variables in the following way, which implicitly injects the same values as the example above. See our [provider documentation](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs) for the full attribute schema + related environment variable names.
 
 ```shell
-export PREFECT_CLOUD_API_KEY="your API Key"
+export PREFECT_API_KEY="your API Key"
 export PREFECT_CLOUD_ACCOUNT_ID="your Account/Organization ID"
 ```
 

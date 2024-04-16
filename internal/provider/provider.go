@@ -43,7 +43,7 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional:    true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_CLOUD_API_KEY` environment variable.",
+				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -87,7 +87,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			path.Root("api_key"),
 			"Unknown Prefect API Key",
 			"The Prefect API Key is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_CLOUD_API_KEY environment variable, or remove the value.",
+				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_KEY environment variable, or remove the value.",
 		)
 	}
 
@@ -143,7 +143,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var apiKey string
 	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
-	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_API_KEY"); ok {
+	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
 		apiKey = apiKeyEnvVar
 	}
 
@@ -173,7 +173,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 				path.Root("api_key"),
 				"Missing Prefect API Key",
 				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect API Key is empty. "+
-					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_CLOUD_API_KEY environment variable, or configure the api_key attribute.",
+					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_API_KEY environment variable, or configure the api_key attribute.",
 			)
 		}
 
