@@ -62,4 +62,3 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           only-new-issues: true
-          # working-directory: ./
