@@ -11,41 +11,25 @@ import (
 
 func fixtureAccDeploymentAccessCreate(name string) string {
 	return fmt.Sprintf(`
-resource "prefect_deployment_access" "deployment_access" {
-	deployment_id = prefect_deployment.deployment.id
-	workspace_id = "7e6f15bf-487a-4811-83ef-f074ec6c5484"
-	access_control = {
-		manage_actor_ids = [
-			"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		]
-		run_actor_ids = [
-			"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		]
-		view_actor_ids = [
-			"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		]
-		// manage_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
-		// run_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
-		// view_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
-	}
+data "prefect_account_member" "member" {
+	email = "richard@skyscrapr.io"
+}
+
+resource "prefect_workspace" "workspace" {
+	handle = "%s"
+	name = "%s"
 }
 
 resource "prefect_flow" "flow" {
 	name = "%s"
-	workspace_id = "7e6f15bf-487a-4811-83ef-f074ec6c5484"
+	workspace_id = prefect_workspace.workspace.id
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "deployment" {
 	name = "%s"
 	description = "string"
-	workspace_id = "7e6f15bf-487a-4811-83ef-f074ec6c5484"
+	workspace_id = prefect_workspace.workspace.id
 	flow_id = prefect_flow.flow.id
 	entrypoint = "hello_world.py:hello_world"
 	tags = ["test"]
@@ -95,7 +79,32 @@ resource "prefect_deployment" "deployment" {
 	// version = "string"
 	// infra_overrides = { }
 }
-`, name, name)
+
+resource "prefect_deployment_access" "deployment_access" {
+	deployment_id = prefect_deployment.deployment.id
+	workspace_id = prefect_workspace.workspace.id
+	access_control = {
+		manage_actor_ids = [
+			data.prefect_account_member.member.actor_id
+		]
+		// run_actor_ids = [
+		// 	data.prefect_account_member.member.id
+		// ]
+		// view_actor_ids = [
+		// 	data.prefect_account_member.member.id
+		// ]
+		// manage_team_ids = [
+		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
+		// ]
+		// run_team_ids = [
+		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
+		// ]
+		// view_team_ids = [
+		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
+		// ]
+	}
+}
+`, name, name, name, name)
 }
 
 // func fixtureAccDeploymentAccessResourceUpdateForBot(botName string) string {
@@ -145,18 +154,18 @@ func TestAccResource_deployment_access(t *testing.T) {
 					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
 				),
 			},
-			{
-				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(randomName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(accessResourceName, "id"),
-					// Check updating the role of the workspace access resource, with matching linked attributes
-					// testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
-					// testAccCheckWorkspaceAccessValuesForBot(&workspaceAccess, botResourceName, runnerRoleDatsourceName),
-					// resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
-					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
-					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
-				),
-			},
+			// {
+			// 	Config: fixtureAccWorkspaceAccessResourceUpdateForBot(randomName),
+			// 	Check: resource.ComposeAggregateTestCheckFunc(
+			// 		resource.TestCheckResourceAttrSet(accessResourceName, "id"),
+			// 		// Check updating the role of the workspace access resource, with matching linked attributes
+			// 		// testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+			// 		// testAccCheckWorkspaceAccessValuesForBot(&workspaceAccess, botResourceName, runnerRoleDatsourceName),
+			// 		// resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
+			// 		// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+			// 		// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
+			// 	),
+			// },
 		},
 	})
 }

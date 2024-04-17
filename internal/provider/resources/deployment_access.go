@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -28,6 +27,7 @@ type DeploymentAccessResourceModel struct {
 	ID            types.String          `tfsdk:"id"`
 	DeploymentID  customtypes.UUIDValue `tfsdk:"deployment_id"`
 	AccessControl types.Object          `tfsdk:"access_control"`
+	Result        types.Object          `tfsdk:"result"`
 
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
@@ -40,6 +40,7 @@ func (m DeploymentAccessResourceModel) AttrTypes() map[string]attr.Type {
 		"account_id":     types.StringType,
 		"workspace_id":   types.StringType,
 		"access_control": types.ObjectType{AttrTypes: DeploymentAccessControlResourceModel{}.AttrTypes()},
+		"result":         types.ObjectType{AttrTypes: DeploymentAccessAccessResourceModel{}.AttrTypes()},
 	}
 }
 
@@ -60,6 +61,36 @@ func (m DeploymentAccessControlResourceModel) AttrTypes() map[string]attr.Type {
 		"manage_team_ids":  types.ListType{ElemType: types.StringType},
 		"run_team_ids":     types.ListType{ElemType: types.StringType},
 		"view_team_ids":    types.ListType{ElemType: types.StringType},
+	}
+}
+
+type DeploymentAccessAccessResourceModel struct {
+	ManageActors types.List `tfsdk:"manage_actors"`
+	RunActors    types.List `tfsdk:"run_actors"`
+	ViewActors   types.List `tfsdk:"view_actors"`
+}
+
+func (m DeploymentAccessAccessResourceModel) AttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"manage_actors": types.ListType{ElemType: types.ObjectType{AttrTypes: DeploymentAccessControlActorModel{}.AttrTypes()}},
+		"run_actors":    types.ListType{ElemType: types.ObjectType{AttrTypes: DeploymentAccessControlActorModel{}.AttrTypes()}},
+		"view_actors":   types.ListType{ElemType: types.ObjectType{AttrTypes: DeploymentAccessControlActorModel{}.AttrTypes()}},
+	}
+}
+
+type DeploymentAccessControlActorModel struct {
+	ID    customtypes.UUIDValue `tfsdk:"id"`
+	Name  types.String          `tfsdk:"name"`
+	Email types.String          `tfsdk:"email"`
+	Type  types.String          `tfsdk:"type"`
+}
+
+func (m DeploymentAccessControlActorModel) AttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		"id":    customtypes.UUIDType{},
+		"name":  types.StringType,
+		"email": types.StringType,
+		"type":  types.StringType,
 	}
 }
 
@@ -117,17 +148,17 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 					"manage_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant manage access to.",
 						ElementType: types.StringType,
-						Required:    true,
+						Optional:    true,
 					},
 					"run_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant run access to.",
 						ElementType: types.StringType,
-						Required:    true,
+						Optional:    true,
 					},
 					"view_actor_ids": schema.ListAttribute{
 						Description: "The list of actor IDs to grant view access to.",
 						ElementType: types.StringType,
-						Required:    true,
+						Optional:    true,
 					},
 					"manage_team_ids": schema.ListAttribute{
 						Description: "The list of team IDs to grant manage access to.",
@@ -143,6 +174,97 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 						Description: "The list of team IDs to grant view access to.",
 						ElementType: types.StringType,
 						Optional:    true,
+					},
+				},
+			},
+			"result": schema.SingleNestedAttribute{
+				Description: "Effective Access Control",
+				Computed:    true,
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"manage_actors": schema.ListNestedAttribute{
+						Description: "The list of actors granted access to manage.",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Computed:    true,
+									CustomType:  customtypes.UUIDType{},
+									Description: "ID (UUID)",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "Name",
+									Optional:    true,
+								},
+								"email": schema.StringAttribute{
+									Computed:    true,
+									Description: "Email",
+									Optional:    true,
+								},
+								"type": schema.StringAttribute{
+									Computed:    true,
+									Description: "Type",
+									Optional:    true,
+								},
+							},
+						},
+					},
+					"run_actors": schema.ListNestedAttribute{
+						Description: "The list of actors granted access to run.",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Computed:    true,
+									CustomType:  customtypes.UUIDType{},
+									Description: "ID (UUID)",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "Name",
+									Optional:    true,
+								},
+								"email": schema.StringAttribute{
+									Computed:    true,
+									Description: "Email",
+									Optional:    true,
+								},
+								"type": schema.StringAttribute{
+									Computed:    true,
+									Description: "Type",
+									Optional:    true,
+								},
+							},
+						},
+					},
+					"view_actors": schema.ListNestedAttribute{
+						Description: "The list of actors granted access to view.",
+						Computed:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									Computed:    true,
+									CustomType:  customtypes.UUIDType{},
+									Description: "ID (UUID)",
+								},
+								"name": schema.StringAttribute{
+									Computed:    true,
+									Description: "Name",
+									Optional:    true,
+								},
+								"email": schema.StringAttribute{
+									Computed:    true,
+									Description: "Email",
+									Optional:    true,
+								},
+								"type": schema.StringAttribute{
+									Computed:    true,
+									Description: "Type",
+									Optional:    true,
+								},
+							},
+						},
 					},
 				},
 			},
@@ -165,19 +287,52 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 	}
 }
 
+func NewActorsModel(ctx context.Context, actors []api.Actor) (basetypes.ListValue, diag.Diagnostics) {
+	var model = make([]DeploymentAccessControlActorModel, len(actors))
+	for i, a := range actors {
+		actor := DeploymentAccessControlActorModel{
+			ID:    customtypes.NewUUIDValue(a.ID),
+			Name:  types.StringValue(a.Name),
+			Email: types.StringValue(a.Email),
+			Type:  types.StringValue(a.Type),
+		}
+		model[i] = actor
+	}
+
+	return types.ListValueFrom(ctx, types.ObjectType{AttrTypes: DeploymentAccessControlActorModel{}.AttrTypes()}, model)
+}
+
 // copyDeploymentAccessToModel copies the API resource to the Terraform model.
 // Note that api.DeploymentAccess represents a combined model for all accessor types,
 // meaning accessory-specific attributes like BotID and UserID will be conditionally nil
 // depending on the accessor type.
-func copyDeploymentAccessToModel(access *api.DeploymentAccess, model *DeploymentAccessResourceModel) {
-	ctx := context.TODO()
+func copyDeploymentAccessAccessToModel(ctx context.Context, access *api.DeploymentAccessControl, model *DeploymentAccessResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(access.ID.String())
-	model.DeploymentID = customtypes.NewUUIDValue(access.DeploymentID)
-	model.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
-	model.AccountID = customtypes.NewUUIDValue(access.AccountID)
+	manageActors, diag := NewActorsModel(ctx, access.ManageActors)
+	diags.Append(diag...)
+	if diags.HasError() {
+		return diags
+	}
+	runActors, diag := NewActorsModel(ctx, access.RunActors)
+	diags.Append(diag...)
+	if diags.HasError() {
+		return diags
+	}
+	viewActors, diag := NewActorsModel(ctx, access.ViewActors)
+	diags.Append(diag...)
+	if diags.HasError() {
+		return diags
+	}
 
-	model.AccessControl, _ = types.ObjectValueFrom(ctx, DeploymentAccessResourceModel{}.AttrTypes(), access.AccessControl)
+	result := DeploymentAccessAccessResourceModel{
+		ManageActors: manageActors,
+		RunActors:    runActors,
+		ViewActors:   viewActors,
+	}
+
+	model.Result, diags = types.ObjectValueFrom(ctx, DeploymentAccessAccessResourceModel{}.AttrTypes(), result)
+	return diags
 }
 
 // Create will create the Workspace Access resource through the API and insert it into the State.
@@ -192,15 +347,11 @@ func (r *DeploymentAccessResource) Create(ctx context.Context, req resource.Crea
 
 	client, err := r.client.Deployments(data.AccountID.ValueUUID(), data.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployments", err))
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployments Access", err))
 		return
 	}
 
-	accessControlReq := api.DeploymentAccessSet{
-		DeploymentID: data.DeploymentID.ValueUUID(),
-		// AccessControl: api.DeploymentAccessControl{},
-	}
-
+	accessControlReq := api.DeploymentAccessSet{}
 	var accessControl DeploymentAccessControlResourceModel
 	resp.Diagnostics.Append(data.AccessControl.As(ctx, &accessControl, basetypes.ObjectAsOptions{})...)
 	if resp.Diagnostics.HasError() {
@@ -210,9 +361,9 @@ func (r *DeploymentAccessResource) Create(ctx context.Context, req resource.Crea
 	accessControlReq.AccessControl.ManageActorIDs = []string{}
 	accessControlReq.AccessControl.RunActorIDs = []string{}
 	accessControlReq.AccessControl.ViewActorIDs = []string{}
-	accessControlReq.AccessControl.RunActorIDs = []string{}
-	accessControlReq.AccessControl.RunActorIDs = []string{}
-	accessControlReq.AccessControl.RunActorIDs = []string{}
+	accessControlReq.AccessControl.ManageTeamIDs = []string{}
+	accessControlReq.AccessControl.RunTeamIDs = []string{}
+	accessControlReq.AccessControl.ViewTeamIDs = []string{}
 
 	if !accessControl.ManageActorIDs.IsNull() {
 		resp.Diagnostics.Append(accessControl.ManageActorIDs.ElementsAs(ctx, &accessControlReq.AccessControl.ManageActorIDs, false)...)
@@ -236,13 +387,24 @@ func (r *DeploymentAccessResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	deploymentAccess, err := client.SetAccess(ctx, accessControlReq)
+	err = client.SetAccess(ctx, data.DeploymentID.ValueUUID(), accessControlReq)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Set", err))
 		return
 	}
 
-	copyDeploymentAccessToModel(deploymentAccess, &data)
+	// Set the ID to the deployment ID value
+	data.ID = data.DeploymentID.StringValue
+
+	deploymentAccess, err := client.ReadAccess(ctx, data.DeploymentID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Read", err))
+		return
+	}
+	resp.Diagnostics.Append(copyDeploymentAccessAccessToModel(ctx, deploymentAccess, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -263,31 +425,18 @@ func (r *DeploymentAccessResource) Read(ctx context.Context, req resource.ReadRe
 	client, err := r.client.Deployments(data.AccountID.ValueUUID(), data.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployments", err))
-
 		return
 	}
 
-	// accessID, err := uuid.Parse(data.ID.ValueString())
-	// if err != nil {
-	// 	resp.Diagnostics.AddAttributeError(
-	// 		path.Root("id"),
-	// 		"Error parsing Deployment Access ID",
-	// 		fmt.Sprintf("Could not parse Deployment Access ID to UUID, unexpected error: %s", err.Error()),
-	// 	)
-	// }
-
-	accessControlReq := api.DeploymentAccessRead{
-		DeploymentID: data.DeploymentID.ValueUUID(),
-	}
-
-	deploymentAccess, err := client.ReadAccess(ctx, accessControlReq)
+	deploymentAccess, err := client.ReadAccess(ctx, data.DeploymentID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Read", err))
-
 		return
 	}
-
-	copyDeploymentAccessToModel(deploymentAccess, &data)
+	resp.Diagnostics.Append(copyDeploymentAccessAccessToModel(ctx, deploymentAccess, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -310,19 +459,24 @@ func (r *DeploymentAccessResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	accessControlReq := api.DeploymentAccessSet{
-		DeploymentID: plan.DeploymentID.ValueUUID(),
-	}
+	accessControlReq := api.DeploymentAccessSet{}
 	plan.AccessControl.As(ctx, plan.AccessControl, basetypes.ObjectAsOptions{})
 
-	deploymentAccess, err := client.SetAccess(ctx, accessControlReq)
+	err = client.SetAccess(ctx, plan.DeploymentID.ValueUUID(), accessControlReq)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Set", err))
-
 		return
 	}
 
-	copyDeploymentAccessToModel(deploymentAccess, &plan)
+	deploymentAccess, err := client.ReadAccess(ctx, plan.DeploymentID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Read", err))
+		return
+	}
+	resp.Diagnostics.Append(copyDeploymentAccessAccessToModel(ctx, deploymentAccess, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -332,36 +486,46 @@ func (r *DeploymentAccessResource) Update(ctx context.Context, req resource.Upda
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *DeploymentAccessResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state WorkspaceAccessResourceModel
+	var state DeploymentAccessResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	client, err := r.client.WorkspaceAccess(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Access", err))
 
+	client, err := r.client.Deployments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployments", err))
 		return
 	}
 
-	accessID, err := uuid.Parse(state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Access ID",
-			fmt.Sprintf("Could not parse Workspace Access ID to UUID, unexpected error: %s", err.Error()),
-		)
-
+	accessControlReq := api.DeploymentAccessSet{}
+	var accessControl DeploymentAccessControlResourceModel
+	resp.Diagnostics.Append(state.AccessControl.As(ctx, &accessControl, basetypes.ObjectAsOptions{})...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accessorType := state.AccessorType.ValueString()
+	accessControlReq.AccessControl.ManageActorIDs = []string{}
+	accessControlReq.AccessControl.RunActorIDs = []string{}
+	accessControlReq.AccessControl.ViewActorIDs = []string{}
+	accessControlReq.AccessControl.ManageTeamIDs = []string{}
+	accessControlReq.AccessControl.RunTeamIDs = []string{}
+	accessControlReq.AccessControl.ViewTeamIDs = []string{}
 
-	err = client.Delete(ctx, accessorType, accessID)
+	err = client.SetAccess(ctx, state.DeploymentID.ValueUUID(), accessControlReq)
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "delete", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Set", err))
+		return
+	}
 
+	deploymentAccess, err := client.ReadAccess(ctx, state.DeploymentID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "Read", err))
+		return
+	}
+	resp.Diagnostics.Append(copyDeploymentAccessAccessToModel(ctx, deploymentAccess, &state)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

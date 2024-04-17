@@ -188,47 +188,37 @@ func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) 
 }
 
 // Sets Deployment Access Control.
-func (c *DeploymentsClient) SetAccess(ctx context.Context, data api.DeploymentAccessSet) (*api.DeploymentAccess, error) {
+func (c *DeploymentsClient) SetAccess(ctx context.Context, deploymentID uuid.UUID, data api.DeploymentAccessSet) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode data: %w", err)
+		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.routePrefix+"/"+data.DeploymentID.String()+"/access", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, c.routePrefix+"/"+deploymentID.String()+"/access", &buf)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	setDefaultHeaders(req, c.apiKey)
 
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("http error: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
 
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var access api.DeploymentAccess
-	if err := json.NewDecoder(resp.Body).Decode(&access); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &access, nil
+	return nil
 }
 
 // Reads Deployment Access Control.
-func (c *DeploymentsClient) ReadAccess(ctx context.Context, data api.DeploymentAccessRead) (*api.DeploymentAccess, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/", &buf)
+func (c *DeploymentsClient) ReadAccess(ctx context.Context, deploymentID uuid.UUID) (*api.DeploymentAccessControl, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+deploymentID.String()+"/access", http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -241,13 +231,13 @@ func (c *DeploymentsClient) ReadAccess(ctx context.Context, data api.DeploymentA
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		errorBody, _ := io.ReadAll(resp.Body)
 
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var access api.DeploymentAccess
+	var access api.DeploymentAccessControl
 	if err := json.NewDecoder(resp.Body).Decode(&access); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
