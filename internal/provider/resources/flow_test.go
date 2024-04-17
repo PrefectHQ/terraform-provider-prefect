@@ -11,12 +11,17 @@ import (
 
 func fixtureAccFlowCreate(name string) string {
 	return fmt.Sprintf(`
+resource "prefect_workspace" "workspace" {
+	handle = "%s"
+	name = "%s"
+}
+
 resource "prefect_flow" "flow" {
 	name = "%s"
-	workspace_id = "7e6f15bf-487a-4811-83ef-f074ec6c5484"
+	workspace_id = prefect_workspace.workspace.id
 	tags = ["test"]
 }
-`, name)
+`, name, name, name)
 }
 
 // func fixtureAccFlowUpdate(name string) string {
