@@ -327,21 +327,46 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
+// // ImportState imports the resource into Terraform state.
+// func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+// 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// }
+
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	idParts := strings.Split(req.ID, ",")
+	// we'll allow input values in the form of:
+	// - "workspace_id,name"
+	// - "name"
+	maxInputCount := 2
+	inputParts := strings.Split(req.ID, ",")
 
-	if len(idParts) != 2 || idParts[0] == "" || idParts[1] == "" {
+	// eg. "foo,bar,baz"
+	if len(inputParts) > maxInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected import identifier with format: workspace_id,flow_id. Got: %q", req.ID),
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
 		)
+
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), idParts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), idParts[1])...)
+	// eg. ",foo" or "foo,"
+	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+		)
 
-	// resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	// resp.Diagnostics.Append(resp.State.SetAttribute(ctx, attrPath, req.ID)...)
+		return
+	}
+
+	if len(inputParts) == maxInputCount {
+		workspaceID := inputParts[0]
+		id := inputParts[1]
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
+	} else {
+		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+	}
 }
