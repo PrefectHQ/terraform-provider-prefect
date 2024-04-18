@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -26,6 +25,7 @@ resource "prefect_flow" "flow" {
 `, name, name, name)
 }
 
+// TODO: test update tags
 // func fixtureAccFlowUpdate(name string) string {
 // 	return fmt.Sprintf(`
 // resource "prefect_flow" "flow" {
@@ -59,27 +59,10 @@ func TestAccResource_flow(t *testing.T) {
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: getFlowImportStateID(resourceName, workspaceResourceName),
+				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(resourceName, workspaceResourceName),
 				ResourceName:      resourceName,
 				ImportStateVerify: true,
 			},
 		},
 	})
-}
-
-func getFlowImportStateID(flowName string, workspaceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspace, exists := state.RootModule().Resources[workspaceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", workspaceName)
-		}
-		workspaceID, _ := uuid.Parse(workspace.Primary.ID)
-
-		flow, exists := state.RootModule().Resources[flowName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", flowName)
-		}
-
-		return fmt.Sprintf("%s,%s", workspaceID, flow.Primary.Attributes["id"]), nil
-	}
 }
