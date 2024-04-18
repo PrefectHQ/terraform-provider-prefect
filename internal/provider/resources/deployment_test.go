@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -78,6 +79,7 @@ resource "prefect_deployment" "deployment" {
 `, name, name, name, name)
 }
 
+// TODO: Update testing
 // func fixtureAccDeploymentUpdate(name string, description string) string {
 // 	return fmt.Sprintf(`
 // resource "prefect_deployment" "deployment" {
@@ -90,6 +92,7 @@ resource "prefect_deployment" "deployment" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
 	resourceName := "prefect_deployment.deployment"
+	workspaceResourceName := "prefect_workspace.workspace"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	// randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	// emptyDescription := ""
@@ -135,12 +138,13 @@ func TestAccResource_deployment(t *testing.T) {
 			// 	ImportStateIdPrefix: "handle/",
 			// 	ImportStateVerify:   true,
 			// },
-			// // Import State checks - import by ID (default)
-			// {
-			// 	ImportState:       true,
-			// 	ResourceName:      resourceName,
-			// 	ImportStateVerify: true,
-			// },
+			// Import State checks - import by ID (default)
+			{
+				ImportState:       true,
+				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(resourceName, workspaceResourceName),
+				ResourceName:      resourceName,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
