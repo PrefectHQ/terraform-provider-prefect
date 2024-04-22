@@ -9,12 +9,8 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccDeploymentAccessCreate(name string) string {
+func fixtureAccDeploymentAccess_members(name string) string {
 	return fmt.Sprintf(`
-data "prefect_account_member" "member" {
-	email = "richard@skyscrapr.io"
-}
-
 resource "prefect_workspace" "workspace" {
 	handle = "%s"
 	name = "%s"
@@ -80,12 +76,14 @@ resource "prefect_deployment" "deployment" {
 	// infra_overrides = { }
 }
 
+data prefect_account_members account_members {}
+
 resource "prefect_deployment_access" "deployment_access" {
 	deployment_id = prefect_deployment.deployment.id
 	workspace_id = prefect_workspace.workspace.id
 	access_control = {
 		manage_actor_ids = [
-			data.prefect_account_member.member.actor_id
+			data.prefect_account_members.account_members.members[0].actor_id
 		]
 		// run_actor_ids = [
 		// 	data.prefect_account_member.member.id
@@ -127,8 +125,7 @@ resource "prefect_deployment_access" "deployment_access" {
 // }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
-func TestAccResource_deployment_access(t *testing.T) {
-
+func TestAccResource_deployment_access_members(t *testing.T) {
 	// resourceName := "prefect_deployment.deployment"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
@@ -147,7 +144,7 @@ func TestAccResource_deployment_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccDeploymentAccessCreate(randomName),
+				Config: fixtureAccDeploymentAccess_members(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(accessResourceName, "id"),
 					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
@@ -169,60 +166,3 @@ func TestAccResource_deployment_access(t *testing.T) {
 		},
 	})
 }
-
-// func testAccCheckDeploymentAccessExists(accessResourceName string, workspaceDatasourceName string, accessorType string, access *api.WorkspaceAccess) resource.TestCheckFunc {
-// 	return func(state *terraform.State) error {
-// 		workspaceAccessResource, exists := state.RootModule().Resources[accessResourceName]
-// 		if !exists {
-// 			return fmt.Errorf("Resource not found in state: %s", accessResourceName)
-// 		}
-
-// 		workspaceDatsource, exists := state.RootModule().Resources[workspaceDatasourceName]
-// 		if !exists {
-// 			return fmt.Errorf("Resource not found in state: %s", workspaceDatasourceName)
-// 		}
-
-// 		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)
-// 		workspaceAccessID, _ := uuid.Parse(workspaceAccessResource.Primary.ID)
-
-// 		// Create a new client, and use the default accountID from environment
-// 		c, _ := testutils.NewTestClient()
-// 		workspaceAccessClient, _ := c.WorkspaceAccess(uuid.Nil, workspaceID)
-
-// 		fetchedWorkspaceAccess, err := workspaceAccessClient.Get(context.Background(), accessorType, workspaceAccessID)
-// 		if err != nil {
-// 			return fmt.Errorf("Error fetching Workspace Access: %w", err)
-// 		}
-// 		if fetchedWorkspaceAccess == nil {
-// 			return fmt.Errorf("Workspace Access not found for ID: %s", workspaceAccessID)
-// 		}
-
-// 		*access = *fetchedWorkspaceAccess
-
-// 		return nil
-// 	}
-// }
-
-// func testAccCheckDeploymentAccessValuesForBot(fetchedAccess *api.WorkspaceAccess, botResourceName string, roleDatasourceName string) resource.TestCheckFunc {
-// 	return func(state *terraform.State) error {
-// 		bot, exists := state.RootModule().Resources[botResourceName]
-// 		if !exists {
-// 			return fmt.Errorf("Resource not found in state: %s", botResourceName)
-// 		}
-
-// 		if fetchedAccess.BotID.String() != bot.Primary.ID {
-// 			return fmt.Errorf("Expected Workspace Access BotID to be %s, got %s", bot.Primary.ID, fetchedAccess.BotID.String())
-// 		}
-
-// 		role, exists := state.RootModule().Resources[roleDatasourceName]
-// 		if !exists {
-// 			return fmt.Errorf("Resource not found in state: %s", roleDatasourceName)
-// 		}
-
-// 		if fetchedAccess.WorkspaceRoleID.String() != role.Primary.ID {
-// 			return fmt.Errorf("Expected Workspace Access WorkspaceRoleID to be %s, got %s", role.Primary.ID, fetchedAccess.WorkspaceRoleID.String())
-// 		}
-
-// 		return nil
-// 	}
-// }
