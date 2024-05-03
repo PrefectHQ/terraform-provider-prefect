@@ -99,12 +99,12 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
 	}
 
-	var workspaceAccess api.WorkspaceAccess
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceAccess); err != nil {
+	var workspaceAccesses []api.WorkspaceAccess
+	if err := json.NewDecoder(resp.Body).Decode(&workspaceAccesses); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return &workspaceAccess, nil
+	return &workspaceAccesses[0], nil
 }
 
 // Get fetches workspace access for various accessor types via accessID.
