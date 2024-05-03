@@ -127,7 +127,7 @@ data "prefect_workspace" "evergreen" {
 resource "prefect_team" "my_team" {
 	name = "my-team"
 }
-resource "prefect_workspace_access" "bot_access" {
+resource "prefect_workspace_access" "team_access" {
 	accessor_type = "TEAM"
 	accessor_id = data.prefect_team.my_team.id
 	workspace_id = data.prefect_workspace.evergreen.id
