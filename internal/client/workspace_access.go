@@ -45,8 +45,12 @@ func (c *Client) WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (ap
 
 // Upsert creates or updates access to a workspace for various accessor types.
 func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string, accessorID uuid.UUID, roleID uuid.UUID) (*api.WorkspaceAccess, error) {
-	payload := api.WorkspaceAccessUpsert{
-		WorkspaceRoleID: roleID,
+	// NOTE: our access APIs can optionally take a single "access" payload
+	// or a list of them. In our case, we'll always pass a 1-item slice
+	payloads := []api.WorkspaceAccessUpsert{
+		{
+			WorkspaceRoleID: roleID,
+		},
 	}
 	var requestPath string
 
@@ -59,21 +63,21 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/", c.routePrefix)
-		payload.UserID = &accessorID
+		payloads[0].UserID = &accessorID
 		requestMethod = http.MethodPost
 	}
 	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/", c.routePrefix)
-		payload.BotID = &accessorID
+		payloads[0].BotID = &accessorID
 		requestMethod = http.MethodPost
 	}
 	if accessorType == utils.Team {
 		requestPath = fmt.Sprintf("%s/team_access/", c.routePrefix)
-		payload.TeamID = &accessorID
+		payloads[0].TeamID = &accessorID
 	}
 
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
+	if err := json.NewEncoder(&buf).Encode(&payloads); err != nil {
 		return nil, fmt.Errorf("failed to encode upsert payload data: %w", err)
 	}
 
