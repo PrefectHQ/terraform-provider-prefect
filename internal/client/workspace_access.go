@@ -49,18 +49,25 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		WorkspaceRoleID: roleID,
 	}
 	var requestPath string
-	requestMethod := http.MethodPost
+
+	// NOTE: this is a quirk of our <entity>_access API at the moment
+	// where user_access and bot_access were originally set up as a POST.
+	// Semantically, they should be a PUT, which the newer team_access API is set up as.
+	// At a later point, we will migrate the user/bot API variants over to a PUT
+	// in a breaking change.
+	requestMethod := http.MethodPut
 
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/", c.routePrefix)
 		payload.UserID = &accessorID
+		requestMethod = http.MethodPost
 	}
 	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/", c.routePrefix)
 		payload.BotID = &accessorID
+		requestMethod = http.MethodPost
 	}
 	if accessorType == utils.Team {
-		requestMethod = http.MethodPut
 		requestPath = fmt.Sprintf("%s/team_access/", c.routePrefix)
 		payload.TeamID = &accessorID
 	}
