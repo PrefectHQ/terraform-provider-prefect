@@ -75,7 +75,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 				Config: fixtureAccWorkspaceAccessResourceForBot(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, workspaceDatsourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, developerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
@@ -86,7 +86,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, workspaceDatsourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, runnerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
@@ -154,7 +154,7 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 				Config: fixtureAccWorkspaceAccessResourceForTeam(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, workspaceDatsourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, viewerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
@@ -165,7 +165,7 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, workspaceDatsourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, runnerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
@@ -176,7 +176,7 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 	})
 }
 
-func testAccCheckWorkspaceAccessExists(accessResourceName string, workspaceDatasourceName string, accessorType string, access *api.WorkspaceAccess) resource.TestCheckFunc {
+func testAccCheckWorkspaceAccessExists(accessorType string, accessResourceName string, workspaceDatasourceName string, access *api.WorkspaceAccess) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		workspaceAccessResource, exists := state.RootModule().Resources[accessResourceName]
 		if !exists {
@@ -196,6 +196,7 @@ func testAccCheckWorkspaceAccessExists(accessResourceName string, workspaceDatas
 		workspaceAccessClient, _ := c.WorkspaceAccess(uuid.Nil, workspaceID)
 
 		fetchedWorkspaceAccess, err := workspaceAccessClient.Get(context.Background(), accessorType, workspaceAccessID)
+
 		if err != nil {
 			return fmt.Errorf("Error fetching Workspace Access: %w", err)
 		}

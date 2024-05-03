@@ -56,6 +56,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 
 	// NOTE: this is a quirk of our <entity>_access API at the moment
 	// where user_access and bot_access were originally set up as a POST.
+	//
 	// Semantically, they should be a PUT, which the newer team_access API is set up as.
 	// At a later point, we will migrate the user/bot API variants over to a PUT
 	// in a breaking change.
@@ -113,6 +114,14 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	var requestPath string
 	var requestMethod string
 
+	// NOTE: this is a quirk of our <entity>_access API at the moment
+	// where user_access and bot_access can be fetched individually by resource ID,
+	// whereas team_access resources must be fetched as a list, scoped to the workspace.
+	//
+	// Here, we'll key off of the `accessorType` to determine the correct API endpoint,
+	// and we'll conditionally handle unmarshalling the response to
+	// a single WorkspaceAccess (for user_access and bot_access)
+	// or a list of them (for team_access) -> filtering for the passed `accessID`.
 	if accessorType == utils.User {
 		// GET: /.../<workspace_access_id>
 		requestMethod = http.MethodGet
@@ -148,16 +157,31 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	}
 
 	var workspaceAccess api.WorkspaceAccess
+	var workspaceAccesses []api.WorkspaceAccess
+
+	// If this is a team_access resource, we'll expect a list of WorkspaceAccess objects
 	if accessorType == utils.Team {
-		var workspaceAccesses []api.WorkspaceAccess
 		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccesses); err != nil {
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
-		workspaceAccess = workspaceAccesses[0]
-	} else {
+	}
+	for _, access := range workspaceAccesses {
+		if access.ID == accessID {
+			workspaceAccess = access
+
+			break
+		}
+	}
+
+	// Otherwise, we'll expect a single WorkspaceAccess object, fetched by `accessID`
+	if accessorType == utils.User || accessorType == utils.ServiceAccount {
 		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccess); err != nil {
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
+	}
+
+	if workspaceAccess.ID == uuid.Nil {
+		return nil, fmt.Errorf("workspace access not found for accessID: %s", accessID.String())
 	}
 
 	return &workspaceAccess, nil
@@ -167,6 +191,12 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string, accessID uuid.UUID, accessorID uuid.UUID) error {
 	var requestPath string
 
+	// NOTE: this is a quirk of our <entity>_access API at the moment
+	// where user_access and bot_access can be deleted individually by the `accessID`
+	// whereas team_access resources must be deleted by the `accessorID`, eg. the team_id
+	//
+	// Here, we'll key off of the `accessorType` to determine the correct URL parameter to use.
+	//
 	// DELETE: /.../<workspace_access_id>
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/%s", c.routePrefix, accessID.String())
