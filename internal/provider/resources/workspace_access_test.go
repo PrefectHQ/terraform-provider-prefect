@@ -124,7 +124,7 @@ data "prefect_workspace_role" "runner" {
 data "prefect_workspace" "evergreen" {
 	handle = "github-ci-tests"
 }
-resource "prefect_team" "my_team" {
+data "prefect_team" "my_team" {
 	name = "my-team"
 }
 resource "prefect_workspace_access" "team_access" {
