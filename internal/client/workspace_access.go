@@ -111,17 +111,25 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 // Get fetches workspace access for various accessor types via accessID.
 func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, accessID uuid.UUID) (*api.WorkspaceAccess, error) {
 	var requestPath string
+	var requestMethod string
+
 	if accessorType == utils.User {
+		// GET: /.../<workspace_access_id>
+		requestMethod = http.MethodGet
 		requestPath = fmt.Sprintf("%s/user_access/%s", c.routePrefix, accessID.String())
 	}
 	if accessorType == utils.ServiceAccount {
+		// GET: /.../<workspace_access_id>
+		requestMethod = http.MethodGet
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
 	}
 	if accessorType == utils.Team {
-		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessID.String())
+		// POST: /.../filter
+		requestMethod = http.MethodPost
+		requestPath = fmt.Sprintf("%s/team_access/filter", c.routePrefix)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestPath, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -140,8 +148,16 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	}
 
 	var workspaceAccess api.WorkspaceAccess
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceAccess); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if accessorType == utils.Team {
+		var workspaceAccesses []api.WorkspaceAccess
+		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccesses); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
+		workspaceAccess = workspaceAccesses[0]
+	} else {
+		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccess); err != nil {
+			return nil, fmt.Errorf("failed to decode response: %w", err)
+		}
 	}
 
 	return &workspaceAccess, nil
