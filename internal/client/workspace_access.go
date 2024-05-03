@@ -49,6 +49,8 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		WorkspaceRoleID: roleID,
 	}
 	var requestPath string
+	requestMethod := http.MethodPost
+
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/", c.routePrefix)
 		payload.UserID = &accessorID
@@ -58,6 +60,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		payload.BotID = &accessorID
 	}
 	if accessorType == utils.Team {
+		requestMethod = http.MethodPut
 		requestPath = fmt.Sprintf("%s/team_access/", c.routePrefix)
 		payload.TeamID = &accessorID
 	}
@@ -67,7 +70,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		return nil, fmt.Errorf("failed to encode upsert payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestPath, &buf)
+	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
