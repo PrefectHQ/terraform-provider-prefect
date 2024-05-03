@@ -269,9 +269,10 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
+	accessorID := state.AccessorID.ValueUUID()
 	accessorType := state.AccessorType.ValueString()
 
-	err = client.Delete(ctx, accessorType, accessID)
+	err = client.Delete(ctx, accessorType, accessID, accessorID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "delete", err))
 

@@ -59,7 +59,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 	// Semantically, they should be a PUT, which the newer team_access API is set up as.
 	// At a later point, we will migrate the user/bot API variants over to a PUT
 	// in a breaking change.
-	requestMethod := http.MethodPut
+	var requestMethod string
 
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/", c.routePrefix)
@@ -74,6 +74,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 	if accessorType == utils.Team {
 		requestPath = fmt.Sprintf("%s/team_access/", c.routePrefix)
 		payloads[0].TeamID = &accessorID
+		requestMethod = http.MethodPut
 	}
 
 	var buf bytes.Buffer
@@ -147,16 +148,22 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 }
 
 // DeleteUserAccess deletes a service account's workspace access via accessID.
-func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string, accessID uuid.UUID) error {
+func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string, accessID uuid.UUID, accessorID uuid.UUID) error {
 	var requestPath string
+
+	// DELETE: /.../<workspace_access_id>
 	if accessorType == utils.User {
 		requestPath = fmt.Sprintf("%s/user_access/%s", c.routePrefix, accessID.String())
 	}
+
+	// DELETE: /.../<workspace_access_id>
 	if accessorType == utils.ServiceAccount {
 		requestPath = fmt.Sprintf("%s/bot_access/%s", c.routePrefix, accessID.String())
 	}
+
+	// DELETE: /.../<team_id>
 	if accessorType == utils.Team {
-		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessID.String())
+		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessorID.String())
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, requestPath, http.NoBody)
