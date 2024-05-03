@@ -14,6 +14,8 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
+const workspaceDatsourceName = "data.prefect_workspace.evergreen"
+
 func fixtureAccWorkspaceAccessResourceForBot(botName string) string {
 	return fmt.Sprintf(`
 data "prefect_workspace_role" "developer" {
@@ -56,7 +58,6 @@ resource "prefect_workspace_access" "bot_access" {
 func TestAccResource_bot_workspace_access(t *testing.T) {
 	accessResourceName := "prefect_workspace_access.bot_access"
 	botResourceName := "prefect_service_account.bot"
-	workspaceDatsourceName := "data.prefect_workspace.evergreen"
 	developerRoleDatsourceName := "data.prefect_workspace_role.developer"
 	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
 
@@ -75,7 +76,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
-					testAccCheckWorkspaceAccessValuesForBot(&workspaceAccess, botResourceName, developerRoleDatsourceName),
+					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, developerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
@@ -86,8 +87,87 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
-					testAccCheckWorkspaceAccessValuesForBot(&workspaceAccess, botResourceName, runnerRoleDatsourceName),
+					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, runnerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
+				),
+			},
+		},
+	})
+}
+
+func fixtureAccWorkspaceAccessResourceForTeam() string {
+	return `
+data "prefect_workspace_role" "viewer" {
+	name = "Viewer"
+}
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
+data "prefect_team" my_team" {
+	name = "my-team"
+}
+resource "prefect_workspace_access" "team_access" {
+	accessor_type = "TEAM"
+	accessor_id = data.prefect_team.my_team.id
+	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_role_id = data.prefect_workspace_role.viewer.id
+}`
+}
+
+func fixtureAccWorkspaceAccessResourceUpdateForTeam() string {
+	return `
+data "prefect_workspace_role" "runner" {
+	name = "Runner"
+}
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
+resource "prefect_team" "my_team" {
+	name = "my-team"
+}
+resource "prefect_workspace_access" "bot_access" {
+	accessor_type = "TEAM"
+	accessor_id = data.prefect_team.my_team.id
+	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_role_id = data.prefect_workspace_role.runner.id
+}`
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_team_workspace_access(t *testing.T) {
+	accessResourceName := "prefect_workspace_access.team_access"
+	teamResourceName := "data.prefect_team.my_team"
+	viewerRoleDatsourceName := "data.prefect_workspace_role.viewer"
+	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
+
+	// We use this variable to store the fetched resource from the API
+	// and it will be shared between TestSteps via a pointer.
+	var workspaceAccess api.WorkspaceAccess
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: fixtureAccWorkspaceAccessResourceForTeam(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Check creation + existence of the workspace access resource, with matching linked attributes
+					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, viewerRoleDatsourceName),
+					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", viewerRoleDatsourceName, "id"),
+				),
+			},
+			{
+				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					// Check updating the role of the workspace access resource, with matching linked attributes
+					testAccCheckWorkspaceAccessExists(accessResourceName, workspaceDatsourceName, utils.ServiceAccount, &workspaceAccess),
+					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, runnerRoleDatsourceName),
+					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				),
@@ -129,15 +209,28 @@ func testAccCheckWorkspaceAccessExists(accessResourceName string, workspaceDatas
 	}
 }
 
-func testAccCheckWorkspaceAccessValuesForBot(fetchedAccess *api.WorkspaceAccess, botResourceName string, roleDatasourceName string) resource.TestCheckFunc {
+func testAccCheckWorkspaceAccessValuesForAccessor(accessorType string, fetchedAccess *api.WorkspaceAccess, accessorResourceName string, roleDatasourceName string) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		bot, exists := state.RootModule().Resources[botResourceName]
+		accessor, exists := state.RootModule().Resources[accessorResourceName]
 		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", botResourceName)
+			return fmt.Errorf("Resource not found in state: %s", accessorResourceName)
 		}
 
-		if fetchedAccess.BotID.String() != bot.Primary.ID {
-			return fmt.Errorf("Expected Workspace Access BotID to be %s, got %s", bot.Primary.ID, fetchedAccess.BotID.String())
+		switch accessorType {
+		case utils.User:
+			if fetchedAccess.UserID.String() != accessor.Primary.ID {
+				return fmt.Errorf("Expected Workspace Access UserID to be %s, got %s", accessor.Primary.ID, fetchedAccess.UserID.String())
+			}
+		case utils.ServiceAccount:
+			if fetchedAccess.BotID.String() != accessor.Primary.ID {
+				return fmt.Errorf("Expected Workspace Access BotID to be %s, got %s", accessor.Primary.ID, fetchedAccess.BotID.String())
+			}
+		case utils.Team:
+			if fetchedAccess.TeamID.String() != accessor.Primary.ID {
+				return fmt.Errorf("Expected Workspace Access TeamID to be %s, got %s", accessor.Primary.ID, fetchedAccess.TeamID.String())
+			}
+		default:
+			return fmt.Errorf("Unsupported accessor type: %s", accessorType)
 		}
 
 		role, exists := state.RootModule().Resources[roleDatasourceName]
