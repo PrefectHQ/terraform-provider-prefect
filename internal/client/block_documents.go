@@ -20,7 +20,7 @@ type BlockDocumentClient struct {
 	routePrefix string
 }
 
-// BlockDcouments is a factory that initializes and returns a BlockDocumentClient.
+// BlockDocuments is a factory that initializes and returns a BlockDocumentClient.
 //
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api.BlockDocumentClient, error) {
