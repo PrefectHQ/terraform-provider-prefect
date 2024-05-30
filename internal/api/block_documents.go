@@ -52,10 +52,10 @@ type BlockDocumentUpdate struct {
 // meaning it contains the list of actors/teams + their respective access
 // to a given block document.
 type BlockDocumentAccessReplace struct {
-	ManageActorIDs AccessControlList `json:"manage_actor_ids"`
-	ViewActorIDs   AccessControlList `json:"view_actor_ids"`
-	ManageTeamIDs  []uuid.UUID       `json:"manage_team_ids"`
-	ViewTeamIDs    []uuid.UUID       `json:"view_team_ids"`
+	ManageActorIDs []AccessActorID `json:"manage_actor_ids"`
+	ViewActorIDs   []AccessActorID `json:"view_actor_ids"`
+	ManageTeamIDs  []uuid.UUID     `json:"manage_team_ids"`
+	ViewTeamIDs    []uuid.UUID     `json:"view_team_ids"`
 }
 
 // BlockDocumentAccess is the API object representing a

@@ -2,64 +2,61 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
 )
 
-// AccessControlList is a custom type that represents
+// AccessActorID is a custom type that represents
 // an API response where the value can be:
-// []uuid.UUID - a list of IDs
-// ["*"] - a wildcard, meaning "all".
+// uuid.UUID - a single ID
+// "*" - a wildcard string, meaning "all".
 //
 // nolint:musttag // we have custom marshal/unmarshal logic for this type
-type AccessControlList struct {
-	IDs []uuid.UUID
+type AccessActorID struct {
+	ID  *uuid.UUID
 	All bool
 }
 
-// Custom JSON marshaling for AccessControlList
-// so we can return []uuid.UUID or ["*"] back to the API.
-func (acl AccessControlList) MarshalJSON() ([]byte, error) {
-	if acl.All {
-		data, err := json.Marshal([]string{"*"})
+// Custom JSON marshaling for AccessActorID
+// so we can return uuid.UUID or "*" back to the API.
+func (aid AccessActorID) MarshalJSON() ([]byte, error) {
+	if aid.All {
+		return []byte("*"), nil
+	}
+	if aid.ID != nil {
+		uuidByteSlice, err := json.Marshal(aid.ID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal wildcard ACL: %w", err)
+			return nil, fmt.Errorf("failed to marshal AccessActorID: %w", err)
 		}
 
-		return data, nil
+		return uuidByteSlice, nil
 	}
 
-	data, err := json.Marshal(acl.IDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal ID slice ACL: %w", err)
-	}
-
-	return data, nil
+	return nil, fmt.Errorf("invalid AccessActorID: both ID and All are nil/false")
 }
 
-// Custom JSON unmarshaling for AccessControlList
-// so we can accept []uuid.UUID or ["*"] from the API
+// Custom JSON unmarshaling for AccessActorID
+// so we can accept uuid.UUID or "*" from the API
 // in a structured format.
-func (acl *AccessControlList) UnmarshalJSON(data []byte) error {
-	var ids []uuid.UUID
-	if err := json.Unmarshal(data, &ids); err == nil {
-		acl.IDs = ids
-		acl.All = false
+func (aid *AccessActorID) UnmarshalJSON(data []byte) error {
+	var id uuid.UUID
+	if err := json.Unmarshal(data, &id); err == nil {
+		aid.ID = &id
+		aid.All = false
 
 		return nil
 	}
 
-	var all []string
-	if err := json.Unmarshal(data, &all); err == nil && len(all) == 1 && all[0] == "*" {
-		acl.All = true
-		acl.IDs = nil
+	var all string
+	if err := json.Unmarshal(data, &all); err == nil && all == "*" {
+		aid.All = true
+		aid.ID = nil
 
 		return nil
 	}
 
-	return errors.New("invalid AccessControlList format")
+	return fmt.Errorf("invalid AccessActorID format")
 }
 
 // AccessActorType represents an enum of type values
@@ -74,8 +71,8 @@ const (
 )
 
 type ObjectActorAccess struct {
-	ID    AccessControlList `json:"id"`
-	Name  string            `json:"name"`
-	Email *string           `json:"email"`
-	Type  AccessActorType   `json:"type"`
+	ID    AccessActorID   `json:"id"`
+	Name  string          `json:"name"`
+	Email *string         `json:"email"`
+	Type  AccessActorType `json:"type"`
 }
