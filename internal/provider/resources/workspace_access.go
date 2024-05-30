@@ -118,7 +118,7 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 
 // copyWorkspaceAccessToModel copies the API resource to the Terraform model.
 // Note that api.WorkspaceAccess represents a combined model for all accessor types,
-// meaning accessory-specific attributes like BotID and UserID will be conditionally nil
+// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
 // depending on the accessor type.
 func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, model *WorkspaceAccessResourceModel) {
 	model.ID = types.StringValue(access.ID.String())
@@ -130,6 +130,9 @@ func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, model *WorkspaceAcc
 	}
 	if access.UserID != nil {
 		model.AccessorID = customtypes.NewUUIDValue(*access.UserID)
+	}
+	if access.TeamID != nil {
+		model.AccessorID = customtypes.NewUUIDValue(*access.TeamID)
 	}
 }
 
@@ -269,9 +272,10 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
+	accessorID := state.AccessorID.ValueUUID()
 	accessorType := state.AccessorType.ValueString()
 
-	err = client.Delete(ctx, accessorType, accessID)
+	err = client.Delete(ctx, accessorType, accessID, accessorID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "delete", err))
 
