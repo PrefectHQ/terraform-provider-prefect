@@ -18,7 +18,6 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - execinquery
     - exhaustive
     - exportloopref
     - forbidigo
@@ -32,7 +31,7 @@ linters:
     - godox
     - goheader
     - goimports
-    - gomnd
+    - mnd
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -76,7 +75,6 @@ linters:
     - unconvert
     - unused
     - usestdlibvars
-    - varnamelen
     - wastedassign
     - whitespace
     - wrapcheck
