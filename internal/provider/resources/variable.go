@@ -390,11 +390,42 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 // ImportState imports the resource into Terraform state.
+// Valid import IDs:
+// name/<variable_name>
+// name/<variable_name>,<workspace_id>
+// <variable_id>
+// <variable_id>,<workspace_id>.
 func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "name/") {
-		name := strings.TrimPrefix(req.ID, "name/")
+	parts := strings.Split(req.ID, ",")
+
+	if len(parts) > 2 || len(parts) == 0 {
+		resp.Diagnostics.AddError(
+			"Error importing variable",
+			"Import ID must be in the format of <variable identifier> OR <variable identifier>,<workspace_id>",
+		)
+
+		return
+	}
+
+	variableIdentifier := parts[0]
+
+	if strings.HasPrefix(variableIdentifier, "name/") {
+		name := strings.TrimPrefix(variableIdentifier, "name/")
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	} else {
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), variableIdentifier)...)
+	}
+
+	if len(parts) == 2 && parts[1] != "" {
+		workspaceID, err := uuid.Parse(parts[1])
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }
