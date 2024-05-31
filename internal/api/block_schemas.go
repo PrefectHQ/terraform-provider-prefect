@@ -8,7 +8,7 @@ import (
 
 // BlockSchemaClient is a client for working with block schemas.
 type BlockSchemaClient interface {
-	List(ctx context.Context, blockTypeSlugs []uuid.UUIDs) ([]*BlockSchema, error)
+	List(ctx context.Context, blockTypeIDs []uuid.UUIDs) ([]*BlockSchema, error)
 }
 
 // BlockSchema is a representation of a block schema.
