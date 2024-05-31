@@ -23,16 +23,6 @@ type BlockSchema struct {
 	Fields       interface{} `json:"fields"`
 }
 
-// BlockTypeID represents a block type ID.
-type BlockTypeID struct {
-	Any []uuid.UUIDs `json:"any_"`
-}
-
-// BlockSchemas represents a block schema.
-type BlockSchemas struct {
-	BlockTypeID
-}
-
 // BlockSchemaFilter defines the search filter payload
 // when searching for block schemas by slug.
 type BlockSchemaFilter struct {
