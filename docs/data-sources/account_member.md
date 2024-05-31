@@ -3,7 +3,7 @@
 page_title: "prefect_account_member Data Source - prefect"
 subcategory: ""
 description: |-
-  Get information about an existing Account Member (user) by their email.
+  Get information about an existing Account Member (user)	by their email.
   
   Use this data source to obtain user or actor IDs to manage Workspace Access.
 ---
