@@ -14,8 +14,8 @@ type BlockSchemaClient interface {
 // BlockSchema is a representation of a block schema.
 type BlockSchema struct {
 	BaseModel
-	BlockType
 
+	BlockType    BlockType   `json:"block_type"`
 	Checksum     string      `json:"checksum"`
 	BlockTypeID  uuid.UUID   `json:"block_type_id"`
 	Capabilities []string    `json:"capabilities"`
