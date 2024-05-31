@@ -21,8 +21,8 @@ type BlockDocument struct {
 	Name *string `json:"name"` // names are optional for anonymous blocks
 	Data string  `json:"data"`
 
-	BlockSchemaID uuid.UUID `json:"block_schema_id"`
-	// BlockSchema   *BlockSchema `json:"block_schema"`
+	BlockSchemaID uuid.UUID    `json:"block_schema_id"`
+	BlockSchema   *BlockSchema `json:"block_schema"`
 
 	BlockTypeID   uuid.UUID `json:"block_type_id"`
 	BlockTypeName *string   `json:"block_type_name"`
