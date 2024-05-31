@@ -14,17 +14,20 @@ This project also uses the following tools to build and test:
 - `goreleaser` to generate release binaries (optional for development)
 - `go-imports` to automatically update missing or unused imports
 
-On MacOS, you can use `brew` and `go install` to install necessary dependencies:
+On MacOS, you can use `brew`, `mise` and `go install` to install necessary dependencies:
 
 ```shell
 brew install \
   go \
   gotestsum \
-  golangci-lint \
-  goreleaser
+  mise
 
 go install golang.org/x/tools/cmd/goimports@latest
+
+mise install
 ```
+
+We use [`mise`](https://github.com/jdx/mise) to manage as many dependencies as possible based on the supported plugins in its [registry](https://mise.jdx.dev/registry.html).
 
 ## Local Development
 
