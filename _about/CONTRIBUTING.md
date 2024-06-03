@@ -81,19 +81,23 @@ though in general, running `make install` will be sufficient in the course of de
 
 ## Testing
 
-There are two `make` commands regarding automated tests:
+There are a few options for running tests depending on the type.
+
+### Unit tests
+
+The following command will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
 
 ```shell
 make test
 ```
 
-will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
+### Terraform acceptance tests
+
+The following command will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests), by prefixing the test run with `TF_ACC=1`.
 
 ```shell
 make testacc
 ```
-
-will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests), by prefixing the test run with `TF_ACC=1`
 
 **NOTE:** Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account when running locally
 
@@ -106,6 +110,8 @@ export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 
 make testacc
 ```
+
+### Integration tests
 
 You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
 
