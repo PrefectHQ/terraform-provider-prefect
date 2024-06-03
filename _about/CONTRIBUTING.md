@@ -130,7 +130,9 @@ provider_installation {
 }
 ```
 
-Next, start the server:
+You only need to do this once, but if you will need to comment this out any time you want to use the provider from the official Terraform registry instead.
+
+Next, start the Prefect server:
 
 ```shell
 docker-compose up -d
