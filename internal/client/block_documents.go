@@ -43,7 +43,10 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 }
 
 func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.BlockDocument, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
+	reqURL := fmt.Sprintf("%s/%s", c.routePrefix, id.String())
+	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

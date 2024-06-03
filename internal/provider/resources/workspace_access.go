@@ -68,7 +68,6 @@ func (r *WorkspaceAccessResource) Configure(_ context.Context, req resource.Conf
 
 func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		// Description: "Resource representing Prefect Workspace Access for a User or Service Account",
 		Description: "The resource `workspace_access` represents a connection between an accessor " +
 			"(User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level " +
 			"to a specific Workspace in the Account.\n" +
