@@ -81,19 +81,23 @@ though in general, running `make install` will be sufficient in the course of de
 
 ## Testing
 
-There are two `make` commands regarding automated tests:
+There are a few options for running tests depending on the type.
+
+### Unit tests
+
+The following command will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
 
 ```shell
 make test
 ```
 
-will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
+### Terraform acceptance tests
+
+The following command will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests), by prefixing the test run with `TF_ACC=1`.
 
 ```shell
 make testacc
 ```
-
-will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests), by prefixing the test run with `TF_ACC=1`
 
 **NOTE:** Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account when running locally
 
@@ -106,6 +110,46 @@ export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 
 make testacc
 ```
+
+### Integration tests
+
+You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
+
+First, you'll need to create or modify `~/.terraformrc` on your machine:
+
+```terraform
+provider_installation {
+  dev_overrides {
+    "registry.terraform.io/prefecthq/prefect" = "/Users/<username>/go/bin/"
+  }
+
+  # For all other providers, install them directly from their origin provider
+  # registries as normal. If you omit this, Terraform will _only_ use
+  # the dev_overrides block, and so no other providers will be available.
+  direct {}
+}
+```
+
+You only need to do this once, but if you will need to comment this out any time you want to use the provider from the official Terraform registry instead.
+
+Next, start the Prefect server:
+
+```shell
+docker-compose up -d
+```
+
+You can confirm the server is running by either:
+
+1. Checking the logs with `docker-compose logs -f`, or
+2. Navigating to the UI in your browser at [localhost:4200](http://localhost:4200).
+
+When you're ready to test your changes, compile the provider and install it to your path:
+
+```shell
+go install .
+```
+
+You can now run `terraform plan` and `terraform apply` to test features in the provider.
 
 ## Build Documentation
 
