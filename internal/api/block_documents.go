@@ -18,8 +18,8 @@ type BlockDocumentClient interface {
 
 type BlockDocument struct {
 	BaseModel
-	Name *string `json:"name"` // names are optional for anonymous blocks
-	Data string  `json:"data"`
+	Name string `json:"name"`
+	Data string `json:"data"`
 
 	BlockSchemaID uuid.UUID    `json:"block_schema_id"`
 	BlockSchema   *BlockSchema `json:"block_schema"`
@@ -29,16 +29,13 @@ type BlockDocument struct {
 	BlockType     BlockType `json:"block_type"`
 
 	BlockDocumentReferences string `json:"block_document_references"`
-
-	IsAnonymous bool `json:"is_anonymous"`
 }
 
 type BlockDocumentCreate struct {
-	Name          *string   `json:"name"` // names are optional for anonymous blocks
+	Name          string    `json:"name"`
 	Data          string    `json:"data"`
 	BlockSchemaID uuid.UUID `json:"block_schema_id"`
 	BlockTypeID   uuid.UUID `json:"block_type_id"`
-	IsAnonymous   bool      `json:"is_anonymous"`
 }
 
 type BlockDocumentUpdate struct {

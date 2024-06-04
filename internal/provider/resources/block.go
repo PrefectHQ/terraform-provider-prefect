@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 type BlockResource struct {
@@ -27,9 +29,9 @@ type BlockResourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name types.String         `tfsdk:"name"`
-	Type types.String         `tfsdk:"type"`
-	Data jsontypes.Normalized `tfsdk:"data"`
+	Name     types.String         `tfsdk:"name"`
+	TypeSlug types.String         `tfsdk:"type_slug"`
+	Data     jsontypes.Normalized `tfsdk:"data"`
 }
 
 // NewBlockResource returns a new BlockResource.
@@ -99,7 +101,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Required:    true,
 				Description: "Unique name of the Block",
 			},
-			"type": schema.StringAttribute{
+			"type_slug": schema.StringAttribute{
 				Required:    true,
 				Description: "Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block types ls` to view all available Block type slugs.",
 			},
@@ -122,10 +124,90 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 	}
 }
 
+// copyBlockToModel maps an API response to a model that is saved in Terraform state.
+func copyBlockToModel(_ context.Context, block *api.BlockDocument, state *BlockResourceModel) diag.Diagnostics {
+	state.ID = types.StringValue(block.ID.String())
+	state.Created = customtypes.NewTimestampPointerValue(block.Created)
+	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
+	state.Name = types.StringValue(block.Name)
+	state.TypeSlug = types.StringValue(block.BlockType.Slug)
+	state.Data = jsontypes.NewNormalizedValue(block.Data)
+
+	// NOTE:
+	// we can perform deserializing checks here
+	// and optionally return an error diagnostic.
+	return nil
+}
+
 // Create will create the Block resource through the API and insert it into the State.
-//
-//nolint:revive // TODO: remove this comment when method is implemented
 func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var config BlockResourceModel
+	diags := req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	blockTypeClient, err := r.client.BlockTypes(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
+	}
+	blockSchemaClient, err := r.client.BlockSchemas(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
+	}
+	blockDocumentClient, err := r.client.BlockDocuments(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+	}
+
+	// fetch the BlockType by the provided `type_slug`
+	blockType, err := blockTypeClient.GetBySlug(ctx, config.TypeSlug.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
+
+		return
+	}
+
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+
+		return
+	}
+
+	if len(blockSchemas) == 0 {
+		resp.Diagnostics.AddError(
+			"No block schemas found",
+			"No block schemas found for the provided type slug",
+		)
+
+		return
+	}
+
+	latestBlockSchema := blockSchemas[0]
+
+	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
+		Name:          config.Name.ValueString(),
+		Data:          config.Data.ValueString(),
+		BlockSchemaID: latestBlockSchema.ID,
+		BlockTypeID:   latestBlockSchema.BlockTypeID,
+	})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Document", "create", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyBlockToModel(ctx, createdBlockDocument, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Read refreshes the Terraform state with the latest data.
@@ -175,12 +257,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	state.ID = types.StringValue(block.ID.String())
-	state.Created = customtypes.NewTimestampPointerValue(block.Created)
-	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
-	state.Name = types.StringValue(*block.Name)
-	state.Type = types.StringValue(block.BlockType.Slug)
-	state.Data = jsontypes.NewNormalizedValue(block.Data)
+	copyBlockToModel(ctx, block, &state)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -199,6 +276,42 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 //
 //nolint:revive // TODO: remove this comment when method is implemented
 func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state BlockResourceModel
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	blockDocumentClient, err := r.client.BlockDocuments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+
+		return
+	}
+
+	blockDocumentID, err := uuid.Parse(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Block ID",
+			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = blockDocumentClient.Delete(ctx, blockDocumentID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Document", "delete", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // ImportState imports the resource into Terraform state.

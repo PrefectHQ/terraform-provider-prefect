@@ -38,7 +38,7 @@ func (c *Client) BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (api.B
 }
 
 // List gets a list of BlockSchemas for a given list of block type slugs.
-func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUIDs) ([]*api.BlockSchema, error) {
+func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) ([]*api.BlockSchema, error) {
 	filterQuery := &api.BlockSchemaFilter{}
 	filterQuery.BlockSchemas.BlockTypeID.Any = blockTypeIDs
 
