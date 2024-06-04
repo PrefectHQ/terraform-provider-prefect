@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -127,9 +129,64 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 }
 
 // Read refreshes the Terraform state with the latest data.
-//
-//nolint:revive // TODO: remove this comment when method is implemented
 func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state BlockResourceModel
+
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if state.ID.IsNull() {
+		resp.Diagnostics.AddError(
+			"ID is unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+	}
+
+	client, err := r.client.BlockDocuments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error creating block client",
+			fmt.Sprintf("Could not create block client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+		)
+	}
+
+	var blockID uuid.UUID
+	blockID, err = uuid.Parse(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Block ID",
+			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	block, err := client.Get(ctx, blockID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing block state",
+			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	state.ID = types.StringValue(block.ID.String())
+	state.Created = customtypes.NewTimestampPointerValue(block.Created)
+	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
+	state.Name = types.StringValue(*block.Name)
+	state.Type = types.StringValue(block.BlockType.Slug)
+	state.Data = jsontypes.NewNormalizedValue(block.Data)
+
+	diags = resp.State.Set(ctx, state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
