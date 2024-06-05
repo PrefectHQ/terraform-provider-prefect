@@ -75,7 +75,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"`block` resources represent configurations for schemas for all different Block types. " +
 			"Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas." +
 			"\n" +
-			"Use `prefect block types ls` to view all available Block type slugs, which is used in the `type` attribute." +
+			"Use `prefect block types ls` to view all available Block type slugs, which is used in the `type_slug` attribute." +
 			"\n" +
 			"Use `prefect block types inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).",
 		Version: 0,
