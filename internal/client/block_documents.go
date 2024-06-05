@@ -38,7 +38,7 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	return &BlockDocumentClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("/account/%s/workspace/%s/block_documents", accountID.String(), workspaceID.String()),
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
 	}, nil
 }
 
@@ -79,7 +79,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/", c.routePrefix), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

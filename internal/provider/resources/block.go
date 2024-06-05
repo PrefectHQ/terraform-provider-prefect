@@ -2,7 +2,9 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -125,17 +127,19 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 }
 
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
-func copyBlockToModel(_ context.Context, block *api.BlockDocument, state *BlockResourceModel) diag.Diagnostics {
+func copyBlockToModel(block *api.BlockDocument, state *BlockResourceModel) diag.Diagnostics {
+	// NOTE: we will map the `data` key OUTSIDE of this helper function, as we will
+	// need to skip this step for the POST /block_documents endpoint,
+	// which always returns masked data + will create inconsistent state between the
+	// plan <> fetched value - for Create(), we'll fall back to the user-configured JSON payload,
+	// whereas for Read() / Update() we can ask the API for unmasked values to ensure a consistent
+	// state drift check.
 	state.ID = types.StringValue(block.ID.String())
 	state.Created = customtypes.NewTimestampPointerValue(block.Created)
 	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 	state.Name = types.StringValue(block.Name)
 	state.TypeSlug = types.StringValue(block.BlockType.Slug)
-	state.Data = jsontypes.NewNormalizedValue(block.Data)
 
-	// NOTE:
-	// we can perform deserializing checks here
-	// and optionally return an error diagnostic.
 	return nil
 }
 
@@ -179,7 +183,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	if len(blockSchemas) == 0 {
 		resp.Diagnostics.AddError(
 			"No block schemas found",
-			"No block schemas found for the provided type slug",
+			fmt.Sprintf("No block schemas found for %s block type slug", config.TypeSlug.ValueString()),
 		)
 
 		return
@@ -187,9 +191,20 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 	latestBlockSchema := blockSchemas[0]
 
+	// We typed `data` as JSON, as this is the most
+	// flexible way to handle a dynamic schema from the API.
+	// Here, we unmarshal the user-provided `data` JSON string to a map[string]interface{}
+	// because we'll later need to re-marshall the entire BlockDocumentCreate payload
+	// when sending it back up to the API
+	var data map[string]interface{}
+	resp.Diagnostics.Append(config.Data.Unmarshal(&data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
 		Name:          config.Name.ValueString(),
-		Data:          config.Data.ValueString(),
+		Data:          data,
 		BlockSchemaID: latestBlockSchema.ID,
 		BlockTypeID:   latestBlockSchema.BlockTypeID,
 	})
@@ -199,12 +214,14 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	resp.Diagnostics.Append(copyBlockToModel(ctx, createdBlockDocument, &config)...)
+	diags = copyBlockToModel(createdBlockDocument, &config)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	diags = resp.State.Set(ctx, &config)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -257,9 +274,25 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	copyBlockToModel(ctx, block, &state)
+	diags = copyBlockToModel(block, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	diags = resp.State.Set(ctx, state)
+	byteSlice, err := json.Marshal(block.Data)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("data"),
+			"Failed to serialize Block Data",
+			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
+		)
+
+		return
+	}
+	state.Data = jsontypes.NewNormalizedValue(string(byteSlice))
+
+	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -273,8 +306,6 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
-//
-//nolint:revive // TODO: remove this comment when method is implemented
 func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state BlockResourceModel
 	diags := req.State.Get(ctx, &state)
@@ -315,7 +346,34 @@ func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 }
 
 // ImportState imports the resource into Terraform state.
-//
-//nolint:revive // TODO: remove this comment when method is implemented
+// Valid import IDs:
+// <block_id>
+// <block_id>,<workspace_id>.
 func (r *BlockResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	parts := strings.Split(req.ID, ",")
+
+	if len(parts) > 2 || len(parts) == 0 {
+		resp.Diagnostics.AddError(
+			"Error importing Block",
+			"Import ID must be in the format of <block identifier> OR <block identifier>,<workspace_id>",
+		)
+
+		return
+	}
+
+	blockIdentifier := parts[0]
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), blockIdentifier)...)
+
+	if len(parts) == 2 && parts[1] != "" {
+		workspaceID, err := uuid.Parse(parts[1])
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Error parsing Workspace ID",
+				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
+			)
+
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
+	}
 }
