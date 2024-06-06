@@ -256,6 +256,8 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			"Error creating block client",
 			fmt.Sprintf("Could not create block client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	var blockID uuid.UUID
@@ -411,6 +413,8 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 			"Failed to serialize Block Data",
 			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
 		)
+
+		return
 	}
 	plan.Data = jsontypes.NewNormalizedValue(string(byteSlice))
 
