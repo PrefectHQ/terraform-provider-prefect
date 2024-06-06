@@ -18,8 +18,8 @@ type BlockDocumentClient interface {
 
 type BlockDocument struct {
 	BaseModel
-	Name *string `json:"name"` // names are optional for anonymous blocks
-	Data string  `json:"data"`
+	Name string                 `json:"name"`
+	Data map[string]interface{} `json:"data"`
 
 	BlockSchemaID uuid.UUID    `json:"block_schema_id"`
 	BlockSchema   *BlockSchema `json:"block_schema"`
@@ -27,24 +27,19 @@ type BlockDocument struct {
 	BlockTypeID   uuid.UUID `json:"block_type_id"`
 	BlockTypeName *string   `json:"block_type_name"`
 	BlockType     BlockType `json:"block_type"`
-
-	BlockDocumentReferences string `json:"block_document_references"`
-
-	IsAnonymous bool `json:"is_anonymous"`
 }
 
 type BlockDocumentCreate struct {
-	Name          *string   `json:"name"` // names are optional for anonymous blocks
-	Data          string    `json:"data"`
-	BlockSchemaID uuid.UUID `json:"block_schema_id"`
-	BlockTypeID   uuid.UUID `json:"block_type_id"`
-	IsAnonymous   bool      `json:"is_anonymous"`
+	Name          string                 `json:"name"`
+	Data          map[string]interface{} `json:"data"`
+	BlockSchemaID uuid.UUID              `json:"block_schema_id"`
+	BlockTypeID   uuid.UUID              `json:"block_type_id"`
 }
 
 type BlockDocumentUpdate struct {
-	BlockSchemaID     *uuid.UUID `json:"block_schema_id"`
-	Data              string     `json:"data"`
-	MergeExistingData bool       `json:"merge_existing_data"`
+	BlockSchemaID     *uuid.UUID             `json:"block_schema_id"`
+	Data              map[string]interface{} `json:"data"`
+	MergeExistingData bool                   `json:"merge_existing_data"`
 }
 
 // BlockDocumentAccessReplace is the "update" request payload

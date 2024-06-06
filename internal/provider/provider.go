@@ -17,6 +17,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
@@ -137,7 +138,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
 	}
-	isPrefectCloudEndpoint := endpointURL.Host == "api.prefect.cloud" || endpointURL.Host == "api.prefect.dev" || endpointURL.Host == "api.stg.prefect.dev"
+	isPrefectCloudEndpoint := helpers.IsCloudEndpoint(endpointURL.Host)
 
 	// Extract the API Key from configuration or environment variable.
 	var apiKey string

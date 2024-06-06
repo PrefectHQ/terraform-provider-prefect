@@ -8,7 +8,7 @@ import (
 
 // BlockSchemaClient is a client for working with block schemas.
 type BlockSchemaClient interface {
-	List(ctx context.Context, blockTypeIDs []uuid.UUIDs) ([]*BlockSchema, error)
+	List(ctx context.Context, blockTypeIDs []uuid.UUID) ([]*BlockSchema, error)
 }
 
 // BlockSchema is a representation of a block schema.
@@ -29,7 +29,7 @@ type BlockSchemaFilter struct {
 	// BlockSchemas
 	BlockSchemas struct {
 		BlockTypeID struct {
-			Any []uuid.UUIDs `json:"any_"`
+			Any []uuid.UUID `json:"any_"`
 		} `json:"block_type_id"`
 		BlockCapabilities struct {
 			All []string `json:"all_"`

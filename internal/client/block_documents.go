@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = api.BlockDocumentClient(&BlockDocumentClient{})
@@ -31,14 +32,15 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
 	}
-	if accountID == uuid.Nil && workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("account id or workspace id is required")
+
+	if helpers.IsCloudEndpoint(c.endpoint) && (accountID == uuid.Nil || workspaceID == uuid.Nil) {
+		return nil, fmt.Errorf("prefect Cloud endpoints require an account_id and workspace_id to be set on either the provider or the resource")
 	}
 
 	return &BlockDocumentClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("/account/%s/workspace/%s/block_documents", accountID.String(), workspaceID.String()),
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
 	}, nil
 }
 
@@ -79,7 +81,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/", c.routePrefix), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
