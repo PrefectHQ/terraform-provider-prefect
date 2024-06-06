@@ -155,17 +155,22 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	blockTypeClient, err := r.client.BlockTypes(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
+
+		return
 	}
 	blockSchemaClient, err := r.client.BlockSchemas(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
+
+		return
 	}
 	blockDocumentClient, err := r.client.BlockDocuments(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+
+		return
 	}
 
-	// fetch the BlockType by the provided `type_slug`
 	blockType, err := blockTypeClient.GetBySlug(ctx, config.TypeSlug.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))

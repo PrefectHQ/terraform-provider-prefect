@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 // BlockSchemaClient is a client for working with block schemas.
@@ -28,6 +29,10 @@ func (c *Client) BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (api.B
 	}
 	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
+	}
+
+	if helpers.IsCloudEndpoint(c.endpoint) && (accountID == uuid.Nil || workspaceID == uuid.Nil) {
+		return nil, fmt.Errorf("prefect Cloud endpoints require an account_id and workspace_id to be set on either the provider or the resource")
 	}
 
 	return &BlockSchemaClient{

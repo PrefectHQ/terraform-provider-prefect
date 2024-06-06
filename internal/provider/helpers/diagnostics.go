@@ -15,7 +15,7 @@ import (
 func CreateClientErrorDiagnostic(clientName string, err error) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error creating %s client", clientName),
-		fmt.Sprintf("Could not create %s client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", clientName, err.Error()),
+		fmt.Sprintf("Could not create %s client, due to error: %s. If you believe this to be a bug in the provider, please report this to the maintainers.", clientName, err.Error()),
 	)
 }
 

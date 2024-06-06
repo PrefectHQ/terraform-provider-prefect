@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = api.BlockDocumentClient(&BlockDocumentClient{})
@@ -31,8 +32,9 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
 	}
-	if accountID == uuid.Nil && workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("account id or workspace id is required")
+
+	if helpers.IsCloudEndpoint(c.endpoint) && (accountID == uuid.Nil || workspaceID == uuid.Nil) {
+		return nil, fmt.Errorf("prefect Cloud endpoints require an account_id and workspace_id to be set on either the provider or the resource")
 	}
 
 	return &BlockDocumentClient{
