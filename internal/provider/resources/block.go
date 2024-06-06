@@ -127,18 +127,19 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 }
 
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
-func copyBlockToModel(block *api.BlockDocument, state *BlockResourceModel) diag.Diagnostics {
+// A model can be a Terraform Plan, State, or Config object.
+func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) diag.Diagnostics {
 	// NOTE: we will map the `data` key OUTSIDE of this helper function, as we will
 	// need to skip this step for the POST /block_documents endpoint,
 	// which always returns masked data + will create inconsistent state between the
 	// plan <> fetched value - for Create(), we'll fall back to the user-configured JSON payload,
 	// whereas for Read() / Update() we can ask the API for unmasked values to ensure a consistent
 	// state drift check.
-	state.ID = types.StringValue(block.ID.String())
-	state.Created = customtypes.NewTimestampPointerValue(block.Created)
-	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
-	state.Name = types.StringValue(block.Name)
-	state.TypeSlug = types.StringValue(block.BlockType.Slug)
+	tfModel.ID = types.StringValue(block.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(block.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(block.Updated)
+	tfModel.Name = types.StringValue(block.Name)
+	tfModel.TypeSlug = types.StringValue(block.BlockType.Slug)
 
 	return nil
 }
