@@ -37,7 +37,7 @@ type BlockDocumentCreate struct {
 }
 
 type BlockDocumentUpdate struct {
-	BlockSchemaID     *uuid.UUID             `json:"block_schema_id"`
+	BlockSchemaID     uuid.UUID              `json:"block_schema_id"`
 	Data              map[string]interface{} `json:"data"`
 	MergeExistingData bool                   `json:"merge_existing_data"`
 }
