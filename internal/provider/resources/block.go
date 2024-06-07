@@ -106,6 +106,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"type_slug": schema.StringAttribute{
 				Required:    true,
 				Description: "Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block types ls` to view all available Block type slugs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"data": schema.StringAttribute{
 				Required:    true,
@@ -256,6 +259,8 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			"Error creating block client",
 			fmt.Sprintf("Could not create block client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	var blockID uuid.UUID
@@ -306,9 +311,121 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-//
-//nolint:revive // TODO: remove this comment when method is implemented
 func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan BlockResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
+
+		return
+	}
+
+	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
+
+		return
+	}
+
+	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+
+		return
+	}
+
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
+
+		return
+	}
+
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+
+		return
+	}
+
+	if len(blockSchemas) == 0 {
+		resp.Diagnostics.AddError(
+			"No block schemas found",
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
+		)
+
+		return
+	}
+
+	latestBlockSchema := blockSchemas[0]
+
+	blockID, err := uuid.Parse(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing block ID",
+			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	var data map[string]interface{}
+	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err = blockDocumentClient.Update(ctx, blockID, api.BlockDocumentUpdate{
+		BlockSchemaID:     latestBlockSchema.ID,
+		Data:              data,
+		MergeExistingData: true,
+	})
+
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Document", "update", err))
+
+		return
+	}
+
+	block, err := blockDocumentClient.Get(ctx, blockID)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error refreshing block state",
+			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	diags := copyBlockToModel(block, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	byteSlice, err := json.Marshal(block.Data)
+	if err != nil {
+		diags.AddAttributeError(
+			path.Root("data"),
+			"Failed to serialize Block Data",
+			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
+		)
+
+		return
+	}
+	plan.Data = jsontypes.NewNormalizedValue(string(byteSlice))
+
+	diags = resp.State.Set(ctx, &plan)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
