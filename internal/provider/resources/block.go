@@ -82,9 +82,8 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Block ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -93,6 +92,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -112,6 +114,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			},
 			"data": schema.StringAttribute{
 				Required:    true,
+				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
 			},
@@ -149,33 +152,33 @@ func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) dia
 
 // Create will create the Block resource through the API and insert it into the State.
 func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config BlockResourceModel
-	diags := req.Config.Get(ctx, &config)
+	var plan BlockResourceModel
+	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	blockTypeClient, err := r.client.BlockTypes(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
 
 		return
 	}
-	blockSchemaClient, err := r.client.BlockSchemas(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
 
 		return
 	}
-	blockDocumentClient, err := r.client.BlockDocuments(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
 
 		return
 	}
 
-	blockType, err := blockTypeClient.GetBySlug(ctx, config.TypeSlug.ValueString())
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
 
@@ -192,7 +195,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	if len(blockSchemas) == 0 {
 		resp.Diagnostics.AddError(
 			"No block schemas found",
-			fmt.Sprintf("No block schemas found for %s block type slug", config.TypeSlug.ValueString()),
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
 		)
 
 		return
@@ -206,13 +209,13 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	// because we'll later need to re-marshall the entire BlockDocumentCreate payload
 	// when sending it back up to the API
 	var data map[string]interface{}
-	resp.Diagnostics.Append(config.Data.Unmarshal(&data)...)
+	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
-		Name:          config.Name.ValueString(),
+		Name:          plan.Name.ValueString(),
 		Data:          data,
 		BlockSchemaID: latestBlockSchema.ID,
 		BlockTypeID:   latestBlockSchema.BlockTypeID,
@@ -223,13 +226,13 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	diags = copyBlockToModel(createdBlockDocument, &config)
+	diags = copyBlockToModel(createdBlockDocument, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	diags = resp.State.Set(ctx, &config)
+	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

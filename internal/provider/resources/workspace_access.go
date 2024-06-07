@@ -78,8 +78,6 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Workspace Access ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -115,55 +113,56 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 	}
 }
 
-// copyWorkspaceAccessToModel copies the API resource to the Terraform model.
-// Note that api.WorkspaceAccess represents a combined model for all accessor types,
-// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
-// depending on the accessor type.
-func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, model *WorkspaceAccessResourceModel) {
-	model.ID = types.StringValue(access.ID.String())
-	model.WorkspaceRoleID = customtypes.NewUUIDValue(access.WorkspaceRoleID)
-	model.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
+// copyWorkspaceAccessToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, tfModel *WorkspaceAccessResourceModel) {
+	// NOTE: api.WorkspaceAccess represents a combined model for all accessor types,
+	// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
+	// depending on the accessor type.
+	tfModel.ID = types.StringValue(access.ID.String())
+	tfModel.WorkspaceRoleID = customtypes.NewUUIDValue(access.WorkspaceRoleID)
+	tfModel.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
 
 	if access.BotID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.BotID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.BotID)
 	}
 	if access.UserID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.UserID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.UserID)
 	}
 	if access.TeamID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.TeamID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.TeamID)
 	}
 }
 
 // Create will create the Workspace Access resource through the API and insert it into the State.
 func (r *WorkspaceAccessResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config WorkspaceAccessResourceModel
+	var plan WorkspaceAccessResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceAccess(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkspaceAccess(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Access", err))
 
 		return
 	}
 
-	accessorType := config.AccessorType.ValueString()
+	accessorType := plan.AccessorType.ValueString()
 
-	workspaceAccess, err := client.Upsert(ctx, accessorType, config.AccessorID.ValueUUID(), config.WorkspaceRoleID.ValueUUID())
+	workspaceAccess, err := client.Upsert(ctx, accessorType, plan.AccessorID.ValueUUID(), plan.WorkspaceRoleID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "create", err))
 
 		return
 	}
 
-	copyWorkspaceAccessToModel(workspaceAccess, &config)
+	copyWorkspaceAccessToModel(workspaceAccess, &plan)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

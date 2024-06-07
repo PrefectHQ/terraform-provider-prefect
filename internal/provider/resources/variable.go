@@ -98,6 +98,9 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -133,41 +136,42 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	}
 }
 
-// copyVariableToModel copies an api.Variable to a VariableResourceModel.
-func copyVariableToModel(ctx context.Context, variable *api.Variable, model *VariableResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(variable.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(variable.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
+// copyVariableToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *VariableResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(variable.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(variable.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
-	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
+	tfModel.Name = types.StringValue(variable.Name)
+	tfModel.Value = types.StringValue(variable.Value)
 
 	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	if diags.HasError() {
 		return diags
 	}
-	model.Tags = tags
+	tfModel.Tags = tags
 
 	return nil
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model VariableResourceModel
+	var plan VariableResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var tags []string
-	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Variables(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -178,8 +182,8 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	variable, err := client.Create(ctx, api.VariableCreate{
-		Name:  model.Name.ValueString(),
-		Value: model.Value.ValueString(),
+		Name:  plan.Name.ValueString(),
+		Value: plan.Value.ValueString(),
 		Tags:  tags,
 	})
 	if err != nil {
@@ -191,12 +195,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -204,15 +208,15 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 
 // Read refreshes the Terraform state with the latest data.
 func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model VariableResourceModel
+	var state VariableResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Variables(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -228,9 +232,9 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	var variable *api.Variable
 
 	switch {
-	case !model.ID.IsNull():
+	case !state.ID.IsNull():
 		var variableID uuid.UUID
-		variableID, err = uuid.Parse(model.ID.ValueString())
+		variableID, err = uuid.Parse(state.ID.ValueString())
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("id"),
@@ -241,8 +245,8 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 			return
 		}
 		variable, err = client.Get(ctx, variableID)
-	case !model.Name.IsNull():
-		variable, err = client.GetByName(ctx, model.Name.ValueString())
+	case !state.Name.IsNull():
+		variable, err = client.GetByName(ctx, state.Name.ValueString())
 	default:
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
@@ -261,12 +265,12 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -274,14 +278,14 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model VariableResourceModel
+	var plan VariableResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Variables(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -292,12 +296,12 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	var tags []string
-	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	variableID, err := uuid.Parse(model.ID.ValueString())
+	variableID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -309,8 +313,8 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	err = client.Update(ctx, variableID, api.VariableUpdate{
-		Name:  model.Name.ValueString(),
-		Value: model.Value.ValueString(),
+		Name:  plan.Name.ValueString(),
+		Value: plan.Value.ValueString(),
 		Tags:  tags,
 	})
 	if err != nil {
@@ -332,12 +336,12 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &model)...)
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -345,14 +349,14 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model VariableResourceModel
+	var state VariableResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Variables(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -362,7 +366,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	variableID, err := uuid.Parse(model.ID.ValueString())
+	variableID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -383,7 +387,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
