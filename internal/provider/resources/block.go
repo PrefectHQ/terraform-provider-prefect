@@ -106,6 +106,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"type_slug": schema.StringAttribute{
 				Required:    true,
 				Description: "Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block types ls` to view all available Block type slugs.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"data": schema.StringAttribute{
 				Required:    true,
