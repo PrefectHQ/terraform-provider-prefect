@@ -13,8 +13,6 @@ type DeploymentsClient interface {
 	List(ctx context.Context, handleNames []string) ([]*Deployment, error)
 	Update(ctx context.Context, deploymentID uuid.UUID, data DeploymentUpdate) error
 	Delete(ctx context.Context, deploymentID uuid.UUID) error
-	SetAccess(ctx context.Context, deploymentID uuid.UUID, accessControl DeploymentAccessSet) error
-	ReadAccess(ctx context.Context, deploymentID uuid.UUID) (*DeploymentAccessControl, error)
 }
 
 // Deployment is a representation of a deployment.
