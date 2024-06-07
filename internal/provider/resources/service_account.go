@@ -155,35 +155,36 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 	}
 }
 
-// Function that copies api.ServiceAccount to a ServiceAccountResourceModel.
-// NOTE: the API Key is attached to the resource model outside of this helper,
-// as it is only returned on Create/Update operations.
-func copyServiceAccountResponseToModel(serviceAccount *api.ServiceAccount, model *ServiceAccountResourceModel) {
-	model.ID = types.StringValue(serviceAccount.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(serviceAccount.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
+// copyServiceAccountResponseToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyServiceAccountResponseToModel(serviceAccount *api.ServiceAccount, tfModel *ServiceAccountResourceModel) {
+	// NOTE: the API Key is attached to the resource model outside of this helper,
+	// as it is only returned on Create/Update operations.
+	tfModel.ID = types.StringValue(serviceAccount.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(serviceAccount.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
 
-	model.Name = types.StringValue(serviceAccount.Name)
-	model.AccountID = customtypes.NewUUIDValue(serviceAccount.AccountID)
-	model.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
+	tfModel.Name = types.StringValue(serviceAccount.Name)
+	tfModel.AccountID = customtypes.NewUUIDValue(serviceAccount.AccountID)
+	tfModel.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
 
-	model.APIKeyID = types.StringValue(serviceAccount.APIKey.ID)
-	model.APIKeyName = types.StringValue(serviceAccount.APIKey.Name)
-	model.APIKeyCreated = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Created)
-	model.APIKeyExpiration = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Expiration)
+	tfModel.APIKeyID = types.StringValue(serviceAccount.APIKey.ID)
+	tfModel.APIKeyName = types.StringValue(serviceAccount.APIKey.Name)
+	tfModel.APIKeyCreated = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Created)
+	tfModel.APIKeyExpiration = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Expiration)
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model ServiceAccountResourceModel
+	var config ServiceAccountResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	serviceAccountClient, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	serviceAccountClient, err := r.client.ServiceAccounts(config.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
@@ -191,20 +192,20 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	createReq := api.ServiceAccountCreateRequest{
-		Name: model.Name.ValueString(),
+		Name: config.Name.ValueString(),
 	}
 
 	// If the Account Role Name is provided, we'll need to fetch the Account Role ID
 	// and attach it to the Create request.
-	if !model.AccountRoleName.IsNull() && !model.AccountRoleName.IsUnknown() {
-		accountRoleClient, err := r.client.AccountRoles(model.AccountID.ValueUUID())
+	if !config.AccountRoleName.IsNull() && !config.AccountRoleName.IsUnknown() {
+		accountRoleClient, err := r.client.AccountRoles(config.AccountID.ValueUUID())
 		if err != nil {
 			resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account Role", err))
 
 			return
 		}
 
-		accountRoles, err := accountRoleClient.List(ctx, []string{model.AccountRoleName.ValueString()})
+		accountRoles, err := accountRoleClient.List(ctx, []string{config.AccountRoleName.ValueString()})
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error fetching Account Role",
@@ -217,7 +218,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		if len(accountRoles) != 1 {
 			resp.Diagnostics.AddError(
 				"Could not find Account Role",
-				fmt.Sprintf("Could not find Account Role with name %s", model.AccountRoleName.String()),
+				fmt.Sprintf("Could not find Account Role with name %s", config.AccountRoleName.String()),
 			)
 
 			return
@@ -227,8 +228,8 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	// Conditionally set APIKeyExpiration if it's provided
-	if !model.APIKeyExpiration.ValueTime().IsZero() {
-		expiration := model.APIKeyExpiration.ValueTime().Format(time.RFC3339)
+	if !config.APIKeyExpiration.ValueTime().IsZero() {
+		expiration := config.APIKeyExpiration.ValueTime().Format(time.RFC3339)
 		createReq.APIKeyExpiration = expiration
 	}
 
@@ -242,14 +243,14 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	copyServiceAccountResponseToModel(serviceAccount, &model)
+	copyServiceAccountResponseToModel(serviceAccount, &config)
 
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
 	// overwritten in state when this helper is used on Read operations.
-	model.APIKey = types.StringValue(serviceAccount.APIKey.Key)
+	config.APIKey = types.StringValue(serviceAccount.APIKey.Key)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -257,15 +258,15 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 
 // Read refreshes the Terraform state with the latest data.
 func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model ServiceAccountResourceModel
+	var state ServiceAccountResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if model.ID.IsNull() && model.Name.IsNull() {
+	if state.ID.IsNull() && state.Name.IsNull() {
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
 			"This is a bug in the Terraform provider. Please report it to the maintainers.",
@@ -274,7 +275,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	client, err := r.client.ServiceAccounts(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
@@ -284,16 +285,16 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	// A Service Account can be read by either ID or Name.
 	// If both are set, we prefer the ID
 	var serviceAccount *api.ServiceAccount
-	if !model.ID.IsNull() {
-		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
-	} else if !model.Name.IsNull() {
+	if !state.ID.IsNull() {
+		serviceAccount, err = client.Get(ctx, state.ID.ValueString())
+	} else if !state.Name.IsNull() {
 		var serviceAccounts []*api.ServiceAccount
-		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
+		serviceAccounts, err = client.List(ctx, []string{state.Name.ValueString()})
 
 		// The error from the API call should take precedence
 		// followed by this custom error if a specific service account is not returned
 		if err == nil && len(serviceAccounts) != 1 {
-			err = fmt.Errorf("a Service Account with the name=%s could not be found", model.Name.ValueString())
+			err = fmt.Errorf("a Service Account with the name=%s could not be found", state.Name.ValueString())
 		}
 
 		if len(serviceAccounts) == 1 {
@@ -304,7 +305,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	if serviceAccount == nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not find Service Account with ID=%s and Name=%s", model.ID.ValueString(), model.Name.ValueString()),
+			fmt.Sprintf("Could not find Service Account with ID=%s and Name=%s", state.ID.ValueString(), state.Name.ValueString()),
 		)
 
 		return
@@ -319,9 +320,9 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	copyServiceAccountResponseToModel(serviceAccount, &model)
+	copyServiceAccountResponseToModel(serviceAccount, &state)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -456,21 +457,21 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model ServiceAccountResourceModel
+	var state ServiceAccountResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.ServiceAccounts(model.AccountID.ValueUUID())
+	client, err := r.client.ServiceAccounts(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
 		return
 	}
 
-	err = client.Delete(ctx, model.ID.ValueString())
+	err = client.Delete(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting Service Account",
@@ -480,7 +481,7 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -132,38 +132,38 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
-func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
-	resp.Diagnostics.AddError("Cannot create account", "Account is an import-only resource and cannot be created by Terraform.")
-}
+// copyAccountToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel *AccountResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(account.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
-// copyAccountToModel copies an api.AccountResponse to an AccountResourceModel.
-func copyAccountToModel(_ context.Context, account *api.AccountResponse, model *AccountResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(account.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(account.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
-
-	model.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
-	model.BillingEmail = types.StringPointerValue(account.BillingEmail)
-	model.Handle = types.StringValue(account.Handle)
-	model.Link = types.StringPointerValue(account.Link)
-	model.Location = types.StringPointerValue(account.Location)
-	model.Name = types.StringValue(account.Name)
+	tfModel.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
+	tfModel.BillingEmail = types.StringPointerValue(account.BillingEmail)
+	tfModel.Handle = types.StringValue(account.Handle)
+	tfModel.Link = types.StringPointerValue(account.Link)
+	tfModel.Location = types.StringPointerValue(account.Location)
+	tfModel.Name = types.StringValue(account.Name)
 
 	return nil
 }
 
+func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
+	resp.Diagnostics.AddError("Cannot create account", "Account is an import-only resource and cannot be created by Terraform.")
+}
+
 // Read refreshes the Terraform state with the latest data.
 func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model AccountResourceModel
+	var state AccountResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -189,12 +189,12 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -202,14 +202,14 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model AccountResourceModel
+	var plan AccountResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -226,12 +226,12 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:                  model.Name.ValueStringPointer(),
-		Handle:                model.Handle.ValueStringPointer(),
-		Location:              model.Location.ValueStringPointer(),
-		Link:                  model.Link.ValueStringPointer(),
-		AllowPublicWorkspaces: model.AllowPublicWorkspaces.ValueBoolPointer(),
-		BillingEmail:          model.BillingEmail.ValueStringPointer(),
+		Name:                  plan.Name.ValueStringPointer(),
+		Handle:                plan.Handle.ValueStringPointer(),
+		Location:              plan.Location.ValueStringPointer(),
+		Link:                  plan.Link.ValueStringPointer(),
+		AllowPublicWorkspaces: plan.AllowPublicWorkspaces.ValueBoolPointer(),
+		BillingEmail:          plan.BillingEmail.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -252,12 +252,12 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -265,14 +265,14 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model AccountResourceModel
+	var state AccountResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -298,7 +298,7 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

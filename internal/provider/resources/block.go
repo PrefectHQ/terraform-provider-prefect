@@ -93,6 +93,11 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				// attributes which are not configurable + should not show updates from the existing state value
+				// should implement `UseStateForUnknown()`
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -109,6 +114,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			},
 			"data": schema.StringAttribute{
 				Required:    true,
+				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
 			},

@@ -130,16 +130,17 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 	}
 }
 
-// copyWorkspaceRoleToModel copies an api.WorkspaceRole to a WorkspaceRoleDataSourceModel.
-func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model *WorkspaceRoleResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(role.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(role.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(role.Updated)
+// copyWorkspaceRoleToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, tfModel *WorkspaceRoleResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(role.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(role.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(role.Updated)
 
-	model.Name = types.StringValue(role.Name)
-	model.Description = types.StringPointerValue(role.Description)
-	model.AccountID = customtypes.NewUUIDPointerValue(role.AccountID)
-	model.InheritedRoleID = customtypes.NewUUIDPointerValue(role.InheritedRoleID)
+	tfModel.Name = types.StringValue(role.Name)
+	tfModel.Description = types.StringPointerValue(role.Description)
+	tfModel.AccountID = customtypes.NewUUIDPointerValue(role.AccountID)
+	tfModel.InheritedRoleID = customtypes.NewUUIDPointerValue(role.InheritedRoleID)
 
 	// NOTE: here, we'll omit updating the TF state with the scopes returned from the API
 	// as scopes in Prefect Cloud have a hierarchical structure. For example, setting `manage_blocks`
@@ -160,21 +161,21 @@ func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model 
 }
 
 func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model WorkspaceRoleResourceModel
+	var config WorkspaceRoleResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var scopes []string
-	resp.Diagnostics.Append(model.Scopes.ElementsAs(ctx, &scopes, false)...)
+	resp.Diagnostics.Append(config.Scopes.ElementsAs(ctx, &scopes, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(config.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating Workspace Role client",
@@ -185,10 +186,10 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	role, err := client.Create(ctx, api.WorkspaceRoleUpsert{
-		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueString(),
+		Name:            config.Name.ValueString(),
+		Description:     config.Description.ValueString(),
 		Scopes:          scopes,
-		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
+		InheritedRoleID: config.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -199,12 +200,12 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -212,15 +213,15 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 
 // Read refreshes the Terraform state with the latest data.
 func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model WorkspaceRoleResourceModel
+	var state WorkspaceRoleResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating Workspace Role client",
@@ -230,7 +231,7 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -249,12 +250,12 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,14 +263,14 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model WorkspaceRoleResourceModel
+	var plan WorkspaceRoleResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating Workspace Role client",
@@ -280,12 +281,12 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	var scopes []string
-	resp.Diagnostics.Append(model.Scopes.ElementsAs(ctx, &scopes, false)...)
+	resp.Diagnostics.Append(plan.Scopes.ElementsAs(ctx, &scopes, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -297,10 +298,10 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	err = client.Update(ctx, roleID, api.WorkspaceRoleUpsert{
-		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueString(),
+		Name:            plan.Name.ValueString(),
+		Description:     plan.Description.ValueString(),
 		Scopes:          scopes,
-		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
+		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -321,12 +322,12 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -334,14 +335,14 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model WorkspaceRoleResourceModel
+	var state WorkspaceRoleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating Workspace Role client",
@@ -351,7 +352,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -372,7 +373,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

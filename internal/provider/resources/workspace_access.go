@@ -115,23 +115,24 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 	}
 }
 
-// copyWorkspaceAccessToModel copies the API resource to the Terraform model.
-// Note that api.WorkspaceAccess represents a combined model for all accessor types,
-// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
-// depending on the accessor type.
-func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, model *WorkspaceAccessResourceModel) {
-	model.ID = types.StringValue(access.ID.String())
-	model.WorkspaceRoleID = customtypes.NewUUIDValue(access.WorkspaceRoleID)
-	model.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
+// copyWorkspaceAccessToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, tfModel *WorkspaceAccessResourceModel) {
+	// NOTE: api.WorkspaceAccess represents a combined model for all accessor types,
+	// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
+	// depending on the accessor type.
+	tfModel.ID = types.StringValue(access.ID.String())
+	tfModel.WorkspaceRoleID = customtypes.NewUUIDValue(access.WorkspaceRoleID)
+	tfModel.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
 
 	if access.BotID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.BotID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.BotID)
 	}
 	if access.UserID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.UserID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.UserID)
 	}
 	if access.TeamID != nil {
-		model.AccessorID = customtypes.NewUUIDValue(*access.TeamID)
+		tfModel.AccessorID = customtypes.NewUUIDValue(*access.TeamID)
 	}
 }
 
