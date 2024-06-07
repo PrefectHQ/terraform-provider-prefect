@@ -78,8 +78,6 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Workspace Access ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

@@ -85,8 +85,6 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Workspace Role ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -95,6 +93,9 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,

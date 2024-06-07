@@ -107,6 +107,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,

@@ -103,10 +103,6 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
-				// In general, we can use UseStateForUnknown() to avoid unnecessary
-				// cases of `known after apply` states during plans. Mostly, this planmodifier
-				// is suitable for Computed attributes that do not change often and
-				// do not have a default value set here in the Schema.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

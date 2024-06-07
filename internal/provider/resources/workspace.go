@@ -94,6 +94,9 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,

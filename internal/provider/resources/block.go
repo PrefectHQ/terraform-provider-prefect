@@ -82,9 +82,8 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Block ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -93,8 +92,6 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
