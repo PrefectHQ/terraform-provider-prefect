@@ -157,21 +157,21 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config VariableResourceModel
+	var plan VariableResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var tags []string
-	resp.Diagnostics.Append(config.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Variables(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating variable client",
@@ -182,8 +182,8 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	variable, err := client.Create(ctx, api.VariableCreate{
-		Name:  config.Name.ValueString(),
-		Value: config.Value.ValueString(),
+		Name:  plan.Name.ValueString(),
+		Value: plan.Value.ValueString(),
 		Tags:  tags,
 	})
 	if err != nil {
@@ -195,12 +195,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &config)...)
+	resp.Diagnostics.Append(copyVariableToModel(ctx, variable, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

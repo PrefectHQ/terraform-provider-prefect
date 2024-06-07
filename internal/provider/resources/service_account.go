@@ -179,15 +179,15 @@ func copyServiceAccountResponseToModel(serviceAccount *api.ServiceAccount, tfMod
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *ServiceAccountResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config ServiceAccountResourceModel
+	var plan ServiceAccountResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	serviceAccountClient, err := r.client.ServiceAccounts(config.AccountID.ValueUUID())
+	serviceAccountClient, err := r.client.ServiceAccounts(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
@@ -195,20 +195,20 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	createReq := api.ServiceAccountCreateRequest{
-		Name: config.Name.ValueString(),
+		Name: plan.Name.ValueString(),
 	}
 
 	// If the Account Role Name is provided, we'll need to fetch the Account Role ID
 	// and attach it to the Create request.
-	if !config.AccountRoleName.IsNull() && !config.AccountRoleName.IsUnknown() {
-		accountRoleClient, err := r.client.AccountRoles(config.AccountID.ValueUUID())
+	if !plan.AccountRoleName.IsNull() && !plan.AccountRoleName.IsUnknown() {
+		accountRoleClient, err := r.client.AccountRoles(plan.AccountID.ValueUUID())
 		if err != nil {
 			resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account Role", err))
 
 			return
 		}
 
-		accountRoles, err := accountRoleClient.List(ctx, []string{config.AccountRoleName.ValueString()})
+		accountRoles, err := accountRoleClient.List(ctx, []string{plan.AccountRoleName.ValueString()})
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error fetching Account Role",
@@ -221,7 +221,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		if len(accountRoles) != 1 {
 			resp.Diagnostics.AddError(
 				"Could not find Account Role",
-				fmt.Sprintf("Could not find Account Role with name %s", config.AccountRoleName.String()),
+				fmt.Sprintf("Could not find Account Role with name %s", plan.AccountRoleName.String()),
 			)
 
 			return
@@ -231,8 +231,8 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	// Conditionally set APIKeyExpiration if it's provided
-	if !config.APIKeyExpiration.ValueTime().IsZero() {
-		expiration := config.APIKeyExpiration.ValueTime().Format(time.RFC3339)
+	if !plan.APIKeyExpiration.ValueTime().IsZero() {
+		expiration := plan.APIKeyExpiration.ValueTime().Format(time.RFC3339)
 		createReq.APIKeyExpiration = expiration
 	}
 
@@ -246,14 +246,14 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	copyServiceAccountResponseToModel(serviceAccount, &config)
+	copyServiceAccountResponseToModel(serviceAccount, &plan)
 
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
 	// overwritten in state when this helper is used on Read operations.
-	config.APIKey = types.StringValue(serviceAccount.APIKey.Key)
+	plan.APIKey = types.StringValue(serviceAccount.APIKey.Key)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

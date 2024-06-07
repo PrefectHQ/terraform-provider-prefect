@@ -141,15 +141,15 @@ func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, tfModel *
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config WorkspaceResourceModel
+	var plan WorkspaceResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Workspaces(config.AccountID.ValueUUID())
+	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating workspace client",
@@ -158,9 +158,9 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	workspace, err := client.Create(ctx, api.WorkspaceCreate{
-		Name:        config.Name.ValueString(),
-		Handle:      config.Handle.ValueString(),
-		Description: config.Description.ValueStringPointer(),
+		Name:        plan.Name.ValueString(),
+		Handle:      plan.Handle.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -171,12 +171,12 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &config)...)
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

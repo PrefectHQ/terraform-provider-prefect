@@ -216,17 +216,17 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoo
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config WorkPoolResourceModel
+	var plan WorkPoolResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !config.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(config.BaseJobTemplate.ValueString())
+	if !plan.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(plan.BaseJobTemplate.ValueString())
 		decoder := json.NewDecoder(reader)
 		err := decoder.Decode(&baseJobTemplate)
 		if err != nil {
@@ -240,7 +240,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	client, err := r.client.WorkPools(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating work pool client",
@@ -251,12 +251,12 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	pool, err := client.Create(ctx, api.WorkPoolCreate{
-		Name:             config.Name.ValueString(),
-		Description:      config.Description.ValueStringPointer(),
-		Type:             config.Type.ValueString(),
+		Name:             plan.Name.ValueString(),
+		Description:      plan.Description.ValueStringPointer(),
+		Type:             plan.Type.ValueString(),
 		BaseJobTemplate:  baseJobTemplate,
-		IsPaused:         config.Paused.ValueBool(),
-		ConcurrencyLimit: config.ConcurrencyLimit.ValueInt64Pointer(),
+		IsPaused:         plan.Paused.ValueBool(),
+		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -267,12 +267,12 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &config)...)
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

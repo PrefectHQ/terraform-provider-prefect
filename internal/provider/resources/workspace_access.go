@@ -136,33 +136,33 @@ func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, tfModel *WorkspaceA
 
 // Create will create the Workspace Access resource through the API and insert it into the State.
 func (r *WorkspaceAccessResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config WorkspaceAccessResourceModel
+	var plan WorkspaceAccessResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceAccess(config.AccountID.ValueUUID(), config.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkspaceAccess(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Access", err))
 
 		return
 	}
 
-	accessorType := config.AccessorType.ValueString()
+	accessorType := plan.AccessorType.ValueString()
 
-	workspaceAccess, err := client.Upsert(ctx, accessorType, config.AccessorID.ValueUUID(), config.WorkspaceRoleID.ValueUUID())
+	workspaceAccess, err := client.Upsert(ctx, accessorType, plan.AccessorID.ValueUUID(), plan.WorkspaceRoleID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "create", err))
 
 		return
 	}
 
-	copyWorkspaceAccessToModel(workspaceAccess, &config)
+	copyWorkspaceAccessToModel(workspaceAccess, &plan)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

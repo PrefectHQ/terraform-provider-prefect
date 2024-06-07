@@ -162,21 +162,21 @@ func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, tfMode
 }
 
 func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var config WorkspaceRoleResourceModel
+	var plan WorkspaceRoleResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var scopes []string
-	resp.Diagnostics.Append(config.Scopes.ElementsAs(ctx, &scopes, false)...)
+	resp.Diagnostics.Append(plan.Scopes.ElementsAs(ctx, &scopes, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(config.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating Workspace Role client",
@@ -187,10 +187,10 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	role, err := client.Create(ctx, api.WorkspaceRoleUpsert{
-		Name:            config.Name.ValueString(),
-		Description:     config.Description.ValueString(),
+		Name:            plan.Name.ValueString(),
+		Description:     plan.Description.ValueString(),
 		Scopes:          scopes,
-		InheritedRoleID: config.InheritedRoleID.ValueUUIDPointer(),
+		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -201,12 +201,12 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &config)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
