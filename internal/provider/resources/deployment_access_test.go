@@ -29,51 +29,6 @@ resource "prefect_deployment" "deployment" {
 	flow_id = prefect_flow.flow.id
 	entrypoint = "hello_world.py:hello_world"
 	tags = ["test"]
-
-	// "schedules": [
-	// 	{
-	// 		"active": true,
-	// 		"schedule": {
-	// 			"interval": 0,
-	// 			"anchor_date": "2019-08-24T14:15:22Z",
-	// 			"timezone": "America/New_York"
-	// 		}
-	// 	}
-	// ],
-	// parameters: {
-	// 	'goodbye': True
-	// },
-	// parameter_openapi_schema = {
-	// 	'title': 'Parameters',
-	// 	'type': 'object',
-	// 	'properties': {
-	// 		'name': {...},
-	// 		'goodbye': {...}
-	// 	}
-	// }
-
-	// is_schedule_active = true
-	// paused = false
-	// 
-	// enforce_parameter_schema = false
-	// "parameter_openapi_schema": { },
-	// "pull_steps": [
-	// { }
-	// ],
-	
-	// manifest_path = "string"
-	// work_queue_name = "string"
-	// work_pool_name = "my-work-pool"
-	// storage_document_id = "e0212ac4-7ec3-401b-b1e6-2a4627d8e7ec"
-	// infrastructure_document_id = "ce9a08a7-d77b-4b3f-826a-53820cfe01fa"
-	// schedule = {
-	// 	interval = 0
-	// 	anchor_date = "2019-08-24T14:15:22Z"
-	// 	timezone = "America/New_York"
-	// },
-	// path = "string"
-	// version = "string"
-	// infra_overrides = { }
 }
 
 data prefect_account_members account_members {}
@@ -85,59 +40,19 @@ resource "prefect_deployment_access" "deployment_access" {
 		manage_actor_ids = [
 			data.prefect_account_members.account_members.members[0].actor_id
 		]
-		// run_actor_ids = [
-		// 	data.prefect_account_member.member.id
-		// ]
-		// view_actor_ids = [
-		// 	data.prefect_account_member.member.id
-		// ]
-		// manage_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
-		// run_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
-		// view_team_ids = [
-		// 	"497f6eca-6276-4993-bfeb-53cbbbba6f08"
-		// ]
 	}
 }
 `, name, name, name, name)
 }
 
-// func fixtureAccDeploymentAccessResourceUpdateForBot(botName string) string {
-// 	return fmt.Sprintf(`
-// data "prefect_workspace_role" "runner" {
-// 	name = "Runner"
-// }
-// data "prefect_workspace" "evergreen" {
-// 	handle = "evergreen-workspace"
-// }
-// resource "prefect_service_account" "bot" {
-// 	name = "%s"
-// }
-// resource "prefect_workspace_access" "bot_access" {
-// 	accessor_type = "SERVICE_ACCOUNT"
-// 	accessor_id = prefect_service_account.bot.id
-// 	workspace_id = data.prefect_workspace.evergreen.id
-// 	workspace_role_id = data.prefect_workspace_role.runner.id
-// }`, botName)
-// }
-
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_access_members(t *testing.T) {
-	// resourceName := "prefect_deployment.deployment"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 
-	accessResourceName := "prefect_deployment_access.deployment_access"
-	// botResourceName := "prefect_service_account.bot"
-	// workspaceDatsourceName := "data.prefect_workspace.evergreen"
-	// developerRoleDatsourceName := "data.prefect_workspace_role.developer"
-	// runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
-
-	// We use this variable to store the fetched resource from the API
-	// and it will be shared between TestSteps via a pointer.
-	// var workspaceAccess api.WorkspaceAccess
+	resourceName := "prefect_deployment_access.deployment_access"
+	deploymentResourceName := "prefect_deployment.deployment"
+	workspaceResourceName := "prefect_workspace.workspace"
+	accountMembersDatasourcename := "data.prefect_account_members.account_members"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -146,9 +61,12 @@ func TestAccResource_deployment_access_members(t *testing.T) {
 			{
 				Config: fixtureAccDeploymentAccess_members(randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(accessResourceName, "id"),
-					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
-					// resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
+					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestCheckResourceAttrPair(resourceName, "id", deploymentResourceName, "id"),
+					resource.TestCheckResourceAttrPair(resourceName, "workspace_id", workspaceResourceName, "id"),
+					resource.TestCheckResourceAttrPair(resourceName, "deployment_id", deploymentResourceName, "id"),
+					resource.TestCheckResourceAttrPair(resourceName, "manage_actor_ids.0", accountMembersDatasourcename, "members.0.actor_id"),
+					resource.TestCheckResourceAttrPair(resourceName, "result.manage_actors.0.id", accountMembersDatasourcename, "members.0.actor_id"),
 				),
 			},
 			// {
