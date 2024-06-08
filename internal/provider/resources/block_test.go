@@ -32,9 +32,8 @@ resource "prefect_block" "block" {
 	`, name, name, name, value)
 }
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_block(t *testing.T) {
-	t.Parallel()
-
 	blockResourceName := "prefect_block.block"
 	const workspaceResourceName = "prefect_workspace.workspace"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
@@ -45,7 +44,7 @@ func TestAccResource_block(t *testing.T) {
 	// and it will be shared between the TestSteps via pointer.
 	var blockDocument api.BlockDocument
 
-	resource.Test(t, resource.TestCase{
+	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{

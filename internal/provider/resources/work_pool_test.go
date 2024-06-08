@@ -29,9 +29,8 @@ resource "prefect_work_pool" "test" {
 `, name, name, name, poolType, paused)
 }
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_work_pool(t *testing.T) {
-	t.Parallel()
-
 	workPoolResourceName := "prefect_work_pool.test"
 	workspaceResourceName := "prefect_workspace.workspace"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
