@@ -36,6 +36,7 @@ type ServiceAccountResourceModel struct {
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	Name            types.String          `tfsdk:"name"`
+	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
 	AccountRoleName types.String          `tfsdk:"account_role_name"`
 
@@ -116,6 +117,11 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
+			"actor_id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Actor ID (UUID), used for granting access to resources like Blocks and Deployments",
+			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
@@ -168,6 +174,7 @@ func copyServiceAccountResponseToModel(serviceAccount *api.ServiceAccount, tfMod
 	tfModel.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
 
 	tfModel.Name = types.StringValue(serviceAccount.Name)
+	tfModel.ActorID = customtypes.NewUUIDValue(serviceAccount.ActorID)
 	tfModel.AccountID = customtypes.NewUUIDValue(serviceAccount.AccountID)
 	tfModel.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
 

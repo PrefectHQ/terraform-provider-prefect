@@ -58,7 +58,7 @@ var accountMemberAttributesBase = map[string]schema.Attribute{
 	"actor_id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Actor ID (UUID)",
+		Description: "Actor ID (UUID), used for granting access to resources like Blocks and Deployments",
 	},
 	"user_id": schema.StringAttribute{
 		Computed:    true,

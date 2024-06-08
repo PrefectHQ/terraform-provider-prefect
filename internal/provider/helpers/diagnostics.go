@@ -26,6 +26,6 @@ func CreateClientErrorDiagnostic(clientName string, err error) diag.Diagnostic {
 func ResourceClientErrorDiagnostic(resourceName string, operation string, err error) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error during %s %s", operation, resourceName),
-		fmt.Sprintf("Could not %s %s, unexpected error: %s", operation, resourceName, err),
+		fmt.Sprintf("Could not %s %s, unexpected error: %s", operation, resourceName, err.Error()),
 	)
 }

@@ -12,8 +12,8 @@ type BlockDocumentClient interface {
 	Update(ctx context.Context, id uuid.UUID, payload BlockDocumentUpdate) error
 	Delete(ctx context.Context, id uuid.UUID) error
 
-	GetACL(ctx context.Context, id uuid.UUID) (*BlockDocumentAccess, error)
-	UpdateACL(ctx context.Context, id uuid.UUID, payload BlockDocumentAccessReplace) error
+	GetAccess(ctx context.Context, id uuid.UUID) (*BlockDocumentAccess, error)
+	UpsertAccess(ctx context.Context, id uuid.UUID, payload BlockDocumentAccessUpsert) error
 }
 
 type BlockDocument struct {
@@ -42,15 +42,21 @@ type BlockDocumentUpdate struct {
 	MergeExistingData bool                   `json:"merge_existing_data"`
 }
 
-// BlockDocumentAccessReplace is the "update" request payload
+// BlockDocumentAccessUpsert is the create/update request payload
 // to modify a block document's current access control levels,
 // meaning it contains the list of actors/teams + their respective access
 // to a given block document.
-type BlockDocumentAccessReplace struct {
-	ManageActorIDs []AccessActorID `json:"manage_actor_ids"`
-	ViewActorIDs   []AccessActorID `json:"view_actor_ids"`
-	ManageTeamIDs  []uuid.UUID     `json:"manage_team_ids"`
-	ViewTeamIDs    []uuid.UUID     `json:"view_team_ids"`
+type BlockDocumentAccessUpsert struct {
+	AccessControl struct {
+		ManageActorIDs []string `json:"manage_actor_ids"`
+		ViewActorIDs   []string `json:"view_actor_ids"`
+		ManageTeamIDs  []string `json:"manage_team_ids"`
+		ViewTeamIDs    []string `json:"view_team_ids"`
+		// ManageActorIDs []AccessActorID `json:"manage_actor_ids"`
+		// ViewActorIDs   []AccessActorID `json:"view_actor_ids"`
+		// ManageTeamIDs  []uuid.UUID     `json:"manage_team_ids"`
+		// ViewTeamIDs    []uuid.UUID     `json:"view_team_ids"`
+	} `json:"access_control"`
 }
 
 // BlockDocumentAccess is the API object representing a
