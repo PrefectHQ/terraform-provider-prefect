@@ -83,8 +83,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// CustomType:  customtypes.UUIDType{},
+				Computed:    true,
 				Description: "Block ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
