@@ -90,6 +90,8 @@ func TestAccResource_block(t *testing.T) {
 	})
 }
 
+// testAccCheckBlockExists is a Custom Check Function that
+// verifies that the API object was created correctly.
 func testAccCheckBlockExists(blockResourceName string, workspaceResourceName string, blockDocument *api.BlockDocument) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the block resource we just created from the state
@@ -130,6 +132,8 @@ type ExpectedBlockValues struct {
 	Data     string
 }
 
+// testAccCheckBlockValues is a Custom Check Function that
+// verifies that the API object matches the expected values.
 func testAccCheckBlockValues(fetchedBlockDocument *api.BlockDocument, expectedValues ExpectedBlockValues) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		if fetchedBlockDocument.Name != expectedValues.Name {
@@ -148,6 +152,8 @@ func testAccCheckBlockValues(fetchedBlockDocument *api.BlockDocument, expectedVa
 	}
 }
 
+// getBlockImportStateID generates the Import ID used in the test assertion,
+// since we need to construct one that includes the Block ID and the Workspace ID.
 func getBlockImportStateID(blockResourceName string, workspaceResourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
 		workspaceResource, exists := state.RootModule().Resources[workspaceResourceName]
