@@ -4,7 +4,7 @@ page_title: "prefect_block_access Resource - prefect"
 subcategory: ""
 description: |-
   This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
-  All Actors/Teams must first be granted access to the workspace where the Block resides.
+  All Actors/Teams must first be granted access to the Workspace where the Block resides.
   Leave fields empty to use the default access controls
 ---
 
@@ -12,7 +12,7 @@ description: |-
 
 This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
 
-All Actors/Teams must first be granted access to the workspace where the Block resides.
+All Actors/Teams must first be granted access to the Workspace where the Block resides.
 
 Leave fields empty to use the default access controls
 
@@ -74,11 +74,21 @@ resource "prefect_workspace_access" "team_developer" {
 }
 
 # Grant all Actors/Teams the appropriate Manage or View access to the Block
-resource "prefect_block_access" "access" {
+resource "prefect_block_access" "custom_access" {
   block_id         = prefect_block.my_secret.id
   manage_actor_ids = [prefect_service_account.bot.actor_id]
   view_actor_ids   = [data.prefect_account_member.user.actor_id]
   manage_team_ids  = [data.prefect_team.eng.id]
+  workspace_id     = data.prefect_workspace.my_workspace.id
+}
+
+# Optionally, leave all fields empty to use the default access controls
+resource "prefect_block_access" "default_access" {
+  block_id         = prefect_block.my_secret.id
+  manage_actor_ids = []
+  view_actor_ids   = []
+  manage_team_ids  = []
+  view_team_ids    = []
   workspace_id     = data.prefect_workspace.my_workspace.id
 }
 ```
@@ -93,8 +103,8 @@ resource "prefect_block_access" "access" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID) where the Block is located
-- `manage_actor_ids` (List of String) List of actor IDs with manage access to the Block. Leave empty to use the default access controls.
-- `manage_team_ids` (List of String) List of team IDs with manage access to the Block. Teams must be granted access to the workspace where the Block resides.
-- `view_actor_ids` (List of String) List of actor IDs with view access to the Block. Actors must be granted access to the workspace where the Block resides.
-- `view_team_ids` (List of String) List of team IDs with view access to the Block. Teams must be granted access to the workspace where the Block resides.
-- `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the resource or the provider's `workspace_id` must be set in order to manage the Block.
+- `manage_actor_ids` (List of String) List of actor IDs with manage access to the Block
+- `manage_team_ids` (List of String) List of team IDs with manage access to the Block
+- `view_actor_ids` (List of String) List of actor IDs with view access to the Block
+- `view_team_ids` (List of String) List of team IDs with view access to the Block
+- `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block_access` resource or the provider's `workspace_id` must be set.

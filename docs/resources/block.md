@@ -82,7 +82,7 @@ resource "prefect_block" "gcp_credentials_key" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID) where the Block is located
-- `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the resource or the provider's `workspace_id` must be set in order to manage the Block.
+- `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only
 
