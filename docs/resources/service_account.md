@@ -53,6 +53,7 @@ resource "prefect_service_account" "example" {
 
 ### Read-Only
 
+- `actor_id` (String) Actor ID (UUID), used for granting access to resources like Blocks and Deployments
 - `api_key` (String, Sensitive) API Key associated with the service account
 - `api_key_created` (String) Timestamp of the API Key creation (RFC3339)
 - `api_key_id` (String) API Key ID associated with the service account

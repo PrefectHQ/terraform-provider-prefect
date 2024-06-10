@@ -26,6 +26,7 @@ type ServiceAccountDataSourceModel struct {
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	Name            types.String          `tfsdk:"name"`
+	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
 	AccountRoleName types.String          `tfsdk:"account_role_name"`
 
@@ -84,6 +85,11 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
 		Description: "Timestamp of when the resource was updated (RFC3339)",
+	},
+	"actor_id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "Actor ID (UUID), used for granting access to resources like Blocks and Deployments",
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},

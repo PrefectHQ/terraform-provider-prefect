@@ -50,6 +50,7 @@ type ServiceAccountFilter struct {
 // ServiceAccount is a representation of a created service account (from a Create response).
 type ServiceAccount struct {
 	BaseModel
+	ActorID         uuid.UUID            `json:"actor_id"`
 	AccountID       uuid.UUID            `json:"account_id"`
 	Name            string               `json:"name"`
 	AccountRoleName string               `json:"account_role_name"`

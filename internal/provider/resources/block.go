@@ -127,7 +127,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the resource or the provider's `workspace_id` must be set in order to manage the Block.",
+				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block` resource or the provider's `workspace_id` must be set.",
 			},
 		},
 	}
@@ -192,7 +192,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		func() (*api.BlockType, error) {
 			return blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
 		},
-		retry.Attempts(utils.RetryAttempts),
+		utils.DefaultRetryOptions...,
 	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
@@ -213,7 +213,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 			return blockSchemas, nil
 		},
-		retry.Attempts(utils.RetryAttempts),
+		utils.DefaultRetryOptions...,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(

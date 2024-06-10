@@ -159,7 +159,7 @@ func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (c *BlockDocumentClient) GetACL(ctx context.Context, id uuid.UUID) (*api.BlockDocumentAccess, error) {
+func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api.BlockDocumentAccess, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
@@ -187,8 +187,7 @@ func (c *BlockDocumentClient) GetACL(ctx context.Context, id uuid.UUID) (*api.Bl
 	return &blockDocumentAccess, nil
 }
 
-func (c *BlockDocumentClient) UpdateACL(ctx context.Context, id uuid.UUID, payload api.
-	BlockDocumentAccessReplace) error {
+func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, payload api.BlockDocumentAccessUpsert) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
 		return fmt.Errorf("failed to encode update payload data: %w", err)
