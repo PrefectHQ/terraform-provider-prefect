@@ -192,7 +192,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		func() (*api.BlockType, error) {
 			return blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
 		},
-		retry.Attempts(utils.RetryAttempts),
+		utils.DefaultRetryOptions...,
 	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
@@ -213,7 +213,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 			return blockSchemas, nil
 		},
-		retry.Attempts(utils.RetryAttempts),
+		utils.DefaultRetryOptions...,
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
