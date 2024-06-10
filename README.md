@@ -25,19 +25,19 @@ We're continuously adding more Prefect Cloud object support, striving for near-p
 
 Check back with us to see new additions and improvements - and please don't hesitate to peruse our [Contributing section!](#contributing)
 
-| Prefect Cloud object | Datasource support? | Resource support? | Import support? |
-|----------------------:|:---------------------:|:-------------------:|:-----------------:|
-| Account Member       |       &check;       |                   |                 |
-| Account Role         |       &check;       |                   |                 |
-| Account              |       &check;       |      &check;      |     &check;     |
-| Block                |                     |      &check;      |     &check;     |
-| Service Account      |       &check;       |      &check;      |     &check;     |
-| Team                 |       &check;       |                   |                 |
-| Variable             |       &check;       |      &check;      |     &check;     |
-| Work Pool            |       &check;       |      &check;      |     &check;     |
-| Workspace Access     |       &check;       |      &check;      |                 |
-| Workspace Role       |       &check;       |      &check;      |     &check;     |
-| Workspace            |       &check;       |      &check;      |     &check;     |
+|   Prefect object | Datasource support? | Resource support? | Import support? | Cloud only? |
+| ---------------: | :-----------------: | :---------------: | :-------------: | :---------: |
+|   Account Member |       &check;       |                   |                 |   &check;   |
+|     Account Role |       &check;       |                   |                 |   &check;   |
+|          Account |       &check;       |      &check;      |     &check;     |   &check;   |
+|            Block |                     |      &check;      |     &check;     |             |
+|  Service Account |       &check;       |      &check;      |     &check;     |   &check;   |
+|             Team |       &check;       |                   |                 |   &check;   |
+|         Variable |       &check;       |      &check;      |     &check;     |             |
+|        Work Pool |       &check;       |      &check;      |     &check;     |             |
+| Workspace Access |       &check;       |      &check;      |                 |   &check;   |
+|   Workspace Role |       &check;       |      &check;      |     &check;     |   &check;   |
+|        Workspace |       &check;       |      &check;      |     &check;     |   &check;   |
 
 ## Contributing
 
