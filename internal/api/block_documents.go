@@ -52,10 +52,6 @@ type BlockDocumentAccessUpsert struct {
 		ViewActorIDs   []string `json:"view_actor_ids"`
 		ManageTeamIDs  []string `json:"manage_team_ids"`
 		ViewTeamIDs    []string `json:"view_team_ids"`
-		// ManageActorIDs []AccessActorID `json:"manage_actor_ids"`
-		// ViewActorIDs   []AccessActorID `json:"view_actor_ids"`
-		// ManageTeamIDs  []uuid.UUID     `json:"manage_team_ids"`
-		// ViewTeamIDs    []uuid.UUID     `json:"view_team_ids"`
 	} `json:"access_control"`
 }
 

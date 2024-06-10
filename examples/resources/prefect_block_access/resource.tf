@@ -53,10 +53,20 @@ resource "prefect_workspace_access" "team_developer" {
 }
 
 # Grant all Actors/Teams the appropriate Manage or View access to the Block
-resource "prefect_block_access" "access" {
+resource "prefect_block_access" "custom_access" {
   block_id         = prefect_block.my_secret.id
   manage_actor_ids = [prefect_service_account.bot.actor_id]
   view_actor_ids   = [data.prefect_account_member.user.actor_id]
   manage_team_ids  = [data.prefect_team.eng.id]
+  workspace_id     = data.prefect_workspace.my_workspace.id
+}
+
+# Optionally, leave all fields empty to use the default access controls
+resource "prefect_block_access" "default_access" {
+  block_id         = prefect_block.my_secret.id
+  manage_actor_ids = []
+  view_actor_ids   = []
+  manage_team_ids  = []
+  view_team_ids    = []
   workspace_id     = data.prefect_workspace.my_workspace.id
 }

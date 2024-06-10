@@ -67,7 +67,7 @@ func (r *BlockAccessResource) Schema(_ context.Context, _ resource.SchemaRequest
 		Description: `
 This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
 
-All Actors/Teams must first be granted access to the workspace where the Block resides.
+All Actors/Teams must first be granted access to the Workspace where the Block resides.
 
 Leave fields empty to use the default access controls
 `,
@@ -82,28 +82,28 @@ Leave fields empty to use the default access controls
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyList),
-				Description: "List of actor IDs with manage access to the Block. Leave empty to use the default access controls.",
+				Description: "List of actor IDs with manage access to the Block",
 				ElementType: types.StringType,
 			},
 			"view_actor_ids": schema.ListAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyList),
-				Description: "List of actor IDs with view access to the Block. Actors must be granted access to the workspace where the Block resides.",
+				Description: "List of actor IDs with view access to the Block",
 				ElementType: types.StringType,
 			},
 			"manage_team_ids": schema.ListAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyList),
-				Description: "List of team IDs with manage access to the Block. Teams must be granted access to the workspace where the Block resides.",
+				Description: "List of team IDs with manage access to the Block",
 				ElementType: types.StringType,
 			},
 			"view_team_ids": schema.ListAttribute{
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyList),
-				Description: "List of team IDs with view access to the Block. Teams must be granted access to the workspace where the Block resides.",
+				Description: "List of team IDs with view access to the Block",
 				ElementType: types.StringType,
 			},
 			"account_id": schema.StringAttribute{
@@ -114,7 +114,7 @@ Leave fields empty to use the default access controls
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the resource or the provider's `workspace_id` must be set in order to manage the Block.",
+				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block_access` resource or the provider's `workspace_id` must be set.",
 			},
 		},
 	}
