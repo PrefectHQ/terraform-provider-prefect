@@ -10,6 +10,8 @@ import (
 )
 
 func fixtureAccBlockByName(name string) string {
+	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+
 	return fmt.Sprintf(`
 data "prefect_workspace" "evergreen" {
 	handle = "github-ci-tests"
@@ -29,13 +31,19 @@ resource "prefect_block" "%s" {
 
 data "prefect_block" "my_existing_secret_by_id" {
   id = prefect_block.%s.id
+
+  account_id = "%s"
+  workspace_id = data.prefect_workspace.evergreen.id
 }
 
 data "prefect_block" "my_existing_secret_by_name" {
   name            = "%s"
   block_type_name = "secret"
+
+  account_id = "%s"
+  workspace_id = data.prefect_workspace.evergreen.id
 }
-`, name, name, os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"), name, name)
+`, name, name, aID, name, aID, name, aID)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
