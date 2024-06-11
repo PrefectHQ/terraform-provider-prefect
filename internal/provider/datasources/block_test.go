@@ -55,7 +55,7 @@ func TestAccDatasource_block(t *testing.T) {
 	datasourceNameByID := "data.prefect_block.my_existing_secret_by_id"
 	datasourceNameByName := "data.prefect_block.my_existing_secret_by_name"
 
-	blockName := "my_block"
+	blockName := "my-block"
 	blockValue := "{\"someKey\":\"someValue\"}"
 
 	resource.ParallelTest(t, resource.TestCase{
