@@ -1,0 +1,25 @@
+# .github/release.yml
+
+changelog:
+  exclude:
+    labels:
+      - maintenance
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking
+    - title: Dependency Updates
+      labels:
+        - dependencies
+    - title: Documentation
+      labels:
+        - docs
+    - title: Exciting New Features 🎉
+      labels:
+        - enhancement
+    - title: Fixes
+      labels:
+        - bugfix
+    - title: And more...
+      labels:
+        - "*"
