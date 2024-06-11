@@ -34,10 +34,10 @@ data "prefect_block" "existing_by_id_string" {
   id = "00000000-0000-0000-0000-000000000000"
 }
 
-# Get block by type name and name.
+# Get block by type slug and name.
 data "prefect_block" "existing_by_id_string" {
-  block_type_name = "secret"
-  name            = "my_existing_block"
+  name      = "my_existing_block"
+  type_slug = "secret"
 }
 ```
 
@@ -47,9 +47,9 @@ data "prefect_block" "existing_by_id_string" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `block_type_name` (String) Block type name
 - `id` (String) Block ID (UUID)
 - `name` (String) Name of the block
+- `type_slug` (String) Block type slug
 - `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only
