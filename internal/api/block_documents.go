@@ -8,6 +8,7 @@ import (
 
 type BlockDocumentClient interface {
 	Get(ctx context.Context, id uuid.UUID) (*BlockDocument, error)
+	GetByName(ctx context.Context, typeSlug, name string) (*BlockDocument, error)
 	Create(ctx context.Context, payload BlockDocumentCreate) (*BlockDocument, error)
 	Update(ctx context.Context, id uuid.UUID, payload BlockDocumentUpdate) error
 	Delete(ctx context.Context, id uuid.UUID) error

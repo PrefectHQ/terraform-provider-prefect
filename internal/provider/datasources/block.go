@@ -57,13 +57,15 @@ func (d *blockDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 func (d *blockDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: `
-Get information about an existing Block by ID.
+Get information about an existing Block by either:
+- ID, or
+- block type name and block name
 <br>
 Use this data source to obtain Block-specific attributes, such as the data.
 `,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Block ID (UUID)",
 			},
@@ -141,7 +143,20 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	var block *api.BlockDocument
 
-	block, err = client.Get(ctx, state.ID.ValueUUID())
+	switch {
+	case !state.ID.IsNull():
+		block, err = client.Get(ctx, state.ID.ValueUUID())
+	case !state.Name.IsNull() && !state.BlockTypeName.IsNull():
+		block, err = client.GetByName(ctx, state.BlockTypeName.ValueString(), state.Name.ValueString())
+	default:
+		resp.Diagnostics.AddError(
+			"Insufficient search criteria provided",
+			"Provide either the ID, or the block type name and block name.",
+		)
+
+		return
+	}
+
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error refreshing block state",
