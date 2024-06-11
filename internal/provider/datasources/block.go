@@ -34,9 +34,9 @@ type BlockDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name          types.String         `tfsdk:"name"`
-	Data          jsontypes.Normalized `tfsdk:"data"`
-	BlockTypeName types.String         `tfsdk:"block_type_name"`
+	Name     types.String         `tfsdk:"name"`
+	Data     jsontypes.Normalized `tfsdk:"data"`
+	TypeSlug types.String         `tfsdk:"type_slug"`
 }
 
 // NewBlockDataSource is a helper function to simplify the provider implementation.
@@ -101,9 +101,9 @@ Use this data source to obtain Block-specific attributes, such as the data.
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
 			},
-			"block_type_name": schema.StringAttribute{
+			"type_slug": schema.StringAttribute{
 				Computed:    true,
-				Description: "Block type name",
+				Description: "Block type slug",
 				Optional:    true,
 			},
 		},
@@ -132,8 +132,8 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	switch {
 	case !state.ID.IsNull():
 		block, err = client.Get(ctx, state.ID.ValueUUID())
-	case !state.Name.IsNull() && !state.BlockTypeName.IsNull():
-		block, err = client.GetByName(ctx, state.BlockTypeName.ValueString(), state.Name.ValueString())
+	case !state.Name.IsNull() && !state.TypeSlug.IsNull():
+		block, err = client.GetByName(ctx, state.TypeSlug.ValueString(), state.Name.ValueString())
 	default:
 		resp.Diagnostics.AddError(
 			"Insufficient search criteria provided",
@@ -157,7 +157,7 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 
 	state.Name = types.StringValue(block.Name)
-	state.BlockTypeName = types.StringPointerValue(block.BlockTypeName)
+	state.TypeSlug = types.StringValue(block.BlockType.Slug)
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {

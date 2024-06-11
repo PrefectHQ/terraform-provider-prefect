@@ -39,8 +39,8 @@ data "prefect_block" "my_existing_secret_by_id" {
 }
 
 data "prefect_block" "my_existing_secret_by_name" {
-  name            = "%s"
-  block_type_name = "secret"
+  name      = "%s"
+  type_slug = "secret"
 
   account_id = "%s"
   workspace_id = data.prefect_workspace.evergreen.id
