@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -46,6 +47,39 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 
 func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.BlockDocument, error) {
 	reqURL := fmt.Sprintf("%s/%s", c.routePrefix, id.String())
+	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	setDefaultHeaders(req, c.apiKey)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	}
+
+	var blockDocument api.BlockDocument
+	if err := json.NewDecoder(resp.Body).Decode(&blockDocument); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &blockDocument, nil
+}
+
+func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name string) (*api.BlockDocument, error) {
+	// This URL is a little different, as it starts with 'block_types' instead of 'block_documents'.
+	newRoutePrefix := fmt.Sprintf("block_types/slug/%s/block_documents/name/%s", typeSlug, name)
+	reqURL := strings.ReplaceAll(c.routePrefix, "block_documents", newRoutePrefix)
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)

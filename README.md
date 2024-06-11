@@ -30,7 +30,7 @@ Check back with us to see new additions and improvements - and please don't hesi
 |   Account Member |       &check;       |                   |                 |   &check;   |
 |     Account Role |       &check;       |                   |                 |   &check;   |
 |          Account |       &check;       |      &check;      |     &check;     |   &check;   |
-|            Block |                     |      &check;      |     &check;     |             |
+|            Block |       &check;       |      &check;      |     &check;     |             |
 |  Service Account |       &check;       |      &check;      |     &check;     |   &check;   |
 |             Team |       &check;       |                   |                 |   &check;   |
 |         Variable |       &check;       |      &check;      |     &check;     |             |
