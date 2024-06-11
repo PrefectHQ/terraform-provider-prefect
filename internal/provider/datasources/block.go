@@ -34,11 +34,9 @@ type BlockDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name          types.String          `tfsdk:"name"`
-	Data          jsontypes.Normalized  `tfsdk:"data"`
-	BlockSchemaID customtypes.UUIDValue `tfsdk:"block_schema_id"`
-	BlockTypeID   customtypes.UUIDValue `tfsdk:"block_type_id"`
-	BlockTypeName types.String          `tfsdk:"block_type_name"`
+	Name          types.String         `tfsdk:"name"`
+	Data          jsontypes.Normalized `tfsdk:"data"`
+	BlockTypeName types.String         `tfsdk:"block_type_name"`
 }
 
 // NewBlockDataSource is a helper function to simplify the provider implementation.
@@ -103,18 +101,6 @@ Use this data source to obtain Block-specific attributes, such as the data.
 				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
 				Optional:    true,
 			},
-			"block_schema_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Block schema ID (UUID)",
-				CustomType:  customtypes.UUIDType{},
-				Optional:    true,
-			},
-			"block_type_id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Block type ID (UUID)",
-				CustomType:  customtypes.UUIDType{},
-				Optional:    true,
-			},
 			"block_type_name": schema.StringAttribute{
 				Computed:    true,
 				Description: "Block type name",
@@ -171,8 +157,6 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	state.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 
 	state.Name = types.StringValue(block.Name)
-	state.BlockSchemaID = customtypes.NewUUIDValue(block.BlockSchemaID)
-	state.BlockTypeID = customtypes.NewUUIDValue(block.BlockTypeID)
 	state.BlockTypeName = types.StringPointerValue(block.BlockTypeName)
 
 	byteSlice, err := json.Marshal(block.Data)
