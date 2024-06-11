@@ -34,6 +34,8 @@ data "prefect_block" "my_existing_secret_by_id" {
 
   account_id = "%s"
   workspace_id = data.prefect_workspace.evergreen.id
+
+  depends_on = [prefect_block.%s]
 }
 
 data "prefect_block" "my_existing_secret_by_name" {
@@ -42,8 +44,10 @@ data "prefect_block" "my_existing_secret_by_name" {
 
   account_id = "%s"
   workspace_id = data.prefect_workspace.evergreen.id
+
+  depends_on = [prefect_block.%s]
 }
-`, name, name, aID, name, aID, name, aID)
+`, name, name, aID, name, aID, name, name, aID, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
