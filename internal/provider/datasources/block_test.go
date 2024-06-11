@@ -2,6 +2,7 @@ package datasources_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -22,6 +23,7 @@ resource "prefect_block" "%s" {
     "someKey" : "someValue"
   })
 
+  account_id = "%s"
   workspace_id = data.prefect_workspace.evergreen.id
 }
 
@@ -33,7 +35,7 @@ data "prefect_block" "my_existing_secret_by_name" {
   name            = "%s"
   block_type_name = "secret"
 }
-`, name, name, name, name)
+`, name, name, os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"), name, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
