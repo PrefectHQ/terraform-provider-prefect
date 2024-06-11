@@ -10,6 +10,10 @@ import (
 
 func fixtureAccBlockByName(name string) string {
 	return fmt.Sprintf(`
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
+
 resource "prefect_block" "%s" {
   name      = "%s"
   type_slug = "secret"
@@ -17,6 +21,8 @@ resource "prefect_block" "%s" {
   data = jsonencode({
     "someKey" : "someValue"
   })
+
+  workspace_id = data.prefect_workspace.evergreen.id
 }
 
 data "prefect_block" "my_existing_secret_by_id" {
