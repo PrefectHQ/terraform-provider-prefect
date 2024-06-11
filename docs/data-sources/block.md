@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Block by either:
   ID, orblock type name and block name
   
+  If the ID is provided, then the block type name and block name will be ignored.
+  
   Use this data source to obtain Block-specific attributes, such as the data.
 ---
 
@@ -14,6 +16,8 @@ description: |-
 Get information about an existing Block by either:
 - ID, or
 - block type name and block name
+<br>
+If the ID is provided, then the block type name and block name will be ignored.
 <br>
 Use this data source to obtain Block-specific attributes, such as the data.
 
@@ -44,9 +48,12 @@ data "prefect_block" "existing_by_id_string" {
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `block_type_name` (String) Block type name
-- `created` (String) Timestamp of when the resource was created (RFC3339)
-- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.
 - `id` (String) Block ID (UUID)
 - `name` (String) Name of the block
-- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 - `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
+
+### Read-Only
+
+- `created` (String) Timestamp of when the resource was created (RFC3339)
+- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
