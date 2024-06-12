@@ -17,14 +17,6 @@ Use this data source to obtain user or actor IDs to manage Workspace Access.
 ## Example Usage
 
 ```terraform
-terraform {
-  required_providers {
-    prefect = {
-      source = "prefecthq/prefect"
-    }
-  }
-}
-
 data "prefect_account_members" "all_members" {}
 ```
 

@@ -137,8 +137,6 @@ func copyFlowToModel(ctx context.Context, flow *api.Flow, model *FlowResourceMod
 	model.ID = types.StringValue(flow.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(flow.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(flow.Updated)
-	// model.WorkspaceID = customtypes.NewUUIDValue(flow.WorkspaceID)
-
 	model.Name = types.StringValue(flow.Name)
 
 	tags, diags := types.ListValueFrom(ctx, types.StringType, flow.Tags)
@@ -243,20 +241,6 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 		flow, err = client.Get(ctx, flowID)
 	}
-	// } else if !model.Handle.IsNull() {
-	// 	var deployments []*api.Deployment
-	// 	deployments, err = client.List(ctx, []string{model.Handle.ValueString()})
-
-	// 	// The error from the API call should take precedence
-	// 	// followed by this custom error if a specific deployment is not returned
-	// 	if err == nil && len(deployments) != 1 {
-	// 		err = fmt.Errorf("a deployment with the handle=%s could not be found", model.Handle.ValueString())
-	// 	}
-
-	// 	if len(deployments) == 1 {
-	// 		deployment = deployments[0]
-	// 	}
-	// }
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -280,7 +264,7 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Unsupported
+	// Unsupported - redeploy by default
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -326,11 +310,6 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 }
-
-// // ImportState imports the resource into Terraform state.
-// func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-// 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-// }
 
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
