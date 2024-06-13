@@ -6,7 +6,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// https://developer.hashicorp.com/terraform/plugin/framework/diagnostics#custom-diagnostics-types
+const (
+	reportMessage = "Please report this issue to the provider developers."
+)
 
 // CreateClientErrorDiagnostic returns an error diagnostic for when one of the
 // HTTP clients failed to be instantiated.
@@ -15,7 +17,7 @@ import (
 func CreateClientErrorDiagnostic(clientName string, err error) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error creating %s client", clientName),
-		fmt.Sprintf("Could not create %s client, due to error: %s. If you believe this to be a bug in the provider, please report this to the maintainers.", clientName, err.Error()),
+		fmt.Sprintf("Could not create %s client, due to error: %s. %s", clientName, err.Error(), reportMessage),
 	)
 }
 
