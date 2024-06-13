@@ -31,3 +31,14 @@ func ResourceClientErrorDiagnostic(resourceName string, operation string, err er
 		fmt.Sprintf("Could not %s %s, unexpected error: %s", operation, resourceName, err.Error()),
 	)
 }
+
+// ConfigureTypeErrorDiagnostic returns an error diagnostic for when a
+// given type does not implement PrefectClient.
+//
+//nolint:ireturn // required by Terraform API
+func ConfigureTypeErrorDiagnostic(componentKind string, data any) diag.Diagnostic {
+	return diag.NewErrorDiagnostic(
+		fmt.Sprintf("Unexpected %s Configure type", componentKind),
+		fmt.Sprintf("Expected api.PrefectClient type, got %T. %s", data, reportMessage),
+	)
+}
