@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -192,6 +193,13 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
+	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
+	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
+	ctx = tflog.SetField(ctx, "prefect_workspace_id", config.WorkspaceID.ValueString())
+	tflog.Debug(ctx, "Creating Prefect client")
+
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint),
 		client.WithAPIKey(apiKey),
@@ -211,6 +219,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// Pass client to DataSource and Resource type Configure methods
 	resp.DataSourceData = prefectClient
 	resp.ResourceData = prefectClient
+
+	tflog.Info(ctx, "Configured Prefect client", map[string]any{"success": true})
 }
 
 // DataSources defines the data sources implemented in the provider.
