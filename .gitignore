@@ -12,3 +12,5 @@ local.tfvars
 build/*
 
 .envrc
+
+dev/*
