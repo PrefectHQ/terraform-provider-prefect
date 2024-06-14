@@ -114,8 +114,8 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"data": schema.StringAttribute{
-				Required: true,
-				// Sensitive:   true,
+				Required:    true,
+				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
 			},
@@ -408,8 +408,13 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	err = blockDocumentClient.Update(ctx, blockID, api.BlockDocumentUpdate{
-		BlockSchemaID:     latestBlockSchema.ID,
-		Data:              data,
+		BlockSchemaID: latestBlockSchema.ID,
+		Data:          data,
+
+		// NOTE: setting this to `false` will replace the contents of `.data`
+		// We want to do this on Update() - if we don't, removing top-level keys
+		// will cause the API to ignore those removals, which causes a provider-level
+		// state conflict + failure.
 		MergeExistingData: false,
 	})
 
