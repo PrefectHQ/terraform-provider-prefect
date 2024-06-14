@@ -29,7 +29,7 @@ resource "prefect_block" "my_secret" {
   name      = "my-secret"
   type_slug = "secret"
   data = jsonencode({
-    "value" : "foobar"
+    "value" = "foobar"
   })
   workspace_id = data.prefect_workspace.my_workspace.id
 }

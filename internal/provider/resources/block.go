@@ -367,14 +367,14 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", fmt.Errorf("failed to get block type for slug=%s: %w", plan.TypeSlug.ValueString(), err)))
 
 		return
 	}
 
 	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", fmt.Errorf("failed to list block schemas for block type=%s: %w", plan.TypeSlug.ValueString(), err)))
 
 		return
 	}
