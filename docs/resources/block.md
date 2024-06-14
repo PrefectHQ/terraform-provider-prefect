@@ -64,8 +64,8 @@ resource "prefect_block" "gcp_credentials_key" {
 
   # prefect block type inspect gcp-credentials
   data = jsonencode({
-    "project" : "my-gcp-project",
-    "service_account_info" : base64decode(google_service_account_key.test_bot.private_key)
+    "project" = "my-gcp-project",
+    "service_account_info" = base64decode(google_service_account_key.test_bot.private_key)
   })
 }
 ```

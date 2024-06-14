@@ -22,7 +22,7 @@ resource "prefect_block" "%s" {
   type_slug = "secret"
 
   data = jsonencode({
-    "someKey" : "someValue"
+    "someKey" = "someValue"
   })
 
   account_id = "%s"

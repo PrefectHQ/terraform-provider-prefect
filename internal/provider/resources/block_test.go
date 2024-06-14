@@ -25,7 +25,7 @@ resource "prefect_block" "block" {
 	type_slug = "secret"
 	workspace_id = prefect_workspace.workspace.id
 	data = jsonencode({
-		"value": "%s"
+		"value" = "%s"
 	})
 	depends_on = [prefect_workspace.workspace]
 }
