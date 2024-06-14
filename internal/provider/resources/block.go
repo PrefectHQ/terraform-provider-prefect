@@ -408,9 +408,14 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	err = blockDocumentClient.Update(ctx, blockID, api.BlockDocumentUpdate{
-		BlockSchemaID:     latestBlockSchema.ID,
-		Data:              data,
-		MergeExistingData: true,
+		BlockSchemaID: latestBlockSchema.ID,
+		Data:          data,
+
+		// NOTE: setting this to `false` will replace the contents of `.data`
+		// We want to do this on Update() - if we don't, removing top-level keys
+		// will cause the API to ignore those removals, which causes a provider-level
+		// state conflict + failure.
+		MergeExistingData: false,
 	})
 
 	if err != nil {
