@@ -191,10 +191,7 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role",
-			fmt.Sprintf("Could not create Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "create", err))
 
 		return
 	}
@@ -241,10 +238,7 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
@@ -303,20 +297,14 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating Workspace Role",
-			fmt.Sprintf("Could not update Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "update", err))
 
 		return
 	}
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
@@ -364,10 +352,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 
 	err = client.Delete(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace Role",
-			fmt.Sprintf("Could not delete Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "delete", err))
 
 		return
 	}

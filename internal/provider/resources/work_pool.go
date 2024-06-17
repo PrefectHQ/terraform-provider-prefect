@@ -257,10 +257,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool",
-			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "create", err))
 
 		return
 	}
@@ -298,10 +295,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	pool, err := client.Get(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
@@ -359,20 +353,14 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating work pool",
-			fmt.Sprintf("Could not update work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "update", err))
 
 		return
 	}
 
 	pool, err := client.Get(ctx, plan.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
@@ -409,10 +397,7 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	err = client.Delete(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting work pool",
-			fmt.Sprintf("Could not delete work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "delete", err))
 
 		return
 	}

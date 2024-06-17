@@ -185,10 +185,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		Tags:  tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable",
-			fmt.Sprintf("Could not create variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "create", err))
 
 		return
 	}
@@ -255,10 +252,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing variable state",
-			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return
 	}
@@ -316,20 +310,14 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:  tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating variable",
-			fmt.Sprintf("Could not update variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "update", err))
 
 		return
 	}
 
 	variable, err := client.Get(ctx, variableID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing variable state",
-			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return
 	}
@@ -377,10 +365,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	err = client.Delete(ctx, variableID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting variable",
-			fmt.Sprintf("Could not delete variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "delete", err))
 
 		return
 	}

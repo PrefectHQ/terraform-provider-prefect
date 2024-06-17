@@ -171,10 +171,13 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	// A Service Account can be read by either ID or Name.
 	// If both are set, we prefer the ID
 	var serviceAccount *api.ServiceAccount
+	var operation string
 	if !model.ID.IsNull() {
+		operation = "get"
 		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
 	} else if !model.Name.IsNull() {
 		var serviceAccounts []*api.ServiceAccount
+		operation = "list"
 		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
 
 		// The error from the API call should take precedence
@@ -198,10 +201,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", operation, err))
 
 		return
 	}

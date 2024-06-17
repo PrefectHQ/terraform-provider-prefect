@@ -3,7 +3,6 @@ package datasources
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -143,10 +142,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 
 	workerTypeByPackage, err := client.GetWorkerMetadataViews(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Worker Metadata state",
-			fmt.Sprintf("Could not read Worker Metadata, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Worker Metadata", "get", err))
 
 		return
 	}

@@ -120,10 +120,7 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	pools, err := client.List(ctx, filter)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pools", "list", err))
 
 		return
 	}

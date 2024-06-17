@@ -181,10 +181,7 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	account, err := client.Get(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
 
 		return
 	}
@@ -234,20 +231,14 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		BillingEmail:          plan.BillingEmail.ValueStringPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating account",
-			fmt.Sprintf("Could not update account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
 
 		return
 	}
 
 	account, err := client.Get(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
 
 		return
 	}
@@ -290,10 +281,7 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	err = client.Delete(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting account",
-			fmt.Sprintf("Could not delete account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "delete", err))
 
 		return
 	}

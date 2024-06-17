@@ -2,7 +2,6 @@ package datasources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -101,10 +100,9 @@ func (d *AccountMembersDataSource) Read(ctx context.Context, req datasource.Read
 	var filter []string
 	accountMembers, err := client.List(ctx, filter)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Account Members state",
-			fmt.Sprintf("Could not retrieve Account Members, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Members", "list", err))
+
+		return
 	}
 
 	attributeTypes := map[string]attr.Type{

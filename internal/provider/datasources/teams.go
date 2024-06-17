@@ -105,10 +105,7 @@ func (d *TeamsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	var filter []string
 	teams, err := client.List(ctx, filter)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing team state",
-			fmt.Sprintf("Could not read team, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Teams", "list", err))
 
 		return
 	}

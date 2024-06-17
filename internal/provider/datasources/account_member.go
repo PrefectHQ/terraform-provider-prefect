@@ -155,10 +155,9 @@ func (d *AccountMemberDataSource) Read(ctx context.Context, req datasource.ReadR
 	// workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
 	accountMembers, err := client.List(ctx, []string{config.Email.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Account Member state",
-			fmt.Sprintf("Could not search for Account Members, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Member", "list", err))
+
+		return
 	}
 
 	if len(accountMembers) != 1 {

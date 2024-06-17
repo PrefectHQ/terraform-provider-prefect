@@ -136,10 +136,9 @@ func (d *TeamDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	// teams, err := client.List(ctx, []string{model.Name.ValueString()})
 	teams, err := client.List(ctx, []string{config.Name.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Team state",
-			fmt.Sprintf("Could not search for Team, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team", "list", err))
+
+		return
 	}
 
 	if len(teams) != 1 {

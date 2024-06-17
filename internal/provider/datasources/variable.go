@@ -162,10 +162,7 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing variable state",
-			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return
 	}

@@ -144,10 +144,7 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}

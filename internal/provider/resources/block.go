@@ -300,10 +300,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	block, err := client.Get(ctx, blockID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}
@@ -418,10 +415,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	block, err := blockDocumentClient.Get(ctx, blockID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}

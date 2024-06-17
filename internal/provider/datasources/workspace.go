@@ -144,6 +144,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 	// If both are set, we prefer the ID
 	// If neither are set, we will fail early.
 	var workspace *api.Workspace
+	var operation string
 	if !model.ID.IsNull() {
 		var workspaceID uuid.UUID
 		workspaceID, err = uuid.Parse(model.ID.ValueString())
@@ -157,9 +158,11 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 			return
 		}
 
+		operation = "get"
 		workspace, err = client.Get(ctx, workspaceID)
 	} else if !model.Handle.IsNull() {
 		var workspaces []*api.Workspace
+		operation = "list"
 		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
 
 		// The error from the API call should take precedence
@@ -183,10 +186,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing workspace state",
-			fmt.Sprintf("Could not read workspace, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", operation, err))
 
 		return
 	}

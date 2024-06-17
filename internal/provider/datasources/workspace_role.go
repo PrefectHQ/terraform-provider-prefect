@@ -140,10 +140,9 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 	// as we are querying a single Role name, not a list of names
 	workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "list", err))
+
+		return
 	}
 
 	if len(workspaceRoles) != 1 {

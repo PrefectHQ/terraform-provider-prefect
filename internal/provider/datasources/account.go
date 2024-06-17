@@ -2,7 +2,6 @@ package datasources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -138,10 +137,7 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	account, err := client.Get(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
 
 		return
 	}

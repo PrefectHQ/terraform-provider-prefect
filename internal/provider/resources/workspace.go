@@ -161,10 +161,7 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace",
-			fmt.Sprintf("Could not create workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
 
 		return
 	}
@@ -210,6 +207,8 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 	// A workspace can be imported + read by either ID or Handle
 	// If both are set, we prefer the ID
 	var workspace *api.Workspace
+	var operation string
+
 	if !state.ID.IsNull() {
 		var workspaceID uuid.UUID
 		workspaceID, err = uuid.Parse(state.ID.ValueString())
@@ -223,9 +222,11 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 			return
 		}
 
+		operation = "get"
 		workspace, err = client.Get(ctx, workspaceID)
 	} else if !state.Handle.IsNull() {
 		var workspaces []*api.Workspace
+		operation = "list"
 		workspaces, err = client.List(ctx, []string{state.Handle.ValueString()})
 
 		// The error from the API call should take precedence
@@ -244,6 +245,7 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 			"Error refreshing Workspace state",
 			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
 		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", operation, err))
 
 		return
 	}
@@ -295,20 +297,14 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 	err = client.Update(ctx, workspaceID, payload)
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating workspace",
-			fmt.Sprintf("Could not update workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "update", err))
 
 		return
 	}
 
 	workspace, err := client.Get(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace state",
-			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "get", err))
 
 		return
 	}
@@ -354,10 +350,7 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	err = client.Delete(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace",
-			fmt.Sprintf("Could not delete Workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "delete", err))
 
 		return
 	}
