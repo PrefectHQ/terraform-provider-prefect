@@ -209,15 +209,6 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	// if model.ID.IsNull() && model.Handle.IsNull() {
-	// 	resp.Diagnostics.AddError(
-	// 		"Both ID and Handle are unset",
-	// 		"This is a bug in the Terraform provider. Please report it to the maintainers.",
-	// 	)
-
-	// 	return
-	// }
-
 	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -226,8 +217,8 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 	}
 
-	// A flow can be imported + read by either ID or Handle
-	// If both are set, we prefer the ID
+	// A flow can be imported + read by specifying the workspace_id and the flow_id.
+	// if the workspace_id is omitted, then the default workspace_id is used.
 	var flow *api.Flow
 	if !model.ID.IsNull() {
 		var flowID uuid.UUID
@@ -317,8 +308,8 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// we'll allow input values in the form of:
-	// - "workspace_id,name"
-	// - "name"
+	// - "workspace_id,id"
+	// - "id"
 	maxInputCount := 2
 	inputParts := strings.Split(req.ID, ",")
 
@@ -342,13 +333,10 @@ func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportState
 		return
 	}
 
+	id := inputParts[maxInputCount-1]
 	if len(inputParts) == maxInputCount {
 		workspaceID := inputParts[0]
-		id := inputParts[1]
-
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
-	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
