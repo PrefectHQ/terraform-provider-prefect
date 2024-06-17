@@ -36,7 +36,7 @@ func TestAccResource_flow(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// Check creation + existence of the deployment resource
+				// Check creation + existence of the flow resource
 				Config: fixtureAccFlowCreate(randomName, "test1"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
