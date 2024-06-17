@@ -272,14 +272,14 @@ func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model FlowResourceModel
+	var state FlowResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Flows(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating flows client",
@@ -287,7 +287,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		)
 	}
 
-	flowID, err := uuid.Parse(model.ID.ValueString())
+	flowID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -308,7 +308,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
