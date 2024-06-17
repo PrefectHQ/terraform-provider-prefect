@@ -15,7 +15,7 @@ import (
 
 var _ = api.FlowsClient(&FlowsClient{})
 
-// FlowsClient is a client for working with Deployments.
+// FlowsClient is a client for working with Flows.
 type FlowsClient struct {
 	hc          *http.Client
 	routePrefix string
