@@ -310,11 +310,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		diags.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}
@@ -425,11 +421,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		diags.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}

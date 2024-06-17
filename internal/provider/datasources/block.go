@@ -3,12 +3,10 @@ package datasources
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -158,11 +156,7 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}

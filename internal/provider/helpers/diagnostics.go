@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 const (
@@ -40,5 +41,17 @@ func ConfigureTypeErrorDiagnostic(componentKind string, data any) diag.Diagnosti
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Unexpected %s Configure type", componentKind),
 		fmt.Sprintf("Expected api.PrefectClient type, got %T. %s", data, reportMessage),
+	)
+}
+
+// SerializeDataErrorDiagnostic returns an error diagnostic for when an
+// attempt to serialize data into a JSON string fails.
+//
+//nolint:ireturn // required by Terraform API
+func SerializeDataErrorDiagnostic(pathRoot, resourceName string, err error) diag.Diagnostic {
+	return diag.NewAttributeErrorDiagnostic(
+		path.Root(pathRoot),
+		fmt.Sprintf("Failed to serialize %s data", resourceName),
+		fmt.Sprintf("Could not serialize %s as JSON string", err.Error()),
 	)
 }
