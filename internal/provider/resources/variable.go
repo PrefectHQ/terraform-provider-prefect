@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -225,11 +224,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		var variableID uuid.UUID
 		variableID, err = uuid.Parse(state.ID.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("id"),
-				"Error parsing Variable ID",
-				fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 			return
 		}
@@ -286,11 +281,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	variableID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -342,11 +333,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	variableID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -394,10 +381,7 @@ func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportS
 	if len(parts) == 2 && parts[1] != "" {
 		workspaceID, err := uuid.Parse(parts[1])
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}

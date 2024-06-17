@@ -2,11 +2,9 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -184,11 +182,9 @@ func (r *WorkspaceAccessResource) Read(ctx context.Context, req resource.ReadReq
 
 	accessID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Access ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
+
+		return
 	}
 
 	accessorType := state.AccessorType.ValueString()
@@ -258,11 +254,7 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 
 	accessID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Access ID",
-			fmt.Sprintf("Could not parse Workspace Access ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Access", err))
 
 		return
 	}

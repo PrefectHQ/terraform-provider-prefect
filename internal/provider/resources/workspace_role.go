@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -223,11 +222,9 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
+
+		return
 	}
 
 	role, err := client.Get(ctx, roleID)
@@ -272,11 +269,7 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 	roleID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -329,11 +322,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 
 	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}

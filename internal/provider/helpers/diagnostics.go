@@ -55,3 +55,15 @@ func SerializeDataErrorDiagnostic(pathRoot, resourceName string, err error) diag
 		fmt.Sprintf("Could not serialize %s as JSON string", err.Error()),
 	)
 }
+
+// ParseUUIDErrorDiagnostic returns an error diagnostic for when an attempt
+// to parse a string into a UUID fails.
+//
+//nolint:ireturn // required by Terraform API
+func ParseUUIDErrorDiagnostic(resourceName string, err error) diag.Diagnostic {
+	return diag.NewAttributeErrorDiagnostic(
+		path.Root("id"),
+		fmt.Sprintf("Error parsing %s ID", resourceName),
+		fmt.Sprintf("Could not parse %s ID to UUID, unexpected error: %s", resourceName, err.Error()),
+	)
+}

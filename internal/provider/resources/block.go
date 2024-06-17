@@ -286,11 +286,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	var blockID uuid.UUID
 	blockID, err = uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
@@ -379,11 +375,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	blockID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
@@ -452,11 +444,7 @@ func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	blockDocumentID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
@@ -496,10 +484,7 @@ func (r *BlockResource) ImportState(ctx context.Context, req resource.ImportStat
 	if len(parts) == 2 && parts[1] != "" {
 		workspaceID, err := uuid.Parse(parts[1])
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}

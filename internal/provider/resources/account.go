@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -165,11 +164,7 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
@@ -208,11 +203,7 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 
 	accountID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
@@ -265,11 +256,7 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
