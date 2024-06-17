@@ -41,7 +41,7 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 	}, nil
 }
 
-// Create returns details for a new Workspace.
+// Create returns details for a new Flow.
 func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flow, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
