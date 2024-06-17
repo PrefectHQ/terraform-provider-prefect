@@ -153,21 +153,21 @@ func copyFlowToModel(ctx context.Context, flow *api.Flow, model *FlowResourceMod
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model FlowResourceModel
+	var plan FlowResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var tags []string
-	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Flows(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating flows client",
@@ -176,7 +176,7 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	flow, err := client.Create(ctx, api.FlowCreate{
-		Name: model.Name.ValueString(),
+		Name: plan.Name.ValueString(),
 		Tags: tags,
 	})
 	if err != nil {
@@ -188,12 +188,12 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &model)...)
+	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
