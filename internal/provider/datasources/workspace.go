@@ -132,10 +132,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	client, err := d.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
 
 		return
 	}

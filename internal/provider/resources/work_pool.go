@@ -240,10 +240,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
@@ -285,10 +282,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
@@ -338,10 +332,7 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
@@ -387,10 +378,7 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}

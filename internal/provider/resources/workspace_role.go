@@ -176,10 +176,7 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 
 	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -219,10 +216,7 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -265,10 +259,7 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -331,10 +322,7 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 
 	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role`", err))
 
 		return
 	}

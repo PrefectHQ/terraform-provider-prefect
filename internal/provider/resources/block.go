@@ -278,10 +278,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	client, err := r.client.BlockDocuments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating block client",
-			fmt.Sprintf("Could not create block client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
 
 		return
 	}

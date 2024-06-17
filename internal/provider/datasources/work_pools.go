@@ -108,10 +108,7 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	client, err := d.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}

@@ -127,10 +127,7 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	client, err := d.client.WorkspaceRoles(model.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating the Workspace Roles client",
-			fmt.Sprintf("Could not create Workspace Roles client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}

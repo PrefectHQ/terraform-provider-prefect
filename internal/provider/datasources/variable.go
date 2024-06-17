@@ -2,7 +2,6 @@ package datasources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -137,10 +136,7 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	client, err := d.client.Variables(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}

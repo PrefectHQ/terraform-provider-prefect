@@ -149,10 +149,9 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 
 	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspace, err := client.Create(ctx, api.WorkspaceCreate{
@@ -198,10 +197,9 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	// A workspace can be imported + read by either ID or Handle
@@ -272,10 +270,9 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 
 	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspaceID, err := uuid.Parse(plan.ID.ValueString())
@@ -331,10 +328,9 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspaceID, err := uuid.Parse(state.ID.ValueString())

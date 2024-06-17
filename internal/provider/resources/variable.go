@@ -171,10 +171,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 
 	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -213,10 +210,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -279,10 +273,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -344,10 +335,7 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
