@@ -221,8 +221,8 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating deployment client",
-			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
+			"Error creating flow client",
+			fmt.Sprintf("Could not create flow client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
 	}
 
