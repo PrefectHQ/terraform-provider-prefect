@@ -80,7 +80,6 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		// Description: "Resource representing a Prefect Workspace",
 		Description: "The resource `flow` represents a Prefect Cloud Flow. " +
 			"Flows are the most central Prefect object. " +
 			"A flow is a container for workflow logic as-code and allows users to configure how their workflows behave. " +
