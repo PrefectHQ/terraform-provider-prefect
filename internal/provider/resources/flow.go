@@ -226,7 +226,7 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		)
 	}
 
-	// A deployment can be imported + read by either ID or Handle
+	// A flow can be imported + read by either ID or Handle
 	// If both are set, we prefer the ID
 	var flow *api.Flow
 	if !model.ID.IsNull() {
