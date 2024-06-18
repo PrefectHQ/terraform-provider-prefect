@@ -21,6 +21,6 @@ func GetResourceWorkspaceImportStateID(resourceName string, workspaceName string
 			return "", fmt.Errorf("resource not found in state: %s", resourceName)
 		}
 
-		return fmt.Sprintf("%s,%s", workspaceID, resource.Primary.Attributes["id"]), nil
+		return fmt.Sprintf("%s,%s", resource.Primary.Attributes["id"], workspaceID), nil
 	}
 }
