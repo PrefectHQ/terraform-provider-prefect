@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	prefectProvider "github.com/prefecthq/terraform-provider-prefect/internal/provider"
@@ -71,4 +72,20 @@ func NewTestClient() (api.PrefectClient, error) {
 	)
 
 	return prefectClient, nil
+}
+
+func NewRandomPrefixedString() string {
+	return acctest.RandomWithPrefix(TestAccPrefix)
+}
+
+func NewEphemeralWorkspace() (string, string) {
+	randomName := NewRandomPrefixedString()
+
+	workspace := fmt.Sprintf(`
+resource "prefect_workspace" "%s" {
+	name = "%s"
+	handle = "%s"
+}`, randomName, randomName, randomName)
+
+	return workspace, randomName
 }
