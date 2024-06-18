@@ -19,6 +19,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -68,10 +69,7 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -242,10 +240,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
@@ -259,10 +254,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool",
-			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "create", err))
 
 		return
 	}
@@ -290,20 +282,14 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
 	pool, err := client.Get(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
@@ -346,10 +332,7 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
@@ -361,20 +344,14 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating work pool",
-			fmt.Sprintf("Could not update work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "update", err))
 
 		return
 	}
 
 	pool, err := client.Get(ctx, plan.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
@@ -401,20 +378,14 @@ func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting work pool",
-			fmt.Sprintf("Could not delete work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "delete", err))
 
 		return
 	}

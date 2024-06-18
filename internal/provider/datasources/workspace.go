@@ -7,11 +7,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = datasource.DataSourceWithConfigure(&WorkspaceDataSource{})
@@ -53,10 +53,7 @@ func (d *WorkspaceDataSource) Configure(_ context.Context, req datasource.Config
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -134,10 +131,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 
 	client, err := d.client.Workspaces(model.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
 
 		return
 	}
@@ -146,22 +140,21 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 	// If both are set, we prefer the ID
 	// If neither are set, we will fail early.
 	var workspace *api.Workspace
+	var operation string
 	if !model.ID.IsNull() {
 		var workspaceID uuid.UUID
 		workspaceID, err = uuid.Parse(model.ID.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}
 
+		operation = "get"
 		workspace, err = client.Get(ctx, workspaceID)
 	} else if !model.Handle.IsNull() {
 		var workspaces []*api.Workspace
+		operation = "list"
 		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
 
 		// The error from the API call should take precedence
@@ -185,10 +178,7 @@ func (d *WorkspaceDataSource) Read(ctx context.Context, req datasource.ReadReque
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing workspace state",
-			fmt.Sprintf("Could not read workspace, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", operation, err))
 
 		return
 	}

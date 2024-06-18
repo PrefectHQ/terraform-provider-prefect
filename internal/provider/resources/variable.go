@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -64,10 +64,7 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -173,10 +170,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 
 	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -187,10 +181,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		Tags:  tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable",
-			fmt.Sprintf("Could not create variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "create", err))
 
 		return
 	}
@@ -218,10 +209,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -236,11 +224,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 		var variableID uuid.UUID
 		variableID, err = uuid.Parse(state.ID.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("id"),
-				"Error parsing Variable ID",
-				fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 			return
 		}
@@ -257,10 +241,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing variable state",
-			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return
 	}
@@ -287,10 +268,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	client, err := r.client.Variables(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -303,11 +281,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	variableID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 		return
 	}
@@ -318,20 +292,14 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		Tags:  tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating variable",
-			fmt.Sprintf("Could not update variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "update", err))
 
 		return
 	}
 
 	variable, err := client.Get(ctx, variableID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing variable state",
-			fmt.Sprintf("Could not read variable, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return
 	}
@@ -358,31 +326,21 @@ func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteReques
 
 	client, err := r.client.Variables(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Variable", err))
 
 		return
 	}
 
 	variableID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Variable ID",
-			fmt.Sprintf("Could not parse variable ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Variable", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, variableID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting variable",
-			fmt.Sprintf("Could not delete variable, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "delete", err))
 
 		return
 	}
@@ -423,10 +381,7 @@ func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportS
 	if len(parts) == 2 && parts[1] != "" {
 		workspaceID, err := uuid.Parse(parts[1])
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}

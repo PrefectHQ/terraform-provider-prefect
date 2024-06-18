@@ -58,10 +58,7 @@ func (r *BlockResource) Configure(_ context.Context, req resource.ConfigureReque
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -281,10 +278,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	client, err := r.client.BlockDocuments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating block client",
-			fmt.Sprintf("Could not create block client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
 
 		return
 	}
@@ -292,21 +286,14 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	var blockID uuid.UUID
 	blockID, err = uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
 
 	block, err := client.Get(ctx, blockID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}
@@ -319,11 +306,7 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		diags.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}
@@ -392,11 +375,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	blockID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
@@ -426,10 +405,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	block, err := blockDocumentClient.Get(ctx, blockID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}
@@ -442,11 +418,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		diags.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}
@@ -477,11 +449,7 @@ func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	blockDocumentID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Block ID",
-			fmt.Sprintf("Could not parse block ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block", err))
 
 		return
 	}
@@ -521,10 +489,7 @@ func (r *BlockResource) ImportState(ctx context.Context, req resource.ImportStat
 	if len(parts) == 2 && parts[1] != "" {
 		workspaceID, err := uuid.Parse(parts[1])
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}

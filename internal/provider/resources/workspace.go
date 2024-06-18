@@ -16,6 +16,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -60,10 +61,7 @@ func (r *WorkspaceResource) Configure(_ context.Context, req resource.ConfigureR
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -151,10 +149,9 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 
 	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspace, err := client.Create(ctx, api.WorkspaceCreate{
@@ -163,10 +160,7 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace",
-			fmt.Sprintf("Could not create workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
 
 		return
 	}
@@ -203,31 +197,30 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	// A workspace can be imported + read by either ID or Handle
 	// If both are set, we prefer the ID
 	var workspace *api.Workspace
+	var operation string
+
 	if !state.ID.IsNull() {
 		var workspaceID uuid.UUID
 		workspaceID, err = uuid.Parse(state.ID.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}
 
+		operation = "get"
 		workspace, err = client.Get(ctx, workspaceID)
 	} else if !state.Handle.IsNull() {
 		var workspaces []*api.Workspace
+		operation = "list"
 		workspaces, err = client.List(ctx, []string{state.Handle.ValueString()})
 
 		// The error from the API call should take precedence
@@ -246,6 +239,7 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 			"Error refreshing Workspace state",
 			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
 		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", operation, err))
 
 		return
 	}
@@ -272,19 +266,14 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 
 	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspaceID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 		return
 	}
@@ -297,20 +286,14 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 	err = client.Update(ctx, workspaceID, payload)
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating workspace",
-			fmt.Sprintf("Could not update workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "update", err))
 
 		return
 	}
 
 	workspace, err := client.Get(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace state",
-			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "get", err))
 
 		return
 	}
@@ -337,29 +320,21 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspaceID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace",
-			fmt.Sprintf("Could not delete Workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "delete", err))
 
 		return
 	}

@@ -2,7 +2,6 @@ package datasources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -54,10 +53,7 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -141,10 +137,7 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	account, err := client.Get(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
 
 		return
 	}

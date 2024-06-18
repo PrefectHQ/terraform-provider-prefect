@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -106,10 +107,7 @@ func (d *WorkspaceRoleDataSource) Configure(_ context.Context, req datasource.Co
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -129,10 +127,7 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	client, err := d.client.WorkspaceRoles(model.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating the Workspace Roles client",
-			fmt.Sprintf("Could not create Workspace Roles client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -142,10 +137,9 @@ func (d *WorkspaceRoleDataSource) Read(ctx context.Context, req datasource.ReadR
 	// as we are querying a single Role name, not a list of names
 	workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "list", err))
+
+		return
 	}
 
 	if len(workspaceRoles) != 1 {

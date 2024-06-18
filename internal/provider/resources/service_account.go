@@ -71,10 +71,7 @@ func (r *ServiceAccountResource) Configure(_ context.Context, req resource.Confi
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -217,10 +214,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 
 		accountRoles, err := accountRoleClient.List(ctx, []string{plan.AccountRoleName.ValueString()})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error fetching Account Role",
-				fmt.Sprintf("Could not fetch Account Role, unexpected error: %s", err),
-			)
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Role", "list", err))
 
 			return
 		}
@@ -245,10 +239,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 
 	serviceAccount, err := serviceAccountClient.Create(ctx, createReq)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating service account",
-			fmt.Sprintf("Could not create service account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "create", err))
 
 		return
 	}
@@ -295,10 +286,13 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	// A Service Account can be read by either ID or Name.
 	// If both are set, we prefer the ID
 	var serviceAccount *api.ServiceAccount
+	var operation string
 	if !state.ID.IsNull() {
+		operation = "get"
 		serviceAccount, err = client.Get(ctx, state.ID.ValueString())
 	} else if !state.Name.IsNull() {
 		var serviceAccounts []*api.ServiceAccount
+		operation = "list"
 		serviceAccounts, err = client.List(ctx, []string{state.Name.ValueString()})
 
 		// The error from the API call should take precedence
@@ -322,10 +316,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", operation, err))
 
 		return
 	}
@@ -386,10 +377,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 
 		accountRoles, err := accountRoleClient.List(ctx, []string{plan.AccountRoleName.ValueString()})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error fetching Account Role",
-				fmt.Sprintf("Could not fetch Account Role, unexpected error: %s", err),
-			)
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Role", "list", err))
 
 			return
 		}
@@ -409,20 +397,14 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 	// Update client method requires context, botID, request args
 	err = client.Update(ctx, plan.ID.ValueString(), updateReq)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating Service Account",
-			fmt.Sprintf("Could not update Service Account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "update", err))
 
 		return
 	}
 
 	serviceAccount, err := client.Get(ctx, plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "get", err))
 
 		return
 	}
@@ -438,10 +420,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 			APIKeyExpiration: providedExpiration,
 		})
 		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error rotating Service Account key",
-				fmt.Sprintf("Could not rotate Service Account key, unexpected error: %s", err),
-			)
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "key rotate", err))
 
 			return
 		}
@@ -483,10 +462,7 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 
 	err = client.Delete(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Service Account",
-			fmt.Sprintf("Could not delete Service Account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "delete", err))
 
 		return
 	}

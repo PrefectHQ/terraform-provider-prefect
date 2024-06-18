@@ -3,12 +3,10 @@ package datasources
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -144,10 +142,7 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing block state",
-			fmt.Sprintf("Could not read block, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
 	}
@@ -161,11 +156,7 @@ func (d *blockDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	byteSlice, err := json.Marshal(block.Data)
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("data"),
-			"Failed to serialize Block Data",
-			fmt.Sprintf("Could not serialize Block Data as JSON string: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
 		return
 	}
@@ -186,10 +177,7 @@ func (d *blockDataSource) Configure(_ context.Context, req datasource.ConfigureR
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}

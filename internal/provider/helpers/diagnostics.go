@@ -4,9 +4,12 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
-// https://developer.hashicorp.com/terraform/plugin/framework/diagnostics#custom-diagnostics-types
+const (
+	reportMessage = "Please report this issue to the provider developers."
+)
 
 // CreateClientErrorDiagnostic returns an error diagnostic for when one of the
 // HTTP clients failed to be instantiated.
@@ -15,7 +18,7 @@ import (
 func CreateClientErrorDiagnostic(clientName string, err error) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error creating %s client", clientName),
-		fmt.Sprintf("Could not create %s client, due to error: %s. If you believe this to be a bug in the provider, please report this to the maintainers.", clientName, err.Error()),
+		fmt.Sprintf("Could not create %s client, due to error: %s. %s", clientName, err.Error(), reportMessage),
 	)
 }
 
@@ -27,5 +30,40 @@ func ResourceClientErrorDiagnostic(resourceName string, operation string, err er
 	return diag.NewErrorDiagnostic(
 		fmt.Sprintf("Error during %s %s", operation, resourceName),
 		fmt.Sprintf("Could not %s %s, unexpected error: %s", operation, resourceName, err.Error()),
+	)
+}
+
+// ConfigureTypeErrorDiagnostic returns an error diagnostic for when a
+// given type does not implement PrefectClient.
+//
+//nolint:ireturn // required by Terraform API
+func ConfigureTypeErrorDiagnostic(componentKind string, data any) diag.Diagnostic {
+	return diag.NewErrorDiagnostic(
+		fmt.Sprintf("Unexpected %s Configure type", componentKind),
+		fmt.Sprintf("Expected api.PrefectClient type, got %T. %s", data, reportMessage),
+	)
+}
+
+// SerializeDataErrorDiagnostic returns an error diagnostic for when an
+// attempt to serialize data into a JSON string fails.
+//
+//nolint:ireturn // required by Terraform API
+func SerializeDataErrorDiagnostic(pathRoot, resourceName string, err error) diag.Diagnostic {
+	return diag.NewAttributeErrorDiagnostic(
+		path.Root(pathRoot),
+		fmt.Sprintf("Failed to serialize %s data", resourceName),
+		fmt.Sprintf("Could not serialize %s as JSON string", err.Error()),
+	)
+}
+
+// ParseUUIDErrorDiagnostic returns an error diagnostic for when an attempt
+// to parse a string into a UUID fails.
+//
+//nolint:ireturn // required by Terraform API
+func ParseUUIDErrorDiagnostic(resourceName string, err error) diag.Diagnostic {
+	return diag.NewAttributeErrorDiagnostic(
+		path.Root("id"),
+		fmt.Sprintf("Error parsing %s ID", resourceName),
+		fmt.Sprintf("Could not parse %s ID to UUID, unexpected error: %s", resourceName, err.Error()),
 	)
 }

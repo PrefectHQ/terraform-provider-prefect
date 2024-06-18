@@ -2,7 +2,6 @@ package datasources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -72,10 +71,7 @@ func (d *AccountMembersDataSource) Configure(_ context.Context, req datasource.C
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -104,10 +100,9 @@ func (d *AccountMembersDataSource) Read(ctx context.Context, req datasource.Read
 	var filter []string
 	accountMembers, err := client.List(ctx, filter)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Account Members state",
-			fmt.Sprintf("Could not retrieve Account Members, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Members", "list", err))
+
+		return
 	}
 
 	attributeTypes := map[string]attr.Type{

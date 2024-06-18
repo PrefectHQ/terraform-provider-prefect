@@ -105,10 +105,7 @@ func (d *TeamDataSource) Configure(_ context.Context, req datasource.ConfigureRe
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -139,10 +136,9 @@ func (d *TeamDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	// teams, err := client.List(ctx, []string{model.Name.ValueString()})
 	teams, err := client.List(ctx, []string{config.Name.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Team state",
-			fmt.Sprintf("Could not search for Team, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team", "list", err))
+
+		return
 	}
 
 	if len(teams) != 1 {

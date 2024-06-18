@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -60,10 +60,7 @@ func (r *WorkspaceRoleResource) Configure(_ context.Context, req resource.Config
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -178,10 +175,7 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 
 	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -193,10 +187,7 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role",
-			fmt.Sprintf("Could not create Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "create", err))
 
 		return
 	}
@@ -224,29 +215,21 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
+
+		return
 	}
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
@@ -273,10 +256,7 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -289,11 +269,7 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 	roleID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
@@ -305,20 +281,14 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating Workspace Role",
-			fmt.Sprintf("Could not update Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "update", err))
 
 		return
 	}
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
@@ -345,31 +315,21 @@ func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteR
 
 	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role`", err))
 
 		return
 	}
 
 	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace Role",
-			fmt.Sprintf("Could not delete Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "delete", err))
 
 		return
 	}
