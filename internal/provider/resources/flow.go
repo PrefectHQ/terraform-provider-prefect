@@ -333,10 +333,15 @@ func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportState
 		return
 	}
 
-	id := inputParts[maxInputCount-1]
-	if len(inputParts) == maxInputCount {
-		workspaceID := inputParts[0]
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
+	identifier := inputParts[0]
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), identifier)...)
+
+	if len(inputParts) == 2 && inputParts[1] != "" {
+		workspaceID, err := uuid.Parse(inputParts[1])
+		if err != nil {
+			resp.Diagnostics.AddError("problem parsing workspace ID", "see details")
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 }
