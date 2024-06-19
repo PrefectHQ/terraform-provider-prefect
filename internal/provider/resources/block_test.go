@@ -94,14 +94,14 @@ func testAccCheckBlockExists(blockResourceName string, workspaceResourceName str
 		// Get the block resource we just created from the state
 		blockResource, exists := s.RootModule().Resources[blockResourceName]
 		if !exists {
-			return fmt.Errorf("resource not found: %s", blockResourceName)
+			return fmt.Errorf("block resource not found: %s", blockResourceName)
 		}
 		blockID, _ := uuid.Parse(blockResource.Primary.ID)
 
 		// Get the workspace resource we just created from the state
 		workspaceResource, exists := s.RootModule().Resources[workspaceResourceName]
 		if !exists {
-			return fmt.Errorf("resource not found: %s", workspaceResourceName)
+			return fmt.Errorf("workspace resource not found: %s", workspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
