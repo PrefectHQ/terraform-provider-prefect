@@ -16,9 +16,15 @@ import (
 	prefectProvider "github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
-// TestAccPrefix is the prefix set for all resources created via acceptance testing,
-// so that we can easily identify and clean them up in case of flakiness/failures.
-const TestAccPrefix = "terraformacc"
+const (
+	// TestAccPrefix is the prefix set for all resources created via acceptance testing,
+	// so that we can easily identify and clean them up in case of flakiness/failures.
+	TestAccPrefix = "terraformacc"
+
+	// RandomStringLength sets the length of the random string used when creating a new random
+	// name for a resource via NewRandomEphemeralWorkspace.
+	RandomStringLength = 10
+)
 
 // TestAccProvider defines the actual Provider, which is used during acceptance testing.
 // This is the same Provider that is used by the CLI, and is used by
@@ -75,7 +81,7 @@ func NewTestClient() (api.PrefectClient, error) {
 }
 
 func NewRandomPrefixedString() string {
-	return acctest.RandomWithPrefix(TestAccPrefix)
+	return TestAccPrefix + acctest.RandStringFromCharSet(RandomStringLength, acctest.CharSetAlphaNum)
 }
 
 func NewEphemeralWorkspace() (string, string) {
