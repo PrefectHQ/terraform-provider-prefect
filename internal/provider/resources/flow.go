@@ -308,7 +308,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// we'll allow input values in the form of:
-	// - "workspace_id,id"
+	// - "id,workspace_id"
 	// - "id"
 	maxInputCount := 2
 	inputParts := strings.Split(req.ID, ",")
