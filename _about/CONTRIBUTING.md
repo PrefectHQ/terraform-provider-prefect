@@ -13,6 +13,7 @@ This project also uses the following tools to build and test:
 - `golangci-lint` for static code analysis
 - `goreleaser` to generate release binaries (optional for development)
 - `go-imports` to automatically update missing or unused imports
+- `tomlv` to [validate TOML files](https://github.com/BurntSushi/toml/tree/master/cmd/tomlv)
 
 On MacOS, you can use `brew`, `mise` and `go install` to install necessary dependencies:
 
