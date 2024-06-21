@@ -305,11 +305,6 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 }
 
-// // ImportState imports the resource into Terraform state.
-// func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-// 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-// }
-
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// we'll allow input values in the form of:
