@@ -317,7 +317,7 @@ func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportState
 	if len(inputParts) > maxInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `name,workspace_id`. Got %q", req.ID),
 		)
 
 		return
