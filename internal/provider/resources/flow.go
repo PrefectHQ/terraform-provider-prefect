@@ -257,7 +257,7 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+func (r *FlowResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
 	// Unsupported - redeploy by default
 }
 
@@ -340,6 +340,7 @@ func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportState
 		workspaceID, err := uuid.Parse(inputParts[1])
 		if err != nil {
 			resp.Diagnostics.AddError("problem parsing workspace ID", "see details")
+
 			return
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
