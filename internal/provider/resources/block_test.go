@@ -35,7 +35,7 @@ resource "prefect_block" "block" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_block(t *testing.T) {
 	blockResourceName := "prefect_block.block"
-	const workspaceResourceName = "prefect_workspace.workspace"
+	workspaceResourceName := "prefect_workspace.workspace"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	randomValue := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
 	randomValue2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)

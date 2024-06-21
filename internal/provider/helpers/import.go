@@ -16,11 +16,11 @@ func GetResourceWorkspaceImportStateID(resourceName string, workspaceName string
 		}
 		workspaceID, _ := uuid.Parse(workspace.Primary.ID)
 
-		resource, exists := state.RootModule().Resources[resourceName]
+		fetchedResource, exists := state.RootModule().Resources[resourceName]
 		if !exists {
 			return "", fmt.Errorf("resource not found in state: %s", resourceName)
 		}
 
-		return fmt.Sprintf("%s,%s", resource.Primary.Attributes["id"], workspaceID), nil
+		return fmt.Sprintf("%s,%s", fetchedResource.Primary.Attributes["id"], workspaceID), nil
 	}
 }
