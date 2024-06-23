@@ -3,12 +3,12 @@
 page_title: "prefect_deployment Resource - prefect"
 subcategory: ""
 description: |-
-  The resource workspace represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using work_pool and workspace_access resources.
+  Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely.
 ---
 
 # prefect_deployment (Resource)
 
-The resource `workspace` represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources.
+Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely.
 
 
 
