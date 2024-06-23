@@ -96,7 +96,7 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
 		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
+			"Unexpected Resource Configure Type",
 			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
 		)
 
@@ -112,9 +112,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 
 	resp.Schema = schema.Schema{
 		// Description: "Resource representing a Prefect Workspace",
-		Description: "The resource `workspace` represents a Prefect Cloud Workspace. " +
-			"Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. " +
-			"Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources.",
+		Description: "Deployments are server-side representations of flows. " +
+			"They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. " +
+			"Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely.",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -274,15 +274,15 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model DeploymentResourceModel
+	var plan DeploymentResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Deployments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment client",
@@ -291,20 +291,20 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	var tags []string
-	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		Name:                   model.Name.ValueString(),
-		FlowID:                 model.FlowID.ValueUUID(),
-		IsScheduleActive:       model.IsScheduleActive.ValueBool(),
-		Paused:                 model.Paused.ValueBool(),
-		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
-		Path:                   model.Path.ValueString(),
-		Entrypoint:             model.Entrypoint.ValueString(),
-		Description:            model.Description.ValueString(),
+		Name:                   plan.Name.ValueString(),
+		FlowID:                 plan.FlowID.ValueUUID(),
+		IsScheduleActive:       plan.IsScheduleActive.ValueBool(),
+		Paused:                 plan.Paused.ValueBool(),
+		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
+		Path:                   plan.Path.ValueString(),
+		Entrypoint:             plan.Entrypoint.ValueString(),
+		Description:            plan.Description.ValueString(),
 		Tags:                   tags,
 	})
 	if err != nil {
@@ -316,12 +316,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
+	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -451,14 +451,14 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model DeploymentResourceModel
+	var state DeploymentResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.Deployments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment client",
@@ -466,7 +466,7 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 		)
 	}
 
-	deploymentID, err := uuid.Parse(model.ID.ValueString())
+	deploymentID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("id"),
@@ -487,7 +487,7 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
