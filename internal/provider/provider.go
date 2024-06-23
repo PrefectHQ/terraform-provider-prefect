@@ -235,6 +235,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewAccountResource,
+		resources.NewDeploymentResource,
 		resources.NewFlowResource,
 		resources.NewServiceAccountResource,
 		resources.NewVariableResource,
