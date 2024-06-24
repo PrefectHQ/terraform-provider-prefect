@@ -40,39 +40,51 @@ type DeploymentResourceModel struct {
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 
-	Name                     types.String          `tfsdk:"name"`
-	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
-	IsScheduleActive         types.Bool            `tfsdk:"is_schedule_active"`
-	Paused                   types.Bool            `tfsdk:"paused"`
-	EnforceParameterSchema   types.Bool            `tfsdk:"enforce_parameter_schema"`
-	ManifestPath             types.String          `tfsdk:"manifest_path"`
-	WorkQueueName            types.String          `tfsdk:"work_queue_name"`
-	WorkPoolName             types.String          `tfsdk:"work_pool_name"`
-	StorageDocumentID        types.String          `tfsdk:"storage_document_id"`
-	InfrastructureDocumentID types.String          `tfsdk:"infrastructure_document_id"`
-	Description              types.String          `tfsdk:"description"`
-	Path                     types.String          `tfsdk:"path"`
-	Version                  types.String          `tfsdk:"version"`
-	Entrypoint               types.String          `tfsdk:"entrypoint"`
-	Tags                     types.List            `tfsdk:"tags"`
-	// schedules
-	// Array of objects (Schedules)
-	// A list of schedules for the deployment.
-	// parameter_openapi_schema
-	// object (Parameter Openapi Schema)
-	// The parameter schema of the flow, including defaults.
-	// parameters
-	// object (Parameters)
-	// Parameters for flow runs scheduled by the deployment.
-	// pull_steps
-	// Array of objects (Pull Steps)
-	// The steps required to pull this deployment's project to a remote location.
+	Name        types.String          `tfsdk:"name"`
+	Version     types.String          `tfsdk:"version"`
+	Description types.String          `tfsdk:"description"`
+	FlowID      customtypes.UUIDValue `tfsdk:"flow_id"`
+
 	// schedule
 	// IntervalSchedule (object) or CronSchedule (object) or RRuleSchedule (object) (Schedule)
 	// A schedule for the deployment.
-	// infra_overrides
-	// object (Infra Overrides)
+
+	IsScheduleActive types.Bool `tfsdk:"is_schedule_active"`
+	Paused           types.Bool `tfsdk:"paused"`
+
+	// schedules
+	// Array of objects (Schedules)
+	// A list of schedules for the deployment.
+
+	// 	job_variables
+	// object (Job Variables)
 	// Overrides to apply to the base infrastructure block at runtime.
+
+	// parameters
+	// object (Parameters)
+	// Parameters for flow runs scheduled by the deployment.
+
+	Tags          types.List   `tfsdk:"tags"`
+	WorkQueueName types.String `tfsdk:"work_queue_name"`
+	//LastPolled               customtypes.TimestampValue `tfsdk:"last_polled"`
+
+	// parameter_openapi_schema
+	// object (Parameter Openapi Schema)
+	// The parameter schema of the flow, including defaults.
+
+	Path types.String `tfsdk:"path"`
+
+	// pull_steps
+	// Array of objects (Pull Steps)
+	// The steps required to pull this deployment's project to a remote location.
+
+	Entrypoint               types.String `tfsdk:"entrypoint"`
+	ManifestPath             types.String `tfsdk:"manifest_path"`
+	StorageDocumentID        types.String `tfsdk:"storage_document_id"`
+	InfrastructureDocumentID types.String `tfsdk:"infrastructure_document_id"`
+	WorkPoolName             types.String `tfsdk:"work_pool_name"`
+	//Status                   types.String          `tfsdk:"status"`
+	EnforceParameterSchema types.Bool `tfsdk:"enforce_parameter_schema"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -227,9 +239,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "The path to the entrypoint for the workflow, relative to the path.",
 				Required:    true,
 			},
-			// infra_overrides
-			// object (Infra Overrides)
-			// Overrides to apply to the base infrastructure block at runtime.
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,

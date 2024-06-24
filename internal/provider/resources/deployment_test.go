@@ -44,6 +44,12 @@ resource "prefect_deployment" "deployment" {
 	// parameters: {
 	// 	'goodbye': True
 	// },
+	
+
+	// is_schedule_active = true
+	// paused = false
+	// 
+	// enforce_parameter_schema = false
 	// parameter_openapi_schema = {
 	// 	'title': 'Parameters',
 	// 	'type': 'object',
@@ -52,12 +58,6 @@ resource "prefect_deployment" "deployment" {
 	// 		'goodbye': {...}
 	// 	}
 	// }
-
-	// is_schedule_active = true
-	// paused = false
-	// 
-	// enforce_parameter_schema = false
-	// "parameter_openapi_schema": { },
 	// "pull_steps": [
 	// { }
 	// ],
@@ -74,7 +74,6 @@ resource "prefect_deployment" "deployment" {
 	// },
 	// path = "string"
 	// version = "string"
-	// infra_overrides = { }
 }
 `, name, name, name, name)
 }
@@ -94,13 +93,6 @@ func TestAccResource_deployment(t *testing.T) {
 	resourceName := "prefect_deployment.deployment"
 	workspaceResourceName := "prefect_workspace.workspace"
 	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	// randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	// emptyDescription := ""
-	// randomDescription := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-
-	// We use this variable to store the fetched resource from the API
-	// and it will be shared between TestSteps via a pointer.
-	// var deployment api.Deployment
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -129,14 +121,6 @@ func TestAccResource_deployment(t *testing.T) {
 			// 		// resource.TestCheckResourceAttr(resourceName, "handle", randomName2),
 			// 		// resource.TestCheckResourceAttr(resourceName, "description", randomDescription),
 			// 	),
-			// },
-			// // Import State checks - import by handle
-			// {
-			// 	ImportState:         true,
-			// 	ResourceName:        resourceName,
-			// 	ImportStateId:       randomName2,
-			// 	ImportStateIdPrefix: "handle/",
-			// 	ImportStateVerify:   true,
 			// },
 			// Import State checks - import by ID (default)
 			{
