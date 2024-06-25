@@ -10,6 +10,7 @@
 
   jobs:
     label:
+      environment: Docs
       runs-on: ubuntu-latest
       permissions:
         contents: read
