@@ -16,6 +16,7 @@ permissions: {}
 jobs:
   build_tf_docs:
     name: Build Terraform Docs
+    environment: Docs
     runs-on: ubuntu-latest
     permissions:
       contents: write
