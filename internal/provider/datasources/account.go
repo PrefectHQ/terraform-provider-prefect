@@ -110,14 +110,17 @@ Use this data source to obtain account-level attributes
 					"allow_public_workspaces": schema.BoolAttribute{
 						Description: "Whether or not this account allows public workspaces",
 						Optional:    true,
+						Computed:    true,
 					},
 					"ai_log_summaries": schema.BoolAttribute{
 						Description: "Whether to use AI to generate log summaries.",
 						Optional:    true,
+						Computed:    true,
 					},
 					"managed_execution": schema.BoolAttribute{
 						Description: "Whether to enable the use of managed work pools",
 						Optional:    true,
+						Computed:    true,
 					},
 				},
 			},
@@ -168,9 +171,9 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			"managed_execution":       types.BoolType,
 		},
 		map[string]attr.Value{
-			"allow_public_workspaces": types.BoolValue(*account.Settings.AllowPublicWorkspaces),
-			"ai_log_summaries":        types.BoolValue(*account.Settings.AILogSummaries),
-			"managed_execution":       types.BoolValue(*account.Settings.ManagedExecution),
+			"allow_public_workspaces": types.BoolValue(account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":        types.BoolValue(account.Settings.AILogSummaries),
+			"managed_execution":       types.BoolValue(account.Settings.ManagedExecution),
 		},
 	)
 	resp.Diagnostics.Append(diag...)

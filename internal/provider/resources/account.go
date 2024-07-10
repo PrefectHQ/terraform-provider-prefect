@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -130,16 +131,19 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						Description: "Whether or not this account allows public workspaces",
 						Optional:    true,
 						Default:     booldefault.StaticBool(false),
+						Computed:    true,
 					},
 					"ai_log_summaries": schema.BoolAttribute{
 						Description: "Whether to use AI to generate log summaries.",
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
+						Computed:    true,
 					},
 					"managed_execution": schema.BoolAttribute{
 						Description: "Whether to enable the use of managed work pools",
 						Optional:    true,
 						Default:     booldefault.StaticBool(true),
+						Computed:    true,
 					},
 				},
 			},
@@ -171,9 +175,9 @@ func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel
 			"managed_execution":       types.BoolType,
 		},
 		map[string]attr.Value{
-			"allow_public_workspaces": types.BoolValue(*account.Settings.AllowPublicWorkspaces),
-			"ai_log_summaries":        types.BoolValue(*account.Settings.AILogSummaries),
-			"managed_execution":       types.BoolValue(*account.Settings.ManagedExecution),
+			"allow_public_workspaces": types.BoolValue(account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":        types.BoolValue(account.Settings.AILogSummaries),
+			"managed_execution":       types.BoolValue(account.Settings.ManagedExecution),
 		},
 	)
 
@@ -247,28 +251,36 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
 
-	settings := plan.Settings.Attributes()
-
-	allowPublicWorkspaces, _ := strconv.ParseBool(settings["allow_public_workspaces"].String())
-	aiLogSummaries, _ := strconv.ParseBool(settings["ai_log_summaries"].String())
-	managedExecution, _ := strconv.ParseBool(settings["managed_execution"].String())
-
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:     plan.Name.ValueStringPointer(),
-		Handle:   plan.Handle.ValueStringPointer(),
-		Location: plan.Location.ValueStringPointer(),
-		Link:     plan.Link.ValueStringPointer(),
-		Settings: &api.Settings{
-			AllowPublicWorkspaces: &allowPublicWorkspaces,
-			AILogSummaries:        &aiLogSummaries,
-			ManagedExecution:      &managedExecution,
-		},
+		Name:         plan.Name.ValueStringPointer(),
+		Handle:       plan.Handle.ValueStringPointer(),
+		Location:     plan.Location.ValueStringPointer(),
+		Link:         plan.Link.ValueStringPointer(),
 		BillingEmail: plan.BillingEmail.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
 
 		return
+	}
+
+	var state AccountResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// If settings have changed, we need to create a separate request to update them.
+	if !plan.Settings.Equal(state.Settings) {
+		err = client.UpdateSettings(ctx, api.AccountSettingsUpdate{
+			Settings: newSettingsFromObject(plan.Settings),
+		})
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account settings", "update", err))
+
+			return
+		}
 	}
 
 	account, err := client.Get(ctx)
@@ -326,4 +338,20 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 // ImportState imports the resource into Terraform state.
 func (r *AccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func newSettingsFromObject(settings basetypes.ObjectValue) api.Settings {
+	attrs := settings.Attributes()
+
+	return api.Settings{
+		AllowPublicWorkspaces: valToBool(attrs["allow_public_workspaces"]),
+		AILogSummaries:        valToBool(attrs["ai_log_summaries"]),
+		ManagedExecution:      valToBool(attrs["managed_execution"]),
+	}
+}
+
+func valToBool(val attr.Value) bool {
+	result, _ := strconv.ParseBool(val.String())
+
+	return result
 }

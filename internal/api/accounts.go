@@ -8,30 +8,31 @@ import (
 type AccountsClient interface {
 	Get(ctx context.Context) (*AccountResponse, error)
 	Update(ctx context.Context, data AccountUpdate) error
+	UpdateSettings(ctx context.Context, data AccountSettingsUpdate) error
 	Delete(ctx context.Context) error
 }
 
 // Settings is a representation of an account's settings.
 type Settings struct {
-	AllowPublicWorkspaces *bool `json:"allow_public_workspaces"`
-	AILogSummaries        *bool `json:"ai_log_summaries"`
-	ManagedExecution      *bool `json:"managed_execution"`
+	AllowPublicWorkspaces bool `json:"allow_public_workspaces"`
+	AILogSummaries        bool `json:"ai_log_summaries"`
+	ManagedExecution      bool `json:"managed_execution"`
 }
 
 // Account is a representation of an account.
 type Account struct {
 	BaseModel
-	Name                  string    `json:"name"`
-	Handle                string    `json:"handle"`
-	Location              *string   `json:"location"`
-	Link                  *string   `json:"link"`
-	ImageLocation         *string   `json:"image_location"`
-	StripeCustomerID      *string   `json:"stripe_customer_id"`
-	WorkOSDirectoryIDs    []string  `json:"workos_directory_ids"`
-	WorkOSOrganizationID  *string   `json:"workos_organization_id"`
-	WorkOSConnectionIDs   []string  `json:"workos_connection_ids"`
-	AuthExpirationSeconds *int64    `json:"auth_expiration_seconds"`
-	Settings              *Settings `json:"settings"`
+	Name                  string   `json:"name"`
+	Handle                string   `json:"handle"`
+	Location              *string  `json:"location"`
+	Link                  *string  `json:"link"`
+	ImageLocation         *string  `json:"image_location"`
+	StripeCustomerID      *string  `json:"stripe_customer_id"`
+	WorkOSDirectoryIDs    []string `json:"workos_directory_ids"`
+	WorkOSOrganizationID  *string  `json:"workos_organization_id"`
+	WorkOSConnectionIDs   []string `json:"workos_connection_ids"`
+	AuthExpirationSeconds *int64   `json:"auth_expiration_seconds"`
+	Settings              Settings `json:"settings"`
 }
 
 // AccountResponse is the data about an account returned by the Accounts API.
@@ -50,11 +51,15 @@ type AccountResponse struct {
 
 // AccountUpdate is the data sent when updating an account.
 type AccountUpdate struct {
-	Name                  *string   `json:"name"`
-	Handle                *string   `json:"handle"`
-	Location              *string   `json:"location"`
-	Link                  *string   `json:"link"`
-	AuthExpirationSeconds *int64    `json:"auth_expiration_seconds"`
-	BillingEmail          *string   `json:"billing_email"`
-	Settings              *Settings `json:"settings"`
+	Name                  *string `json:"name"`
+	Handle                *string `json:"handle"`
+	Location              *string `json:"location"`
+	Link                  *string `json:"link"`
+	AuthExpirationSeconds *int64  `json:"auth_expiration_seconds"`
+	BillingEmail          *string `json:"billing_email"`
+}
+
+// AccountSettingsUpdate is the data sent when updating an account's settings.
+type AccountSettingsUpdate struct {
+	Settings `json:"settings"`
 }
