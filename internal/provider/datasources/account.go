@@ -3,6 +3,7 @@ package datasources
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -25,12 +26,12 @@ type AccountDataSourceModel struct {
 	Created customtypes.TimestampValue `tfsdk:"created"`
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
-	Name                  types.String `tfsdk:"name"`
-	Handle                types.String `tfsdk:"handle"`
-	Location              types.String `tfsdk:"location"`
-	Link                  types.String `tfsdk:"link"`
-	AllowPublicWorkspaces types.Bool   `tfsdk:"allow_public_workspaces"`
-	BillingEmail          types.String `tfsdk:"billing_email"`
+	Name         types.String `tfsdk:"name"`
+	Handle       types.String `tfsdk:"handle"`
+	Location     types.String `tfsdk:"location"`
+	Link         types.String `tfsdk:"link"`
+	Settings     types.Object `tfsdk:"settings"`
+	BillingEmail types.String `tfsdk:"billing_email"`
 }
 
 // NewAccountDataSource returns a new AccountDataSource.
@@ -102,9 +103,23 @@ Use this data source to obtain account-level attributes
 				Computed:    true,
 				Description: "An optional for an external url associated with the account, e.g. https://prefect.io/",
 			},
-			"allow_public_workspaces": schema.BoolAttribute{
-				Computed:    true,
-				Description: "Whether or not this account allows public workspaces",
+			"settings": schema.SingleNestedAttribute{
+				Description: "Group of settings related to accounts",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"allow_public_workspaces": schema.BoolAttribute{
+						Description: "Whether or not this account allows public workspaces",
+						Optional:    true,
+					},
+					"ai_log_summaries": schema.BoolAttribute{
+						Description: "Whether to use AI to generate log summaries.",
+						Optional:    true,
+					},
+					"managed_execution": schema.BoolAttribute{
+						Description: "Whether to enable the use of managed work pools",
+						Optional:    true,
+					},
+				},
 			},
 			"billing_email": schema.StringAttribute{
 				Computed:    true,
@@ -146,7 +161,25 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	model.Created = customtypes.NewTimestampPointerValue(account.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
-	model.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
+	settingsObject, diag := types.ObjectValue(
+		map[string]attr.Type{
+			"allow_public_workspaces": types.BoolType,
+			"ai_log_summaries":        types.BoolType,
+			"managed_execution":       types.BoolType,
+		},
+		map[string]attr.Value{
+			"allow_public_workspaces": types.BoolValue(*account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":        types.BoolValue(*account.Settings.AILogSummaries),
+			"managed_execution":       types.BoolValue(*account.Settings.ManagedExecution),
+		},
+	)
+	resp.Diagnostics.Append(diag...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	model.Settings = settingsObject
+
 	model.BillingEmail = types.StringPointerValue(account.BillingEmail)
 	model.Handle = types.StringValue(account.Handle)
 	model.Link = types.StringPointerValue(account.Link)

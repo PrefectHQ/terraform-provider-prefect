@@ -2,12 +2,15 @@ package resources
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -33,12 +36,12 @@ type AccountResourceModel struct {
 	Created customtypes.TimestampValue `tfsdk:"created"`
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
-	Name                  types.String `tfsdk:"name"`
-	Handle                types.String `tfsdk:"handle"`
-	Location              types.String `tfsdk:"location"`
-	Link                  types.String `tfsdk:"link"`
-	AllowPublicWorkspaces types.Bool   `tfsdk:"allow_public_workspaces"`
-	BillingEmail          types.String `tfsdk:"billing_email"`
+	Name         types.String `tfsdk:"name"`
+	Handle       types.String `tfsdk:"handle"`
+	Location     types.String `tfsdk:"location"`
+	Link         types.String `tfsdk:"link"`
+	Settings     types.Object `tfsdk:"settings"`
+	BillingEmail types.String `tfsdk:"billing_email"`
 }
 
 // NewAccountResource returns a new AccountResource.
@@ -119,9 +122,26 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "An optional for an external url associated with the account, e.g. https://prefect.io/",
 				Optional:    true,
 			},
-			"allow_public_workspaces": schema.BoolAttribute{
-				Description: "Whether or not this account allows public workspaces",
+			"settings": schema.SingleNestedAttribute{
+				Description: "Group of settings related to accounts",
 				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"allow_public_workspaces": schema.BoolAttribute{
+						Description: "Whether or not this account allows public workspaces",
+						Optional:    true,
+						Default:     booldefault.StaticBool(false),
+					},
+					"ai_log_summaries": schema.BoolAttribute{
+						Description: "Whether to use AI to generate log summaries.",
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+					"managed_execution": schema.BoolAttribute{
+						Description: "Whether to enable the use of managed work pools",
+						Optional:    true,
+						Default:     booldefault.StaticBool(true),
+					},
+				},
 			},
 			"billing_email": schema.StringAttribute{
 				Description: "Billing email to apply to the account's Stripe customer",
@@ -138,14 +158,28 @@ func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel
 	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
-	tfModel.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
 	tfModel.BillingEmail = types.StringPointerValue(account.BillingEmail)
 	tfModel.Handle = types.StringValue(account.Handle)
 	tfModel.Link = types.StringPointerValue(account.Link)
 	tfModel.Location = types.StringPointerValue(account.Location)
 	tfModel.Name = types.StringValue(account.Name)
 
-	return nil
+	settingsObject, diags := types.ObjectValue(
+		map[string]attr.Type{
+			"allow_public_workspaces": types.BoolType,
+			"ai_log_summaries":        types.BoolType,
+			"managed_execution":       types.BoolType,
+		},
+		map[string]attr.Value{
+			"allow_public_workspaces": types.BoolValue(*account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":        types.BoolValue(*account.Settings.AILogSummaries),
+			"managed_execution":       types.BoolValue(*account.Settings.ManagedExecution),
+		},
+	)
+
+	tfModel.Settings = settingsObject
+
+	return diags
 }
 
 func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
@@ -213,13 +247,23 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
 
+	settings := plan.Settings.Attributes()
+
+	allowPublicWorkspaces, _ := strconv.ParseBool(settings["allow_public_workspaces"].String())
+	aiLogSummaries, _ := strconv.ParseBool(settings["ai_log_summaries"].String())
+	managedExecution, _ := strconv.ParseBool(settings["managed_execution"].String())
+
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:                  plan.Name.ValueStringPointer(),
-		Handle:                plan.Handle.ValueStringPointer(),
-		Location:              plan.Location.ValueStringPointer(),
-		Link:                  plan.Link.ValueStringPointer(),
-		AllowPublicWorkspaces: plan.AllowPublicWorkspaces.ValueBoolPointer(),
-		BillingEmail:          plan.BillingEmail.ValueStringPointer(),
+		Name:     plan.Name.ValueStringPointer(),
+		Handle:   plan.Handle.ValueStringPointer(),
+		Location: plan.Location.ValueStringPointer(),
+		Link:     plan.Link.ValueStringPointer(),
+		Settings: &api.Settings{
+			AllowPublicWorkspaces: &allowPublicWorkspaces,
+			AILogSummaries:        &aiLogSummaries,
+			ManagedExecution:      &managedExecution,
+		},
+		BillingEmail: plan.BillingEmail.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
