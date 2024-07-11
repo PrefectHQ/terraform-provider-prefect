@@ -12,8 +12,8 @@ type AccountsClient interface {
 	Delete(ctx context.Context) error
 }
 
-// Settings is a representation of an account's settings.
-type Settings struct {
+// AccountSettings is a representation of an account's settings.
+type AccountSettings struct {
 	AllowPublicWorkspaces bool `json:"allow_public_workspaces"`
 	AILogSummaries        bool `json:"ai_log_summaries"`
 	ManagedExecution      bool `json:"managed_execution"`
@@ -22,17 +22,17 @@ type Settings struct {
 // Account is a representation of an account.
 type Account struct {
 	BaseModel
-	Name                  string   `json:"name"`
-	Handle                string   `json:"handle"`
-	Location              *string  `json:"location"`
-	Link                  *string  `json:"link"`
-	ImageLocation         *string  `json:"image_location"`
-	StripeCustomerID      *string  `json:"stripe_customer_id"`
-	WorkOSDirectoryIDs    []string `json:"workos_directory_ids"`
-	WorkOSOrganizationID  *string  `json:"workos_organization_id"`
-	WorkOSConnectionIDs   []string `json:"workos_connection_ids"`
-	AuthExpirationSeconds *int64   `json:"auth_expiration_seconds"`
-	Settings              Settings `json:"settings"`
+	Name                  string          `json:"name"`
+	Handle                string          `json:"handle"`
+	Location              *string         `json:"location"`
+	Link                  *string         `json:"link"`
+	ImageLocation         *string         `json:"image_location"`
+	StripeCustomerID      *string         `json:"stripe_customer_id"`
+	WorkOSDirectoryIDs    []string        `json:"workos_directory_ids"`
+	WorkOSOrganizationID  *string         `json:"workos_organization_id"`
+	WorkOSConnectionIDs   []string        `json:"workos_connection_ids"`
+	AuthExpirationSeconds *int64          `json:"auth_expiration_seconds"`
+	Settings              AccountSettings `json:"settings"`
 }
 
 // AccountResponse is the data about an account returned by the Accounts API.
@@ -61,5 +61,5 @@ type AccountUpdate struct {
 
 // AccountSettingsUpdate is the data sent when updating an account's settings.
 type AccountSettingsUpdate struct {
-	Settings `json:"settings"`
+	AccountSettings `json:"settings"`
 }

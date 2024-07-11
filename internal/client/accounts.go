@@ -101,7 +101,7 @@ func (c *AccountsClient) Update(ctx context.Context, data api.AccountUpdate) err
 // UpdateSettings modifies an existing account's settings by ID.
 func (c *AccountsClient) UpdateSettings(ctx context.Context, data api.AccountSettingsUpdate) error {
 	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data.Settings); err != nil {
+	if err := json.NewEncoder(&buf).Encode(&data.AccountSettings); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 

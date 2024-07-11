@@ -274,7 +274,7 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	// If settings have changed, we need to create a separate request to update them.
 	if !plan.Settings.Equal(state.Settings) {
 		err = client.UpdateSettings(ctx, api.AccountSettingsUpdate{
-			Settings: newSettingsFromObject(plan.Settings),
+			AccountSettings: newAccountSettingsFromObject(plan.Settings),
 		})
 		if err != nil {
 			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account settings", "update", err))
@@ -340,10 +340,10 @@ func (r *AccountResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-func newSettingsFromObject(settings basetypes.ObjectValue) api.Settings {
+func newAccountSettingsFromObject(settings basetypes.ObjectValue) api.AccountSettings {
 	attrs := settings.Attributes()
 
-	return api.Settings{
+	return api.AccountSettings{
 		AllowPublicWorkspaces: valToBool(attrs["allow_public_workspaces"]),
 		AILogSummaries:        valToBool(attrs["ai_log_summaries"]),
 		ManagedExecution:      valToBool(attrs["managed_execution"]),
