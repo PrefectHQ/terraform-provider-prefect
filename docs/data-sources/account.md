@@ -32,10 +32,10 @@ data "prefect_account" "my_organization" {}
 ### Optional
 
 - `id` (String) Account ID (UUID)
+- `settings` (Attributes) Group of settings related to accounts (see [below for nested schema](#nestedatt--settings))
 
 ### Read-Only
 
-- `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
 - `billing_email` (String) Billing email to apply to the account's Stripe customer
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `handle` (String) Unique handle of the account
@@ -43,3 +43,12 @@ data "prefect_account" "my_organization" {}
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
 - `name` (String) Name of the account
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+<a id="nestedatt--settings"></a>
+### Nested Schema for `settings`
+
+Optional:
+
+- `ai_log_summaries` (Boolean) Whether to use AI to generate log summaries.
+- `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
+- `managed_execution` (Boolean) Whether to enable the use of managed work pools

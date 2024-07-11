@@ -17,10 +17,14 @@ Note that this resource can only be imported, as account creation is not current
 
 ```terraform
 resource "prefect_account" "example" {
-  name                    = "My Imported Account"
-  description             = "A cool account"
-  billing_email           = "marvin@prefect.io"
-  allow_public_workspaces = true
+  name          = "My Imported Account"
+  description   = "A cool account"
+  billing_email = "marvin@prefect.io"
+  settings = {
+    allow_public_workspaces = true
+    ai_log_summaries        = false
+    managed_execution       = false
+  }
 }
 ```
 
@@ -34,16 +38,25 @@ resource "prefect_account" "example" {
 
 ### Optional
 
-- `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
 - `billing_email` (String) Billing email to apply to the account's Stripe customer
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
+- `settings` (Attributes) Group of settings related to accounts (see [below for nested schema](#nestedatt--settings))
 
 ### Read-Only
 
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Account ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+<a id="nestedatt--settings"></a>
+### Nested Schema for `settings`
+
+Optional:
+
+- `ai_log_summaries` (Boolean) Whether to use AI to generate log summaries.
+- `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
+- `managed_execution` (Boolean) Whether to enable the use of managed work pools
 
 ## Import
 
