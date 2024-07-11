@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -126,23 +125,21 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"settings": schema.SingleNestedAttribute{
 				Description: "Group of settings related to accounts",
 				Optional:    true,
+				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"allow_public_workspaces": schema.BoolAttribute{
 						Description: "Whether or not this account allows public workspaces",
 						Optional:    true,
-						Default:     booldefault.StaticBool(false),
 						Computed:    true,
 					},
 					"ai_log_summaries": schema.BoolAttribute{
 						Description: "Whether to use AI to generate log summaries.",
 						Optional:    true,
-						Default:     booldefault.StaticBool(true),
 						Computed:    true,
 					},
 					"managed_execution": schema.BoolAttribute{
 						Description: "Whether to enable the use of managed work pools",
 						Optional:    true,
-						Default:     booldefault.StaticBool(true),
 						Computed:    true,
 					},
 				},
