@@ -1,7 +1,7 @@
 name: Build Terraform Docs
 
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
     paths:
@@ -16,6 +16,7 @@ permissions: {}
 jobs:
   build_tf_docs:
     name: Build Terraform Docs
+    environment: Docs
     runs-on: ubuntu-latest
     permissions:
       contents: write

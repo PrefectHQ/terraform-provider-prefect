@@ -17,7 +17,6 @@ Use this data source to obtain user or actor IDs to manage Workspace Access.
 ## Example Usage
 
 ```terraform
-# Query all Members in Account
 data "prefect_account_members" "all_members" {}
 ```
 

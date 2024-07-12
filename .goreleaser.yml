@@ -56,4 +56,4 @@ release:
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
   draft: false
 changelog:
-  skip: true
+  disable: true

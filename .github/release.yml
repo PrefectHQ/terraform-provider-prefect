@@ -8,18 +8,18 @@ changelog:
     - title: Breaking Changes
       labels:
         - breaking
-    - title: Dependency Updates
-      labels:
-        - dependencies
-    - title: Documentation
-      labels:
-        - docs
     - title: Exciting New Features 🎉
       labels:
         - enhancement
     - title: Fixes
       labels:
         - bugfix
+    - title: Dependency Updates
+      labels:
+        - dependencies
+    - title: Documentation
+      labels:
+        - docs
     - title: And more...
       labels:
         - "*"
