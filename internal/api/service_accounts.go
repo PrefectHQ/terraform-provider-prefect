@@ -30,7 +30,8 @@ type ServiceAccountUpdateRequest struct {
 }
 
 type ServiceAccountRotateKeyRequest struct {
-	APIKeyExpiration *time.Time `json:"api_key_expiration"`
+	APIKeyExpiration       *time.Time `json:"api_key_expiration"`
+	OldKeyExpiresInSeconds int32      `json:"old_key_expires_in_seconds"`
 }
 
 // ServiceAccountFilter defines the search filter payload
