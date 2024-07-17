@@ -6,10 +6,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -19,6 +21,11 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+)
+
+const (
+	oldKeyExpiresInSecondsMin = 0
+	oldKeyExpiresInSecondsMax = 172800
 )
 
 var (
@@ -40,11 +47,12 @@ type ServiceAccountResourceModel struct {
 	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
 	AccountRoleName types.String          `tfsdk:"account_role_name"`
 
-	APIKeyID         types.String               `tfsdk:"api_key_id"`
-	APIKeyName       types.String               `tfsdk:"api_key_name"`
-	APIKeyCreated    customtypes.TimestampValue `tfsdk:"api_key_created"`
-	APIKeyExpiration customtypes.TimestampValue `tfsdk:"api_key_expiration"`
-	APIKey           types.String               `tfsdk:"api_key"`
+	APIKeyID               types.String               `tfsdk:"api_key_id"`
+	APIKeyName             types.String               `tfsdk:"api_key_name"`
+	APIKeyCreated          customtypes.TimestampValue `tfsdk:"api_key_created"`
+	APIKeyExpiration       customtypes.TimestampValue `tfsdk:"api_key_expiration"`
+	OldKeyExpiresInSeconds types.Int32                `tfsdk:"old_key_expires_in_seconds"`
+	APIKey                 types.String               `tfsdk:"api_key"`
 }
 
 // ArePointerTimesEqual is a helper to compare equality of two pointer times
@@ -151,6 +159,16 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.",
+			},
+			"old_key_expires_in_seconds": schema.Int32Attribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Provide this field to set an expiration for the currently active api key. If not provided or provided Null, the current key will be deleted. If provided, it cannot be more than 48 hours (172800 seconds) in the future.",
+				Default:     int32default.StaticInt32(oldKeyExpiresInSecondsMin),
+				Validators: []validator.Int32{
+					int32validator.AtMost(oldKeyExpiresInSecondsMax),
+					int32validator.AtLeast(oldKeyExpiresInSecondsMin),
+				},
 			},
 			"api_key": schema.StringAttribute{
 				Computed:    true,
@@ -417,7 +435,8 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 	currentExpiration := serviceAccount.APIKey.Expiration
 	if !ArePointerTimesEqual(providedExpiration, currentExpiration) {
 		serviceAccount, err = client.RotateKey(ctx, plan.ID.ValueString(), api.ServiceAccountRotateKeyRequest{
-			APIKeyExpiration: providedExpiration,
+			APIKeyExpiration:       providedExpiration,
+			OldKeyExpiresInSeconds: plan.OldKeyExpiresInSeconds.ValueInt32(),
 		})
 		if err != nil {
 			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "key rotate", err))

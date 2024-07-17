@@ -50,6 +50,7 @@ resource "prefect_service_account" "example" {
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `account_role_name` (String) Account Role name of the service account
 - `api_key_expiration` (String) Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.
+- `old_key_expires_in_seconds` (Number) Provide this field to set an expiration for the currently active api key. If not provided or provided Null, the current key will be deleted. If provided, it cannot be more than 48 hours (172800 seconds) in the future.
 
 ### Read-Only
 
