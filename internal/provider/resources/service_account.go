@@ -136,10 +136,10 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Account Role name of the service account",
+				Description: "Account Role name of the service account (one of: Admin, Member, Owner)",
 				Default:     stringdefault.StaticString("Member"),
 				Validators: []validator.String{
-					stringvalidator.OneOf("Admin", "Member"),
+					stringvalidator.OneOf("Admin", "Member", "Owner"),
 				},
 			},
 			"api_key_id": schema.StringAttribute{
