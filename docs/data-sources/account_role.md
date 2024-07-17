@@ -17,8 +17,8 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 ## Example Usage
 
 ```terraform
-# Read down the default Owner Account Role
-data "prefect_account_role" "owner" {
+# Read down the default Admin Account Role
+data "prefect_account_role" "admin" {
   name = "Admin"
 }
 
