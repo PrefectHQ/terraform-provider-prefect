@@ -3,19 +3,15 @@ package customtypes
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 var (
 	_ = basetypes.StringTypable(&TimestampType{})
-	_ = xattr.TypeWithValidate(&TimestampType{})
 	_ = fmt.Stringer(&TimestampType{})
 )
 
@@ -78,35 +74,4 @@ func (t TimestampType) ValueFromTerraform(ctx context.Context, in tftypes.Value)
 //nolint:ireturn // required to implement StringTypable
 func (t TimestampType) ValueType(_ context.Context) attr.Value {
 	return TimestampValue{}
-}
-
-// Validate ensures that the string can be converted to a TimestampValue.
-func (t TimestampType) Validate(_ context.Context, value tftypes.Value, valuePath path.Path) diag.Diagnostics {
-	if value.IsNull() || !value.IsKnown() {
-		return nil
-	}
-
-	var diags diag.Diagnostics
-	var timestampStr string
-	if err := value.As(&timestampStr); err != nil {
-		diags.AddAttributeError(
-			valuePath,
-			"Invalid Terraform Value",
-			fmt.Sprintf("Failed to convert %T to string: %s. Please report this issue to the provider developers.", value, err.Error()),
-		)
-
-		return diags
-	}
-
-	if _, err := time.Parse(time.RFC3339, timestampStr); err != nil {
-		diags.AddAttributeError(
-			valuePath,
-			"Invalid RFC 3339 String Value",
-			fmt.Sprintf("Failed to parse string %q as RFC 3339 timestamp (YYYY-MM-DDTHH:MM:SSZ): %s", timestampStr, err.Error()),
-		)
-
-		return diags
-	}
-
-	return diags
 }

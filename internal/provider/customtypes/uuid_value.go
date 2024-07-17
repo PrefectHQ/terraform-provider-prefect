@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -14,6 +15,7 @@ var (
 	_ = basetypes.StringValuable(&UUIDValue{})
 	_ = basetypes.StringValuableWithSemanticEquals(&UUIDValue{})
 	_ = fmt.Stringer(&UUIDValue{})
+	_ = xattr.ValidateableAttribute(&UUIDValue{})
 )
 
 // UUIDValue implements a custom Terraform value that represents
@@ -122,4 +124,23 @@ func (v UUIDValue) ValueUUIDPointer() *uuid.UUID {
 	value := v.ValueUUID()
 
 	return &value
+}
+
+// ValidateAttribute ensures that the string can be converted to a UUIDValue.
+//
+//nolint:ireturn // required to implement ValidateAttribute
+func (v UUIDValue) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
+		return
+	}
+
+	if _, err := uuid.Parse(v.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid UUID String Value",
+			fmt.Sprintf("Failed to parse string %q as a UUID: %s", v.ValueString(), err.Error()),
+		)
+
+		return
+	}
 }
