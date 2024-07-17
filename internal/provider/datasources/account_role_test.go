@@ -26,7 +26,7 @@ func TestAccDatasource_account_role_defaults(t *testing.T) {
 	}
 
 	// Default account role names - these exist in every account
-	defaultAccountRoles := []defaultAccountRole{{"Admin", "37"}, {"Member", "10"}}
+	defaultAccountRoles := []defaultAccountRole{{"Admin", "37"}, {"Member", "10"}, {"Owner", "39"}}
 
 	testSteps := []resource.TestStep{}
 

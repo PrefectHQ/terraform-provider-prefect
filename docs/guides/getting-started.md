@@ -84,7 +84,7 @@ API Keys can also be generated to represent a User - look to this option if you 
 
 <br>
 
-Note that any User API Keys will inherit the Account/Organization Role of the User (eg. `Admin` or `Member`)
+Note that any User API Keys will inherit the Account/Organization Role of the User (eg. `Admin`, `Member`, or `Owner`)
 
 <img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/user-api-key-example.png" alt="User API Key Example" align="center" width="400">
 
