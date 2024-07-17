@@ -48,7 +48,7 @@ resource "prefect_service_account" "example" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `account_role_name` (String) Account Role name of the service account
+- `account_role_name` (String) Account Role name of the service account (one of: Admin, Member, Owner)
 - `api_key_expiration` (String) Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.
 
 ### Read-Only
