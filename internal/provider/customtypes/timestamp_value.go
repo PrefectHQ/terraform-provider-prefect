@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
@@ -13,6 +14,7 @@ import (
 var (
 	_ = basetypes.StringValuable(&TimestampValue{})
 	_ = basetypes.StringValuableWithSemanticEquals(&TimestampValue{})
+	_ = xattr.ValidateableAttribute(&TimestampValue{})
 	_ = fmt.Stringer(&TimestampValue{})
 )
 
@@ -122,4 +124,21 @@ func (v TimestampValue) ValueTimePointer() *time.Time {
 	value := v.ValueTime()
 
 	return &value
+}
+
+// ValidateAttribute ensures that the string can be converted to a TimestampValue.
+//
+//nolint:ireturn // required to implement ValidateAttribute
+func (v TimestampValue) ValidateAttribute(_ context.Context, req xattr.ValidateAttributeRequest, resp *xattr.ValidateAttributeResponse) {
+	if v.IsNull() || v.IsUnknown() {
+		return
+	}
+
+	if _, err := time.Parse(time.RFC3339, v.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid RFC 3339 String Value",
+			fmt.Sprintf("Failed to parse string %q as RFC 3339 timestamp (YYYY-MM-DDTHH:MM:SSZ): %s", v.ValueString(), err.Error()),
+		)
+	}
 }

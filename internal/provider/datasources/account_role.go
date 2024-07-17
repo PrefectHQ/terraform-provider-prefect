@@ -75,7 +75,7 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 				Required:    true,
 				Description: "Name of the Account Role",
 				Validators: []validator.String{
-					stringvalidator.OneOf("Admin", "Member"),
+					stringvalidator.OneOf("Admin", "Member", "Owner"),
 				},
 			},
 			"permissions": schema.ListAttribute{

@@ -4,18 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
 var (
 	_ = basetypes.StringTypable(&UUIDType{})
-	_ = xattr.TypeWithValidate(&UUIDType{})
 	_ = fmt.Stringer(&UUIDType{})
 )
 
@@ -78,35 +74,4 @@ func (t UUIDType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (att
 //nolint:ireturn // required to implement StringTypable
 func (t UUIDType) ValueType(_ context.Context) attr.Value {
 	return UUIDValue{}
-}
-
-// Validate ensures that the string can be converted to a UUIDValue.
-func (t UUIDType) Validate(_ context.Context, value tftypes.Value, valuePath path.Path) diag.Diagnostics {
-	if value.IsNull() || !value.IsKnown() {
-		return nil
-	}
-
-	var diags diag.Diagnostics
-	var uuidStr string
-	if err := value.As(&uuidStr); err != nil {
-		diags.AddAttributeError(
-			valuePath,
-			"Invalid Terraform Value",
-			fmt.Sprintf("Failed to convert %T to string: %s. Please report this issue to the provider developers.", value, err.Error()),
-		)
-
-		return diags
-	}
-
-	if _, err := uuid.Parse(uuidStr); err != nil {
-		diags.AddAttributeError(
-			valuePath,
-			"Invalid UUID String Value",
-			fmt.Sprintf("Failed to parse string %q as a UUID: %s", uuidStr, err.Error()),
-		)
-
-		return diags
-	}
-
-	return diags
 }
