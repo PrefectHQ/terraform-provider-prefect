@@ -7,38 +7,36 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccBlock(name string, value string) string {
+func fixtureAccBlock(workspace, workspaceName, blockName, blockValue string) string {
 	return fmt.Sprintf(`
-resource "prefect_workspace" "workspace" {
-	name = "%s"
-	handle = "%s"
-}
-resource "prefect_block" "block" {
+%s
+resource "prefect_block" "%s" {
 	name = "%s"
 	type_slug = "secret"
-	workspace_id = prefect_workspace.workspace.id
 	data = jsonencode({
 		"value" = "%s"
 	})
-	depends_on = [prefect_workspace.workspace]
-}
-	`, name, name, name, value)
+	workspace_id = prefect_workspace.%s.id
+	depends_on = [prefect_workspace.%s]
+}`, workspace, blockName, blockName, blockValue, workspaceName, workspaceName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_block(t *testing.T) {
-	blockResourceName := "prefect_block.block"
-	workspaceResourceName := "prefect_workspace.workspace"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomValue := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomValue2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.NewRandomPrefixedString()
+	randomValue := testutils.NewRandomPrefixedString()
+	randomValue2 := testutils.NewRandomPrefixedString()
+
+	workspace, workspaceName := testutils.NewEphemeralWorkspace()
+
+	blockResourceName := fmt.Sprintf("prefect_block.%s", randomName)
+	workspaceResourceName := fmt.Sprintf("prefect_workspace.%s", workspaceName)
 
 	// We use this variable to store the fetched block document resource from the API
 	// and it will be shared between the TestSteps via pointer.
@@ -50,7 +48,7 @@ func TestAccResource_block(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Check creation + existence of the block resource
 			{
-				Config: fixtureAccBlock(randomName, randomValue),
+				Config: fixtureAccBlock(workspace, workspaceName, randomName, randomValue),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, workspaceResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -65,7 +63,7 @@ func TestAccResource_block(t *testing.T) {
 			},
 			// Check updating the value of the block resource
 			{
-				Config: fixtureAccBlock(randomName, randomValue2),
+				Config: fixtureAccBlock(workspace, workspaceName, randomName, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, workspaceResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -96,14 +94,14 @@ func testAccCheckBlockExists(blockResourceName string, workspaceResourceName str
 		// Get the block resource we just created from the state
 		blockResource, exists := s.RootModule().Resources[blockResourceName]
 		if !exists {
-			return fmt.Errorf("resource not found: %s", blockResourceName)
+			return fmt.Errorf("block resource not found: %s", blockResourceName)
 		}
 		blockID, _ := uuid.Parse(blockResource.Primary.ID)
 
 		// Get the workspace resource we just created from the state
 		workspaceResource, exists := s.RootModule().Resources[workspaceResourceName]
 		if !exists {
-			return fmt.Errorf("resource not found: %s", workspaceResourceName)
+			return fmt.Errorf("workspace resource not found: %s", workspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
