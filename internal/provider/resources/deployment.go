@@ -66,7 +66,7 @@ type DeploymentResourceModel struct {
 
 	Tags          types.List   `tfsdk:"tags"`
 	WorkQueueName types.String `tfsdk:"work_queue_name"`
-	//LastPolled               customtypes.TimestampValue `tfsdk:"last_polled"`
+	// LastPolled    customtypes.TimestampValue `tfsdk:"last_polled"`
 
 	// parameter_openapi_schema
 	// object (Parameter Openapi Schema)
@@ -83,7 +83,7 @@ type DeploymentResourceModel struct {
 	StorageDocumentID        types.String `tfsdk:"storage_document_id"`
 	InfrastructureDocumentID types.String `tfsdk:"infrastructure_document_id"`
 	WorkPoolName             types.String `tfsdk:"work_pool_name"`
-	//Status                   types.String          `tfsdk:"status"`
+	// Status                   types.String `tfsdk:"status"`
 	EnforceParameterSchema types.Bool `tfsdk:"enforce_parameter_schema"`
 }
 
@@ -537,6 +537,7 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 		workspaceID, err := uuid.Parse(inputParts[1])
 		if err != nil {
 			resp.Diagnostics.AddError("problem parsing workspace ID", "see details")
+
 			return
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)

@@ -78,7 +78,7 @@ type DeploymentAccessSet struct {
 	AccessControl DeploymentAccessControlSet `json:"access_control"`
 }
 
-// DeploymentAccessControlSet is a defintion of deployment access control.
+// DeploymentAccessControlSet is a definition of deployment access control.
 type DeploymentAccessControlSet struct {
 	ManageActorIDs []string `json:"manage_actor_ids"`
 	RunActorIDs    []string `json:"run_actor_ids"`
@@ -88,7 +88,7 @@ type DeploymentAccessControlSet struct {
 	ViewTeamIDs    []string `json:"view_team_ids"`
 }
 
-// DeploymentAccessControl is a defintion of deployment access control.
+// DeploymentAccessControl is a definition of deployment access control.
 type DeploymentAccessControl struct {
 	ManageActors []Actor `json:"manage_actors"`
 	RunActors    []Actor `json:"run_actors"`

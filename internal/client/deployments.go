@@ -75,9 +75,9 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 	return &deployment, nil
 }
 
-// List returns a list of Workspaces, based on the provided list of handle names.
-func (c *DeploymentsClient) List(ctx context.Context, names []string) ([]*api.Deployment, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), nil)
+// List returns a list of Deployments based on the provided list of names.
+func (c *DeploymentsClient) List(ctx context.Context, _ []string) ([]*api.Deployment, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
