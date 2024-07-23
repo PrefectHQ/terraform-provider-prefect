@@ -13,6 +13,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = datasource.DataSourceWithConfigure(&WorkPoolDataSource{})
@@ -59,10 +60,7 @@ func (d *WorkPoolDataSource) Configure(_ context.Context, req datasource.Configu
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -167,20 +165,14 @@ func (d *WorkPoolDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	client, err := d.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
 	pool, err := client.Get(ctx, model.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}

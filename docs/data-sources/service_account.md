@@ -40,6 +40,7 @@ data "prefect_service_account" "bot" {
 ### Read-Only
 
 - `account_role_name` (String) Account Role name of the service account
+- `actor_id` (String) Actor ID (UUID), used for granting access to resources like Blocks and Deployments
 - `api_key` (String) API Key associated with the service account
 - `api_key_created` (String) Date and time that the API Key was created in RFC 3339 format
 - `api_key_expiration` (String) Date and time that the API Key expires in RFC 3339 format

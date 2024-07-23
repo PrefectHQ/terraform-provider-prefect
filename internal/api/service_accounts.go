@@ -30,7 +30,8 @@ type ServiceAccountUpdateRequest struct {
 }
 
 type ServiceAccountRotateKeyRequest struct {
-	APIKeyExpiration *time.Time `json:"api_key_expiration"`
+	APIKeyExpiration       *time.Time `json:"api_key_expiration"`
+	OldKeyExpiresInSeconds int32      `json:"old_key_expires_in_seconds"`
 }
 
 // ServiceAccountFilter defines the search filter payload
@@ -50,6 +51,7 @@ type ServiceAccountFilter struct {
 // ServiceAccount is a representation of a created service account (from a Create response).
 type ServiceAccount struct {
 	BaseModel
+	ActorID         uuid.UUID            `json:"actor_id"`
 	AccountID       uuid.UUID            `json:"account_id"`
 	Name            string               `json:"name"`
 	AccountRoleName string               `json:"account_role_name"`

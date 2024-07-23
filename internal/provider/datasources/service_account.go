@@ -10,6 +10,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = datasource.DataSourceWithConfigure(&ServiceAccountDataSource{})
@@ -26,6 +27,7 @@ type ServiceAccountDataSourceModel struct {
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	Name            types.String          `tfsdk:"name"`
+	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	AccountID       customtypes.UUIDValue `tfsdk:"account_id"`
 	AccountRoleName types.String          `tfsdk:"account_role_name"`
 
@@ -57,10 +59,7 @@ func (d *ServiceAccountDataSource) Configure(_ context.Context, req datasource.C
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -84,6 +83,11 @@ var serviceAccountAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
 		Description: "Timestamp of when the resource was updated (RFC3339)",
+	},
+	"actor_id": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
+		Description: "Actor ID (UUID), used for granting access to resources like Blocks and Deployments",
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
@@ -156,10 +160,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 
 	client, err := d.client.ServiceAccounts(model.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating variable client",
-			fmt.Sprintf("Could not create variable client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Service Account", err))
 
 		return
 	}
@@ -167,10 +168,13 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	// A Service Account can be read by either ID or Name.
 	// If both are set, we prefer the ID
 	var serviceAccount *api.ServiceAccount
+	var operation string
 	if !model.ID.IsNull() {
+		operation = "get"
 		serviceAccount, err = client.Get(ctx, model.ID.ValueString())
 	} else if !model.Name.IsNull() {
 		var serviceAccounts []*api.ServiceAccount
+		operation = "list"
 		serviceAccounts, err = client.List(ctx, []string{model.Name.ValueString()})
 
 		// The error from the API call should take precedence
@@ -194,10 +198,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	}
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Service Account state",
-			fmt.Sprintf("Could not read Service Account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", operation, err))
 
 		return
 	}

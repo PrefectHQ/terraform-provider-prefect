@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -60,10 +60,7 @@ func (r *WorkspaceRoleResource) Configure(_ context.Context, req resource.Config
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -85,8 +82,6 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			"id": schema.StringAttribute{
 				Computed:    true,
 				Description: "Workspace Role ID (UUID)",
-				// attributes which are not configurable + should not show updates from the existing state value
-				// should implement `UseStateForUnknown()`
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -95,6 +90,9 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -130,16 +128,17 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 	}
 }
 
-// copyWorkspaceRoleToModel copies an api.WorkspaceRole to a WorkspaceRoleDataSourceModel.
-func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model *WorkspaceRoleResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(role.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(role.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(role.Updated)
+// copyWorkspaceRoleToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, tfModel *WorkspaceRoleResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(role.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(role.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(role.Updated)
 
-	model.Name = types.StringValue(role.Name)
-	model.Description = types.StringPointerValue(role.Description)
-	model.AccountID = customtypes.NewUUIDPointerValue(role.AccountID)
-	model.InheritedRoleID = customtypes.NewUUIDPointerValue(role.InheritedRoleID)
+	tfModel.Name = types.StringValue(role.Name)
+	tfModel.Description = types.StringPointerValue(role.Description)
+	tfModel.AccountID = customtypes.NewUUIDPointerValue(role.AccountID)
+	tfModel.InheritedRoleID = customtypes.NewUUIDPointerValue(role.InheritedRoleID)
 
 	// NOTE: here, we'll omit updating the TF state with the scopes returned from the API
 	// as scopes in Prefect Cloud have a hierarchical structure. For example, setting `manage_blocks`
@@ -160,51 +159,45 @@ func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, model 
 }
 
 func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model WorkspaceRoleResourceModel
+	var plan WorkspaceRoleResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	var scopes []string
-	resp.Diagnostics.Append(model.Scopes.ElementsAs(ctx, &scopes, false)...)
+	resp.Diagnostics.Append(plan.Scopes.ElementsAs(ctx, &scopes, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	role, err := client.Create(ctx, api.WorkspaceRoleUpsert{
-		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueString(),
+		Name:            plan.Name.ValueString(),
+		Description:     plan.Description.ValueString(),
 		Scopes:          scopes,
-		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
+		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role",
-			fmt.Sprintf("Could not create Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "create", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -212,49 +205,41 @@ func (r *WorkspaceRoleResource) Create(ctx context.Context, req resource.CreateR
 
 // Read refreshes the Terraform state with the latest data.
 func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model WorkspaceRoleResourceModel
+	var state WorkspaceRoleResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
+
+		return
 	}
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,71 +247,58 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model WorkspaceRoleResourceModel
+	var plan WorkspaceRoleResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	var scopes []string
-	resp.Diagnostics.Append(model.Scopes.ElementsAs(ctx, &scopes, false)...)
+	resp.Diagnostics.Append(plan.Scopes.ElementsAs(ctx, &scopes, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	err = client.Update(ctx, roleID, api.WorkspaceRoleUpsert{
-		Name:            model.Name.ValueString(),
-		Description:     model.Description.ValueString(),
+		Name:            plan.Name.ValueString(),
+		Description:     plan.Description.ValueString(),
 		Scopes:          scopes,
-		InheritedRoleID: model.InheritedRoleID.ValueUUIDPointer(),
+		InheritedRoleID: plan.InheritedRoleID.ValueUUIDPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating Workspace Role",
-			fmt.Sprintf("Could not update Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "update", err))
 
 		return
 	}
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceRoleToModel(ctx, role, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -334,45 +306,35 @@ func (r *WorkspaceRoleResource) Update(ctx context.Context, req resource.UpdateR
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *WorkspaceRoleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model WorkspaceRoleResourceModel
+	var state WorkspaceRoleResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkspaceRoles(model.AccountID.ValueUUID())
+	client, err := r.client.WorkspaceRoles(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating Workspace Role client",
-			fmt.Sprintf("Could not create Workspace Role client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace Role`", err))
 
 		return
 	}
 
-	roleID, err := uuid.Parse(model.ID.ValueString())
+	roleID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace Role ID",
-			fmt.Sprintf("Could not parse Workspace Role ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace Role", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, roleID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace Role",
-			fmt.Sprintf("Could not delete Workspace Role, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "delete", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

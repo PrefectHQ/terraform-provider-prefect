@@ -14,14 +14,14 @@ The resource `flow` represents a Prefect Cloud Flow. Flows are the most central 
 
 ```terraform
 resource "prefect_workspace" "workspace" {
-	handle = "my-workspace"
-	name = "my-workspace"
+  handle = "my-workspace"
+  name   = "my-workspace"
 }
 
 resource "prefect_flow" "flow" {
-	name = "my-flow"
-	workspace_id = prefect_workspace.workspace.id
-	tags = ["tf-test"]
+  name         = "my-flow"
+  workspace_id = prefect_workspace.workspace.id
+  tags         = ["tf-test"]
 }
 ```
 
@@ -50,5 +50,5 @@ Import is supported using the following syntax:
 
 ```shell
 # Prefect Flows can be imported via flow_id,workspace_id
-terraform import prefect_flow.example 00000000-0000-0000-0000-000000000000,00000000-0000-0000-0000-000000000000
+terraform import prefect_variable.example 00000000-0000-0000-0000-000000000000,00000000-0000-0000-0000-000000000000
 ```

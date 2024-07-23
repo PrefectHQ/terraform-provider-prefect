@@ -10,3 +10,7 @@ local.tfvars
 
 # Built artifacts
 build/*
+
+.envrc
+
+dev/*

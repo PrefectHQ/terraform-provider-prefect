@@ -19,6 +19,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -68,10 +69,7 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -103,10 +101,6 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
-				// In general, we can use UseStateForUnknown() to avoid unnecessary
-				// cases of `known after apply` states during plans. Mostly, this planmodifier
-				// is suitable for Computed attributes that do not change often and
-				// do not have a default value set here in the Schema.
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -181,20 +175,21 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	}
 }
 
-// copyWorkPoolToModel copies an api.WorkPool to a WorkPoolResourceModel.
-func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolResourceModel) diag.Diagnostics {
+// copyWorkPoolToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoolResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue(pool.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(pool.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
+	tfModel.ID = types.StringValue(pool.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(pool.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
 
-	model.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
-	model.DefaultQueueID = customtypes.NewUUIDValue(pool.DefaultQueueID)
-	model.Description = types.StringPointerValue(pool.Description)
-	model.Name = types.StringValue(pool.Name)
-	model.Paused = types.BoolValue(pool.IsPaused)
-	model.Type = types.StringValue(pool.Type)
+	tfModel.ConcurrencyLimit = types.Int64PointerValue(pool.ConcurrencyLimit)
+	tfModel.DefaultQueueID = customtypes.NewUUIDValue(pool.DefaultQueueID)
+	tfModel.Description = types.StringPointerValue(pool.Description)
+	tfModel.Name = types.StringValue(pool.Name)
+	tfModel.Paused = types.BoolValue(pool.IsPaused)
+	tfModel.Type = types.StringValue(pool.Type)
 
 	if pool.BaseJobTemplate != nil {
 		var builder strings.Builder
@@ -211,7 +206,7 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolR
 			return diags
 		}
 
-		model.BaseJobTemplate = jsontypes.NewNormalizedValue(strings.TrimSuffix(builder.String(), "\n"))
+		tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(strings.TrimSuffix(builder.String(), "\n"))
 	}
 
 	return nil
@@ -219,17 +214,17 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, model *WorkPoolR
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model WorkPoolResourceModel
+	var plan WorkPoolResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !model.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
+	if !plan.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(plan.BaseJobTemplate.ValueString())
 		decoder := json.NewDecoder(reader)
 		err := decoder.Decode(&baseJobTemplate)
 		if err != nil {
@@ -243,39 +238,33 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
 	pool, err := client.Create(ctx, api.WorkPoolCreate{
-		Name:             model.Name.ValueString(),
-		Description:      model.Description.ValueStringPointer(),
-		Type:             model.Type.ValueString(),
+		Name:             plan.Name.ValueString(),
+		Description:      plan.Description.ValueStringPointer(),
+		Type:             plan.Type.ValueString(),
 		BaseJobTemplate:  baseJobTemplate,
-		IsPaused:         model.Paused.ValueBool(),
-		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
+		IsPaused:         plan.Paused.ValueBool(),
+		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool",
-			fmt.Sprintf("Could not create work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "create", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -283,40 +272,34 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 
 // Read refreshes the Terraform state with the latest data.
 func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model WorkPoolResourceModel
+	var state WorkPoolResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
-	pool, err := client.Get(ctx, model.Name.ValueString())
+	pool, err := client.Get(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -324,16 +307,16 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model WorkPoolResourceModel
+	var plan WorkPoolResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !model.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(model.BaseJobTemplate.ValueString())
+	if !plan.BaseJobTemplate.IsNull() {
+		reader := strings.NewReader(plan.BaseJobTemplate.ValueString())
 		decoder := json.NewDecoder(reader)
 		err := decoder.Decode(&baseJobTemplate)
 		if err != nil {
@@ -347,47 +330,38 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
-	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
-	err = client.Update(ctx, model.Name.ValueString(), api.WorkPoolUpdate{
-		Description:      model.Description.ValueStringPointer(),
-		IsPaused:         model.Paused.ValueBoolPointer(),
+	err = client.Update(ctx, plan.Name.ValueString(), api.WorkPoolUpdate{
+		Description:      plan.Description.ValueStringPointer(),
+		IsPaused:         plan.Paused.ValueBoolPointer(),
 		BaseJobTemplate:  baseJobTemplate,
-		ConcurrencyLimit: model.ConcurrencyLimit.ValueInt64Pointer(),
+		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating work pool",
-			fmt.Sprintf("Could not update work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "update", err))
 
 		return
 	}
 
-	pool, err := client.Get(ctx, model.Name.ValueString())
+	pool, err := client.Get(ctx, plan.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing work pool state",
-			fmt.Sprintf("Could not read work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &model)...)
+	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -395,34 +369,28 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *WorkPoolResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model WorkPoolResourceModel
+	var state WorkPoolResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.WorkPools(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
+	client, err := r.client.WorkPools(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating work pool client",
-			fmt.Sprintf("Could not create work pool client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
 
 		return
 	}
 
-	err = client.Delete(ctx, model.Name.ValueString())
+	err = client.Delete(ctx, state.Name.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting work pool",
-			fmt.Sprintf("Could not delete work pool, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "delete", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -6,33 +6,36 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkPoolCreate(name string, poolType string, paused bool) string {
+func fixtureAccWorkPoolCreate(workspace, workspaceName, name, poolType string, paused bool) string {
 	return fmt.Sprintf(`
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
-resource "prefect_work_pool" "test" {
+%s
+resource "prefect_work_pool" "%s" {
 	name = "%s"
 	type = "%s"
-	workspace_id = data.prefect_workspace.evergreen.id
 	paused = %t
+	workspace_id = prefect_workspace.%s.id
+	depends_on = [prefect_workspace.%s]
 }
-`, name, poolType, paused)
+`, workspace, name, name, poolType, paused, workspaceName, workspaceName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_work_pool(t *testing.T) {
-	resourceName := "prefect_work_pool.test"
-	workspaceDatsourceName := "data.prefect_workspace.evergreen"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	workspace, workspaceName := testutils.NewEphemeralWorkspace()
+	workspaceResourceName := "prefect_workspace." + workspaceName
+
+	randomName := testutils.NewRandomPrefixedString()
+	workPoolResourceName := "prefect_work_pool." + randomName
+
+	randomName2 := testutils.NewRandomPrefixedString()
+	workPoolResourceName2 := "prefect_work_pool." + randomName2
+
 	poolType := "kubernetes"
 	poolType2 := "ecs"
 
@@ -40,74 +43,74 @@ func TestAccResource_work_pool(t *testing.T) {
 	// and it will be shared between TestSteps via a pointer.
 	var workPool api.WorkPool
 
-	resource.ParallelTest(t, resource.TestCase{
+	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the work pool resource
-				Config: fixtureAccWorkPoolCreate(randomName, poolType, true),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckWorkPoolExists(resourceName, workspaceDatsourceName, &workPool),
+					testAccCheckWorkPoolExists(workPoolResourceName, workspaceResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: true}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "type", poolType),
-					resource.TestCheckResourceAttr(resourceName, "paused", "true"),
+					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
+					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
+					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "true"),
 				),
 			},
 			{
 				// Check that changing the paused state will update the resource in place
-				Config: fixtureAccWorkPoolCreate(randomName, poolType, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckIDAreEqual(resourceName, &workPool),
-					testAccCheckWorkPoolExists(resourceName, workspaceDatsourceName, &workPool),
+					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
+					testAccCheckWorkPoolExists(workPoolResourceName, workspaceResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: false}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "type", poolType),
-					resource.TestCheckResourceAttr(resourceName, "paused", "false"),
+					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
+					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
+					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
 				),
 			},
 			{
 				// Check that changing the name will re-create the resource
-				Config: fixtureAccWorkPoolCreate(randomName2, poolType, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckIDsNotEqual(resourceName, &workPool),
-					testAccCheckWorkPoolExists(resourceName, workspaceDatsourceName, &workPool),
+					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
+					testAccCheckWorkPoolExists(workPoolResourceName2, workspaceResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType, IsPaused: false}),
 				),
 			},
 			{
 				// Check that changing the poolType will re-create the resource
-				Config: fixtureAccWorkPoolCreate(randomName2, poolType2, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckIDsNotEqual(resourceName, &workPool),
-					testAccCheckWorkPoolExists(resourceName, workspaceDatsourceName, &workPool),
+					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
+					testAccCheckWorkPoolExists(workPoolResourceName2, workspaceResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, IsPaused: false}),
 				),
 			},
 			// Import State checks - import by workspace_id,name (dynamic)
 			{
 				ImportState:       true,
-				ResourceName:      resourceName,
-				ImportStateIdFunc: getWorkPoolImportStateID(resourceName, workspaceDatsourceName),
+				ResourceName:      workPoolResourceName2,
+				ImportStateIdFunc: getWorkPoolImportStateID(workPoolResourceName2, workspaceResourceName),
 				ImportStateVerify: true,
 			},
 		},
 	})
 }
 
-func testAccCheckWorkPoolExists(workPoolResourceName string, workspaceDatasourceName string, workPool *api.WorkPool) resource.TestCheckFunc {
+func testAccCheckWorkPoolExists(workPoolResourceName string, workspaceResourceName string, workPool *api.WorkPool) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		workPoolResource, exists := state.RootModule().Resources[workPoolResourceName]
 		if !exists {
 			return fmt.Errorf("Resource not found in state: %s", workPoolResourceName)
 		}
 
-		workspaceDatsource, exists := state.RootModule().Resources[workspaceDatasourceName]
+		workspaceResource, exists := state.RootModule().Resources[workspaceResourceName]
 		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", workspaceDatasourceName)
+			return fmt.Errorf("Resource not found in state: %s", workspaceResourceName)
 		}
-		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)
+		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
@@ -181,13 +184,13 @@ func testAccCheckIDsNotEqual(resourceName string, fetchedWorkPool *api.WorkPool)
 	}
 }
 
-func getWorkPoolImportStateID(workPoolResourceName string, workspaceDatsourceName string) resource.ImportStateIdFunc {
+func getWorkPoolImportStateID(workPoolResourceName string, workspaceResourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
-		workspaceDatsource, exists := state.RootModule().Resources[workspaceDatsourceName]
+		workspaceResource, exists := state.RootModule().Resources[workspaceResourceName]
 		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", workspaceDatsourceName)
+			return "", fmt.Errorf("Resource not found in state: %s", workspaceResourceName)
 		}
-		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)
+		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		workPoolResource, exists := state.RootModule().Resources[workPoolResourceName]
 		if !exists {

@@ -9,12 +9,14 @@ help:
 	@echo ""
 	@echo "This project defines the following build targets:"
 	@echo ""
-	@echo "  build - compiles source code to build/"
-	@echo "  clean - removes built artifacts"
-	@echo "  lint - run static code analysis"
-	@echo "  test - run automated unit tests"
-	@echo "  testacc - run automated acceptance tests"
-	@echo "  docs - builds Terraform documentation"
+	@echo "  build      - compiles source code to build/"
+	@echo "  clean      - removes built artifacts"
+	@echo "  lint       - run static code analysis"
+	@echo "  test       - run automated unit tests"
+	@echo "  testacc    - run automated acceptance tests"
+	@echo "  docs       - builds Terraform documentation"
+	@echo "  dev-new    - creates a new dev testfile (args: resource=<resource> name=<name>)"
+	@echo "  dev-clean  - cleans up dev directory"
 .PHONY: help
 
 build: $(BINARY)
@@ -48,3 +50,11 @@ docs:
 	rm -rf ./docs/images
 	go generate ./...
 .PHONY: docs
+
+dev-new:
+	sh ./create-dev-testfile.sh $(resource) $(name)
+.PHONY: dev-new
+
+dev-clean:
+	rm -rf ./dev
+.PHONY: dev-clean

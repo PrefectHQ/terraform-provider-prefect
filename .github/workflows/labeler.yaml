@@ -1,13 +1,16 @@
 ---
   name: Labeler
 
-  on: [pull_request]
+  on:
+    pull_request_target:
+      branches:
+        - main
 
-  permissions:
-    contents: read
+  permissions: {}
 
   jobs:
     label:
+      environment: Docs
       runs-on: ubuntu-latest
       permissions:
         contents: read

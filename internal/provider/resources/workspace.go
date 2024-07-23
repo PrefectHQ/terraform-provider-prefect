@@ -16,6 +16,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -60,10 +61,7 @@ func (r *WorkspaceResource) Configure(_ context.Context, req resource.ConfigureR
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -94,6 +92,9 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -122,57 +123,54 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	}
 }
 
-// copyWorkspaceToModel copies an api.Workspace to a WorkspaceResourceModel.
-func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, model *WorkspaceResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(workspace.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(workspace.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
+// copyWorkspaceModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, tfModel *WorkspaceResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(workspace.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(workspace.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
 
-	model.Name = types.StringValue(workspace.Name)
-	model.Handle = types.StringValue(workspace.Handle)
-	model.Description = types.StringValue(*workspace.Description)
+	tfModel.Name = types.StringValue(workspace.Name)
+	tfModel.Handle = types.StringValue(workspace.Handle)
+	tfModel.Description = types.StringValue(*workspace.Description)
 
 	return nil
 }
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var model WorkspaceResourceModel
+	var plan WorkspaceResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	workspace, err := client.Create(ctx, api.WorkspaceCreate{
-		Name:        model.Name.ValueString(),
-		Handle:      model.Handle.ValueString(),
-		Description: model.Description.ValueStringPointer(),
+		Name:        plan.Name.ValueString(),
+		Handle:      plan.Handle.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace",
-			fmt.Sprintf("Could not create workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -180,15 +178,15 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 
 // Read refreshes the Terraform state with the latest data.
 func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model WorkspaceResourceModel
+	var state WorkspaceResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if model.ID.IsNull() && model.Handle.IsNull() {
+	if state.ID.IsNull() && state.Handle.IsNull() {
 		resp.Diagnostics.AddError(
 			"Both ID and Handle are unset",
 			"This is a bug in the Terraform provider. Please report it to the maintainers.",
@@ -197,39 +195,38 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
 	// A workspace can be imported + read by either ID or Handle
 	// If both are set, we prefer the ID
 	var workspace *api.Workspace
-	if !model.ID.IsNull() {
+	var operation string
+
+	if !state.ID.IsNull() {
 		var workspaceID uuid.UUID
-		workspaceID, err = uuid.Parse(model.ID.ValueString())
+		workspaceID, err = uuid.Parse(state.ID.ValueString())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("id"),
-				"Error parsing Workspace ID",
-				fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-			)
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 			return
 		}
 
+		operation = "get"
 		workspace, err = client.Get(ctx, workspaceID)
-	} else if !model.Handle.IsNull() {
+	} else if !state.Handle.IsNull() {
 		var workspaces []*api.Workspace
-		workspaces, err = client.List(ctx, []string{model.Handle.ValueString()})
+		operation = "list"
+		workspaces, err = client.List(ctx, []string{state.Handle.ValueString()})
 
 		// The error from the API call should take precedence
 		// followed by this custom error if a specific workspace is not returned
 		if err == nil && len(workspaces) != 1 {
-			err = fmt.Errorf("a workspace with the handle=%s could not be found", model.Handle.ValueString())
+			err = fmt.Errorf("a workspace with the handle=%s could not be found", state.Handle.ValueString())
 		}
 
 		if len(workspaces) == 1 {
@@ -242,16 +239,17 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 			"Error refreshing Workspace state",
 			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
 		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", operation, err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -259,64 +257,53 @@ func (r *WorkspaceResource) Read(ctx context.Context, req resource.ReadRequest, 
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model WorkspaceResourceModel
+	var plan WorkspaceResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Workspaces(plan.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	workspaceID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 		return
 	}
 
 	payload := api.WorkspaceUpdate{
-		Name:        model.Name.ValueStringPointer(),
-		Handle:      model.Handle.ValueStringPointer(),
-		Description: model.Description.ValueStringPointer(),
+		Name:        plan.Name.ValueStringPointer(),
+		Handle:      plan.Handle.ValueStringPointer(),
+		Description: plan.Description.ValueStringPointer(),
 	}
 	err = client.Update(ctx, workspaceID, payload)
 
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating workspace",
-			fmt.Sprintf("Could not update workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "update", err))
 
 		return
 	}
 
 	workspace, err := client.Get(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace state",
-			fmt.Sprintf("Could not read Workspace, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &model)...)
+	resp.Diagnostics.Append(copyWorkspaceToModel(ctx, workspace, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -324,43 +311,35 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model WorkspaceResourceModel
+	var state WorkspaceResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.Workspaces(model.AccountID.ValueUUID())
+	client, err := r.client.Workspaces(state.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating workspace client",
-			fmt.Sprintf("Could not create workspace client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Workspace", err))
+
+		return
 	}
 
-	workspaceID, err := uuid.Parse(model.ID.ValueString())
+	workspaceID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Workspace ID",
-			fmt.Sprintf("Could not parse workspace ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, workspaceID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Workspace",
-			fmt.Sprintf("Could not delete Workspace, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "delete", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

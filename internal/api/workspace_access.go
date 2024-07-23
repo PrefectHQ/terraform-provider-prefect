@@ -9,7 +9,7 @@ import (
 type WorkspaceAccessClient interface {
 	Upsert(ctx context.Context, accessorType string, accessorID uuid.UUID, roleID uuid.UUID) (*WorkspaceAccess, error)
 	Get(ctx context.Context, accessorType string, accessID uuid.UUID) (*WorkspaceAccess, error)
-	Delete(ctx context.Context, accessorType string, accessID uuid.UUID) error
+	Delete(ctx context.Context, accessorType string, accessID uuid.UUID, accessorID uuid.UUID) error
 }
 
 // WorkspaceAccess is a representation of a workspace access.

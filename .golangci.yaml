@@ -18,21 +18,19 @@ linters:
     - errchkjson
     - errname
     - errorlint
-    - execinquery
     - exhaustive
     - exportloopref
     - forbidigo
     - forcetypeassert
     - gocheckcompilerdirectives
     - gochecknoinits
-    - goconst
     - gocritic
     - gocyclo
     - godot
     - godox
     - goheader
     - goimports
-    - gomnd
+    - mnd
     - gomoddirectives
     - gomodguard
     - goprintffuncname
@@ -76,7 +74,6 @@ linters:
     - unconvert
     - unused
     - usestdlibvars
-    - varnamelen
     - wastedassign
     - whitespace
     - wrapcheck
@@ -146,7 +143,6 @@ linters-settings:
       - typeUnparen
       - uncheckedInlineErr
       - unlabelStmt
-      - unnamedResult
       - unnecessaryBlock
       - unnecessaryDefer
       - weakCond

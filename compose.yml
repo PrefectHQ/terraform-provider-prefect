@@ -1,0 +1,19 @@
+# This file is used to run a local instance of
+# Prefect for testing our Terraform Provider.
+#
+# See ./_about/CONTRIBUTING.md.
+services:
+  prefect:
+    image: prefecthq/prefect:2-latest
+    ports:
+      - "4200:4200"
+    environment:
+      PREFECT_LOGGING_LEVEL: debug
+    command:
+      - prefect
+      - server
+      - start
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "4200"

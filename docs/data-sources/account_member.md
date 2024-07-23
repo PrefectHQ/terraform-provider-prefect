@@ -3,7 +3,7 @@
 page_title: "prefect_account_member Data Source - prefect"
 subcategory: ""
 description: |-
-  Get information about an existing Account Member (user) by their email.
+  Get information about an existing Account Member (user)	by their email.
   
   Use this data source to obtain user or actor IDs to manage Workspace Access.
 ---
@@ -38,7 +38,7 @@ data "prefect_account_member" "marvin" {
 
 - `account_role_id` (String) Acount Role ID (UUID)
 - `account_role_name` (String) Name of Account Role assigned to member
-- `actor_id` (String) Actor ID (UUID)
+- `actor_id` (String) Actor ID (UUID), used for granting access to resources like Blocks and Deployments
 - `first_name` (String) Member's first name
 - `handle` (String) Member handle, or a human-readable identifier
 - `id` (String) Account Member ID (UUID)

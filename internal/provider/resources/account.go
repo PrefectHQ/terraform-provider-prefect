@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -34,12 +36,12 @@ type AccountResourceModel struct {
 	Created customtypes.TimestampValue `tfsdk:"created"`
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
-	Name                  types.String `tfsdk:"name"`
-	Handle                types.String `tfsdk:"handle"`
-	Location              types.String `tfsdk:"location"`
-	Link                  types.String `tfsdk:"link"`
-	AllowPublicWorkspaces types.Bool   `tfsdk:"allow_public_workspaces"`
-	BillingEmail          types.String `tfsdk:"billing_email"`
+	Name         types.String `tfsdk:"name"`
+	Handle       types.String `tfsdk:"handle"`
+	Location     types.String `tfsdk:"location"`
+	Link         types.String `tfsdk:"link"`
+	Settings     types.Object `tfsdk:"settings"`
+	BillingEmail types.String `tfsdk:"billing_email"`
 }
 
 // NewAccountResource returns a new AccountResource.
@@ -62,10 +64,7 @@ func (r *AccountResource) Configure(_ context.Context, req resource.ConfigureReq
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("resource", req.ProviderData))
 
 		return
 	}
@@ -98,6 +97,9 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -120,9 +122,27 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "An optional for an external url associated with the account, e.g. https://prefect.io/",
 				Optional:    true,
 			},
-			"allow_public_workspaces": schema.BoolAttribute{
-				Description: "Whether or not this account allows public workspaces",
+			"settings": schema.SingleNestedAttribute{
+				Description: "Group of settings related to accounts",
 				Optional:    true,
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"allow_public_workspaces": schema.BoolAttribute{
+						Description: "Whether or not this account allows public workspaces",
+						Optional:    true,
+						Computed:    true,
+					},
+					"ai_log_summaries": schema.BoolAttribute{
+						Description: "Whether to use AI to generate log summaries.",
+						Optional:    true,
+						Computed:    true,
+					},
+					"managed_execution": schema.BoolAttribute{
+						Description: "Whether to enable the use of managed work pools",
+						Optional:    true,
+						Computed:    true,
+					},
+				},
 			},
 			"billing_email": schema.StringAttribute{
 				Description: "Billing email to apply to the account's Stripe customer",
@@ -132,44 +152,54 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
+// copyAccountToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel *AccountResourceModel) diag.Diagnostics {
+	tfModel.ID = types.StringValue(account.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
+
+	tfModel.BillingEmail = types.StringPointerValue(account.BillingEmail)
+	tfModel.Handle = types.StringValue(account.Handle)
+	tfModel.Link = types.StringPointerValue(account.Link)
+	tfModel.Location = types.StringPointerValue(account.Location)
+	tfModel.Name = types.StringValue(account.Name)
+
+	settingsObject, diags := types.ObjectValue(
+		map[string]attr.Type{
+			"allow_public_workspaces": types.BoolType,
+			"ai_log_summaries":        types.BoolType,
+			"managed_execution":       types.BoolType,
+		},
+		map[string]attr.Value{
+			"allow_public_workspaces": types.BoolValue(account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":        types.BoolValue(account.Settings.AILogSummaries),
+			"managed_execution":       types.BoolValue(account.Settings.ManagedExecution),
+		},
+	)
+
+	tfModel.Settings = settingsObject
+
+	return diags
+}
+
 func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
 	resp.Diagnostics.AddError("Cannot create account", "Account is an import-only resource and cannot be created by Terraform.")
 }
 
-// copyAccountToModel copies an api.AccountResponse to an AccountResourceModel.
-func copyAccountToModel(_ context.Context, account *api.AccountResponse, model *AccountResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(account.ID.String())
-	model.Created = customtypes.NewTimestampPointerValue(account.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
-
-	model.AllowPublicWorkspaces = types.BoolPointerValue(account.AllowPublicWorkspaces)
-	model.BillingEmail = types.StringPointerValue(account.BillingEmail)
-	model.Handle = types.StringValue(account.Handle)
-	model.Link = types.StringPointerValue(account.Link)
-	model.Location = types.StringPointerValue(account.Location)
-	model.Name = types.StringValue(account.Name)
-
-	return nil
-}
-
 // Read refreshes the Terraform state with the latest data.
 func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var model AccountResourceModel
+	var state AccountResourceModel
 
 	// Populate the model from state and emit diagnostics on error
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
@@ -181,20 +211,17 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	account, err := client.Get(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -202,20 +229,16 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var model AccountResourceModel
+	var plan AccountResourceModel
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
@@ -226,38 +249,50 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:                  model.Name.ValueStringPointer(),
-		Handle:                model.Handle.ValueStringPointer(),
-		Location:              model.Location.ValueStringPointer(),
-		Link:                  model.Link.ValueStringPointer(),
-		AllowPublicWorkspaces: model.AllowPublicWorkspaces.ValueBoolPointer(),
-		BillingEmail:          model.BillingEmail.ValueStringPointer(),
+		Name:         plan.Name.ValueStringPointer(),
+		Handle:       plan.Handle.ValueStringPointer(),
+		Location:     plan.Location.ValueStringPointer(),
+		Link:         plan.Link.ValueStringPointer(),
+		BillingEmail: plan.BillingEmail.ValueStringPointer(),
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating account",
-			fmt.Sprintf("Could not update account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
 
 		return
 	}
 
-	account, err := client.Get(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing account state",
-			fmt.Sprintf("Could not read account, unexpected error: %s", err.Error()),
-		)
+	var state AccountResourceModel
 
-		return
-	}
-
-	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	// If settings have changed, we need to create a separate request to update them.
+	if !plan.Settings.Equal(state.Settings) {
+		err = client.UpdateSettings(ctx, api.AccountSettingsUpdate{
+			AccountSettings: newAccountSettingsFromObject(plan.Settings),
+		})
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account settings", "update", err))
+
+			return
+		}
+	}
+
+	account, err := client.Get(ctx)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyAccountToModel(ctx, account, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -265,20 +300,16 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var model AccountResourceModel
+	var state AccountResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &model)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	accountID, err := uuid.Parse(model.ID.ValueString())
+	accountID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("id"),
-			"Error parsing Account ID",
-			fmt.Sprintf("Could not parse account ID to UUID, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
 
 		return
 	}
@@ -290,15 +321,12 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 	err = client.Delete(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting account",
-			fmt.Sprintf("Could not delete account, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "delete", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -307,4 +335,20 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 // ImportState imports the resource into Terraform state.
 func (r *AccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+func newAccountSettingsFromObject(settings basetypes.ObjectValue) api.AccountSettings {
+	attrs := settings.Attributes()
+
+	return api.AccountSettings{
+		AllowPublicWorkspaces: valToBool(attrs["allow_public_workspaces"]),
+		AILogSummaries:        valToBool(attrs["ai_log_summaries"]),
+		ManagedExecution:      valToBool(attrs["managed_execution"]),
+	}
+}
+
+func valToBool(val attr.Value) bool {
+	result, _ := strconv.ParseBool(val.String())
+
+	return result
 }

@@ -58,7 +58,7 @@ var accountMemberAttributesBase = map[string]schema.Attribute{
 	"actor_id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Actor ID (UUID)",
+		Description: "Actor ID (UUID), used for granting access to resources like Blocks and Deployments",
 	},
 	"user_id": schema.StringAttribute{
 		Computed:    true,
@@ -124,10 +124,7 @@ func (d *AccountMemberDataSource) Configure(_ context.Context, req datasource.Co
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -158,10 +155,9 @@ func (d *AccountMemberDataSource) Read(ctx context.Context, req datasource.ReadR
 	// workspaceRoles, err := client.List(ctx, []string{model.Name.ValueString()})
 	accountMembers, err := client.List(ctx, []string{config.Email.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Account Member state",
-			fmt.Sprintf("Could not search for Account Members, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Member", "list", err))
+
+		return
 	}
 
 	if len(accountMembers) != 1 {

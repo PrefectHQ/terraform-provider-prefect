@@ -75,7 +75,7 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 				Required:    true,
 				Description: "Name of the Account Role",
 				Validators: []validator.String{
-					stringvalidator.OneOf("Admin", "Member"),
+					stringvalidator.OneOf("Admin", "Member", "Owner"),
 				},
 			},
 			"permissions": schema.ListAttribute{
@@ -104,10 +104,7 @@ func (d *AccountRoleDataSource) Configure(_ context.Context, req datasource.Conf
 
 	client, ok := req.ProviderData.(api.PrefectClient)
 	if !ok {
-		resp.Diagnostics.AddError(
-			"Unexpected Data Source Configure Type",
-			fmt.Sprintf("Expected api.PrefectClient, got: %T. Please report this issue to the provider developers.", req.ProviderData),
-		)
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("data source", req.ProviderData))
 
 		return
 	}
@@ -137,10 +134,9 @@ func (d *AccountRoleDataSource) Read(ctx context.Context, req datasource.ReadReq
 	// as we are querying a single Role name, not a list of names
 	accountRoles, err := client.List(ctx, []string{config.Name.ValueString()})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error refreshing Workspace Role state",
-			fmt.Sprintf("Could not read Workspace Role, unexpected error: %s", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account Role", "list", err))
+
+		return
 	}
 
 	if len(accountRoles) != 1 {
