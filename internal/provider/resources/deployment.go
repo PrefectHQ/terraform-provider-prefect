@@ -224,12 +224,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"description": schema.StringAttribute{
 				Description: "A description for the deployment.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"path": schema.StringAttribute{
 				Description: "The path to the working directory for the workflow, relative to remote storage or an absolute path.",
 				Optional:    true,
 				Computed:    true,
-				// Default: stringdefault.StaticString("."),
 			},
 			"version": schema.StringAttribute{
 				Description: "An optional version for the deployment.",
@@ -237,7 +237,8 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"entrypoint": schema.StringAttribute{
 				Description: "The path to the entrypoint for the workflow, relative to the path.",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 			},
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the deployment",
