@@ -29,8 +29,6 @@ type Deployment struct {
 	Tags                   []string  `json:"tags"`
 
 	ManifestPath             string `json:"manifest_path,omitempty"`
-	StorageDocumentID        string `json:"storage_document_id,omitempty"`
-	InfrastructureDocumentID string `json:"infrastructure_document_id,omitempty"`
 	Description              string `json:"description,omitempty"`
 	Version                  string `json:"version,omitempty"`
 

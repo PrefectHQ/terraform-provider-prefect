@@ -54,8 +54,6 @@ type DeploymentResourceModel struct {
 
 	Entrypoint               types.String `tfsdk:"entrypoint"`
 	ManifestPath             types.String `tfsdk:"manifest_path"`
-	StorageDocumentID        types.String `tfsdk:"storage_document_id"`
-	InfrastructureDocumentID types.String `tfsdk:"infrastructure_document_id"`
 	WorkPoolName             types.String `tfsdk:"work_pool_name"`
 	EnforceParameterSchema   types.Bool   `tfsdk:"enforce_parameter_schema"`
 }
@@ -165,14 +163,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "The name of the deployment's work pool.",
 				Optional:    true,
 			},
-			"storage_document_id": schema.StringAttribute{
-				Description: "The block document defining storage used for this flow.",
-				Optional:    true,
-			},
-			"infrastructure_document_id": schema.StringAttribute{
-				Description: "The block document defining infrastructure to use for flow runs.",
-				Optional:    true,
-			},
 			"description": schema.StringAttribute{
 				Description: "A description for the deployment.",
 				Optional:    true,
@@ -217,8 +207,6 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.ManifestPath = types.StringValue(deployment.ManifestPath)
 	model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
 	model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
-	model.StorageDocumentID = types.StringValue(deployment.StorageDocumentID)
-	model.InfrastructureDocumentID = types.StringValue(deployment.InfrastructureDocumentID)
 	model.Description = types.StringValue(deployment.Description)
 	model.Path = types.StringValue(deployment.Path)
 	model.Version = types.StringValue(deployment.Version)
