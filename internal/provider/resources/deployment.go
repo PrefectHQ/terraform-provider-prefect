@@ -83,8 +83,7 @@ type DeploymentResourceModel struct {
 	StorageDocumentID        types.String `tfsdk:"storage_document_id"`
 	InfrastructureDocumentID types.String `tfsdk:"infrastructure_document_id"`
 	WorkPoolName             types.String `tfsdk:"work_pool_name"`
-	// Status                   types.String `tfsdk:"status"`
-	EnforceParameterSchema types.Bool `tfsdk:"enforce_parameter_schema"`
+	EnforceParameterSchema   types.Bool   `tfsdk:"enforce_parameter_schema"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
