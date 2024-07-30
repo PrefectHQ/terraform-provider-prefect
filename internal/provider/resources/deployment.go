@@ -45,38 +45,13 @@ type DeploymentResourceModel struct {
 	Description types.String          `tfsdk:"description"`
 	FlowID      customtypes.UUIDValue `tfsdk:"flow_id"`
 
-	// schedule
-	// IntervalSchedule (object) or CronSchedule (object) or RRuleSchedule (object) (Schedule)
-	// A schedule for the deployment.
-
 	IsScheduleActive types.Bool `tfsdk:"is_schedule_active"`
 	Paused           types.Bool `tfsdk:"paused"`
 
-	// schedules
-	// Array of objects (Schedules)
-	// A list of schedules for the deployment.
-
-	// 	job_variables
-	// object (Job Variables)
-	// Overrides to apply to the base infrastructure block at runtime.
-
-	// parameters
-	// object (Parameters)
-	// Parameters for flow runs scheduled by the deployment.
-
 	Tags          types.List   `tfsdk:"tags"`
 	WorkQueueName types.String `tfsdk:"work_queue_name"`
-	// LastPolled    customtypes.TimestampValue `tfsdk:"last_polled"`
-
-	// parameter_openapi_schema
-	// object (Parameter Openapi Schema)
-	// The parameter schema of the flow, including defaults.
 
 	Path types.String `tfsdk:"path"`
-
-	// pull_steps
-	// Array of objects (Pull Steps)
-	// The steps required to pull this deployment's project to a remote location.
 
 	Entrypoint               types.String `tfsdk:"entrypoint"`
 	ManifestPath             types.String `tfsdk:"manifest_path"`
@@ -179,24 +154,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
-			// schedules
-			// Array of objects (Schedules)
-			// A list of schedules for the deployment.
 			"enforce_parameter_schema": schema.BoolAttribute{
 				Description: "Whether or not the deployment should enforce the parameter schema.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
-			// parameter_openapi_schema
-			// object (Parameter Openapi Schema)
-			// The parameter schema of the flow, including defaults.
-			// parameters
-			// object (Parameters)
-			// Parameters for flow runs scheduled by the deployment.
-			// pull_steps
-			// Array of objects (Pull Steps)
-			// The steps required to pull this deployment's project to a remote location.
 			"manifest_path": schema.StringAttribute{
 				Description: "The path to the flow's manifest file, relative to the chosen storage.",
 				Computed:    true,
@@ -217,9 +180,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "The block document defining infrastructure to use for flow runs.",
 				Optional:    true,
 			},
-			// schedule
-			// IntervalSchedule (object) or CronSchedule (object) or RRuleSchedule (object) (Schedule)
-			// A schedule for the deployment.
 			"description": schema.StringAttribute{
 				Description: "A description for the deployment.",
 				Optional:    true,
