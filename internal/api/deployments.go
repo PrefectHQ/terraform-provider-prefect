@@ -18,53 +18,52 @@ type DeploymentsClient interface {
 // Deployment is a representation of a deployment.
 type Deployment struct {
 	BaseModel
-	AccountID              uuid.UUID `json:"account_id"`
-	WorkspaceID            uuid.UUID `json:"workspace_id"`
-	Name                   string    `json:"name"`
-	FlowID                 uuid.UUID `json:"flow_id"`
-	Paused                 bool      `json:"paused"`
+	AccountID   uuid.UUID `json:"account_id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+
+	Description            string    `json:"description,omitempty"`
 	EnforceParameterSchema bool      `json:"enforce_parameter_schema"`
-	Path                   string    `json:"path"`
 	Entrypoint             string    `json:"entrypoint"`
+	FlowID                 uuid.UUID `json:"flow_id"`
+	ManifestPath           string    `json:"manifest_path,omitempty"`
+	Name                   string    `json:"name"`
+	Path                   string    `json:"path"`
+	Paused                 bool      `json:"paused"`
 	Tags                   []string  `json:"tags"`
-
-	ManifestPath string `json:"manifest_path,omitempty"`
-	Description  string `json:"description,omitempty"`
-	Version      string `json:"version,omitempty"`
-
-	WorkQueueName string `json:"work_queue_name,omitempty"`
-	WorkPoolName  string `json:"work_pool_name,omitempty"`
+	Version                string    `json:"version,omitempty"`
+	WorkPoolName           string    `json:"work_pool_name,omitempty"`
+	WorkQueueName          string    `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
-	Name                   string    `json:"name"`
-	FlowID                 uuid.UUID `json:"flow_id"`
-	Paused                 bool      `json:"paused,omitempty"`
-	EnforceParameterSchema bool      `json:"enforce_parameter_schema,omitempty"`
-	Path                   string    `json:"path,omitempty"`
-	ManifestPath           string    `json:"manifest_path,omitempty"`
-	Entrypoint             string    `json:"entrypoint,omitempty"`
 	Description            string    `json:"description,omitempty"`
+	EnforceParameterSchema bool      `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint             string    `json:"entrypoint,omitempty"`
+	FlowID                 uuid.UUID `json:"flow_id"`
+	ManifestPath           string    `json:"manifest_path,omitempty"`
+	Name                   string    `json:"name"`
+	Path                   string    `json:"path,omitempty"`
+	Paused                 bool      `json:"paused,omitempty"`
 	Tags                   []string  `json:"tags,omitempty"`
-	WorkQueueName          string    `json:"work_queue_name,omitempty"`
-	WorkPoolName           string    `json:"work_pool_name,omitempty"`
 	Version                string    `json:"version,omitempty"`
+	WorkPoolName           string    `json:"work_pool_name,omitempty"`
+	WorkQueueName          string    `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	Name                   string   `json:"name"`
-	Version                string   `json:"version,omitempty"`
 	Description            string   `json:"description,omitempty"`
+	EnforceParameterSchema bool     `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint             string   `json:"entrypoint,omitempty"`
+	ManifestPath           string   `json:"manifest_path"`
+	Name                   string   `json:"name"`
+	Path                   string   `json:"path,omitempty"`
 	Paused                 bool     `json:"paused,omitempty"`
 	Tags                   []string `json:"tags,omitempty"`
-	WorkQueueName          string   `json:"work_queue_name,omitempty"`
+	Version                string   `json:"version,omitempty"`
 	WorkPoolName           string   `json:"work_pool_name,omitempty"`
-	Path                   string   `json:"path,omitempty"`
-	Entrypoint             string   `json:"entrypoint,omitempty"`
-	EnforceParameterSchema bool     `json:"enforce_parameter_schema,omitempty"`
-	ManifestPath           string   `json:"manifest_path"`
+	WorkQueueName          string   `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentFilter defines the search filter payload
