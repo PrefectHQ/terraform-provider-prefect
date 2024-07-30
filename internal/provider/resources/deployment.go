@@ -114,6 +114,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -128,7 +131,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) to associate deployment to",
-				Required:    true,
+				Optional:    true,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the workspace",
@@ -153,34 +156,59 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"manifest_path": schema.StringAttribute{
 				Description: "The path to the flow's manifest file, relative to the chosen storage.",
+				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"work_queue_name": schema.StringAttribute{
 				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"work_pool_name": schema.StringAttribute{
 				Description: "The name of the deployment's work pool.",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"description": schema.StringAttribute{
 				Description: "A description for the deployment.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"path": schema.StringAttribute{
 				Description: "The path to the working directory for the workflow, relative to remote storage or an absolute path.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"version": schema.StringAttribute{
 				Description: "An optional version for the deployment.",
 				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"entrypoint": schema.StringAttribute{
 				Description: "The path to the entrypoint for the workflow, relative to the path.",
 				Optional:    true,
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the deployment",
