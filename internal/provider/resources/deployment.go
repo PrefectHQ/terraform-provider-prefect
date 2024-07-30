@@ -45,7 +45,6 @@ type DeploymentResourceModel struct {
 	Description types.String          `tfsdk:"description"`
 	FlowID      customtypes.UUIDValue `tfsdk:"flow_id"`
 
-	IsScheduleActive types.Bool `tfsdk:"is_schedule_active"`
 	Paused           types.Bool `tfsdk:"paused"`
 
 	Tags          types.List   `tfsdk:"tags"`
@@ -142,12 +141,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Flow ID (UUID) to associate deployment to",
 				Required:    true,
 			},
-			"is_schedule_active": schema.BoolAttribute{
-				Description: "Is Schedule Active",
-				Optional:    true,
-				Computed:    true,
-				Default:     booldefault.StaticBool(true),
-			},
 			"paused": schema.BoolAttribute{
 				Description: "Whether or not the deployment is paused.",
 				Optional:    true,
@@ -219,7 +212,6 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Name = types.StringValue(deployment.Name)
 	model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
-	model.IsScheduleActive = types.BoolValue(deployment.IsScheduleActive)
 	model.Paused = types.BoolValue(deployment.Paused)
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.ManifestPath = types.StringValue(deployment.ManifestPath)
@@ -268,7 +260,6 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
 		Name:                   plan.Name.ValueString(),
 		FlowID:                 plan.FlowID.ValueUUID(),
-		IsScheduleActive:       plan.IsScheduleActive.ValueBool(),
 		Paused:                 plan.Paused.ValueBool(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Path:                   plan.Path.ValueString(),

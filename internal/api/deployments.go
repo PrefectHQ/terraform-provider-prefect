@@ -22,7 +22,6 @@ type Deployment struct {
 	WorkspaceID            uuid.UUID `json:"workspace_id"`
 	Name                   string    `json:"name"`
 	FlowID                 uuid.UUID `json:"flow_id"`
-	IsScheduleActive       bool      `json:"is_schedule_active"`
 	Paused                 bool      `json:"paused"`
 	EnforceParameterSchema bool      `json:"enforce_parameter_schema"`
 	Path                   string    `json:"path"`
@@ -43,7 +42,6 @@ type Deployment struct {
 type DeploymentCreate struct {
 	Name                   string    `json:"name"`
 	FlowID                 uuid.UUID `json:"flow_id"`
-	IsScheduleActive       bool      `json:"is_schedule_active"`
 	Paused                 bool      `json:"paused"`
 	EnforceParameterSchema bool      `json:"enforce_parameter_schema"`
 	Path                   string    `json:"path"`
