@@ -133,15 +133,14 @@ func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*a
 	return &deployment, nil
 }
 
-// Update modifies an existing Workspace by ID.
-func (c *DeploymentsClient) Update(ctx context.Context, workspaceID uuid.UUID, data api.DeploymentUpdate) error {
+// Update modifies an existing Deployment by ID.
+func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.DeploymentUpdate) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	endpoint := c.routePrefix + "/" + workspaceID.String()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
