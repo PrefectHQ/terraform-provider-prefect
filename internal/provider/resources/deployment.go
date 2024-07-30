@@ -45,17 +45,17 @@ type DeploymentResourceModel struct {
 	Description types.String          `tfsdk:"description"`
 	FlowID      customtypes.UUIDValue `tfsdk:"flow_id"`
 
-	Paused           types.Bool `tfsdk:"paused"`
+	Paused types.Bool `tfsdk:"paused"`
 
 	Tags          types.List   `tfsdk:"tags"`
 	WorkQueueName types.String `tfsdk:"work_queue_name"`
 
 	Path types.String `tfsdk:"path"`
 
-	Entrypoint               types.String `tfsdk:"entrypoint"`
-	ManifestPath             types.String `tfsdk:"manifest_path"`
-	WorkPoolName             types.String `tfsdk:"work_pool_name"`
-	EnforceParameterSchema   types.Bool   `tfsdk:"enforce_parameter_schema"`
+	Entrypoint             types.String `tfsdk:"entrypoint"`
+	ManifestPath           types.String `tfsdk:"manifest_path"`
+	WorkPoolName           types.String `tfsdk:"work_pool_name"`
+	EnforceParameterSchema types.Bool   `tfsdk:"enforce_parameter_schema"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -200,7 +200,6 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
 	model.Name = types.StringValue(deployment.Name)
-	model.WorkspaceID = customtypes.NewUUIDValue(deployment.WorkspaceID)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
 	model.Paused = types.BoolValue(deployment.Paused)
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
@@ -254,6 +253,9 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		Entrypoint:             plan.Entrypoint.ValueString(),
 		Description:            plan.Description.ValueString(),
 		Tags:                   tags,
+		WorkQueueName:          plan.WorkQueueName.ValueString(),
+		WorkPoolName:           plan.WorkPoolName.ValueString(),
+		Version:                plan.Version.ValueString(),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -360,10 +362,23 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	var tags []string
+	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	payload := api.DeploymentUpdate{
-		Name: model.Name.ValueStringPointer(),
-		// Handle:      model.Handle.ValueStringPointer(),
-		// Description: model.Description.ValueStringPointer(),
+		Name:                   model.Name.ValueString(),
+		Version:                model.Version.ValueString(),
+		Description:            model.Description.ValueString(),
+		Paused:                 model.Paused.ValueBool(),
+		Tags:                   tags,
+		WorkQueueName:          model.WorkQueueName.ValueString(),
+		WorkPoolName:           model.WorkPoolName.ValueString(),
+		Path:                   model.Path.ValueString(),
+		Entrypoint:             model.Entrypoint.ValueString(),
+		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 	}
 	err = client.Update(ctx, deploymentID, payload)
 
