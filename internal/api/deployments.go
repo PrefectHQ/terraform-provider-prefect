@@ -64,6 +64,7 @@ type DeploymentUpdate struct {
 	Path                   string   `json:"path,omitempty"`
 	Entrypoint             string   `json:"entrypoint,omitempty"`
 	EnforceParameterSchema bool     `json:"enforce_parameter_schema,omitempty"`
+	ManifestPath           string   `json:"manifest_path"`
 }
 
 // DeploymentFilter defines the search filter payload
