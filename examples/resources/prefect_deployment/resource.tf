@@ -10,10 +10,18 @@ resource "prefect_flow" "flow" {
 }
 
 resource "prefect_deployment" "deployment" {
-  name         = "%s"
-  description  = "string"
-  workspace_id = prefect_workspace.workspace.id
-  flow_id      = prefect_flow.flow.id
-  entrypoint   = "hello_world.py:hello_world"
-  tags         = ["test"]
+  name                     = "%s"
+  description              = "string"
+  workspace_id             = prefect_workspace.workspace.id
+  flow_id                  = prefect_flow.flow.id
+  entrypoint               = "hello_world.py:hello_world"
+  tags                     = ["test"]
+  enforce_parameter_schema = false
+  manifest_path            = "./bar/foo"
+  path                     = "./foo/bar"
+  paused                   = false
+  version                  = "v1.1.1"
+  work_pool_name           = "mitch-testing-pool"
+  work_queue_name          = "default"
 }
+
