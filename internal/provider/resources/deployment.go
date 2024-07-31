@@ -20,6 +20,7 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -517,49 +518,10 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 	if len(inputParts) == 2 && inputParts[1] != "" {
 		workspaceID, err := uuid.Parse(inputParts[1])
 		if err != nil {
-			resp.Diagnostics.AddError("problem parsing workspace ID", "see details")
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Deployment", err))
 
 			return
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }
-
-// // ImportState imports the resource into Terraform state.
-// func (r *DeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-// 	// we'll allow input values in the form of:
-// 	// - "workspace_id,name"
-// 	// - "name"
-// 	maxInputCount := 2
-// 	inputParts := strings.Split(req.ID, ",")
-
-// 	// eg. "foo,bar,baz"
-// 	if len(inputParts) > maxInputCount {
-// 		resp.Diagnostics.AddError(
-// 			"Unexpected Import Identifier",
-// 			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
-// 		)
-
-// 		return
-// 	}
-
-// 	// eg. ",foo" or "foo,"
-// 	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
-// 		resp.Diagnostics.AddError(
-// 			"Unexpected Import Identifier",
-// 			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
-// 		)
-
-// 		return
-// 	}
-
-// 	if len(inputParts) == maxInputCount {
-// 		workspaceID := inputParts[0]
-// 		id := inputParts[1]
-
-// 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-// 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
-// 	} else {
-// 		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
-// 	}
-// }
