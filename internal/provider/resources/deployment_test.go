@@ -38,7 +38,7 @@ resource "prefect_deployment" "deployment" {
   paused                   = false
 	tags = ["test"]
   version                  = "v1.1.1"
-  work_pool_name           = "test-pool"
+  work_pool_name           = "evergreen-pools"
   work_queue_name          = "default"
 	workspace_id = prefect_workspace.workspace.id
 }
