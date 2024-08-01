@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -14,54 +13,71 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccDeploymentCreate(name, description string) string {
-	return fmt.Sprintf(`
-resource "prefect_workspace" "workspace" {
-	handle = "%s"
-	name = "%s"
+type deploymentConfig struct {
+	workspace             string
+	workspaceName         string
+	workspaceResourceName string
+
+	deploymentName         string
+	deploymentResourceName string
+
+	description string
+
+	flowName string
 }
 
-resource "prefect_flow" "flow" {
+func fixtureAccDeployment(cfg deploymentConfig) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_flow" "%s" {
 	name = "%s"
-	workspace_id = prefect_workspace.workspace.id
+	workspace_id = prefect_workspace.%s.id
 	tags = ["test"]
 }
 
-resource "prefect_deployment" "deployment" {
+resource "prefect_deployment" "%s" {
 	name = "%s"
 	description = "%s"
   enforce_parameter_schema = false
 	entrypoint = "hello_world.py:hello_world"
-	flow_id = prefect_flow.flow.id
+	flow_id = prefect_flow.%s.id
   manifest_path            = "./bar/foo"
   path                     = "./foo/bar"
   paused                   = false
 	tags = ["test"]
   version                  = "v1.1.1"
-  work_pool_name           = "evergreen-pools"
-  work_queue_name          = "default"
-	workspace_id = prefect_workspace.workspace.id
+	workspace_id = prefect_workspace.%s.id
 }
-`, name, name, name, name, description)
-}
-
-func fixtureAccDeploymentUpdate(name string, description string) string {
-	return fmt.Sprintf(`
-resource "prefect_deployment" "deployment" {
-	name = "%s"
-	description = "%s"
-}`, name, description)
+`, cfg.workspace,
+		cfg.flowName,
+		cfg.flowName,
+		cfg.workspaceName,
+		cfg.deploymentName,
+		cfg.deploymentName,
+		cfg.description,
+		cfg.flowName,
+		cfg.workspaceName,
+	)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
-	resourceName := "prefect_deployment.deployment"
-	workspaceResourceName := "prefect_workspace.workspace"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 
-	description := "My deployment description"
-	description2 := "My deployment description v2"
+	cfgCreate := deploymentConfig{
+		workspace:      workspace,
+		workspaceName:  workspaceName,
+		deploymentName: testutils.NewRandomPrefixedString(),
+		flowName:       testutils.NewRandomPrefixedString(),
+		description:    "My deployment description",
+	}
+
+	cfgCreate.deploymentResourceName = fmt.Sprintf("prefect_deployment.%s", cfgCreate.deploymentName)
+	cfgCreate.workspaceResourceName = fmt.Sprintf("prefect_workspace.%s", cfgCreate.workspaceName)
+
+	cfgUpdate := cfgCreate
+	cfgUpdate.description = "My deployment description v2"
 
 	var deployment api.Deployment
 
@@ -71,30 +87,30 @@ func TestAccResource_deployment(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the deployment resource
-				Config: fixtureAccDeploymentCreate(randomName, description),
+				Config: fixtureAccDeployment(cfgCreate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "description", description),
+					resource.TestCheckResourceAttr(cfgCreate.deploymentResourceName, "name", cfgCreate.deploymentName),
+					resource.TestCheckResourceAttr(cfgCreate.deploymentResourceName, "description", cfgCreate.description),
 				),
 			},
 			{
 				// Check update of existing deployment resource
-				Config: fixtureAccDeploymentUpdate(randomName2, description2),
+				Config: fixtureAccDeployment(cfgUpdate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists(resourceName, workspaceResourceName, &deployment),
+					testAccCheckDeploymentExists(cfgUpdate.deploymentResourceName, cfgUpdate.workspaceResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-						name:        randomName2,
-						description: description2,
+						name:        cfgUpdate.deploymentName,
+						description: cfgUpdate.description,
 					}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName, "description", description2),
+					resource.TestCheckResourceAttr(cfgUpdate.deploymentResourceName, "name", cfgUpdate.deploymentName),
+					resource.TestCheckResourceAttr(cfgUpdate.deploymentResourceName, "description", cfgUpdate.description),
 				),
 			},
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(resourceName, workspaceResourceName),
-				ResourceName:      resourceName,
+				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(cfgCreate.deploymentName, cfgCreate.workspaceResourceName),
+				ResourceName:      cfgCreate.deploymentResourceName,
 				ImportStateVerify: true,
 			},
 		},
