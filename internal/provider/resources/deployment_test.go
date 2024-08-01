@@ -32,8 +32,10 @@ func fixtureAccDeployment(cfg deploymentConfig) string {
 
 resource "prefect_flow" "%s" {
 	name = "%s"
-	workspace_id = prefect_workspace.%s.id
 	tags = ["test"]
+
+	workspace_id = prefect_workspace.%s.id
+	depends_on = [prefect_workspace.%s]
 }
 
 resource "prefect_deployment" "%s" {
@@ -47,17 +49,22 @@ resource "prefect_deployment" "%s" {
   paused                   = false
 	tags = ["test"]
   version                  = "v1.1.1"
+
 	workspace_id = prefect_workspace.%s.id
+	depends_on = [prefect_workspace.%s, prefect_flow.%s]
 }
 `, cfg.workspace,
 		cfg.flowName,
 		cfg.flowName,
+		cfg.workspaceName,
 		cfg.workspaceName,
 		cfg.deploymentName,
 		cfg.deploymentName,
 		cfg.description,
 		cfg.flowName,
 		cfg.workspaceName,
+		cfg.workspaceName,
+		cfg.flowName,
 	)
 }
 
