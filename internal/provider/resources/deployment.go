@@ -370,7 +370,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	client, err := r.client.Deployments(model.WorkspaceID.ValueUUID(), model.AccountID.ValueUUID())
+	client, err := r.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment client",
