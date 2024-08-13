@@ -400,7 +400,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
 		ManifestPath:           model.ManifestPath.ValueString(),
-		Name:                   model.Name.ValueString(),
 		Path:                   model.Path.ValueString(),
 		Paused:                 model.Paused.ValueBool(),
 		Tags:                   tags,

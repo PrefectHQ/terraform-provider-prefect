@@ -57,7 +57,6 @@ type DeploymentUpdate struct {
 	EnforceParameterSchema bool     `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string   `json:"entrypoint,omitempty"`
 	ManifestPath           string   `json:"manifest_path"`
-	Name                   string   `json:"name"`
 	Path                   string   `json:"path,omitempty"`
 	Paused                 bool     `json:"paused,omitempty"`
 	Tags                   []string `json:"tags,omitempty"`
