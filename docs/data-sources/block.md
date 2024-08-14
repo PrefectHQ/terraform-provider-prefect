@@ -5,9 +5,9 @@ subcategory: ""
 description: |-
   Get information about an existing Block by either:
   ID, orblock type name and block name
-
+  
   If the ID is provided, then the block type name and block name will be ignored.
-
+  
   Use this data source to obtain Block-specific attributes, such as the data.
 ---
 

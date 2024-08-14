@@ -5,6 +5,7 @@ subcategory: ""
 description: |-
   The resource block allows creating and managing Prefect Blocks https://docs.prefect.io/latest/concepts/blocks/, which are primitives for configuration / secrets in your flows.
   block resources represent configurations for schemas for all different Block types. Because of the polymorphic nature of Blocks, you should utilize the prefect CLI https://docs.prefect.io/latest/getting-started/installation/ to inspect all Block types and schemas.
+  Note: you should be on version 3.0.0rc1 or later to use the following commands:
   Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
   Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
 ---
@@ -13,6 +14,7 @@ description: |-
 
 The resource `block` allows creating and managing [Prefect Blocks](https://docs.prefect.io/latest/concepts/blocks/), which are primitives for configuration / secrets in your flows.
 `block` resources represent configurations for schemas for all different Block types. Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas.
+*Note:* you should be on version `3.0.0rc1` or later to use the following commands:
 Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute.
 Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
 
