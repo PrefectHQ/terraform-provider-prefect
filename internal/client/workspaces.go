@@ -57,7 +57,12 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
+	// Create is considered successful if the response is either:
+	// 1. StatusCreated (201) - meaning it was created
+	// 2. StatusConflict (409) - meaning it already exists.
+	//   This is relevant in cases where the Create method is retried.
+	// If the error is not one of these, then Create is considered unsuccessful.
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusConflict {
 		errorBody, _ := io.ReadAll(resp.Body)
 
 		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
