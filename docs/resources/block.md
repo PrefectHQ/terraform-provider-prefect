@@ -5,16 +5,16 @@ subcategory: ""
 description: |-
   The resource block allows creating and managing Prefect Blocks https://docs.prefect.io/latest/concepts/blocks/, which are primitives for configuration / secrets in your flows.
   block resources represent configurations for schemas for all different Block types. Because of the polymorphic nature of Blocks, you should utilize the prefect CLI https://docs.prefect.io/latest/getting-started/installation/ to inspect all Block types and schemas.
-  Use prefect block types ls to view all available Block type slugs, which is used in the type_slug attribute.
-  Use prefect block types inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
+  Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
+  Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
 ---
 
 # prefect_block (Resource)
 
 The resource `block` allows creating and managing [Prefect Blocks](https://docs.prefect.io/latest/concepts/blocks/), which are primitives for configuration / secrets in your flows.
 `block` resources represent configurations for schemas for all different Block types. Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas.
-Use `prefect block types ls` to view all available Block type slugs, which is used in the `type_slug` attribute.
-Use `prefect block types inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
+Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute.
+Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
 
 ## Example Usage
 
@@ -75,9 +75,9 @@ resource "prefect_block" "gcp_credentials_key" {
 
 ### Required
 
-- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.
+- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
 - `name` (String) Unique name of the Block
-- `type_slug` (String) Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block types ls` to view all available Block type slugs.
+- `type_slug` (String) Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block type ls` to view all available Block type slugs.
 
 ### Optional
 

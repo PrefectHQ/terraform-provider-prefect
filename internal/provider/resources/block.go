@@ -74,9 +74,11 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"`block` resources represent configurations for schemas for all different Block types. " +
 			"Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas." +
 			"\n" +
-			"Use `prefect block types ls` to view all available Block type slugs, which is used in the `type_slug` attribute." +
+			"*Note:* you should be on version `3.0.0rc1` or later to use the following commands:" +
 			"\n" +
-			"Use `prefect block types inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).",
+			"Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute." +
+			"\n" +
+			"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -105,7 +107,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			},
 			"type_slug": schema.StringAttribute{
 				Required:    true,
-				Description: "Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block types ls` to view all available Block type slugs.",
+				Description: "Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block type ls` to view all available Block type slugs.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -114,7 +116,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Required:    true,
 				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
-				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block types inspect <slug>` to view the data schema for a given Block type.",
+				Description: "The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.",
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
