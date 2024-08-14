@@ -158,8 +158,7 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 
 	// In certain scenarios, such as in tests when multiple Workspaces are created at the same time
 	// for test isolation, Prefect will return a "503 Service Unavailable" error.
-	// To mitigate this, we will retry the Workspace creation. The Create method will stop retrying
-	// if either the Workspace was created or if the Workspace already exists.
+	// To mitigate this, we will retry the Workspace creation.
 	// See https://github.com/PrefectHQ/terraform-provider-prefect/issues/241 for more information.
 	workspace, err := retry.DoWithData(
 		func() (*api.Workspace, error) {
