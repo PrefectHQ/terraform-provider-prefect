@@ -15,8 +15,6 @@ import (
 )
 
 type deploymentConfig struct {
-	Workspace             string
-	WorkspaceName         string
 	WorkspaceResourceName string
 
 	DeploymentName         string
@@ -36,14 +34,15 @@ type deploymentConfig struct {
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
 	tmpl := `
-{{.Workspace}}
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
 
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = prefect_workspace.{{.WorkspaceName}}.id
-	depends_on = [prefect_workspace.{{.WorkspaceName}}]
+	workspace_id = data.prefect_workspace.evergreen.id
 }
 
 resource "prefect_deployment" "{{.DeploymentName}}" {
@@ -58,12 +57,8 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 	version = "{{.Version}}"
 
-	# work pools can be tested when they are created in the ephemeral workspace
-	# work_pool_name = ""
-	# work_queue_name = ""
-
-	workspace_id = prefect_workspace.{{.WorkspaceName}}.id
-	depends_on = [prefect_workspace.{{.WorkspaceName}}, prefect_flow.{{.FlowName}}]
+	workspace_id = data.prefect_workspace.evergreen.id
+	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
 
@@ -72,17 +67,14 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
-	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 	deploymentName := testutils.NewRandomPrefixedString()
 	flowName := testutils.NewRandomPrefixedString()
 
 	cfgCreate := deploymentConfig{
-		Workspace:              workspace,
-		WorkspaceName:          workspaceName,
 		DeploymentName:         deploymentName,
 		FlowName:               flowName,
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
-		WorkspaceResourceName:  fmt.Sprintf("prefect_workspace.%s", workspaceName),
+		WorkspaceResourceName:  "data.prefect_workspace.evergreen",
 
 		Description:            "My deployment description",
 		EnforceParameterSchema: false,
@@ -96,8 +88,6 @@ func TestAccResource_deployment(t *testing.T) {
 
 	cfgUpdate := deploymentConfig{
 		// Keep some values from cfgCreate so we refer to the same resources for the update.
-		Workspace:              cfgCreate.Workspace,
-		WorkspaceName:          cfgCreate.WorkspaceName,
 		DeploymentName:         cfgCreate.DeploymentName,
 		FlowName:               cfgCreate.FlowName,
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
