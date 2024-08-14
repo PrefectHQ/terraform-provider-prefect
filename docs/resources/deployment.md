@@ -36,7 +36,7 @@ resource "prefect_deployment" "deployment" {
   path                     = "./foo/bar"
   paused                   = false
   version                  = "v1.1.1"
-  work_pool_name           = "mitch-testing-pool"
+  work_pool_name           = "my-testing-pool"
   work_queue_name          = "default"
 }
 ```
