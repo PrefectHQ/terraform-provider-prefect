@@ -14,23 +14,30 @@ Deployments are server-side representations of flows. They store the crucial met
 
 ```terraform
 resource "prefect_workspace" "workspace" {
-	handle = "my-workspace"
-	name = "my-workspace"
+  handle = "my-workspace"
+  name   = "my-workspace"
 }
 
 resource "prefect_flow" "flow" {
-	name = "my-flow"
-	workspace_id = prefect_workspace.workspace.id
-	tags = ["tf-test"]
+  name         = "my-flow"
+  workspace_id = prefect_workspace.workspace.id
+  tags         = ["tf-test"]
 }
 
 resource "prefect_deployment" "deployment" {
-	name = "%s"
-	description = "string"
-	workspace_id = prefect_workspace.workspace.id
-	flow_id = prefect_flow.flow.id
-	entrypoint = "hello_world.py:hello_world"
-	tags = ["test"]
+  name                     = "%s"
+  description              = "string"
+  workspace_id             = prefect_workspace.workspace.id
+  flow_id                  = prefect_flow.flow.id
+  entrypoint               = "hello_world.py:hello_world"
+  tags                     = ["test"]
+  enforce_parameter_schema = false
+  manifest_path            = "./bar/foo"
+  path                     = "./foo/bar"
+  paused                   = false
+  version                  = "v1.1.1"
+  work_pool_name           = "mitch-testing-pool"
+  work_queue_name          = "default"
 }
 ```
 
@@ -39,31 +46,28 @@ resource "prefect_deployment" "deployment" {
 
 ### Required
 
-- `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
 - `name` (String) Name of the workspace
-- `workspace_id` (String) Workspace ID (UUID) to associate deployment to
 
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
-- `infrastructure_document_id` (String) The block document defining infrastructure to use for flow runs.
-- `is_schedule_active` (Boolean) Is Schedule Active
+- `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
+- `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
-- `storage_document_id` (String) The block document defining storage used for this flow.
 - `tags` (List of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.
 - `work_queue_name` (String) The work queue for the deployment. If no work queue is set, work will not be scheduled.
+- `workspace_id` (String) Workspace ID (UUID) to associate deployment to
 
 ### Read-Only
 
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Workspace ID (UUID)
-- `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
@@ -71,6 +75,9 @@ resource "prefect_deployment" "deployment" {
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Deployments can be imported via deployment_id,workspace_id
+# Prefect Deployments can be imported via deployment_id
+terraform import prefect_deployment.example 00000000-0000-0000-0000-000000000000
+
+# or via deployment_id,workspace_id
 terraform import prefect_deployment.example 00000000-0000-0000-0000-000000000000,00000000-0000-0000-0000-000000000000
 ```
