@@ -3,6 +3,7 @@ package resources_test
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
@@ -14,77 +15,120 @@ import (
 )
 
 type deploymentConfig struct {
-	workspace             string
-	workspaceName         string
-	workspaceResourceName string
+	Workspace             string
+	WorkspaceName         string
+	WorkspaceResourceName string
 
-	deploymentName         string
-	deploymentResourceName string
+	DeploymentName         string
+	DeploymentResourceName string
 
-	description string
+	Description            string
+	EnforceParameterSchema bool
+	Entrypoint             string
+	ManifestPath           string
+	Path                   string
+	Paused                 bool
+	Tags                   []string
+	Version                string
 
-	flowName string
+	FlowName string
 }
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
-	return fmt.Sprintf(`
-%s
+	tmpl := `
+{{.Workspace}}
 
-resource "prefect_flow" "%s" {
-	name = "%s"
-	tags = ["test"]
+resource "prefect_flow" "{{.FlowName}}" {
+	name = "{{.FlowName}}"
+	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = prefect_workspace.%s.id
-	depends_on = [prefect_workspace.%s]
+	workspace_id = prefect_workspace.{{.WorkspaceName}}.id
+	depends_on = [prefect_workspace.{{.WorkspaceName}}]
 }
 
-resource "prefect_deployment" "%s" {
-	name = "%s"
-	description = "%s"
-  enforce_parameter_schema = false
-	entrypoint = "hello_world.py:hello_world"
-	flow_id = prefect_flow.%s.id
-  manifest_path            = "./bar/foo"
-  path                     = "./foo/bar"
-  paused                   = false
-	tags = ["test"]
-  version                  = "v1.1.1"
+resource "prefect_deployment" "{{.DeploymentName}}" {
+	name = "{{.DeploymentName}}"
+	description = "{{.Description}}"
+	enforce_parameter_schema = {{.EnforceParameterSchema}}
+	entrypoint = "{{.Entrypoint}}"
+	flow_id = prefect_flow.{{.FlowName}}.id
+	manifest_path = "{{.ManifestPath}}"
+	path = "{{.Path}}"
+	paused = {{.Paused}}
+	tags = [{{range .Tags}}"{{.}}", {{end}}]
+	version = "{{.Version}}"
 
-	workspace_id = prefect_workspace.%s.id
-	depends_on = [prefect_workspace.%s, prefect_flow.%s]
+	# work pools can be tested when they are created in the ephemeral workspace
+	# work_pool_name = ""
+	# work_queue_name = ""
+
+	workspace_id = prefect_workspace.{{.WorkspaceName}}.id
+	depends_on = [prefect_workspace.{{.WorkspaceName}}, prefect_flow.{{.FlowName}}]
 }
-`, cfg.workspace,
-		cfg.flowName,
-		cfg.flowName,
-		cfg.workspaceName,
-		cfg.workspaceName,
-		cfg.deploymentName,
-		cfg.deploymentName,
-		cfg.description,
-		cfg.flowName,
-		cfg.workspaceName,
-		cfg.workspaceName,
-		cfg.flowName,
-	)
+`
+
+	return helpers.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
 	workspace, workspaceName := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
 
 	cfgCreate := deploymentConfig{
-		workspace:      workspace,
-		workspaceName:  workspaceName,
-		deploymentName: testutils.NewRandomPrefixedString(),
-		flowName:       testutils.NewRandomPrefixedString(),
-		description:    "My deployment description",
+		Workspace:              workspace,
+		WorkspaceName:          workspaceName,
+		DeploymentName:         deploymentName,
+		FlowName:               flowName,
+		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
+		WorkspaceResourceName:  fmt.Sprintf("prefect_workspace.%s", workspaceName),
+
+		Description:            "My deployment description",
+		EnforceParameterSchema: false,
+		Entrypoint:             "hello_world.py:hello_world",
+		ManifestPath:           "some-manifest-path",
+		Path:                   "some-path",
+		Paused:                 false,
+		Tags:                   []string{"test1", "test2"},
+		Version:                "v1.1.1",
 	}
 
-	cfgCreate.deploymentResourceName = fmt.Sprintf("prefect_deployment.%s", cfgCreate.deploymentName)
-	cfgCreate.workspaceResourceName = fmt.Sprintf("prefect_workspace.%s", cfgCreate.workspaceName)
+	cfgUpdate := deploymentConfig{
+		// Keep some values from cfgCreate so we refer to the same resources for the update.
+		Workspace:              cfgCreate.Workspace,
+		WorkspaceName:          cfgCreate.WorkspaceName,
+		DeploymentName:         cfgCreate.DeploymentName,
+		FlowName:               cfgCreate.FlowName,
+		DeploymentResourceName: cfgCreate.DeploymentResourceName,
+		WorkspaceResourceName:  cfgCreate.WorkspaceResourceName,
 
-	cfgUpdate := cfgCreate
-	cfgUpdate.description = "My deployment description v2"
+		// Configure new values to test the update.
+		Description:  "My deployment description v2",
+		Entrypoint:   "hello_world.py:hello_world2",
+		ManifestPath: "some-manifest-path2",
+		Path:         "some-path2",
+		Paused:       true,
+		Version:      "v1.1.2",
+
+		// Enforcing parameter schema  returns the following error:
+		//
+		//   Could not update deployment, unexpected error: status code 409 Conflict,
+		//   error={"detail":"Error updating deployment: Cannot update parameters because
+		//   parameter schema enforcement is enabledand the deployment does not have a
+		//   valid parameter schema."}
+		//
+		// Will avoid testing this for now until a schema is configurable in the provider.
+		//
+		// EnforceParameterSchema: true
+		EnforceParameterSchema: cfgCreate.EnforceParameterSchema,
+
+		// Changing the tags results in a "404 Deployment not found" error.
+		// Will avoid testing this until a solution is found.
+		//
+		// Tags: []string{"test1", "test3"}
+		Tags: cfgCreate.Tags,
+	}
 
 	var deployment api.Deployment
 
@@ -96,28 +140,46 @@ func TestAccResource_deployment(t *testing.T) {
 				// Check creation + existence of the deployment resource
 				Config: fixtureAccDeployment(cfgCreate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(cfgCreate.deploymentResourceName, "name", cfgCreate.deploymentName),
-					resource.TestCheckResourceAttr(cfgCreate.deploymentResourceName, "description", cfgCreate.description),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "name", cfgCreate.DeploymentName),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "description", cfgCreate.Description),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.0", cfgCreate.Tags[0]),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.1", cfgCreate.Tags[1]),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
 				),
 			},
 			{
 				// Check update of existing deployment resource
 				Config: fixtureAccDeployment(cfgUpdate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists(cfgUpdate.deploymentResourceName, cfgUpdate.workspaceResourceName, &deployment),
+					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, cfgUpdate.WorkspaceResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-						name:        cfgUpdate.deploymentName,
-						description: cfgUpdate.description,
+						name:        cfgUpdate.DeploymentName,
+						description: cfgUpdate.Description,
 					}),
-					resource.TestCheckResourceAttr(cfgUpdate.deploymentResourceName, "name", cfgUpdate.deploymentName),
-					resource.TestCheckResourceAttr(cfgUpdate.deploymentResourceName, "description", cfgUpdate.description),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "name", cfgUpdate.DeploymentName),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "description", cfgUpdate.Description),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.0", cfgUpdate.Tags[0]),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.1", cfgUpdate.Tags[1]),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
 				),
 			},
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(cfgCreate.deploymentResourceName, cfgCreate.workspaceResourceName),
-				ResourceName:      cfgCreate.deploymentResourceName,
+				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName),
+				ResourceName:      cfgCreate.DeploymentResourceName,
 				ImportStateVerify: true,
 			},
 		},
