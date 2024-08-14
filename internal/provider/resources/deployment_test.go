@@ -28,6 +28,8 @@ type deploymentConfig struct {
 	Paused                 bool
 	Tags                   []string
 	Version                string
+	WorkPoolName           string
+	WorkQueueName          string
 
 	FlowName string
 }
@@ -56,6 +58,8 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	paused = {{.Paused}}
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 	version = "{{.Version}}"
+	work_pool_name = "{{.WorkPoolName}}"
+	work_queue_name = "{{.WorkQueueName}}"
 
 	workspace_id = data.prefect_workspace.evergreen.id
 	depends_on = [prefect_flow.{{.FlowName}}]
@@ -84,6 +88,8 @@ func TestAccResource_deployment(t *testing.T) {
 		Paused:                 false,
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
+		WorkPoolName:           "evergreen-pool",
+		WorkQueueName:          "evergreen-queue",
 	}
 
 	cfgUpdate := deploymentConfig{
@@ -93,13 +99,17 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
 		WorkspaceResourceName:  cfgCreate.WorkspaceResourceName,
 
+		// There's only one evergreen work pool right now, so let's reuse that.
+		WorkPoolName: cfgCreate.WorkPoolName,
+
 		// Configure new values to test the update.
-		Description:  "My deployment description v2",
-		Entrypoint:   "hello_world.py:hello_world2",
-		ManifestPath: "some-manifest-path2",
-		Path:         "some-path2",
-		Paused:       true,
-		Version:      "v1.1.2",
+		Description:   "My deployment description v2",
+		Entrypoint:    "hello_world.py:hello_world2",
+		ManifestPath:  "some-manifest-path2",
+		Path:          "some-path2",
+		Paused:        true,
+		Version:       "v1.1.2",
+		WorkQueueName: "default",
 
 		// Enforcing parameter schema  returns the following error:
 		//
@@ -141,6 +151,8 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.0", cfgCreate.Tags[0]),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.1", cfgCreate.Tags[1]),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
 				),
 			},
 			{
@@ -163,6 +175,8 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.0", cfgUpdate.Tags[0]),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.1", cfgUpdate.Tags[1]),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
 				),
 			},
 			// Import State checks - import by ID (default)
