@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,6 +18,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 var (
@@ -154,11 +156,24 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	workspace, err := client.Create(ctx, api.WorkspaceCreate{
-		Name:        plan.Name.ValueString(),
-		Handle:      plan.Handle.ValueString(),
-		Description: plan.Description.ValueStringPointer(),
-	})
+	// In certain scenarios, such as in tests when multiple Workspaces are created at the same time
+	// for test isolation, Prefect will return a "503 Service Unavailable" error.
+	// To mitigate this, we will retry the Workspace creation.
+	// See https://github.com/PrefectHQ/terraform-provider-prefect/issues/241 for more information.
+	workspace, err := retry.DoWithData(
+		func() (*api.Workspace, error) {
+			return client.Create(
+				ctx,
+				api.WorkspaceCreate{
+					Name:        plan.Name.ValueString(),
+					Handle:      plan.Handle.ValueString(),
+					Description: plan.Description.ValueStringPointer(),
+				},
+			)
+		},
+		utils.DefaultRetryOptions...,
+	)
+
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
 
