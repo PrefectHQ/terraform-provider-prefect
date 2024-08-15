@@ -8,3 +8,4 @@ resource "prefect_flow" "flow" {
   workspace_id = prefect_workspace.workspace.id
   tags         = ["tf-test"]
 }
+

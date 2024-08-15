@@ -13,6 +13,7 @@ type PrefectClient interface {
 	BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (BlockSchemaClient, error)
 	BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (BlockTypeClient, error)
 	Collections() (CollectionsClient, error)
+	Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentsClient, error)
 	Teams(accountID uuid.UUID) (TeamsClient, error)
 	Flows(accountID uuid.UUID, workspaceID uuid.UUID) (FlowsClient, error)
 	Workspaces(accountID uuid.UUID) (WorkspacesClient, error)
