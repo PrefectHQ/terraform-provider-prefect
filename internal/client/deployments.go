@@ -104,7 +104,7 @@ func (c *DeploymentsClient) List(ctx context.Context, _ []string) ([]*api.Deploy
 	return deployments, nil
 }
 
-// Get returns details for a Workspace by ID.
+// Get returns details for a Deployment by ID.
 func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*api.Deployment, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
 	if err != nil {
