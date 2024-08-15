@@ -10,7 +10,7 @@ resource "prefect_flow" "flow" {
 }
 
 resource "prefect_deployment" "deployment" {
-  name                     = "%s"
+  name                     = "my-deployment"
   description              = "string"
   workspace_id             = prefect_workspace.workspace.id
   flow_id                  = prefect_flow.flow.id
