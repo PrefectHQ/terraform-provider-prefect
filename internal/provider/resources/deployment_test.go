@@ -24,6 +24,7 @@ type deploymentConfig struct {
 	EnforceParameterSchema bool
 	Entrypoint             string
 	ManifestPath           string
+	Parameters             string
 	Path                   string
 	Paused                 bool
 	Tags                   []string
@@ -54,6 +55,9 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	entrypoint = "{{.Entrypoint}}"
 	flow_id = prefect_flow.{{.FlowName}}.id
 	manifest_path = "{{.ManifestPath}}"
+	parameters = jsonencode({
+		"some-parameter": "{{.Parameters}}"
+	})
 	path = "{{.Path}}"
 	paused = {{.Paused}}
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
@@ -84,6 +88,7 @@ func TestAccResource_deployment(t *testing.T) {
 		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world",
 		ManifestPath:           "some-manifest-path",
+		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
 		Tags:                   []string{"test1", "test2"},
@@ -106,6 +111,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Description:   "My deployment description v2",
 		Entrypoint:    "hello_world.py:hello_world2",
 		ManifestPath:  "some-manifest-path2",
+		Parameters:    "some-value2",
 		Path:          "some-path2",
 		Paused:        true,
 		Version:       "v1.1.2",
@@ -145,6 +151,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
@@ -169,6 +176,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),

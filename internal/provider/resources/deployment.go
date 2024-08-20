@@ -2,10 +2,12 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -48,6 +50,7 @@ type DeploymentResourceModel struct {
 	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
 	ManifestPath           types.String          `tfsdk:"manifest_path"`
 	Name                   types.String          `tfsdk:"name"`
+	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
 	Path                   types.String          `tfsdk:"path"`
 	Paused                 types.Bool            `tfsdk:"paused"`
 	Tags                   types.List            `tfsdk:"tags"`
@@ -215,6 +218,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyTagList),
 			},
+			"parameters": schema.StringAttribute{
+				Description: "Parameters for flow runs scheduled by the deployment.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
+			},
 		},
 	}
 }
@@ -270,6 +279,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	var data map[string]interface{}
+	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
@@ -277,6 +292,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		FlowID:                 plan.FlowID.ValueUUID(),
 		ManifestPath:           plan.ManifestPath.ValueString(),
 		Name:                   plan.Name.ValueString(),
+		Parameters:             data,
 		Path:                   plan.Path.ValueString(),
 		Paused:                 plan.Paused.ValueBool(),
 		Tags:                   tags,
@@ -355,6 +371,12 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	byteSlice, err := json.Marshal(deployment.Parameters)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
+	}
+	model.Parameters = jsontypes.NewNormalizedValue(string(byteSlice))
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -395,11 +417,18 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	var parameters map[string]interface{}
+	resp.Diagnostics.Append(model.Parameters.Unmarshal(&parameters)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	payload := api.DeploymentUpdate{
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
 		ManifestPath:           model.ManifestPath.ValueString(),
+		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
 		Paused:                 model.Paused.ValueBool(),
 		Tags:                   tags,
@@ -432,6 +461,14 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	byteSlice, err := json.Marshal(deployment.Parameters)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
+
+		return
+	}
+	model.Parameters = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
