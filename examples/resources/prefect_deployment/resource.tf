@@ -18,10 +18,14 @@ resource "prefect_deployment" "deployment" {
   tags                     = ["test"]
   enforce_parameter_schema = false
   manifest_path            = "./bar/foo"
-  path                     = "./foo/bar"
-  paused                   = false
-  version                  = "v1.1.1"
-  work_pool_name           = "mitch-testing-pool"
-  work_queue_name          = "default"
+  parameters = jsonencode({
+    "some-parameter" : "some-value",
+    "some-parameter2" : "some-value2"
+  })
+  path            = "./foo/bar"
+  paused          = false
+  version         = "v1.1.1"
+  work_pool_name  = "mitch-testing-pool"
+  work_queue_name = "default"
 }
 
