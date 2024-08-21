@@ -33,11 +33,15 @@ resource "prefect_deployment" "deployment" {
   tags                     = ["test"]
   enforce_parameter_schema = false
   manifest_path            = "./bar/foo"
-  path                     = "./foo/bar"
-  paused                   = false
-  version                  = "v1.1.1"
-  work_pool_name           = "mitch-testing-pool"
-  work_queue_name          = "default"
+  parameters = jsonencode({
+    "some-parameter" : "some-value",
+    "some-parameter2" : "some-value2"
+  })
+  path            = "./foo/bar"
+  paused          = false
+  version         = "v1.1.1"
+  work_pool_name  = "mitch-testing-pool"
+  work_queue_name = "default"
 }
 ```
 
@@ -56,6 +60,7 @@ resource "prefect_deployment" "deployment" {
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
+- `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
 - `tags` (List of String) Tags associated with the deployment
