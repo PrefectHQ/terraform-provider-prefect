@@ -418,13 +418,13 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	byteSlice, err := json.Marshal(block.Data)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
-
-		return
-	}
-	plan.Data = jsontypes.NewNormalizedValue(string(byteSlice))
+	// Normally, we would also copy the retrieved Block's Data field into the
+	// plan object before setting the current state.
+	//
+	// However, the API's GET method does not return the `$ref` expression if it
+	// was specified in the Data field on the Block resource. This leads to
+	// "inconsistent result after apply" errors. For now, we'll skip copying the
+	// retrieved Block's Data field and use what was specified in the plan.
 
 	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
