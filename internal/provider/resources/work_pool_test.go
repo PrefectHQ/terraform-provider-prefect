@@ -2,6 +2,7 @@ package resources_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -9,20 +10,22 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkPoolCreate(workspace, workspaceName, name, poolType string, paused bool) string {
+func fixtureAccWorkPoolCreate(workspace, workspaceName, name, poolType, baseJobTemplate string, paused bool) string {
 	return fmt.Sprintf(`
 %s
 resource "prefect_work_pool" "%s" {
 	name = "%s"
 	type = "%s"
 	paused = %t
+	base_job_template = jsonencode(%s)
 	workspace_id = prefect_workspace.%s.id
 	depends_on = [prefect_workspace.%s]
 }
-`, workspace, name, name, poolType, paused, workspaceName, workspaceName)
+`, workspace, name, name, poolType, paused, baseJobTemplate, workspaceName, workspaceName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -39,6 +42,14 @@ func TestAccResource_work_pool(t *testing.T) {
 	poolType := "kubernetes"
 	poolType2 := "ecs"
 
+	baseJobTemplate := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker.")
+	var baseJobTemplateMap map[string]interface{}
+	_ = json.Unmarshal([]byte(baseJobTemplate), &baseJobTemplateMap)
+
+	baseJobTemplate2 := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker!")
+	var baseJobTemplateMap2 map[string]interface{}
+	_ = json.Unmarshal([]byte(baseJobTemplate2), &baseJobTemplateMap2)
+
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
 	var workPool api.WorkPool
@@ -49,10 +60,10 @@ func TestAccResource_work_pool(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the work pool resource
-				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, true),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, baseJobTemplate, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkPoolExists(workPoolResourceName, workspaceResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: true}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap, IsPaused: true}),
 					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
 					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "true"),
@@ -60,11 +71,23 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the paused state will update the resource in place
-				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, baseJobTemplate, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, workspaceResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap, IsPaused: false}),
+					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
+					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
+					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
+				),
+			},
+			{
+				// Check that changing the baseJobTemplate will update the resource in place
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, baseJobTemplate2, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
+					testAccCheckWorkPoolExists(workPoolResourceName, workspaceResourceName, &workPool),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
 					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
 					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
@@ -72,28 +95,29 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the name will re-create the resource
-				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType, baseJobTemplate2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, workspaceResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
 				),
 			},
 			{
 				// Check that changing the poolType will re-create the resource
-				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType2, false),
+				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName2, poolType2, baseJobTemplate2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, workspaceResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
 				),
 			},
 			// Import State checks - import by workspace_id,name (dynamic)
 			{
-				ImportState:       true,
-				ResourceName:      workPoolResourceName2,
-				ImportStateIdFunc: getWorkPoolImportStateID(workPoolResourceName2, workspaceResourceName),
-				ImportStateVerify: true,
+				ImportState:             true,
+				ResourceName:            workPoolResourceName2,
+				ImportStateIdFunc:       getWorkPoolImportStateID(workPoolResourceName2, workspaceResourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"base_job_template"}, // we've already tested this, and we can't provide our unique equality check here
 			},
 		},
 	})
@@ -144,6 +168,10 @@ func testAccCheckWorkPoolValues(fetchedWorkPool *api.WorkPool, valuesToCheck *ap
 
 		if fetchedWorkPool.IsPaused != valuesToCheck.IsPaused {
 			return fmt.Errorf("Expected work pool paused to be %t, got %t", valuesToCheck.IsPaused, fetchedWorkPool.IsPaused)
+		}
+
+		if resources.BaseJobTemplatesMatch(fetchedWorkPool.BaseJobTemplate, valuesToCheck.BaseJobTemplate) != nil {
+			return fmt.Errorf("Expected work pool base job template to be %+v, got %+v", valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate)
 		}
 
 		return nil
@@ -201,3 +229,59 @@ func getWorkPoolImportStateID(workPoolResourceName string, workspaceResourceName
 		return fmt.Sprintf("%s,%s", workspaceID, workPoolName), nil
 	}
 }
+
+var baseJobTemplateTpl = `
+{
+  "job_configuration": {
+    "command": "{{ command }}",
+    "env": "{{ env }}",
+    "labels": "{{ labels }}",
+    "name": "{{ name }}",
+    "stream_output": "{{ stream_output }}",
+    "working_dir": "{{ working_dir }}"
+  },
+  "variables": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "description": "%s",
+        "type": "string"
+      },
+      "env": {
+        "title": "Environment Variables",
+        "description": "Environment variables to set when starting a flow run.",
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "labels": {
+        "title": "Labels",
+        "description": "Labels applied to infrastructure created by a worker.",
+        "type": "object",
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "command": {
+        "title": "Command",
+        "description": "The command to use when starting a flow run. In most cases, this should be left blank and the command will be automatically generated by the worker.",
+        "type": "string"
+      },
+      "stream_output": {
+        "title": "Stream Output",
+        "description": "If enabled, workers will stream output from flow run processes to local standard output.",
+        "default": true,
+        "type": "boolean"
+      },
+      "working_dir": {
+        "title": "Working Directory",
+        "description": "If provided, workers will open flow run processes within the specified path as the working directory. Otherwise, a temporary directory will be created.",
+        "type": "string",
+        "format": "path"
+      }
+    }
+  }
+}
+`
