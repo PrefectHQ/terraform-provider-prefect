@@ -2,9 +2,10 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -178,8 +179,6 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 // copyWorkPoolToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoolResourceModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
 	tfModel.ID = types.StringValue(pool.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
@@ -190,15 +189,6 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoo
 	tfModel.Name = types.StringValue(pool.Name)
 	tfModel.Paused = types.BoolValue(pool.IsPaused)
 	tfModel.Type = types.StringValue(pool.Type)
-
-	byteSlice, err := json.Marshal(pool.BaseJobTemplate)
-	if err != nil {
-		diags.Append(helpers.SerializeDataErrorDiagnostic("base_job_template", "Work Pool base job template", err))
-
-		return diags
-	}
-
-	tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	return nil
 }
@@ -325,6 +315,22 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
+	}
+
+	if !cmp.Equal(pool.BaseJobTemplate, baseJobTemplate) {
+		// If the base job template from the retrieved work pool is equal
+		// to the base job template from the plan (taking into account that the
+		// fields could be in a different order), then use the plan's definition
+		// of the base job template in the state. This avoids "inconsistent value"
+		// errors.
+		//
+		// If the two are not equal, then something has gone wrong so we should
+		// exit and alert the user.
+		resp.Diagnostics.AddAttributeError(
+			path.Root("base_job_template"),
+			"Unexpected difference between base_job_template",
+			"Expected the provided base_job_template to be equal to the one retrieved from the API",
+		)
 	}
 
 	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
