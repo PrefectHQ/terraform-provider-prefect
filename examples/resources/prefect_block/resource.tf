@@ -47,3 +47,25 @@ resource "prefect_block" "gcp_credentials_key" {
     "service_account_info" = jsondecode(base64decode(google_service_account_key.test_bot.private_key))
   })
 }
+
+# example:
+# some resources need to be referenced using a "$ref" key
+resource "prefect_block" "my_dbt_cli_profile" {
+  name      = "my-dbt-cli-profile"
+  type_slug = "dbt-cli-profile"
+
+  data = jsonencode({
+    "name"   = "mine"
+    "target" = "prefect-dbt-profile"
+  })
+}
+resource "prefect_block" "my_dbt_run_operation_block" {
+  name      = "my-dbt-operations"
+  type_slug = "dbt-core-operation"
+
+  # note the "$ref" key wrapping the "block_document_id" reference
+  data = jsonencode({
+    "commands"        = ["dbt deps", "dbt seed", "dbt run"]
+    "dbt_cli_profile" = { "$ref" : { "block_document_id" : prefect_block.my_dbt_cli_profile.id } }
+  })
+}
