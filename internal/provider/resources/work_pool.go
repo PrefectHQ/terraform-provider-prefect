@@ -8,7 +8,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -178,7 +177,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 // copyWorkPoolToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoolResourceModel) diag.Diagnostics {
+func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) {
 	tfModel.ID = types.StringValue(pool.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
@@ -189,8 +188,6 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoo
 	tfModel.Name = types.StringValue(pool.Name)
 	tfModel.Paused = types.BoolValue(pool.IsPaused)
 	tfModel.Type = types.StringValue(pool.Type)
-
-	return nil
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -230,7 +227,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
+	copyWorkPoolToModel(pool, &plan)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -265,10 +262,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	copyWorkPoolToModel(pool, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -333,10 +327,7 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		)
 	}
 
-	resp.Diagnostics.Append(copyWorkPoolToModel(ctx, pool, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	copyWorkPoolToModel(pool, &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
