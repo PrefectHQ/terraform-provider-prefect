@@ -6,6 +6,7 @@ toolchain go1.22.1
 
 require (
 	github.com/avast/retry-go/v4 v4.6.0
+	github.com/go-test/deep v1.1.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-framework v1.10.0
@@ -14,7 +15,6 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-testing v1.9.0
-	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 )
 
 require (

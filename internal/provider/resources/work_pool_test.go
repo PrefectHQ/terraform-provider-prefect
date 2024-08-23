@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -170,8 +171,9 @@ func testAccCheckWorkPoolValues(fetchedWorkPool *api.WorkPool, valuesToCheck *ap
 			return fmt.Errorf("Expected work pool paused to be %t, got %t", valuesToCheck.IsPaused, fetchedWorkPool.IsPaused)
 		}
 
-		if resources.BaseJobTemplatesMatch(fetchedWorkPool.BaseJobTemplate, valuesToCheck.BaseJobTemplate) != nil {
-			return fmt.Errorf("Expected work pool base job template to be %+v, got %+v", valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate)
+		equal, diffs := helpers.ObjectsEqual(valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate)
+		if !equal {
+			return fmt.Errorf("Found unexpected differences in work pool base_job_template: %s", strings.Join(diffs, "\n"))
 		}
 
 		return nil

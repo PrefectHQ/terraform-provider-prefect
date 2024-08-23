@@ -2,14 +2,10 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/nsf/jsondiff"
-
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -320,9 +316,18 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 	// errors.
 	//
 	// If the two are not equal, then something has gone wrong so we should
-	// exit and alert the user.
-	resp.Diagnostics.Append(BaseJobTemplatesMatch(baseJobTemplate, pool.BaseJobTemplate))
-	if resp.Diagnostics.HasError() {
+	// exit and alert the user of the differences.
+	equal, diffs := helpers.ObjectsEqual(baseJobTemplate, pool.BaseJobTemplate)
+	if !equal {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("base_job_template"),
+			"Unexpected difference in base_job_templates",
+			fmt.Sprintf(
+				"Expected the provided base_job_template to be equal to the one retrieved from the API, differences: %s",
+				strings.Join(diffs, "\n"),
+			),
+		)
+
 		return
 	}
 
@@ -400,32 +405,4 @@ func (r *WorkPoolResource) ImportState(ctx context.Context, req resource.ImportS
 	} else {
 		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
 	}
-}
-
-// BaseJobTemplatesMatch checks to see if two base_job_template objects are
-// equivalent, accounting for differences in the order of the contents.
-//
-//nolint:ireturn // required by Terraform API
-func BaseJobTemplatesMatch(bjtPlan, bjtReceived map[string]interface{}) diag.Diagnostic {
-	bjtPlanBytes, err := json.Marshal(bjtPlan)
-	if err != nil {
-		return helpers.SerializeDataErrorDiagnostic("base_job_template", "Work Pool base job template", err)
-	}
-
-	bjtReceivedBytes, err := json.Marshal(bjtReceived)
-	if err != nil {
-		return helpers.SerializeDataErrorDiagnostic("base_job_template", "Work Pool base job template", err)
-	}
-
-	opts := jsondiff.DefaultJSONOptions()
-	differenceType, differences := jsondiff.Compare(bjtPlanBytes, bjtReceivedBytes, &opts)
-	if differenceType != jsondiff.FullMatch {
-		return diag.NewAttributeErrorDiagnostic(
-			path.Root("base_job_template"),
-			"Unexpected difference between base_job_template",
-			fmt.Sprintf("Expected the provided base_job_template to be equal to the one retrieved from the API, differences: %s", differences),
-		)
-	}
-
-	return nil
 }
