@@ -191,23 +191,14 @@ func copyWorkPoolToModel(_ context.Context, pool *api.WorkPool, tfModel *WorkPoo
 	tfModel.Paused = types.BoolValue(pool.IsPaused)
 	tfModel.Type = types.StringValue(pool.Type)
 
-	if pool.BaseJobTemplate != nil {
-		var builder strings.Builder
-		encoder := json.NewEncoder(&builder)
-		encoder.SetIndent("", "  ")
-		err := encoder.Encode(pool.BaseJobTemplate)
-		if err != nil {
-			diags.AddAttributeError(
-				path.Root("base_job_template"),
-				"Failed to serialize Base Job Template",
-				fmt.Sprintf("Failed to serialize Base Job Template as JSON string: %s", err),
-			)
+	byteSlice, err := json.Marshal(pool.BaseJobTemplate)
+	if err != nil {
+		diags.Append(helpers.SerializeDataErrorDiagnostic("base_job_template", "Work Pool base job template", err))
 
-			return diags
-		}
-
-		tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(strings.TrimSuffix(builder.String(), "\n"))
+		return diags
 	}
+
+	tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	return nil
 }
@@ -223,19 +214,9 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !plan.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(plan.BaseJobTemplate.ValueString())
-		decoder := json.NewDecoder(reader)
-		err := decoder.Decode(&baseJobTemplate)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("base_job_template"),
-				"Failed to deserialize Base Job Template",
-				fmt.Sprintf("Failed to deserialize Base Job Template as JSON object: %s", err),
-			)
-
-			return
-		}
+	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
@@ -315,19 +296,9 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	if !plan.BaseJobTemplate.IsNull() {
-		reader := strings.NewReader(plan.BaseJobTemplate.ValueString())
-		decoder := json.NewDecoder(reader)
-		err := decoder.Decode(&baseJobTemplate)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("base_job_template"),
-				"Failed to deserialize Base Job Template",
-				fmt.Sprintf("Failed to deserialize Base Job Template as JSON object: %s", err),
-			)
-
-			return
-		}
+	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
