@@ -18,10 +18,9 @@ resource "prefect_deployment" "deployment" {
   tags                     = ["test"]
   enforce_parameter_schema = false
   job_variables = jsonencode({
-    "some-job-variable" : "some-value",
-    "some-job-variable2" : "some-value2"
+    "env" : { "some-key" : "some-value" }
   })
-  manifest_path            = "./bar/foo"
+  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"

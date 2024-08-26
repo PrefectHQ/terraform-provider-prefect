@@ -55,9 +55,9 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	enforce_parameter_schema = {{.EnforceParameterSchema}}
 	entrypoint = "{{.Entrypoint}}"
 	flow_id = prefect_flow.{{.FlowName}}.id
-	job_variables = jsonencode({
-		"some-job-variable": "{{.JobVariables}}"
-	})
+	job_variables = jsonencode(
+		{{.JobVariables}}
+	)
 	manifest_path = "{{.ManifestPath}}"
 	parameters = jsonencode({
 		"some-parameter": "{{.Parameters}}"
@@ -91,7 +91,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Description:            "My deployment description",
 		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world",
-		JobVariables:           "some-job-variable-value1",
+		JobVariables:           `{"env":{"some-key":"some-value"}}`,
 		ManifestPath:           "some-manifest-path",
 		Parameters:             "some-value1",
 		Path:                   "some-path",
@@ -115,7 +115,7 @@ func TestAccResource_deployment(t *testing.T) {
 		// Configure new values to test the update.
 		Description:   "My deployment description v2",
 		Entrypoint:    "hello_world.py:hello_world2",
-		JobVariables:  "some-job-variable-value2",
+		JobVariables:  `{"env":{"some-key":"some-value2"}}`,
 		ManifestPath:  "some-manifest-path2",
 		Parameters:    "some-value2",
 		Path:          "some-path2",
@@ -156,7 +156,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "description", cfgCreate.Description),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", `{"some-job-variable":"some-job-variable-value1"}`),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
@@ -182,7 +182,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "description", cfgUpdate.Description),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", `{"some-job-variable":"some-job-variable-value2"}`),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
