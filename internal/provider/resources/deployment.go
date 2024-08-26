@@ -286,14 +286,14 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	var parameters_data map[string]interface{}
-	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&parameters_data)...)
+	var parameters map[string]interface{}
+	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&parameters)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var job_variables_data map[string]interface{}
-	resp.Diagnostics.Append(plan.JobVariables.Unmarshal(&job_variables_data)...)
+	var jobVariables map[string]interface{}
+	resp.Diagnostics.Append(plan.JobVariables.Unmarshal(&jobVariables)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -303,10 +303,10 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
 		FlowID:                 plan.FlowID.ValueUUID(),
-		JobVariables:           job_variables_data,
+		JobVariables:           jobVariables,
 		ManifestPath:           plan.ManifestPath.ValueString(),
 		Name:                   plan.Name.ValueString(),
-		Parameters:             parameters_data,
+		Parameters:             parameters,
 		Path:                   plan.Path.ValueString(),
 		Paused:                 plan.Paused.ValueBool(),
 		Tags:                   tags,
@@ -443,8 +443,8 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	var job_variables map[string]interface{}
-	resp.Diagnostics.Append(model.JobVariables.Unmarshal(&job_variables)...)
+	var jobVariables map[string]interface{}
+	resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -453,7 +453,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
-		JobVariables:           job_variables,
+		JobVariables:           jobVariables,
 		ManifestPath:           model.ManifestPath.ValueString(),
 		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
