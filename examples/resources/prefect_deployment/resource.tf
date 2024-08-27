@@ -17,7 +17,10 @@ resource "prefect_deployment" "deployment" {
   entrypoint               = "hello_world.py:hello_world"
   tags                     = ["test"]
   enforce_parameter_schema = false
-  manifest_path            = "./bar/foo"
+  job_variables = jsonencode({
+    "env" : { "some-key" : "some-value" }
+  })
+  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"

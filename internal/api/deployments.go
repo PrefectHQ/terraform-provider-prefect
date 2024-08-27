@@ -25,6 +25,7 @@ type Deployment struct {
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
 	Entrypoint             string                 `json:"entrypoint"`
 	FlowID                 uuid.UUID              `json:"flow_id"`
+	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
@@ -42,6 +43,7 @@ type DeploymentCreate struct {
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	FlowID                 uuid.UUID              `json:"flow_id"`
+	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
@@ -58,6 +60,7 @@ type DeploymentUpdate struct {
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
+	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`

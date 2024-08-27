@@ -32,7 +32,10 @@ resource "prefect_deployment" "deployment" {
   entrypoint               = "hello_world.py:hello_world"
   tags                     = ["test"]
   enforce_parameter_schema = false
-  manifest_path            = "./bar/foo"
+  job_variables = jsonencode({
+    "env" : { "some-key" : "some-value" }
+  })
+  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
@@ -59,6 +62,7 @@ resource "prefect_deployment" "deployment" {
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
+- `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.

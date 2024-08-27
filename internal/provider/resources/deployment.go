@@ -48,6 +48,7 @@ type DeploymentResourceModel struct {
 	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
 	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
+	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
 	ManifestPath           types.String          `tfsdk:"manifest_path"`
 	Name                   types.String          `tfsdk:"name"`
 	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
@@ -162,6 +163,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"job_variables": schema.StringAttribute{
+				Description: "Overrides for the flow's infrastructure configuration.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 			"work_queue_name": schema.StringAttribute{
 				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
@@ -279,8 +286,14 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	var data map[string]interface{}
-	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&data)...)
+	var parameters map[string]interface{}
+	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&parameters)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var jobVariables map[string]interface{}
+	resp.Diagnostics.Append(plan.JobVariables.Unmarshal(&jobVariables)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -290,9 +303,10 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
 		FlowID:                 plan.FlowID.ValueUUID(),
+		JobVariables:           jobVariables,
 		ManifestPath:           plan.ManifestPath.ValueString(),
 		Name:                   plan.Name.ValueString(),
-		Parameters:             data,
+		Parameters:             parameters,
 		Path:                   plan.Path.ValueString(),
 		Paused:                 plan.Paused.ValueBool(),
 		Tags:                   tags,
@@ -371,11 +385,17 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	byteSlice, err := json.Marshal(deployment.Parameters)
+	parametersByteSlice, err := json.Marshal(deployment.Parameters)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
 	}
-	model.Parameters = jsontypes.NewNormalizedValue(string(byteSlice))
+	model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+
+	jobVariablesByteSlice, err := json.Marshal(deployment.JobVariables)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("job_variables", "Deployment job variables", err))
+	}
+	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -423,10 +443,17 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	var jobVariables map[string]interface{}
+	resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	payload := api.DeploymentUpdate{
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
+		JobVariables:           jobVariables,
 		ManifestPath:           model.ManifestPath.ValueString(),
 		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
@@ -462,13 +489,21 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	byteSlice, err := json.Marshal(deployment.Parameters)
+	parametersByteSlice, err := json.Marshal(deployment.Parameters)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
 
 		return
 	}
-	model.Parameters = jsontypes.NewNormalizedValue(string(byteSlice))
+	model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+
+	jobVariablesByteSlice, err := json.Marshal(deployment.JobVariables)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("job_variables", "Deployment job variables", err))
+
+		return
+	}
+	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
