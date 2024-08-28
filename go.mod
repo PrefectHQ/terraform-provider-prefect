@@ -3,7 +3,7 @@ module github.com/prefecthq/terraform-provider-prefect
 go 1.21
 
 toolchain go1.22.1
-replace github.com/prefecthq/terraform-provider-prefect => /Users/adeeb.rahman/Documents/dev/personal/terraform-provider-prefect
+
 require (
 	github.com/avast/retry-go/v4 v4.6.0
 	github.com/go-test/deep v1.1.1
@@ -88,3 +88,5 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/prefecthq/terraform-provider-prefect => /Users/adeeb.rahman/Documents/dev/personal/terraform-provider-prefect
