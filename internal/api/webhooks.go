@@ -8,10 +8,11 @@ import (
 )
 
 type WebhooksClient interface {
-	Create(ctx context.Context, accountID, workspaceID string, request WebhookCreateRequest) (*Webhook, error)
-	Get(ctx context.Context, accountID, workspaceID, webhookID string) (*Webhook, error)
-	Update(ctx context.Context, accountID, workspaceID, webhookID string, request WebhookUpdateRequest) error
-	Delete(ctx context.Context, accountID, workspaceID, webhookID string) error
+    Create(ctx context.Context, accountID, workspaceID string, request WebhookCreateRequest) (*Webhook, error)
+    Get(ctx context.Context, accountID, workspaceID, webhookID string) (*Webhook, error)
+    List(ctx context.Context, accountID, workspaceID string) ([]*Webhook, error)
+    Update(ctx context.Context, accountID, workspaceID, webhookID string, request WebhookUpdateRequest) error
+    Delete(ctx context.Context, accountID, workspaceID, webhookID string) error
 }
 
 /*** REQUEST DATA STRUCTS ***/
