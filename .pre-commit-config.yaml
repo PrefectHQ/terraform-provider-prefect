@@ -16,3 +16,7 @@ repos:
       - id: golangci-lint
       - id: go-unit-tests
       - id: go-mod-tidy
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.1
+    hooks:
+      - id: actionlint
