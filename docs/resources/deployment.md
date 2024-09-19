@@ -67,6 +67,7 @@ resource "prefect_deployment" "deployment" {
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
+- `storage_document_id` (String) ID of the associated storage document (UUID)
 - `tags` (List of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.

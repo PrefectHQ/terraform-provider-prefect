@@ -31,6 +31,7 @@ type Deployment struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path"`
 	Paused                 bool                   `json:"paused"`
+	StorageDocumentID      uuid.UUID              `json:"storage_document_id"`
 	Tags                   []string               `json:"tags"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
@@ -49,6 +50,7 @@ type DeploymentCreate struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	StorageDocumentID      uuid.UUID              `json:"storage_document_id"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
@@ -65,6 +67,7 @@ type DeploymentUpdate struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	StorageDocumentID      uuid.UUID              `json:"storage_document_id"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`

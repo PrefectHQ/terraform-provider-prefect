@@ -34,6 +34,8 @@ type deploymentConfig struct {
 	WorkQueueName          string
 
 	FlowName string
+
+	StorageDocumentID string
 }
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
@@ -68,6 +70,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	version = "{{.Version}}"
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
+	storage_document_id = "{{.StorageDocumentID}}"
 
 	workspace_id = data.prefect_workspace.evergreen.id
 	depends_on = [prefect_flow.{{.FlowName}}]
@@ -100,6 +103,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Version:                "v1.1.1",
 		WorkPoolName:           "evergreen-pool",
 		WorkQueueName:          "evergreen-queue",
+		StorageDocumentID:      "a489d88c-4d5e-44cb-ae57-2a8ebb3b6ae2",
 	}
 
 	cfgUpdate := deploymentConfig{
@@ -140,6 +144,8 @@ func TestAccResource_deployment(t *testing.T) {
 		//
 		// Tags: []string{"test1", "test3"}
 		Tags: cfgCreate.Tags,
+
+		StorageDocumentID: cfgCreate.StorageDocumentID,
 	}
 
 	var deployment api.Deployment
@@ -167,6 +173,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "storage_document_id", cfgCreate.StorageDocumentID),
 				),
 			},
 			{
@@ -193,6 +200,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "storage_document_id", cfgUpdate.StorageDocumentID),
 				),
 			},
 			// Import State checks - import by ID (default)
