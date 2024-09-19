@@ -1,9 +1,6 @@
 [tools]
+golang = '1.21.10'
 golangci-lint = '1.61.0'
 goreleaser = '1.26.2'
 pre-commit = '3.7.1'
 terraform = '1.8.4'
-
-# Installing Golang seems to be broken at the moment.
-# For now, install with `brew` per ./_about/CONTRIBUTING.md.
-# go-sdk = '1.21.10'
