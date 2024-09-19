@@ -51,6 +51,7 @@ type DeploymentResourceModel struct {
 	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
 	ManifestPath           types.String          `tfsdk:"manifest_path"`
 	Name                   types.String          `tfsdk:"name"`
+	ParameterOpenAPISchema jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
 	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
 	Path                   types.String          `tfsdk:"path"`
 	Paused                 types.Bool            `tfsdk:"paused"`
@@ -231,6 +232,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
+			"parameter_openapi_schema": schema.StringAttribute{
+				Description: "The parameter schema of the flow, including defaults.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
+			},
 		},
 	}
 }
@@ -298,6 +305,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	var parameterOpenAPISchema map[string]interface{}
+	resp.Diagnostics.Append(plan.ParameterOpenAPISchema.Unmarshal(&parameterOpenAPISchema)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
@@ -313,6 +326,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		Version:                plan.Version.ValueString(),
 		WorkPoolName:           plan.WorkPoolName.ValueString(),
 		WorkQueueName:          plan.WorkQueueName.ValueString(),
+		ParameterOpenAPISchema: parameterOpenAPISchema,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -397,6 +411,12 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
 
+	parameterOpenAPISchemaByteSlice, err := json.Marshal(deployment.ParameterOpenAPISchema)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err))
+	}
+	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -445,6 +465,12 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	var jobVariables map[string]interface{}
 	resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var parameterOpenAPISchema map[string]interface{}
+	resp.Diagnostics.Append(model.ParameterOpenAPISchema.Unmarshal(&parameterOpenAPISchema)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -504,6 +530,14 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
+
+	parameterOpenAPISchemaByteSlice, err := json.Marshal(deployment.ParameterOpenAPISchema)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err))
+
+		return
+	}
+	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
