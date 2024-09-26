@@ -237,6 +237,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				// OpenAPI schema is also only set on create, and
+				// we do not support modifying this value. Therefore, any changes
+				// to this attribute will force a replacement.
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
