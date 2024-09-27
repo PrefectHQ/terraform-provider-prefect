@@ -45,7 +45,7 @@ resource "prefect_block" "aws_credentials_from_file" {
   type_slug = "aws-credentials"
 
   # prefect block type inspect aws-credentials
-  data = file("./aws-credentials.json")
+  data = jsonencode(file("./aws-credentials.json"))
 }
 
 # example:
@@ -111,7 +111,7 @@ For more information on the `$ref` syntax definition, see the
 
 ### Required
 
-- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
+- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
 - `name` (String) Unique name of the Block
 - `type_slug` (String) Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block type ls` to view all available Block type slugs.
 

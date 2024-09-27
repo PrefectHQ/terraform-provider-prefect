@@ -30,13 +30,15 @@ jobs:
       - name: Build Terraform Docs
         run: make docs
       - name: Commit changes
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           git add .
           if [[ $(git diff --staged) != '' ]]; then
             git config --local user.email "github-actions[bot]@users.noreply.github.com"
             git config --local user.name "github-actions[bot]"
             git commit -m "Generate Terraform Docs"
-            git push --set-upstream origin ${{ github.event.pull_request.head.ref }}
+            git push --set-upstream origin ${{ env.HEAD_REF }}
           else
             echo "No changes to commit"
           fi
