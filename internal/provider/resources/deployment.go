@@ -484,12 +484,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	var parameterOpenAPISchema map[string]interface{}
-	resp.Diagnostics.Append(model.ParameterOpenAPISchema.Unmarshal(&parameterOpenAPISchema)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	payload := api.DeploymentUpdate{
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
