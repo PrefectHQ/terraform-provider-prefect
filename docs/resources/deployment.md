@@ -56,6 +56,7 @@ resource "prefect_deployment" "deployment" {
     "type" : "object",
     "properties" : {
       "some-parameter" : { "type" : "string" }
+      "some-parameter2" : { "type" : "string" }
     }
   })
   path                = "./foo/bar"
