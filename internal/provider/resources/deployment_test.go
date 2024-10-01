@@ -37,12 +37,26 @@ type deploymentConfig struct {
 	ParameterOpenAPISchema string
 
 	FlowName string
+
+	StorageDocumentName string
 }
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
 	tmpl := `
 data "prefect_workspace" "evergreen" {
 	handle = "github-ci-tests"
+}
+
+resource "prefect_block" "test_gh_repository" {
+	name = "{{.StorageDocumentName}}"
+	type_slug = "github-repository"
+
+	data = jsonencode({
+		"repository_url": "https://github.com/foo/bar",
+		"reference": "main"
+	})
+
+	workspace_id = data.prefect_workspace.evergreen.id
 }
 
 resource "prefect_flow" "{{.FlowName}}" {
@@ -72,6 +86,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
+	storage_document_id = prefect_block.test_gh_repository.id
 
 	workspace_id = data.prefect_workspace.evergreen.id
 	depends_on = [prefect_flow.{{.FlowName}}]
@@ -109,6 +124,7 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           "evergreen-pool",
 		WorkQueueName:          "evergreen-queue",
 		ParameterOpenAPISchema: parameterOpenAPISchema,
+		StorageDocumentName:    testutils.NewRandomPrefixedString(),
 	}
 
 	cfgUpdate := deploymentConfig{
@@ -152,6 +168,8 @@ func TestAccResource_deployment(t *testing.T) {
 
 		// ParameterOpenAPISchema is not settable via the Update method.
 		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
+
+		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
 	var deployment api.Deployment
@@ -183,6 +201,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
+					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
 			},
 			{
@@ -208,6 +227,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
 			},
 			// Import State checks - import by ID (default)
