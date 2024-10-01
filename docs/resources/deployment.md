@@ -18,6 +18,18 @@ resource "prefect_workspace" "workspace" {
   name   = "my-workspace"
 }
 
+resource "prefect_block" "demo_github_repository" {
+  name      = "demo-github-repository"
+  type_slug = "github-repository"
+
+  data = jsonencode({
+    "repository_url" : "https://github.com/foo/bar",
+    "reference" : "main"
+  })
+
+  workspace_id = prefect_workspace.workspace.id
+}
+
 resource "prefect_flow" "flow" {
   name         = "my-flow"
   workspace_id = prefect_workspace.workspace.id
@@ -40,11 +52,12 @@ resource "prefect_deployment" "deployment" {
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
   })
-  path            = "./foo/bar"
-  paused          = false
-  version         = "v1.1.1"
-  work_pool_name  = "mitch-testing-pool"
-  work_queue_name = "default"
+  path                = "./foo/bar"
+  paused              = false
+  storage_document_id = prefect_block.test_gh_repository.id
+  version             = "v1.1.1"
+  work_pool_name      = "mitch-testing-pool"
+  work_queue_name     = "default"
 }
 ```
 
