@@ -52,6 +52,13 @@ resource "prefect_deployment" "deployment" {
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
   })
+  parameter_openapi_schema = jsonencode({
+    "type" : "object",
+    "properties" : {
+      "some-parameter" : { "type" : "string" }
+      "some-parameter2" : { "type" : "string" }
+    }
+  })
   path                = "./foo/bar"
   paused              = false
   storage_document_id = prefect_block.test_gh_repository.id
@@ -77,6 +84,7 @@ resource "prefect_deployment" "deployment" {
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
+- `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.

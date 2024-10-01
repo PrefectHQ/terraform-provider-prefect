@@ -28,6 +28,7 @@ type Deployment struct {
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path"`
 	Paused                 bool                   `json:"paused"`
@@ -47,6 +48,7 @@ type DeploymentCreate struct {
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`

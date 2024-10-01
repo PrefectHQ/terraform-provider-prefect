@@ -2,8 +2,10 @@ package resources_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -32,6 +34,7 @@ type deploymentConfig struct {
 	Version                string
 	WorkPoolName           string
 	WorkQueueName          string
+	ParameterOpenAPISchema string
 
 	FlowName string
 
@@ -82,6 +85,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	version = "{{.Version}}"
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
+	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	storage_document_id = prefect_block.test_gh_repository.id
 
 	workspace_id = data.prefect_workspace.evergreen.id
@@ -96,6 +100,10 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 func TestAccResource_deployment(t *testing.T) {
 	deploymentName := testutils.NewRandomPrefixedString()
 	flowName := testutils.NewRandomPrefixedString()
+
+	parameterOpenAPISchema := `{"type": "object", "properties": {"some-parameter": {"type": "string"}}}`
+	var parameterOpenAPISchemaMap map[string]interface{}
+	_ = json.Unmarshal([]byte(parameterOpenAPISchema), &parameterOpenAPISchemaMap)
 
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,
@@ -115,6 +123,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Version:                "v1.1.1",
 		WorkPoolName:           "evergreen-pool",
 		WorkQueueName:          "evergreen-queue",
+		ParameterOpenAPISchema: parameterOpenAPISchema,
 		StorageDocumentName:    testutils.NewRandomPrefixedString(),
 	}
 
@@ -157,6 +166,9 @@ func TestAccResource_deployment(t *testing.T) {
 		// Tags: []string{"test1", "test3"}
 		Tags: cfgCreate.Tags,
 
+		// ParameterOpenAPISchema is not settable via the Update method.
+		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
+
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
@@ -170,8 +182,12 @@ func TestAccResource_deployment(t *testing.T) {
 				// Check creation + existence of the deployment resource
 				Config: fixtureAccDeployment(cfgCreate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "name", cfgCreate.DeploymentName),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "description", cfgCreate.Description),
+					testAccCheckDeploymentExists(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName, &deployment),
+					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
+						name:                   cfgCreate.DeploymentName,
+						description:            cfgCreate.Description,
+						parameterOpenapiSchema: parameterOpenAPISchemaMap,
+					}),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
@@ -194,11 +210,10 @@ func TestAccResource_deployment(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, cfgUpdate.WorkspaceResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-						name:        cfgUpdate.DeploymentName,
-						description: cfgUpdate.Description,
+						name:                   cfgUpdate.DeploymentName,
+						description:            cfgUpdate.Description,
+						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "name", cfgUpdate.DeploymentName),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "description", cfgUpdate.Description),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
@@ -263,8 +278,9 @@ func testAccCheckDeploymentExists(deploymentResourceName string, workspaceResour
 }
 
 type expectedDeploymentValues struct {
-	name        string
-	description string
+	name                   string
+	description            string
+	parameterOpenapiSchema map[string]interface{}
 }
 
 // testAccCheckDeploymentValues is a Custom Check Function that
@@ -276,6 +292,11 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		}
 		if fetchedDeployment.Description != expectedValues.description {
 			return fmt.Errorf("Expected deployment description to be %s, got %s", expectedValues.description, fetchedDeployment.Description)
+		}
+
+		equal, diffs := helpers.ObjectsEqual(expectedValues.parameterOpenapiSchema, fetchedDeployment.ParameterOpenAPISchema)
+		if !equal {
+			return fmt.Errorf("Found unexpected differences in deployment parameter_openapi_schema: %s", strings.Join(diffs, "\n"))
 		}
 
 		return nil

@@ -37,6 +37,13 @@ resource "prefect_deployment" "deployment" {
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
   })
+  parameter_openapi_schema = jsonencode({
+    "type" : "object",
+    "properties" : {
+      "some-parameter" : { "type" : "string" }
+      "some-parameter2" : { "type" : "string" }
+    }
+  })
   path                = "./foo/bar"
   paused              = false
   storage_document_id = prefect_block.test_gh_repository.id
