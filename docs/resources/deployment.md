@@ -56,7 +56,7 @@ resource "prefect_deployment" "deployment" {
   paused              = false
   storage_document_id = prefect_block.test_gh_repository.id
   version             = "v1.1.1"
-  work_pool_name      = "mitch-testing-pool"
+  work_pool_name      = "some-testing-pool"
   work_queue_name     = "default"
 }
 ```
