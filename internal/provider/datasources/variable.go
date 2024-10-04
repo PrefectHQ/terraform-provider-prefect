@@ -3,6 +3,7 @@ package datasources
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -29,9 +30,9 @@ type VariableDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String         `tfsdk:"name"`
-	Value jsontypes.Normalized `tfsdk:"value"`
-	Tags  types.List           `tfsdk:"tags"`
+	Name  types.String  `tfsdk:"name"`
+	Value types.Dynamic `tfsdk:"value"`
+	Tags  types.List    `tfsdk:"tags"`
 }
 
 // NewVariableDataSource returns a new VariableDataSource.
@@ -94,10 +95,9 @@ var variableAttributes = map[string]schema.Attribute{
 		Description: "Name of the variable",
 		Optional:    true,
 	},
-	"value": schema.StringAttribute{
+	"value": schema.DynamicAttribute{
 		Computed:    true,
 		Description: "Value of the variable",
-		CustomType:  jsontypes.NormalizedType{},
 	},
 	"tags": schema.ListAttribute{
 		Computed:    true,
@@ -172,14 +172,43 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	model.Name = types.StringValue(variable.Name)
 
-	byteSlice, err := json.Marshal(variable.Value)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+	// Supported Python types: string, integer, number, boolean, object, array
+	// Unsupported Terraform types:
+	// - set: these are ordered with no duplicates, and we don't want to mutate data
+	// - tuple: these don't have a clear Golang equivalent, so skipping for now
+	// - map: these are used when the keys are all strings and all values are of the same type
+	//
+	switch value := variable.Value.(type) {
+	case string: // string
+		model.Value = types.DynamicValue(types.StringValue(value))
 
-		return
+	case float64: // number
+		model.Value = types.DynamicValue(types.Float64Value(value))
+
+	case bool:
+		model.Value = types.DynamicValue(types.BoolValue(value))
+
+	case map[string]interface{}: // object
+		byteSlice, err := json.Marshal(value)
+		if err != nil {
+			resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+
+			return
+		}
+
+		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
+
+	case []string: // array
+		list, diags := types.ListValueFrom(ctx, types.StringType, value)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		model.Value = types.DynamicValue(list)
+
+	default:
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
 	}
-
-	model.Value = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)

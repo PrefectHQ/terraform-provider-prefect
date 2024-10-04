@@ -19,9 +19,9 @@ type VariablesClient interface {
 // Variable is a representation of a variable.
 type Variable struct {
 	BaseModel
-	Name  string                 `json:"name"`
-	Value map[string]interface{} `json:"value"`
-	Tags  []string               `json:"tags"`
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
+	Tags  []string    `json:"tags"`
 }
 
 // VariableCreate is a subset of Variable used when creating variables.
