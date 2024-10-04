@@ -2,7 +2,9 @@ package datasources
 
 import (
 	"context"
+	"encoding/json"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,9 +29,9 @@ type VariableDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Name  types.String         `tfsdk:"name"`
+	Value jsontypes.Normalized `tfsdk:"value"`
+	Tags  types.List           `tfsdk:"tags"`
 }
 
 // NewVariableDataSource returns a new VariableDataSource.
@@ -95,6 +97,7 @@ var variableAttributes = map[string]schema.Attribute{
 	"value": schema.StringAttribute{
 		Computed:    true,
 		Description: "Value of the variable",
+		CustomType:  jsontypes.NormalizedType{},
 	},
 	"tags": schema.ListAttribute{
 		Computed:    true,
@@ -168,7 +171,15 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
+
+	byteSlice, err := json.Marshal(variable.Value)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+
+		return
+	}
+
+	model.Value = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)
