@@ -24,7 +24,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 			{
 				Config: fixtureAccWorkerMetadtata(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "11"),
+					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "13"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.kubernetes"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.ecs"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.azure_container_instances"),
