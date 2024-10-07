@@ -63,6 +63,8 @@ Read-Only:
 - `azure_container_instances_push` (String) Default base job configuration for Azure Container Instances Push workers
 - `cloud_run` (String) Default base job configuration for Cloud Run workers
 - `cloud_run_push` (String) Default base job configuration for Cloud Run Push workers
+- `cloud_run_v2` (String) Default base job configuration for Cloud Run V2 workers
+- `cloud_run_v2_push` (String) Default base job configuration for Cloud Run V2 Push workers
 - `docker` (String) Default base job configuration for Docker workers
 - `ecs` (String) Default base job configuration for ECS workers
 - `ecs_push` (String) Default base job configuration for ECS Push workers

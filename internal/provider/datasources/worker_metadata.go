@@ -87,6 +87,11 @@ Use this data source to get the default base job configurations for those common
 						Description: "Default base job configuration for Cloud Run workers",
 						CustomType:  jsontypes.NormalizedType{},
 					},
+					"cloud_run_v2": schema.StringAttribute{
+						Computed:    true,
+						Description: "Default base job configuration for Cloud Run V2 workers",
+						CustomType:  jsontypes.NormalizedType{},
+					},
 					"vertex_ai": schema.StringAttribute{
 						Computed:    true,
 						Description: "Default base job configuration for Vertex AI workers",
@@ -110,6 +115,11 @@ Use this data source to get the default base job configurations for those common
 					"cloud_run_push": schema.StringAttribute{
 						Computed:    true,
 						Description: "Default base job configuration for Cloud Run Push workers",
+						CustomType:  jsontypes.NormalizedType{},
+					},
+					"cloud_run_v2_push": schema.StringAttribute{
+						Computed:    true,
+						Description: "Default base job configuration for Cloud Run V2 Push workers",
 						CustomType:  jsontypes.NormalizedType{},
 					},
 					"ecs_push": schema.StringAttribute{
@@ -163,11 +173,13 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"azure_container_instances":      jsontypes.NormalizedType{},
 		"docker":                         jsontypes.NormalizedType{},
 		"cloud_run":                      jsontypes.NormalizedType{},
+		"cloud_run_v2":                   jsontypes.NormalizedType{},
 		"vertex_ai":                      jsontypes.NormalizedType{},
 		"prefect_agent":                  jsontypes.NormalizedType{},
 		"process":                        jsontypes.NormalizedType{},
 		"azure_container_instances_push": jsontypes.NormalizedType{},
 		"cloud_run_push":                 jsontypes.NormalizedType{},
+		"cloud_run_v2_push":              jsontypes.NormalizedType{},
 		"ecs_push":                       jsontypes.NormalizedType{},
 	}
 	attributeValues := map[string]attr.Value{
@@ -176,11 +188,13 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"azure_container_instances":      jsontypes.NewNormalizedValue(string(remap["azure-container-instance"])),
 		"docker":                         jsontypes.NewNormalizedValue(string(remap["docker"])),
 		"cloud_run":                      jsontypes.NewNormalizedValue(string(remap["cloud-run"])),
+		"cloud_run_v2":                   jsontypes.NewNormalizedValue(string(remap["cloud-run-v2"])),
 		"vertex_ai":                      jsontypes.NewNormalizedValue(string(remap["vertex-ai"])),
 		"prefect_agent":                  jsontypes.NewNormalizedValue(string(remap["prefect-agent"])),
 		"process":                        jsontypes.NewNormalizedValue(string(remap["process"])),
 		"azure_container_instances_push": jsontypes.NewNormalizedValue(string(remap["azure-container-instance:push"])),
 		"cloud_run_push":                 jsontypes.NewNormalizedValue(string(remap["cloud-run:push"])),
+		"cloud_run_v2_push":              jsontypes.NewNormalizedValue(string(remap["cloud-run-v2:push"])),
 		"ecs_push":                       jsontypes.NewNormalizedValue(string(remap["ecs:push"])),
 	}
 
