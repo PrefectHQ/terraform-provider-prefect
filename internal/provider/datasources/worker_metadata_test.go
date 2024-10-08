@@ -1,6 +1,8 @@
 package datasources_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -8,9 +10,18 @@ import (
 )
 
 func fixtureAccWorkerMetadtata() string {
-	return `
-data "prefect_worker_metadata" "default" {}
-`
+	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+
+	return fmt.Sprintf(`
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
+
+data "prefect_worker_metadata" "default" {
+  account_id = "%s"
+  workspace_id = data.prefect_workspace.evergreen.id
+}
+`, aID)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

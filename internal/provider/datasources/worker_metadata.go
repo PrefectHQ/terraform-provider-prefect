@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
@@ -18,6 +19,9 @@ type WorkerMetadataDataSource struct {
 }
 
 type WorkerMetadataDataSourceModel struct {
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
+
 	BaseJobConfigs types.Object `tfsdk:"base_job_configs"`
 }
 
@@ -58,6 +62,16 @@ Get metadata information about the common Worker types, such as Kubernetes, ECS,
 Use this data source to get the default base job configurations for those common Worker types.
 `,
 		Attributes: map[string]schema.Attribute{
+			"account_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Description: "Account ID (UUID), defaults to the account set in the provider",
+				Optional:    true,
+			},
+			"workspace_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+				Optional:    true,
+			},
 			"base_job_configs": schema.SingleNestedAttribute{
 				Computed:    true,
 				Description: "A map of default base job configurations (JSON) for each of the primary worker types",
@@ -143,7 +157,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		return
 	}
 
-	client, err := d.client.Collections()
+	client, err := d.client.Collections(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Collections", err))
 
