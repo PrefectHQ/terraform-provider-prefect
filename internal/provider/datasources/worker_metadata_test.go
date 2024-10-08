@@ -35,7 +35,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 			{
 				Config: fixtureAccWorkerMetadtata(),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "13"),
+					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "14"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.kubernetes"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.ecs"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.azure_container_instances"),
@@ -48,6 +48,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.azure_container_instances_push"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run_push"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run_v2_push"),
+					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.modal_push"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.ecs_push"),
 				),
 			},

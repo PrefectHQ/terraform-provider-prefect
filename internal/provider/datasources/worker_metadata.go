@@ -141,6 +141,11 @@ Use this data source to get the default base job configurations for those common
 						Description: "Default base job configuration for ECS Push workers",
 						CustomType:  jsontypes.NormalizedType{},
 					},
+					"modal_push": schema.StringAttribute{
+						Computed:    true,
+						Description: "Default base job configuration for Modal Push workers",
+						CustomType:  jsontypes.NormalizedType{},
+					},
 				},
 			},
 		},
@@ -181,6 +186,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 	}
 
 	// https://developer.hashicorp.com/terraform/plugin/framework/handling-data/types/object#setting-values
+	// https://docs.prefect.io/latest/deploy/infrastructure-concepts/work-pools#work-pool-types
 	attributeTypes := map[string]attr.Type{
 		"kubernetes":                     jsontypes.NormalizedType{},
 		"ecs":                            jsontypes.NormalizedType{},
@@ -195,6 +201,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"cloud_run_push":                 jsontypes.NormalizedType{},
 		"cloud_run_v2_push":              jsontypes.NormalizedType{},
 		"ecs_push":                       jsontypes.NormalizedType{},
+		"modal_push":                     jsontypes.NormalizedType{},
 	}
 	attributeValues := map[string]attr.Value{
 		"kubernetes":                     jsontypes.NewNormalizedValue(string(remap["kubernetes"])),
@@ -210,6 +217,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"cloud_run_push":                 jsontypes.NewNormalizedValue(string(remap["cloud-run:push"])),
 		"cloud_run_v2_push":              jsontypes.NewNormalizedValue(string(remap["cloud-run-v2:push"])),
 		"ecs_push":                       jsontypes.NewNormalizedValue(string(remap["ecs:push"])),
+		"modal_push":                     jsontypes.NewNormalizedValue(string(remap["modal:push"])),
 	}
 
 	obj, diag := types.ObjectValue(attributeTypes, attributeValues)
