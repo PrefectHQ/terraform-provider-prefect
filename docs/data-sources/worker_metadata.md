@@ -74,6 +74,7 @@ Read-Only:
 - `ecs` (String) Default base job configuration for ECS workers
 - `ecs_push` (String) Default base job configuration for ECS Push workers
 - `kubernetes` (String) Default base job configuration for Kubernetes workers
+- `modal_push` (String) Default base job configuration for Modal Push workers
 - `prefect_agent` (String) Default base job configuration for Prefect Agent workers
 - `process` (String) Default base job configuration for Process workers
 - `vertex_ai` (String) Default base job configuration for Vertex AI workers
