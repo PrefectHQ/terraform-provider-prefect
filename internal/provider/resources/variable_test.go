@@ -3,6 +3,7 @@ package resources_test
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,7 +18,7 @@ func fixtureAccVariableResource(workspace, workspaceName, name, value string) st
 %s
 resource "prefect_variable" "%s" {
 	name = "%s"
-	value = "%s"
+	value = jsonencode({"foo" = "%s"})
 	workspace_id = prefect_workspace.%s.id
 	depends_on = [prefect_workspace.%s]
 }
@@ -29,7 +30,7 @@ func fixtureAccVariableResourceWithTags(workspace, workspaceName, name, value st
 %s
 resource "prefect_variable" "%s" {
 	name = "%s"
-	value = "%s"
+	value = jsonencode({"foo" = "%s"})
 	tags = ["foo", "bar"]
 	workspace_id = prefect_workspace.%s.id
 	depends_on = [prefect_workspace.%s]
@@ -48,6 +49,9 @@ func TestAccResource_variable(t *testing.T) {
 	randomValue := testutils.NewRandomPrefixedString()
 	randomValue2 := testutils.NewRandomPrefixedString()
 
+	randomValueMap := map[string]interface{}{"foo": randomValue}
+	randomValue2Map := map[string]interface{}{"foo": randomValue2}
+
 	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 	workspaceResourceName := "prefect_workspace." + workspaceName
 
@@ -64,9 +68,8 @@ func TestAccResource_variable(t *testing.T) {
 				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, randomValue),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValueMap}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "value", randomValue),
 				),
 			},
 			{
@@ -74,9 +77,8 @@ func TestAccResource_variable(t *testing.T) {
 				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName2, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2Map}),
 					resource.TestCheckResourceAttr(resourceName2, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName2, "value", randomValue2),
 				),
 			},
 			{
@@ -84,9 +86,8 @@ func TestAccResource_variable(t *testing.T) {
 				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName2, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName2, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2Map}),
 					resource.TestCheckResourceAttr(resourceName2, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName2, "value", randomValue2),
 					resource.TestCheckResourceAttr(resourceName2, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName2, "tags.0", "foo"),
 					resource.TestCheckResourceAttr(resourceName2, "tags.1", "bar"),
@@ -134,8 +135,9 @@ func testAccCheckVariableValues(fetchedVariable *api.Variable, valuesToCheck *ap
 		if fetchedVariable.Name != valuesToCheck.Name {
 			return fmt.Errorf("Expected variable name to be %s, got %s", valuesToCheck.Name, fetchedVariable.Name)
 		}
-		if fetchedVariable.Value != valuesToCheck.Value {
-			return fmt.Errorf("Expected variable value to be %s, got %s", valuesToCheck.Name, fetchedVariable.Name)
+
+		if !reflect.DeepEqual(fetchedVariable.Value, valuesToCheck.Value) {
+			return fmt.Errorf("Expected variable value to be %s, got %s", valuesToCheck.Value, fetchedVariable.Value)
 		}
 
 		return nil

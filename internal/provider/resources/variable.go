@@ -6,6 +6,7 @@ import (
 
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -41,9 +42,9 @@ type VariableResourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Name  types.String         `tfsdk:"name"`
+	Value jsontypes.Normalized `tfsdk:"value"`
+	Tags  types.List           `tfsdk:"tags"`
 }
 
 // NewVariableResource returns a new VariableResource.
@@ -123,6 +124,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"value": schema.StringAttribute{
 				Description: "Value of the variable",
 				Required:    true,
+				CustomType:  jsontypes.NormalizedType{},
 			},
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the variable",
@@ -143,7 +145,6 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	tfModel.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	tfModel.Name = types.StringValue(variable.Name)
-	tfModel.Value = types.StringValue(variable.Value)
 
 	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	if diags.HasError() {
@@ -160,6 +161,12 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var value map[string]interface{}
+	resp.Diagnostics.Append(plan.Value.Unmarshal(&value)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -181,7 +188,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		func() (*api.Variable, error) {
 			return client.Create(ctx, api.VariableCreate{
 				Name:  plan.Name.ValueString(),
-				Value: plan.Value.ValueString(),
+				Value: value,
 				Tags:  tags,
 			})
 		},
@@ -281,6 +288,12 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	var value map[string]interface{}
+	resp.Diagnostics.Append(plan.Value.Unmarshal(&value)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	var tags []string
 	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
@@ -296,7 +309,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	err = client.Update(ctx, variableID, api.VariableUpdate{
 		Name:  plan.Name.ValueString(),
-		Value: plan.Value.ValueString(),
+		Value: value,
 		Tags:  tags,
 	})
 	if err != nil {
