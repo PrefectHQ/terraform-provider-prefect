@@ -60,7 +60,7 @@ resource "prefect_work_pool" "example" {
 - `description` (String) Description of the work pool
 - `paused` (Boolean) Whether this work pool is paused
 - `type` (String) Type of the work pool, eg. kubernetes, ecs, process, etc.
-- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only
 
