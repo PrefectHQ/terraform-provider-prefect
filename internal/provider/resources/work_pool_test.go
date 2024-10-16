@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -14,6 +15,13 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
+
+const workPoolWithoutWorkspaceID = `
+resource "prefect_work_pool" "invalid_work_pool" {
+	name = "invalid-work-pool"
+	type = "kubernetes"
+}
+`
 
 func fixtureAccWorkPoolCreate(workspace, workspaceName, name, poolType, baseJobTemplate string, paused bool) string {
 	return fmt.Sprintf(`
@@ -59,6 +67,11 @@ func TestAccResource_work_pool(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
+			{
+				// Check that workspace_id missing causes a failure
+				Config:      workPoolWithoutWorkspaceID,
+				ExpectError: regexp.MustCompile(".*require an account_id and workspace_id to be set.*"),
+			},
 			{
 				// Check creation + existence of the work pool resource
 				Config: fixtureAccWorkPoolCreate(workspace, workspaceName, randomName, poolType, baseJobTemplate, true),
