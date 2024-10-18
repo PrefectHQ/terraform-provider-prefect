@@ -13,24 +13,24 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccVariableResource(workspace, workspaceName, name, value string) string {
+func fixtureAccVariableResource(workspace, workspaceName, name string, value interface{}) string {
 	return fmt.Sprintf(`
 %s
 resource "prefect_variable" "%s" {
 	name = "%s"
-	value = jsonencode({"foo" = "%s"})
+	value = %v
 	workspace_id = prefect_workspace.%s.id
 	depends_on = [prefect_workspace.%s]
 }
 	`, workspace, name, name, value, workspaceName, workspaceName)
 }
 
-func fixtureAccVariableResourceWithTags(workspace, workspaceName, name, value string) string {
+func fixtureAccVariableResourceWithTags(workspace, workspaceName, name string, value interface{}) string {
 	return fmt.Sprintf(`
 %s
 resource "prefect_variable" "%s" {
 	name = "%s"
-	value = jsonencode({"foo" = "%s"})
+	value = %v
 	tags = ["foo", "bar"]
 	workspace_id = prefect_workspace.%s.id
 	depends_on = [prefect_workspace.%s]
@@ -41,16 +41,11 @@ resource "prefect_variable" "%s" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_variable(t *testing.T) {
 	randomName := testutils.NewRandomPrefixedString()
-	randomName2 := testutils.NewRandomPrefixedString()
-
 	resourceName := "prefect_variable." + randomName
-	resourceName2 := "prefect_variable." + randomName2
 
 	randomValue := testutils.NewRandomPrefixedString()
-	randomValue2 := testutils.NewRandomPrefixedString()
-
-	randomValueMap := map[string]interface{}{"foo": randomValue}
-	randomValue2Map := map[string]interface{}{"foo": randomValue2}
+	randomValueWithQuotes := fmt.Sprintf("%q", randomValue)
+	randomValue2 := false
 
 	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 	workspaceResourceName := "prefect_workspace." + workspaceName
@@ -65,32 +60,32 @@ func TestAccResource_variable(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, randomValue),
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, randomValueWithQuotes),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValueMap}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 				),
 			},
 			{
 				// Check updating name + value of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, randomValue2),
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName2, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2Map}),
-					resource.TestCheckResourceAttr(resourceName2, "name", randomName2),
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue2}),
+					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 				),
 			},
 			{
 				// Check adding tags
-				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName2, randomValue2),
+				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName2, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2Map}),
-					resource.TestCheckResourceAttr(resourceName2, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName2, "tags.#", "2"),
-					resource.TestCheckResourceAttr(resourceName2, "tags.0", "foo"),
-					resource.TestCheckResourceAttr(resourceName2, "tags.1", "bar"),
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue2}),
+					resource.TestCheckResourceAttr(resourceName, "name", randomName),
+					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "tags.0", "foo"),
+					resource.TestCheckResourceAttr(resourceName, "tags.1", "bar"),
 				),
 			},
 		},
