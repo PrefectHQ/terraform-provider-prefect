@@ -172,23 +172,17 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	model.Name = types.StringValue(variable.Name)
 
-	// Supported Python types: string, integer, number, boolean, object, array
-	// Unsupported Terraform types:
-	// - set: these are ordered with no duplicates, and we don't want to mutate data
-	// - tuple: these don't have a clear Golang equivalent, so skipping for now
-	// - map: these are used when the keys are all strings and all values are of the same type
-	//
 	switch value := variable.Value.(type) {
-	case string: // string
+	case string:
 		model.Value = types.DynamicValue(types.StringValue(value))
 
-	case float64: // number
+	case float64:
 		model.Value = types.DynamicValue(types.Float64Value(value))
 
 	case bool:
 		model.Value = types.DynamicValue(types.BoolValue(value))
 
-	case map[string]interface{}: // object
+	case map[string]interface{}:
 		byteSlice, err := json.Marshal(value)
 		if err != nil {
 			resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))

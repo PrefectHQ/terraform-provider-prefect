@@ -156,14 +156,10 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	return nil
 }
 
-// Supported Python types: string, integer, number, boolean, object, array
-// Unsupported Terraform types:
-// - set: these are ordered with no duplicates, and we don't want to mutate data.
-// - tuple: these don't have a clear Golang equivalent, so skipping for now.
-// - map: these are used when the keys are all strings and all values are of the same type.
+// getUnderlyingValue converts the 'value' attribute from a DynamicValue to
+// a native Go type that can be sent to the Prefect API.
 func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
 	var value interface{}
 
 	switch underlyingValue := plan.Value.UnderlyingValue().(type) {

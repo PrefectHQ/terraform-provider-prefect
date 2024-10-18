@@ -49,7 +49,6 @@ func TestAccResource_variable(t *testing.T) {
 	valueStringForResource := fmt.Sprintf("%q", valueString)
 	valueNumber := float64(123)
 	valueBool := true
-
 	valueObject := `{"foo" = "bar"}`
 	valueObjectForResource := fmt.Sprintf("%q", valueObject)
 
