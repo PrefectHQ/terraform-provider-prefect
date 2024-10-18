@@ -2,11 +2,11 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -42,9 +42,9 @@ type VariableResourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String         `tfsdk:"name"`
-	Value jsontypes.Normalized `tfsdk:"value"`
-	Tags  types.List           `tfsdk:"tags"`
+	Name  types.String  `tfsdk:"name"`
+	Value types.Dynamic `tfsdk:"value"`
+	Tags  types.List    `tfsdk:"tags"`
 }
 
 // NewVariableResource returns a new VariableResource.
@@ -121,10 +121,9 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Name of the variable",
 				Required:    true,
 			},
-			"value": schema.StringAttribute{
+			"value": schema.DynamicAttribute{
 				Description: "Value of the variable",
 				Required:    true,
-				CustomType:  jsontypes.NormalizedType{},
 			},
 			"tags": schema.ListAttribute{
 				Description: "Tags associated with the variable",
@@ -155,6 +154,34 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	return nil
 }
 
+// Supported Python types: string, integer, number, boolean, object, array
+// Unsupported Terraform types:
+// - set: these are ordered with no duplicates, and we don't want to mutate data.
+// - tuple: these don't have a clear Golang equivalent, so skipping for now.
+// - map: these are used when the keys are all strings and all values are of the same type.
+func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	var value interface{}
+
+	switch underlyingValue := plan.Value.UnderlyingValue().(type) {
+	case types.Bool:
+		value = underlyingValue.ValueBool()
+	// case types.Number:
+	// case types.List:
+	// case types.Object:
+	case types.String:
+		value = underlyingValue.ValueString()
+	default:
+		diags.Append(diag.NewErrorDiagnostic(
+			"unexpected value type",
+			fmt.Sprintf("type: %T", underlyingValue),
+		))
+	}
+
+	return value, diags
+}
+
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan VariableResourceModel
@@ -165,9 +192,8 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	var value map[string]interface{}
-	resp.Diagnostics.Append(plan.Value.Unmarshal(&value)...)
-	if resp.Diagnostics.HasError() {
+	value, diags := getUnderlyingValue(plan)
+	if diags.HasError() {
 		return
 	}
 
@@ -288,9 +314,8 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	var value map[string]interface{}
-	resp.Diagnostics.Append(plan.Value.Unmarshal(&value)...)
-	if resp.Diagnostics.HasError() {
+	value, diags := getUnderlyingValue(plan)
+	if diags.HasError() {
 		return
 	}
 
