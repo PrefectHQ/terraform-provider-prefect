@@ -2,7 +2,11 @@ package datasources
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -27,9 +31,9 @@ type VariableDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Name  types.String  `tfsdk:"name"`
+	Value types.Dynamic `tfsdk:"value"`
+	Tags  types.List    `tfsdk:"tags"`
 }
 
 // NewVariableDataSource returns a new VariableDataSource.
@@ -92,7 +96,7 @@ var variableAttributes = map[string]schema.Attribute{
 		Description: "Name of the variable",
 		Optional:    true,
 	},
-	"value": schema.StringAttribute{
+	"value": schema.DynamicAttribute{
 		Computed:    true,
 		Description: "Value of the variable",
 	},
@@ -168,7 +172,54 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
+
+	switch value := variable.Value.(type) {
+	case string:
+		model.Value = types.DynamicValue(types.StringValue(value))
+
+	case float64:
+		model.Value = types.DynamicValue(types.Float64Value(value))
+
+	case bool:
+		model.Value = types.DynamicValue(types.BoolValue(value))
+
+	case map[string]interface{}:
+		byteSlice, err := json.Marshal(value)
+		if err != nil {
+			resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+
+			return
+		}
+
+		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
+
+	case []interface{}:
+		tupleTypes := make([]attr.Type, len(value))
+		tupleValues := make([]attr.Value, len(value))
+
+		for i, v := range value {
+			tupleTypes[i] = types.StringType
+
+			val, ok := v.(string)
+			if !ok {
+				resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+			}
+
+			tupleValues[i] = types.StringValue(val)
+		}
+
+		tupleValue, diags := types.TupleValue(tupleTypes, tupleValues)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+
+			return
+		}
+
+		model.Value = types.DynamicValue(tupleValue)
+
+	default:
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
+	}
 
 	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)

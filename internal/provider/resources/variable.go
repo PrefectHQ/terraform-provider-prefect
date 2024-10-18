@@ -2,6 +2,9 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/avast/retry-go/v4"
@@ -41,9 +44,9 @@ type VariableResourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Name  types.String  `tfsdk:"name"`
+	Value types.Dynamic `tfsdk:"value"`
+	Tags  types.List    `tfsdk:"tags"`
 }
 
 // NewVariableResource returns a new VariableResource.
@@ -120,7 +123,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Description: "Name of the variable",
 				Required:    true,
 			},
-			"value": schema.StringAttribute{
+			"value": schema.DynamicAttribute{
 				Description: "Value of the variable",
 				Required:    true,
 			},
@@ -143,7 +146,6 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	tfModel.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	tfModel.Name = types.StringValue(variable.Name)
-	tfModel.Value = types.StringValue(variable.Value)
 
 	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	if diags.HasError() {
@@ -154,6 +156,58 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	return nil
 }
 
+// getUnderlyingValue converts the 'value' attribute from a DynamicValue to
+// a native Go type that can be sent to the Prefect API.
+func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var value interface{}
+
+	switch underlyingValue := plan.Value.UnderlyingValue().(type) {
+	case types.String:
+		value = underlyingValue.ValueString()
+
+	case types.Number:
+		var err error
+		value, err = strconv.ParseFloat(underlyingValue.String(), 64)
+		if err != nil {
+			diags.Append(diag.NewErrorDiagnostic(
+				"unable to convert number to float64",
+				fmt.Sprintf("number: %v, error: %v", value, err),
+			))
+		}
+
+	case types.Bool:
+		value = underlyingValue.ValueBool()
+
+	case types.Tuple:
+		result := make([]string, len(underlyingValue.Elements()))
+		for i, e := range underlyingValue.Elements() {
+			result[i] = e.String()
+		}
+
+		value = result
+
+	case types.Object:
+		result := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(underlyingValue.String()), &result); err != nil {
+			diags.Append(diag.NewErrorDiagnostic(
+				"unable to convert object to map[string]interface",
+				fmt.Sprintf("object: %v, error: %v", value, err),
+			))
+		}
+
+		value = result
+
+	default:
+		diags.Append(diag.NewErrorDiagnostic(
+			"unexpected value type",
+			fmt.Sprintf("type: %T", underlyingValue),
+		))
+	}
+
+	return value, diags
+}
+
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan VariableResourceModel
@@ -161,6 +215,11 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	value, diags := getUnderlyingValue(plan)
+	if diags.HasError() {
 		return
 	}
 
@@ -181,7 +240,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		func() (*api.Variable, error) {
 			return client.Create(ctx, api.VariableCreate{
 				Name:  plan.Name.ValueString(),
-				Value: plan.Value.ValueString(),
+				Value: value,
 				Tags:  tags,
 			})
 		},
@@ -281,6 +340,11 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	value, diags := getUnderlyingValue(plan)
+	if diags.HasError() {
+		return
+	}
+
 	var tags []string
 	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
 	if resp.Diagnostics.HasError() {
@@ -296,7 +360,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 	err = client.Update(ctx, variableID, api.VariableUpdate{
 		Name:  plan.Name.ValueString(),
-		Value: plan.Value.ValueString(),
+		Value: value,
 		Tags:  tags,
 	})
 	if err != nil {
