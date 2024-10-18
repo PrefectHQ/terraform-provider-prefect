@@ -179,6 +179,14 @@ func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnosti
 	case types.Bool:
 		value = underlyingValue.ValueBool()
 
+	case types.Tuple:
+		result := make([]string, len(underlyingValue.Elements()))
+		for i, e := range underlyingValue.Elements() {
+			result[i] = e.String()
+		}
+
+		value = result
+
 	case types.Object:
 		result := map[string]interface{}{}
 		if err := json.Unmarshal([]byte(underlyingValue.String()), &result); err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -191,6 +192,30 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 		}
 
 		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
+
+	case []interface{}:
+		tupleTypes := make([]attr.Type, len(value))
+		tupleValues := make([]attr.Value, len(value))
+
+		for i, v := range value {
+			tupleTypes[i] = types.StringType
+
+			val, ok := v.(string)
+			if !ok {
+				resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+			}
+
+			tupleValues[i] = types.StringValue(val)
+		}
+
+		tupleValue, diags := types.TupleValue(tupleTypes, tupleValues)
+		if diags.HasError() {
+			resp.Diagnostics.Append(diags...)
+
+			return
+		}
+
+		model.Value = types.DynamicValue(tupleValue)
 
 	default:
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))

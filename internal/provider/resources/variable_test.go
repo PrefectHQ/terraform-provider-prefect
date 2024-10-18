@@ -49,8 +49,10 @@ func TestAccResource_variable(t *testing.T) {
 	valueStringForResource := fmt.Sprintf("%q", valueString)
 	valueNumber := float64(123)
 	valueBool := true
+	valueTuple := `["foo", "bar"]`
+	valueTupleExpected := []interface{}{`"foo"`, `"bar"`}
 	valueObject := `{"foo" = "bar"}`
-	valueObjectForResource := fmt.Sprintf("%q", valueObject)
+	valueObjectExpected := map[string]interface{}{"foo": "bar"}
 
 	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 	workspaceResourceName := "prefect_workspace." + workspaceName
@@ -98,10 +100,18 @@ func TestAccResource_variable(t *testing.T) {
 			},
 			{
 				// Check updating value of the variable resource to a object
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueObjectForResource),
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueObject),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueObject}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueObjectExpected}),
+				),
+			},
+			{
+				// Check updating value of the variable resource to a tuple
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueTuple),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueTupleExpected}),
 				),
 			},
 			{
