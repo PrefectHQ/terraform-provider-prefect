@@ -2,7 +2,9 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/avast/retry-go/v4"
@@ -165,13 +167,33 @@ func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnosti
 	var value interface{}
 
 	switch underlyingValue := plan.Value.UnderlyingValue().(type) {
-	case types.Bool:
-		value = underlyingValue.ValueBool()
-	// case types.Number:
-	// case types.List:
-	// case types.Object:
 	case types.String:
 		value = underlyingValue.ValueString()
+
+	case types.Number:
+		var err error
+		value, err = strconv.ParseFloat(underlyingValue.String(), 64)
+		if err != nil {
+			diags.Append(diag.NewErrorDiagnostic(
+				"unable to convert number to float64",
+				fmt.Sprintf("number: %v, error: %v", value, err),
+			))
+		}
+
+	case types.Bool:
+		value = underlyingValue.ValueBool()
+
+	case types.Object:
+		result := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(underlyingValue.String()), &result); err != nil {
+			diags.Append(diag.NewErrorDiagnostic(
+				"unable to convert object to map[string]interface",
+				fmt.Sprintf("object: %v, error: %v", value, err),
+			))
+		}
+
+		value = result
+
 	default:
 		diags.Append(diag.NewErrorDiagnostic(
 			"unexpected value type",

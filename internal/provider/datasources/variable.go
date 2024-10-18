@@ -198,14 +198,6 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
 
-	case []string: // array
-		list, diags := types.ListValueFrom(ctx, types.StringType, value)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-		model.Value = types.DynamicValue(list)
-
 	default:
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
 	}

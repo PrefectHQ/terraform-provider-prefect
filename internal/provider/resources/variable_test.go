@@ -45,9 +45,13 @@ func TestAccResource_variable(t *testing.T) {
 
 	resourceName := "prefect_variable.test"
 
-	randomValue := testutils.NewRandomPrefixedString()
-	randomValueWithQuotes := fmt.Sprintf("%q", randomValue)
-	randomValue2 := false
+	valueString := "hello-world"
+	valueStringForResource := fmt.Sprintf("%q", valueString)
+	valueNumber := float64(123)
+	valueBool := true
+
+	valueObject := `{"foo" = "bar"}`
+	valueObjectForResource := fmt.Sprintf("%q", valueObject)
 
 	workspace, workspaceName := testutils.NewEphemeralWorkspace()
 	workspaceResourceName := "prefect_workspace." + workspaceName
@@ -62,28 +66,51 @@ func TestAccResource_variable(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, randomValueWithQuotes),
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, valueStringForResource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: randomValue}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: valueString}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 				),
 			},
 			{
-				// Check updating name + value of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, randomValue2),
+				// Check updating name of the variable resource
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueStringForResource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueString}),
+				),
+			},
+			{
+				// Check updating value of the variable resource to a number
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueNumber),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueNumber}),
+				),
+			},
+			{
+				// Check updating value of the variable resource to a boolean
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueBool),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
+				),
+			},
+			{
+				// Check updating value of the variable resource to a object
+				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueObjectForResource),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueObject}),
 				),
 			},
 			{
 				// Check adding tags
-				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName2, randomValue2),
+				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName2, valueBool),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: randomValue2}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "tags.0", "foo"),
