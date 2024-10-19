@@ -25,7 +25,7 @@ resource "prefect_variable" "example" {
 ### Required
 
 - `name` (String) Name of the variable
-- `value` (String) Value of the variable
+- `value` (Dynamic) Value of the variable
 
 ### Optional
 
