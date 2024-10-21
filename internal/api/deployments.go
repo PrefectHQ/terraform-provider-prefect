@@ -28,9 +28,11 @@ type Deployment struct {
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path"`
 	Paused                 bool                   `json:"paused"`
+	StorageDocumentID      uuid.UUID              `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
@@ -46,9 +48,11 @@ type DeploymentCreate struct {
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
@@ -65,6 +69,7 @@ type DeploymentUpdate struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`

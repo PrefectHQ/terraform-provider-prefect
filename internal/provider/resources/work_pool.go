@@ -115,7 +115,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.",
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{
