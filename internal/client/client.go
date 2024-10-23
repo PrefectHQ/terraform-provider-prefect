@@ -16,6 +16,16 @@ import (
 var _ = api.PrefectClient(&Client{})
 
 // New creates and returns new client instance.
+// Uses the retryablehttp package for built-in retries
+// with exponential backoff.
+//
+// Some notable defaults include:
+// - max retries: 4
+// - retry wait minimum seconds: 1
+// - retry wait maximum seconds: 30
+//
+// All defaults are defined in
+// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
 func New(opts ...Option) (*Client, error) {
 	client := &Client{
 		hc: retryablehttp.NewClient(),
