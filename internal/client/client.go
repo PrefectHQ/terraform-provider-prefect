@@ -18,7 +18,7 @@ var _ = api.PrefectClient(&Client{})
 
 const (
 	//nolint:revive // matches name from retryablehttp package
-	clientRetryWaitMin = 2 * time.Second
+	clientRetryWaitMin = 3 * time.Second
 	clientRetryMax     = 10
 )
 
