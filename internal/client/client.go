@@ -36,8 +36,13 @@ func New(opts ...Option) (*Client, error) {
 	// by providing a custom function for determining whether or not to retry.
 	retryableClient.CheckRetry = checkRetryPolicy
 
+	// Finally, convert the retryablehttp client to a standard http client.
+	// This allows us to retain the `http.Client` interface, and avoid specifying
+	// the `retryablehttp.Client` interface in our client methods.
+	httpClient := retryableClient.StandardClient()
+
 	client := &Client{
-		hc: retryableClient,
+		hc: httpClient,
 	}
 
 	var errs []error

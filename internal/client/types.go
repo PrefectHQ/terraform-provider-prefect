@@ -1,13 +1,13 @@
 package client
 
 import (
-	"github.com/google/uuid"
+	"net/http"
 
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/google/uuid"
 )
 
 type Client struct {
-	hc                 *retryablehttp.Client
+	hc                 *http.Client
 	endpoint           string
 	apiKey             string
 	defaultAccountID   uuid.UUID

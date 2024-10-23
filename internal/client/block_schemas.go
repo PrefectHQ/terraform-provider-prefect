@@ -9,14 +9,13 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 // BlockSchemaClient is a client for working with block schemas.
 type BlockSchemaClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	routePrefix string
 	apiKey      string
 }
@@ -53,7 +52,7 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

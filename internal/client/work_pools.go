@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
@@ -18,7 +17,7 @@ var _ = api.WorkPoolsClient(&WorkPoolsClient{})
 
 // WorkPoolsClient is a client for working with work pools.
 type WorkPoolsClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
@@ -53,7 +52,7 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -87,7 +86,7 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 		return nil, fmt.Errorf("failed to encode filter: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -116,7 +115,7 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 
 // Get returns details for a work pool by name.
 func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+name, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+name, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -150,7 +149,7 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+name, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+name, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -174,7 +173,7 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 
 // Delete removes a work pool by name.
 func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+name, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+name, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

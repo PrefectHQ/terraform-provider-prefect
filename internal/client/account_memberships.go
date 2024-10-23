@@ -9,14 +9,13 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
 var _ = api.AccountMembershipsClient(&AccountMembershipsClient{})
 
 type AccountMembershipsClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
@@ -46,7 +45,7 @@ func (c *AccountMembershipsClient) List(ctx context.Context, emails []string) ([
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

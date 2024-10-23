@@ -10,15 +10,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
 var _ = api.AccountsClient(&AccountsClient{})
 
 // AccountsClient is a client for working with accounts.
 type AccountsClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
@@ -44,7 +42,7 @@ func (c *Client) Accounts(accountID uuid.UUID) (api.AccountsClient, error) {
 
 // Get returns details for an account by ID.
 func (c *AccountsClient) Get(ctx context.Context) (*api.AccountResponse, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -78,7 +76,7 @@ func (c *AccountsClient) Update(ctx context.Context, data api.AccountUpdate) err
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -108,7 +106,7 @@ func (c *AccountsClient) UpdateSettings(ctx context.Context, data api.AccountSet
 	}
 
 	url := c.routePrefix + "settings"
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, url, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -132,7 +130,7 @@ func (c *AccountsClient) UpdateSettings(ctx context.Context, data api.AccountSet
 
 // Delete removes an account by ID.
 func (c *AccountsClient) Delete(ctx context.Context) error {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

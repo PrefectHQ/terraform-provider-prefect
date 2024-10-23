@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
@@ -17,7 +16,7 @@ var _ = api.BlockTypeClient(&BlockTypeClient{})
 
 // BlockTypeClient is a client for working with block types.
 type BlockTypeClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	routePrefix string
 	apiKey      string
 }
@@ -46,7 +45,7 @@ func (c *Client) BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (api.Blo
 
 // GetBySlug returns details for a block type by slug.
 func (c *BlockTypeClient) GetBySlug(ctx context.Context, slug string) (*api.BlockType, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/slug/"+slug, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/slug/"+slug, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

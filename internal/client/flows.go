@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
@@ -18,7 +17,7 @@ var _ = api.FlowsClient(&FlowsClient{})
 
 // FlowsClient is a client for working with Flows.
 type FlowsClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	routePrefix string
 	apiKey      string
 }
@@ -49,7 +48,7 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -86,7 +85,7 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -115,7 +114,7 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 
 // Get returns details for a Flow by ID.
 func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+flowID.String(), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+flowID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -150,7 +149,7 @@ func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.Flo
 	}
 
 	endpoint := c.routePrefix + "/" + flowID.String()
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -174,7 +173,7 @@ func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.Flo
 
 // Delete removes a Flow by ID.
 func (c *FlowsClient) Delete(ctx context.Context, flowID uuid.UUID) error {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+flowID.String(), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+flowID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

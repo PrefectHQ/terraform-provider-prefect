@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
@@ -17,7 +16,7 @@ import (
 var _ = api.AccountRolesClient(&AccountRolesClient{})
 
 type AccountRolesClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
@@ -47,7 +46,7 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -76,7 +75,7 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 
 // Get returns an account role by ID.
 func (c *AccountRolesClient) Get(ctx context.Context, roleID uuid.UUID) (*api.AccountRole, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

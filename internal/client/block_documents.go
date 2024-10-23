@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
@@ -18,7 +17,7 @@ import (
 var _ = api.BlockDocumentClient(&BlockDocumentClient{})
 
 type BlockDocumentClient struct {
-	hc          *retryablehttp.Client
+	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
@@ -50,7 +49,7 @@ func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.Block
 	reqURL := fmt.Sprintf("%s/%s", c.routePrefix, id.String())
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -83,7 +82,7 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 	reqURL := strings.ReplaceAll(c.routePrefix, "block_documents", newRoutePrefix)
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -116,7 +115,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -149,7 +148,7 @@ func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload 
 		return fmt.Errorf("failed to encode update payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -172,7 +171,7 @@ func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload 
 }
 
 func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -195,7 +194,7 @@ func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api.BlockDocumentAccess, error) {
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -228,7 +227,7 @@ func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, pa
 		return fmt.Errorf("failed to encode update payload data: %w", err)
 	}
 
-	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

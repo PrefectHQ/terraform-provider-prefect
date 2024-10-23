@@ -1,10 +1,10 @@
 package client
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/go-retryablehttp"
 )
 
 // getAccountScopedURL constructs a URL for an account-scoped route.
@@ -44,7 +44,7 @@ func getWorkspaceScopedURL(endpoint string, accountID uuid.UUID, workspaceID uui
 
 // setAuthorizationHeader will set the Authorization header to the
 // provided apiKey, if set.
-func setAuthorizationHeader(request *retryablehttp.Request, apiKey string) {
+func setAuthorizationHeader(request *http.Request, apiKey string) {
 	if apiKey != "" {
 		request.Header.Set("Authorization", "Bearer "+apiKey)
 	}
@@ -52,7 +52,7 @@ func setAuthorizationHeader(request *retryablehttp.Request, apiKey string) {
 
 // setDefaultHeaders will set Authorization, Content-Type, and Accept
 // headers that are common to most requests.
-func setDefaultHeaders(request *retryablehttp.Request, apiKey string) {
+func setDefaultHeaders(request *http.Request, apiKey string) {
 	setAuthorizationHeader(request, apiKey)
 
 	request.Header.Set("Content-Type", "application/json")
