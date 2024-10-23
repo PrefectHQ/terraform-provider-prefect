@@ -163,12 +163,14 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 		return
 	}
+
 	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
 
 		return
 	}
+
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -186,6 +188,8 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+
+		return
 	}
 
 	if len(blockSchemas) == 0 {
