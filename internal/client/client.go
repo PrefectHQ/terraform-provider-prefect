@@ -37,26 +37,6 @@ func New(opts ...Option) (*Client, error) {
 	return client, nil
 }
 
-// MustNew returns a new client or panics if an error occurred.
-func MustNew(opts ...Option) *Client {
-	client, err := New(opts...)
-	if err != nil {
-		panic(fmt.Sprintf("error occurred during construction: %s", err))
-	}
-
-	return client
-}
-
-// WithClient configures the underlying http.Client used to send
-// requests.
-func WithClient(httpClient *retryablehttp.Client) Option {
-	return func(client *Client) error {
-		client.hc = httpClient
-
-		return nil
-	}
-}
-
 // WithEndpoint configures the client to communicate with a self-hosted
 // Prefect server or Prefect Cloud.
 func WithEndpoint(endpoint string) Option {
