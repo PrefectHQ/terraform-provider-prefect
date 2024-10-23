@@ -1,11 +1,12 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -15,12 +16,6 @@ import (
 )
 
 var _ = api.PrefectClient(&Client{})
-
-const (
-	//nolint:revive // matches name from retryablehttp package
-	clientRetryWaitMin time.Duration = 3 * time.Second
-	clientRetryMax     int           = 10
-)
 
 // New creates and returns new client instance.
 func New(opts ...Option) (*Client, error) {
@@ -36,12 +31,10 @@ func New(opts ...Option) (*Client, error) {
 	// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
 	retryableClient := retryablehttp.NewClient()
 
-	// We adjust the seconds between retries and the maximum number of retries.
-	// This provides a bigger window of time for the API to return the desired
-	// response retries. This is especially relevant for Block-related objects
-	// that are created asynchronously after a new Workspace request resolves.
-	retryableClient.RetryWaitMin = clientRetryWaitMin
-	retryableClient.RetryMax = clientRetryMax
+	// By default, retryablehttp will only retry requests if there was some kind
+	// of transient server or networking error. We can be more specific with this
+	// by providing a custom function for determining whether or not to retry.
+	retryableClient.CheckRetry = checkRetryPolicy
 
 	client := &Client{
 		hc: retryableClient,
@@ -103,4 +96,22 @@ func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 
 		return nil
 	}
+}
+
+func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// If the response is a 409 (StatusConflict), that means the request
+	// eventually succeeded and we don't need to make the request again.
+	if resp.StatusCode == http.StatusConflict {
+		return false, nil
+	}
+
+	// If the response is a 404 (NotFound), try again. This is particularly
+	// relevant for block-related objects that are created asynchronously.
+	if resp.StatusCode == http.StatusNotFound {
+		return true, err
+	}
+
+	// Fall back to the default retry policy for any other status codes.
+	//nolint:wrapcheck // we've extended this method, no need to wrap error
+	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 }
