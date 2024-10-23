@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -20,7 +19,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 var (
@@ -177,17 +175,11 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	variable, err := retry.DoWithData(
-		func() (*api.Variable, error) {
-			return client.Create(ctx, api.VariableCreate{
-				Name:  plan.Name.ValueString(),
-				Value: plan.Value.ValueString(),
-				Tags:  tags,
-			})
-		},
-		utils.DefaultRetryOptions...,
-	)
-
+	variable, err := client.Create(ctx, api.VariableCreate{
+		Name:  plan.Name.ValueString(),
+		Value: plan.Value.ValueString(),
+		Tags:  tags,
+	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "create", err))
 

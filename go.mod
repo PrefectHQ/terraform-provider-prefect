@@ -5,9 +5,9 @@ go 1.21
 toolchain go1.22.1
 
 require (
-	github.com/avast/retry-go/v4 v4.6.0
 	github.com/go-test/deep v1.1.1
 	github.com/google/uuid v1.6.0
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-framework v1.11.0
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
@@ -41,7 +41,6 @@ require (
 	github.com/hashicorp/go-hclog v1.6.3 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.6.0 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/hc-install v0.8.0 // indirect
@@ -67,6 +66,7 @@ require (
 	github.com/posener/complete v1.2.3 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
