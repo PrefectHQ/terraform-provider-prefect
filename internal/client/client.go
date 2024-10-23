@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -15,20 +16,35 @@ import (
 
 var _ = api.PrefectClient(&Client{})
 
+const (
+	//nolint:revive // matches name from retryablehttp package
+	clientRetryWaitMin = 2 * time.Second
+	clientRetryMax     = 10
+)
+
 // New creates and returns new client instance.
-// Uses the retryablehttp package for built-in retries
-// with exponential backoff.
-//
-// Some notable defaults include:
-// - max retries: 4
-// - retry wait minimum seconds: 1
-// - retry wait maximum seconds: 30
-//
-// All defaults are defined in
-// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
 func New(opts ...Option) (*Client, error) {
+	// Uses the retryablehttp package for built-in retries
+	// with exponential backoff.
+	//
+	// Some notable defaults from that package include:
+	// - max retries: 4
+	// - retry wait minimum seconds: 1
+	// - retry wait maximum seconds: 30
+	//
+	// All defaults are defined in
+	// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
+	retryableClient := retryablehttp.NewClient()
+
+	// We adjust the seconds between retries and the maximum number of retries.
+	// This provides a bigger window of time for the API to return the desired
+	// response retries. This is especially relevant for Block-related objects
+	// that are created asynchronously after a new Workspace request resolves.
+	retryableClient.RetryWaitMin = clientRetryWaitMin
+	retryableClient.RetryMax = clientRetryMax
+
 	client := &Client{
-		hc: retryablehttp.NewClient(),
+		hc: retryableClient,
 	}
 
 	var errs []error
