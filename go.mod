@@ -1,8 +1,7 @@
 module github.com/prefecthq/terraform-provider-prefect
 
 go 1.21
-
-toolchain go1.22.1
+toolchain go1.22.5
 
 require (
 	github.com/go-test/deep v1.1.1
@@ -10,7 +9,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/terraform-plugin-docs v0.19.4
 	github.com/hashicorp/terraform-plugin-framework v1.11.0
-	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.1.0
+	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.13.0
 	github.com/hashicorp/terraform-plugin-go v0.23.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
