@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -19,7 +18,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 type BlockResource struct {
@@ -178,46 +176,22 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	// NOTE: here, we add retries for BlockType and BlockSchema fetches.
-	// BlockTypes / BlockSchemas are tied to a particular Workspace, and
-	// they are created asynchronously after a new Workspace request resolves.
-	// This means that if a `prefect_block` is created in the same plan as a
-	// new `prefect_workspace`, there is a potential race condition that could occur if the
-	// Workspace is created + resolves, but the BlockTypes / BlockSchemas have yet to have
-	// been created - this has been observed to happen even with a depends_on relationship defined.
-	// To eliminate spurious create failures, test flakiness, and general user confusion,
-	// we'll add a retry for these specific operations.
-	blockType, err := retry.DoWithData(
-		func() (*api.BlockType, error) {
-			return blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
-		},
-		utils.DefaultRetryOptions...,
-	)
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
 
 		return
 	}
 
-	blockSchemas, err := retry.DoWithData(
-		func() ([]*api.BlockSchema, error) {
-			blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
-			if err != nil {
-				return nil, fmt.Errorf("http request to fetch block schemas failed: %w", err)
-			}
-
-			if len(blockSchemas) == 0 {
-				return nil, fmt.Errorf("no block schemas found for %s block type slug", plan.TypeSlug.ValueString())
-			}
-
-			return blockSchemas, nil
-		},
-		utils.DefaultRetryOptions...,
-	)
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
 	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+	}
+
+	if len(blockSchemas) == 0 {
 		resp.Diagnostics.AddError(
-			"Failed to fetch block schemas",
-			fmt.Sprintf("Failed to fetch block schemas for %s block type slug due to: %s", plan.TypeSlug.ValueString(), err.Error()),
+			"No block schemas found",
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
 		)
 
 		return

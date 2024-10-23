@@ -9,13 +9,14 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
 var _ = api.TeamsClient(&TeamsClient{})
 
 type TeamsClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	apiKey      string
 	routePrefix string
 }
@@ -45,7 +46,7 @@ func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, er
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

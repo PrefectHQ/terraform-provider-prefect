@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
@@ -17,7 +18,7 @@ var _ = api.WorkspacesClient(&WorkspacesClient{})
 
 // WorkspacesClient is a client for working with Workspaces.
 type WorkspacesClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	routePrefix string
 	apiKey      string
 }
@@ -44,7 +45,7 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -81,7 +82,7 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -110,7 +111,7 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 
 // Get returns details for a Workspace by ID.
 func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api.Workspace, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -145,7 +146,7 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 	}
 
 	endpoint := c.routePrefix + "/" + workspaceID.String()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, endpoint, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -169,7 +170,7 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 
 // Delete removes a Workspace by ID.
 func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+workspaceID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

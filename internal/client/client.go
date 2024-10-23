@@ -3,13 +3,14 @@ package client
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
 var _ = api.PrefectClient(&Client{})
@@ -17,7 +18,7 @@ var _ = api.PrefectClient(&Client{})
 // New creates and returns new client instance.
 func New(opts ...Option) (*Client, error) {
 	client := &Client{
-		hc: http.DefaultClient,
+		hc: retryablehttp.NewClient(),
 	}
 
 	var errs []error
@@ -48,7 +49,7 @@ func MustNew(opts ...Option) *Client {
 
 // WithClient configures the underlying http.Client used to send
 // requests.
-func WithClient(httpClient *http.Client) Option {
+func WithClient(httpClient *retryablehttp.Client) Option {
 	return func(client *Client) error {
 		client.hc = httpClient
 

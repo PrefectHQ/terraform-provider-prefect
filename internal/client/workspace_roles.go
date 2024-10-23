@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
@@ -16,7 +17,7 @@ import (
 var _ = api.WorkspaceRolesClient(&WorkspaceRolesClient{})
 
 type WorkspaceRolesClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	apiKey      string
 	routePrefix string
 }
@@ -43,7 +44,7 @@ func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRol
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/", c.routePrefix), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -77,7 +78,7 @@ func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.
 		return fmt.Errorf("failed to encode update payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, workspaceRoleID.String()), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, workspaceRoleID.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -101,7 +102,7 @@ func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.
 
 // Delete removes a workspace role by ID.
 func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -133,7 +134,7 @@ func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]
 		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -162,7 +163,7 @@ func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]
 
 // Get returns a workspace role by ID.
 func (c *WorkspaceRolesClient) Get(ctx context.Context, id uuid.UUID) (*api.WorkspaceRole, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

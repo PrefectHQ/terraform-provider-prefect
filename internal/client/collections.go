@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
@@ -15,7 +16,7 @@ import (
 var _ = api.CollectionsClient(&CollectionsClient{})
 
 type CollectionsClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	apiKey      string
 	routePrefix string
 }
@@ -53,7 +54,7 @@ func (c *CollectionsClient) GetWorkerMetadataViews(ctx context.Context) (api.Wor
 
 	url := fmt.Sprintf("%s/%s", c.routePrefix, routeSuffix)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

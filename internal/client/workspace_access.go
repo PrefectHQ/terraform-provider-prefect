@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
@@ -17,7 +18,7 @@ import (
 var _ = api.WorkspaceAccessClient(&WorkspaceAccessClient{})
 
 type WorkspaceAccessClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	apiKey      string
 	routePrefix string
 }
@@ -83,7 +84,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		return nil, fmt.Errorf("failed to encode upsert payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, requestMethod, requestPath, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -138,7 +139,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 		requestPath = fmt.Sprintf("%s/team_access/filter", c.routePrefix)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, requestMethod, requestPath, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -212,7 +213,7 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessorID.String())
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, requestPath, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, requestPath, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

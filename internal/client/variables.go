@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
@@ -17,7 +18,7 @@ var _ = api.VariablesClient(&VariablesClient{})
 
 // VariablesClient is a client for working with variables.
 type VariablesClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	routePrefix string
 	apiKey      string
 }
@@ -47,7 +48,7 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -84,7 +85,7 @@ func (c *VariablesClient) List(ctx context.Context, filter api.VariableFilter) (
 
 // Get returns details for a variable by ID.
 func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+variableID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -113,7 +114,7 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 
 // GetByName returns details for a variable by name.
 func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/name/"+name, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/name/"+name, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -147,7 +148,7 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+variableID.String(), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+variableID.String(), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -171,7 +172,7 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 
 // Delete removes a variable by ID.
 func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+variableID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+variableID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

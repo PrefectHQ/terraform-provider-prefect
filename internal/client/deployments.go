@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
@@ -17,7 +18,7 @@ var _ = api.DeploymentsClient(&DeploymentsClient{})
 
 // DeploymentsClient is a client for working with Deployments.
 type DeploymentsClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	routePrefix string
 	apiKey      string
 }
@@ -48,7 +49,7 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 		return nil, fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -77,7 +78,7 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 
 // List returns a list of Deployments based on the provided list of names.
 func (c *DeploymentsClient) List(ctx context.Context, _ []string) ([]*api.Deployment, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -106,7 +107,7 @@ func (c *DeploymentsClient) List(ctx context.Context, _ []string) ([]*api.Deploy
 
 // Get returns details for a Deployment by ID.
 func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*api.Deployment, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -140,7 +141,7 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 		return fmt.Errorf("failed to encode data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -164,7 +165,7 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 
 // Delete removes a Deployment by ID.
 func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+deploymentID.String(), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}

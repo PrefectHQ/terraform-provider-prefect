@@ -9,11 +9,12 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
 type ServiceAccountsClient struct {
-	hc          *http.Client
+	hc          *retryablehttp.Client
 	apiKey      string
 	routePrefix string
 }
@@ -49,7 +50,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 		return nil, fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/", &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -85,7 +86,7 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 		return nil, fmt.Errorf("failed to encode filter: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/filter", &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/filter", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -113,7 +114,7 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 }
 
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.ServiceAccount, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botID, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botID, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
@@ -150,7 +151,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 		return fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botID, &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botID, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -173,7 +174,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 }
 
 func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botID, http.NoBody)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botID, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
@@ -200,7 +201,7 @@ func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID
 		return nil, fmt.Errorf("failed to encode request data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID), &buf)
+	req, err := retryablehttp.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID), &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

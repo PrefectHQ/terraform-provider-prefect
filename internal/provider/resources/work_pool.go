@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -19,7 +18,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 var (
@@ -213,20 +211,14 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	pool, err := retry.DoWithData(
-		func() (*api.WorkPool, error) {
-			return client.Create(ctx, api.WorkPoolCreate{
-				Name:             plan.Name.ValueString(),
-				Description:      plan.Description.ValueStringPointer(),
-				Type:             plan.Type.ValueString(),
-				BaseJobTemplate:  baseJobTemplate,
-				IsPaused:         plan.Paused.ValueBool(),
-				ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
-			})
-		},
-		utils.DefaultRetryOptions...,
-	)
-
+	pool, err := client.Create(ctx, api.WorkPoolCreate{
+		Name:             plan.Name.ValueString(),
+		Description:      plan.Description.ValueStringPointer(),
+		Type:             plan.Type.ValueString(),
+		BaseJobTemplate:  baseJobTemplate,
+		IsPaused:         plan.Paused.ValueBool(),
+		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
+	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "create", err))
 
@@ -261,13 +253,7 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	pool, err := retry.DoWithData(
-		func() (*api.WorkPool, error) {
-			return client.Get(ctx, state.Name.ValueString())
-		},
-		utils.DefaultRetryOptions...,
-	)
-
+	pool, err := client.Get(ctx, state.Name.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
