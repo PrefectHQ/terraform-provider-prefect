@@ -9,7 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -173,53 +175,12 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 
 	model.Name = types.StringValue(variable.Name)
 
-	switch value := variable.Value.(type) {
-	case string:
-		model.Value = types.DynamicValue(types.StringValue(value))
-
-	case float64:
-		model.Value = types.DynamicValue(types.Float64Value(value))
-
-	case bool:
-		model.Value = types.DynamicValue(types.BoolValue(value))
-
-	case map[string]interface{}:
-		byteSlice, err := json.Marshal(value)
-		if err != nil {
-			resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
-
-			return
-		}
-
-		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
-
-	case []interface{}:
-		tupleTypes := make([]attr.Type, len(value))
-		tupleValues := make([]attr.Value, len(value))
-
-		for i, v := range value {
-			tupleTypes[i] = types.StringType
-
-			val, ok := v.(string)
-			if !ok {
-				resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
-			}
-
-			tupleValues[i] = types.StringValue(val)
-		}
-
-		tupleValue, diags := types.TupleValue(tupleTypes, tupleValues)
-		if diags.HasError() {
-			resp.Diagnostics.Append(diags...)
-
-			return
-		}
-
-		model.Value = types.DynamicValue(tupleValue)
-
-	default:
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
+	value, diags := getDynamicValue(model, variable)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
+	model.Value = value
 
 	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)
@@ -232,4 +193,61 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+// getDynamicValue converts the 'value' attribute from a native Go type to a DynamicValue.
+func getDynamicValue(model VariableDataSourceModel, variable *api.Variable) (basetypes.DynamicValue, diag.Diagnostics) {
+	var result basetypes.DynamicValue
+	var diags diag.Diagnostics
+
+	switch value := variable.Value.(type) {
+	case string:
+		result = types.DynamicValue(types.StringValue(value))
+
+	case float64:
+		result = types.DynamicValue(types.Float64Value(value))
+
+	case bool:
+		result = types.DynamicValue(types.BoolValue(value))
+
+	case map[string]interface{}:
+		byteSlice, err := json.Marshal(value)
+		if err != nil {
+			diags = append(diags, helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+		}
+
+		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
+
+	case []interface{}:
+		tupleTypes := make([]attr.Type, len(value))
+		tupleValues := make([]attr.Value, len(value))
+
+		for i, v := range value {
+			// For now, we only support string values in tuples.
+			// This can be expanded in the future when we're ready to type check
+			// inside of a type check :).
+			tupleTypes[i] = types.StringType
+
+			val, ok := v.(string)
+			if !ok {
+				diags.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", fmt.Errorf("unable to convert variable value to string")))
+			}
+
+			tupleValues[i] = types.StringValue(val)
+		}
+
+		tupleValue, diags := types.TupleValue(tupleTypes, tupleValues)
+		if diags.HasError() {
+			diags.Append(diags...)
+
+			return result, diags
+		}
+
+		result = types.DynamicValue(tupleValue)
+
+	default:
+		diags.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
+	}
+
+	return result, diags
 }
