@@ -115,7 +115,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix, &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}

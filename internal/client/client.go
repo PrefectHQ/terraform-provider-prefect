@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -10,14 +11,38 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 )
 
 var _ = api.PrefectClient(&Client{})
 
 // New creates and returns new client instance.
 func New(opts ...Option) (*Client, error) {
+	// Uses the retryablehttp package for built-in retries
+	// with exponential backoff.
+	//
+	// Some notable defaults from that package include:
+	// - max retries: 4
+	// - retry wait minimum seconds: 1
+	// - retry wait maximum seconds: 30
+	//
+	// All defaults are defined in
+	// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
+	retryableClient := retryablehttp.NewClient()
+
+	// By default, retryablehttp will only retry requests if there was some kind
+	// of transient server or networking error. We can be more specific with this
+	// by providing a custom function for determining whether or not to retry.
+	retryableClient.CheckRetry = checkRetryPolicy
+
+	// Finally, convert the retryablehttp client to a standard http client.
+	// This allows us to retain the `http.Client` interface, and avoid specifying
+	// the `retryablehttp.Client` interface in our client methods.
+	httpClient := retryableClient.StandardClient()
+
 	client := &Client{
-		hc: http.DefaultClient,
+		hc: httpClient,
 	}
 
 	var errs []error
@@ -34,26 +59,6 @@ func New(opts ...Option) (*Client, error) {
 	}
 
 	return client, nil
-}
-
-// MustNew returns a new client or panics if an error occurred.
-func MustNew(opts ...Option) *Client {
-	client, err := New(opts...)
-	if err != nil {
-		panic(fmt.Sprintf("error occurred during construction: %s", err))
-	}
-
-	return client
-}
-
-// WithClient configures the underlying http.Client used to send
-// requests.
-func WithClient(httpClient *http.Client) Option {
-	return func(client *Client) error {
-		client.hc = httpClient
-
-		return nil
-	}
 }
 
 // WithEndpoint configures the client to communicate with a self-hosted
@@ -96,4 +101,22 @@ func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 
 		return nil
 	}
+}
+
+func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// If the response is a 409 (StatusConflict), that means the request
+	// eventually succeeded and we don't need to make the request again.
+	if resp.StatusCode == http.StatusConflict {
+		return false, nil
+	}
+
+	// If the response is a 404 (NotFound), try again. This is particularly
+	// relevant for block-related objects that are created asynchronously.
+	if resp.StatusCode == http.StatusNotFound {
+		return true, err
+	}
+
+	// Fall back to the default retry policy for any other status codes.
+	//nolint:wrapcheck // we've extended this method, no need to wrap error
+	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
 }
