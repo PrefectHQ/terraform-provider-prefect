@@ -2,10 +2,16 @@ package datasources
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -27,9 +33,9 @@ type VariableDataSourceModel struct {
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name  types.String `tfsdk:"name"`
-	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Name  types.String  `tfsdk:"name"`
+	Value types.Dynamic `tfsdk:"value"`
+	Tags  types.List    `tfsdk:"tags"`
 }
 
 // NewVariableDataSource returns a new VariableDataSource.
@@ -92,9 +98,9 @@ var variableAttributes = map[string]schema.Attribute{
 		Description: "Name of the variable",
 		Optional:    true,
 	},
-	"value": schema.StringAttribute{
+	"value": schema.DynamicAttribute{
 		Computed:    true,
-		Description: "Value of the variable",
+		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 	},
 	"tags": schema.ListAttribute{
 		Computed:    true,
@@ -168,7 +174,13 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	model.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 
 	model.Name = types.StringValue(variable.Name)
-	model.Value = types.StringValue(variable.Value)
+
+	value, diags := getDynamicValue(model, variable)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	model.Value = value
 
 	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)
@@ -181,4 +193,61 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+// getDynamicValue converts the 'value' attribute from a native Go type to a DynamicValue.
+func getDynamicValue(model VariableDataSourceModel, variable *api.Variable) (basetypes.DynamicValue, diag.Diagnostics) {
+	var result basetypes.DynamicValue
+	var diags diag.Diagnostics
+
+	switch value := variable.Value.(type) {
+	case string:
+		result = types.DynamicValue(types.StringValue(value))
+
+	case float64:
+		result = types.DynamicValue(types.Float64Value(value))
+
+	case bool:
+		result = types.DynamicValue(types.BoolValue(value))
+
+	case map[string]interface{}:
+		byteSlice, err := json.Marshal(value)
+		if err != nil {
+			diags = append(diags, helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
+		}
+
+		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
+
+	case []interface{}:
+		tupleTypes := make([]attr.Type, len(value))
+		tupleValues := make([]attr.Value, len(value))
+
+		for i, v := range value {
+			// For now, we only support string values in tuples.
+			// This can be expanded in the future when we're ready to type check
+			// inside of a type check :).
+			tupleTypes[i] = types.StringType
+
+			val, ok := v.(string)
+			if !ok {
+				diags.Append(helpers.SerializeDataErrorDiagnostic("data", "Variable Value", fmt.Errorf("unable to convert variable value to string")))
+			}
+
+			tupleValues[i] = types.StringValue(val)
+		}
+
+		tupleValue, diags := types.TupleValue(tupleTypes, tupleValues)
+		if diags.HasError() {
+			diags.Append(diags...)
+
+			return result, diags
+		}
+
+		result = types.DynamicValue(tupleValue)
+
+	default:
+		diags.Append(helpers.ResourceClientErrorDiagnostic("Variable", "type", fmt.Errorf("unsupported type: %T", value)))
+	}
+
+	return result, diags
 }
