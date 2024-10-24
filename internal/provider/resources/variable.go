@@ -124,7 +124,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				Required:    true,
 			},
 			"value": schema.DynamicAttribute{
-				Description: "Value of the variable",
+				Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 				Required:    true,
 			},
 			"tags": schema.ListAttribute{

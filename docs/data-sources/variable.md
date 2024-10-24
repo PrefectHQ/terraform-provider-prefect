@@ -41,4 +41,4 @@ data "prefect_variable" "existing_by_name" {
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `tags` (List of String) Tags associated with the variable
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
-- `value` (Dynamic) Value of the variable
+- `value` (Dynamic) Value of the variable, supported Terraform value types: string, number, bool, tuple, object

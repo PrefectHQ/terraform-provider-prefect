@@ -98,7 +98,7 @@ var variableAttributes = map[string]schema.Attribute{
 	},
 	"value": schema.DynamicAttribute{
 		Computed:    true,
-		Description: "Value of the variable",
+		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 	},
 	"tags": schema.ListAttribute{
 		Computed:    true,
