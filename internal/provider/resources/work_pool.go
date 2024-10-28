@@ -199,9 +199,11 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if !plan.BaseJobTemplate.IsNull() {
+		resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
@@ -278,9 +280,11 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if !plan.BaseJobTemplate.IsNull() {
+		resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
