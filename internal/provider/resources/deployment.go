@@ -307,28 +307,22 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	var parameters map[string]interface{}
-	if !plan.Parameters.IsNull() {
-		resp.Diagnostics.Append(plan.Parameters.Unmarshal(&parameters)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	parameters, diags := helpers.SafeUnmarshal(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	var jobVariables map[string]interface{}
-	if !plan.JobVariables.IsNull() {
-		resp.Diagnostics.Append(plan.JobVariables.Unmarshal(&jobVariables)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	jobVariables, diags := helpers.SafeUnmarshal(plan.JobVariables)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	var parameterOpenAPISchema map[string]interface{}
-	if !plan.ParameterOpenAPISchema.IsNull() {
-		resp.Diagnostics.Append(plan.ParameterOpenAPISchema.Unmarshal(&parameterOpenAPISchema)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	parameterOpenAPISchema, diags := helpers.SafeUnmarshal(plan.ParameterOpenAPISchema)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
