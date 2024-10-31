@@ -90,7 +90,7 @@ func (c *DeploymentAccessClient) Set(ctx context.Context, deploymentID uuid.UUID
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		errorBody, _ := io.ReadAll(resp.Body)
 
 		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
