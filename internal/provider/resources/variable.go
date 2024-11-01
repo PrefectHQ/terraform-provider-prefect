@@ -67,6 +67,59 @@ type VariableResourceModelV1 struct {
 	Tags  types.List    `tfsdk:"tags"`
 }
 
+var defaultEmptyTagList, _ = basetypes.NewListValue(types.StringType, []attr.Value{})
+
+var VariableResourceSchemaAttributes = map[string]schema.Attribute{
+	"id": schema.StringAttribute{
+		Computed: true,
+		// We cannot use a CustomType due to a conflict with PlanModifiers; see
+		// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+		// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+		Description: "Variable ID (UUID)",
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
+	},
+	"created": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
+		Description: "Timestamp of when the resource was created (RFC3339)",
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
+	},
+	"updated": schema.StringAttribute{
+		Computed:    true,
+		CustomType:  customtypes.TimestampType{},
+		Description: "Timestamp of when the resource was updated (RFC3339)",
+	},
+	"account_id": schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "Account ID (UUID), defaults to the account set in the provider",
+		Optional:    true,
+	},
+	"workspace_id": schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+		Optional:    true,
+	},
+	"name": schema.StringAttribute{
+		Description: "Name of the variable",
+		Required:    true,
+	},
+	"value": schema.DynamicAttribute{
+		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
+		Required:    true,
+	},
+	"tags": schema.ListAttribute{
+		Description: "Tags associated with the variable",
+		ElementType: types.StringType,
+		Optional:    true,
+		Computed:    true,
+		Default:     listdefault.StaticValue(defaultEmptyTagList),
+	},
+}
+
 // NewVariableResource returns a new VariableResource.
 //
 //nolint:ireturn // required by Terraform API
@@ -97,62 +150,11 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 
 // Schema defines the schema for the resource.
 func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
-
 	resp.Schema = schema.Schema{
 		Description: "The resource `variable` represents a Prefect Cloud Variable. " +
 			"Variables enable you to store and reuse non-sensitive information in your flows. ",
-		Version: 1,
-		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Variable ID (UUID)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"created": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.TimestampType{},
-				Description: "Timestamp of when the resource was created (RFC3339)",
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"updated": schema.StringAttribute{
-				Computed:    true,
-				CustomType:  customtypes.TimestampType{},
-				Description: "Timestamp of when the resource was updated (RFC3339)",
-			},
-			"account_id": schema.StringAttribute{
-				CustomType:  customtypes.UUIDType{},
-				Description: "Account ID (UUID), defaults to the account set in the provider",
-				Optional:    true,
-			},
-			"workspace_id": schema.StringAttribute{
-				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
-				Optional:    true,
-			},
-			"name": schema.StringAttribute{
-				Description: "Name of the variable",
-				Required:    true,
-			},
-			"value": schema.DynamicAttribute{
-				Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
-				Required:    true,
-			},
-			"tags": schema.ListAttribute{
-				Description: "Tags associated with the variable",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				Default:     listdefault.StaticValue(defaultEmptyTagList),
-			},
-		},
+		Version:    1,
+		Attributes: VariableResourceSchemaAttributes,
 	}
 }
 
@@ -162,8 +164,6 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 // The target version is the one defined in Schema.Version above
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade
 func (r *VariableResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
-	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
-
 	return map[int64]resource.StateUpgrader{
 		// State upgrade implementation from prior (0) => current (Schema.Version)
 		0: {
@@ -172,37 +172,16 @@ func (r *VariableResource) UpgradeState(_ context.Context) map[int64]resource.St
 			// to a new schema.
 			PriorSchema: &schema.Schema{
 				Attributes: map[string]schema.Attribute{
-					"id": schema.StringAttribute{
-						Computed: true,
-					},
-					"created": schema.StringAttribute{
-						Computed:   true,
-						CustomType: customtypes.TimestampType{},
-					},
-					"updated": schema.StringAttribute{
-						Computed:   true,
-						CustomType: customtypes.TimestampType{},
-					},
-					"account_id": schema.StringAttribute{
-						CustomType: customtypes.UUIDType{},
-						Optional:   true,
-					},
-					"workspace_id": schema.StringAttribute{
-						CustomType: customtypes.UUIDType{},
-						Optional:   true,
-					},
-					"name": schema.StringAttribute{
-						Required: true,
-					},
+					"id":           VariableResourceSchemaAttributes["id"],
+					"created":      VariableResourceSchemaAttributes["created"],
+					"updated":      VariableResourceSchemaAttributes["updated"],
+					"account_id":   VariableResourceSchemaAttributes["account_id"],
+					"workspace_id": VariableResourceSchemaAttributes["workspace_id"],
+					"name":         VariableResourceSchemaAttributes["name"],
 					"value": schema.StringAttribute{
 						Required: true,
 					},
-					"tags": schema.ListAttribute{
-						ElementType: types.StringType,
-						Optional:    true,
-						Computed:    true,
-						Default:     listdefault.StaticValue(defaultEmptyTagList),
-					},
+					"tags": VariableResourceSchemaAttributes["tags"],
 				},
 			},
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
