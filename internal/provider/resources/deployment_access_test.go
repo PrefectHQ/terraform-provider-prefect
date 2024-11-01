@@ -3,7 +3,6 @@ package resources_test
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -169,42 +168,29 @@ type expectedDeploymentAccessValues struct {
 // verifies that the API object matches the expected values.
 func testAccCheckDeploymentAccessValues(fetchedDeploymentAccess *api.DeploymentAccessControl, expectedValues expectedDeploymentAccessValues) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
-		found, err := actorFound(fetchedDeploymentAccess.ManageActors, expectedValues.manageActors)
-		if err != nil {
-			return fmt.Errorf("no matching actor found: %w", err)
-		}
-		if !found {
-			return fmt.Errorf("no matching actor found: %w", err)
-		}
-
-		found, err = actorFound(fetchedDeploymentAccess.RunActors, expectedValues.runActors)
-		if err != nil {
-			return fmt.Errorf("no matching actor found: %w", err)
-		}
-		if !found {
-			return fmt.Errorf("no matching actor found: %w", err)
+		tests := map[string]struct {
+			fetched  []api.ObjectActorAccess
+			expected []api.ObjectActorAccess
+		}{
+			"manageActors": {fetchedDeploymentAccess.ManageActors, expectedValues.manageActors},
+			"runActors":    {fetchedDeploymentAccess.RunActors, expectedValues.runActors},
+			"viewActors":   {fetchedDeploymentAccess.ViewActors, expectedValues.viewActors},
 		}
 
-		found, err = actorFound(fetchedDeploymentAccess.ViewActors, expectedValues.viewActors)
-		if err != nil {
-			return fmt.Errorf("no matching actor found: %w", err)
-		}
-		if !found {
-			return fmt.Errorf("no matching actor found: %w", err)
+		for name, test := range tests {
+			err := actorFound(test.fetched, test.expected)
+			if err != nil {
+				return fmt.Errorf("%s: %w", name, err)
+			}
 		}
 
 		return nil
 	}
 }
 
-func actorFound(fetched []api.ObjectActorAccess, expected []api.ObjectActorAccess) (bool, error) {
+func actorFound(fetched []api.ObjectActorAccess, expected []api.ObjectActorAccess) error {
 	if len(fetched) != len(expected) {
-		return false, fmt.Errorf("expected %d actors, got %d", len(fetched), len(expected))
-	}
-
-	foundNames := make([]string, len(fetched))
-	for i := range fetched {
-		foundNames[i] = fmt.Sprintf("%s:%s", fetched[i].Name, fetched[i].Type)
+		return fmt.Errorf("got %d actors, expected %d", len(fetched), len(expected))
 	}
 
 	for i := range expected {
@@ -218,9 +204,9 @@ func actorFound(fetched []api.ObjectActorAccess, expected []api.ObjectActorAcces
 		}
 
 		if !found {
-			return false, fmt.Errorf("actor %s not found in %s", expected[i].Name, strings.Join(foundNames, ", "))
+			return fmt.Errorf("actor %s of type %s not found", expected[i].Name, expected[i].Type)
 		}
 	}
 
-	return true, nil
+	return nil
 }
