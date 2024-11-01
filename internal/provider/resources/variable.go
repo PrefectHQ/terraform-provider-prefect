@@ -27,6 +27,7 @@ import (
 var (
 	_ = resource.ResourceWithConfigure(&VariableResource{})
 	_ = resource.ResourceWithImportState(&VariableResource{})
+	_ = resource.ResourceWithUpgradeState(&VariableResource{})
 )
 
 // VariableResource contains state for the resource.
@@ -35,7 +36,26 @@ type VariableResource struct {
 }
 
 // VariableResourceModel defines the Terraform resource model.
-type VariableResourceModel struct {
+// NOTE: we version the VersionResourceModel here due to a schema
+// update, and we want to be able to properly migrate existing
+// prefect_variable resources in state from one schema version to the next.
+// See UpgradeState for more details.
+//
+// V0: Value is types.String.
+type VariableResourceModelV0 struct {
+	ID          types.String               `tfsdk:"id"`
+	Created     customtypes.TimestampValue `tfsdk:"created"`
+	Updated     customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
+
+	Name  types.String `tfsdk:"name"`
+	Value types.String `tfsdk:"value"`
+	Tags  types.List   `tfsdk:"tags"`
+}
+
+// V1: Value is types.Dynamic.
+type VariableResourceModelV1 struct {
 	ID          types.String               `tfsdk:"id"`
 	Created     customtypes.TimestampValue `tfsdk:"created"`
 	Updated     customtypes.TimestampValue `tfsdk:"updated"`
@@ -82,7 +102,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Description: "The resource `variable` represents a Prefect Cloud Variable. " +
 			"Variables enable you to store and reuse non-sensitive information in your flows. ",
-		Version: 0,
+		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed: true,
@@ -136,9 +156,93 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	}
 }
 
+// UpgradeState adds upgraders to the VariableResource.
+// This is needed when a resource schema change is made (eg. an attribute type).
+// The key/index in the return object is the source version (eg. 0 -> current).
+// The target version is the one defined in Schema.Version above
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade
+func (r *VariableResource) UpgradeState(_ context.Context) map[int64]resource.StateUpgrader {
+	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+
+	return map[int64]resource.StateUpgrader{
+		// State upgrade implementation from prior (0) => current (Schema.Version)
+		0: {
+			// PriorSchema allows the framework to populate the req.State argument
+			// for easier data handling when migrating existing state resources
+			// to a new schema.
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"id": schema.StringAttribute{
+						Computed: true,
+					},
+					"created": schema.StringAttribute{
+						Computed:   true,
+						CustomType: customtypes.TimestampType{},
+					},
+					"updated": schema.StringAttribute{
+						Computed:   true,
+						CustomType: customtypes.TimestampType{},
+					},
+					"account_id": schema.StringAttribute{
+						CustomType: customtypes.UUIDType{},
+						Optional:   true,
+					},
+					"workspace_id": schema.StringAttribute{
+						CustomType: customtypes.UUIDType{},
+						Optional:   true,
+					},
+					"name": schema.StringAttribute{
+						Required: true,
+					},
+					"value": schema.StringAttribute{
+						Required: true,
+					},
+					"tags": schema.ListAttribute{
+						ElementType: types.StringType,
+						Optional:    true,
+						Computed:    true,
+						Default:     listdefault.StaticValue(defaultEmptyTagList),
+					},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
+				var priorStateData VariableResourceModelV0
+
+				resp.Diagnostics.Append(req.State.Get(ctx, &priorStateData)...)
+
+				if resp.Diagnostics.HasError() {
+					return
+				}
+
+				// In order to update a prefect_variable resource in state
+				// that is tied to the old schema version, we need to copy
+				// the existing state into the new schema version.
+				upgradedStateData := VariableResourceModelV1{
+					ID:          priorStateData.ID,
+					Created:     priorStateData.Created,
+					Updated:     priorStateData.Updated,
+					AccountID:   priorStateData.AccountID,
+					WorkspaceID: priorStateData.WorkspaceID,
+					Name:        priorStateData.Name,
+					Tags:        priorStateData.Tags,
+				}
+
+				// This is the main upgrade operation between v0 => v1.
+				// Convert the "value" attribute's type from
+				// StringAttribute (v0) to a DynamicValue (v1)
+				// to prevent a Terraform error when deserializing the state
+				// from the old schema to the new one.
+				upgradedStateData.Value = types.DynamicValue(basetypes.NewStringValue(priorStateData.Value.ValueString()))
+
+				resp.Diagnostics.Append(resp.State.Set(ctx, upgradedStateData)...)
+			},
+		},
+	}
+}
+
 // copyVariableToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *VariableResourceModel) diag.Diagnostics {
+func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *VariableResourceModelV1) diag.Diagnostics {
 	tfModel.ID = types.StringValue(variable.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(variable.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
@@ -156,7 +260,7 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 
 // getUnderlyingValue converts the 'value' attribute from a DynamicValue to
 // a native Go type that can be sent to the Prefect API.
-func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnostics) {
+func getUnderlyingValue(plan VariableResourceModelV1) (interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var value interface{}
 
@@ -208,7 +312,7 @@ func getUnderlyingValue(plan VariableResourceModel) (interface{}, diag.Diagnosti
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *VariableResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan VariableResourceModel
+	var plan VariableResourceModelV1
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -259,7 +363,7 @@ func (r *VariableResource) Create(ctx context.Context, req resource.CreateReques
 
 // Read refreshes the Terraform state with the latest data.
 func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state VariableResourceModel
+	var state VariableResourceModelV1
 
 	// Populate the model from state and emit diagnostics on error
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -319,7 +423,7 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *VariableResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var plan VariableResourceModel
+	var plan VariableResourceModelV1
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -382,7 +486,7 @@ func (r *VariableResource) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete deletes the resource and removes the Terraform state on success.
 func (r *VariableResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state VariableResourceModel
+	var state VariableResourceModelV1
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
