@@ -38,15 +38,7 @@ type DeploymentAccessControlSet struct {
 
 // DeploymentAccessControl is a definition of deployment access control.
 type DeploymentAccessControl struct {
-	ManageActors []Actor `json:"manage_actors"`
-	RunActors    []Actor `json:"run_actors"`
-	ViewActors   []Actor `json:"view_actors"`
-}
-
-// Actor is a definition of an actor.
-type Actor struct {
-	ID    uuid.UUID `json:"id"`
-	Name  string    `json:"name"`
-	Email string    `json:"email"`
-	Type  string    `json:"type"`
+	ManageActors []ObjectActorAccess `json:"manage_actors"`
+	RunActors    []ObjectActorAccess `json:"run_actors"`
+	ViewActors   []ObjectActorAccess `json:"view_actors"`
 }
