@@ -2,11 +2,13 @@ package resources
 
 import (
 	"context"
-	"log"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
@@ -19,8 +21,6 @@ type DeploymentAccessResource struct {
 }
 
 type DeploymentAccessResourceModel struct {
-	ID types.String `tfsdk:"id"`
-
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
@@ -63,16 +63,14 @@ func (r *DeploymentAccessResource) Configure(_ context.Context, req resource.Con
 }
 
 func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+	defaultEmptyList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+
 	resp.Schema = schema.Schema{
 		Description: "The resource `deployment_access` represents a connection between an accessor " +
 			"(User, Service Account or Team) with a Deployment. This resource specifies an actor's access level " +
 			"to a specific Deployment in the Account.",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				Computed:    true,
-				Description: "Deployment Access ID (UUID)",
-			},
 			"deployment_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Deployment ID (UUID)",
@@ -89,34 +87,46 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 				CustomType:  customtypes.UUIDType{},
 			},
 			"manage_actor_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "Manage Actor IDs",
+				Description: "List of actor IDs with manage access to the Deployment",
 			},
 			"run_actor_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "Run Actor IDs",
+				Description: "List of actor IDs with run access to the Deployment",
 			},
 			"view_actor_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "View Actor IDs",
+				Description: "List of actor IDs with view access to the Deployment",
 			},
 			"manage_team_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
+				Description: "List of team IDs with manage access to the Deployment",
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "Manage Team IDs",
 			},
 			"run_team_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
+				Description: "List of team IDs with run access to the Deployment",
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "Run Team IDs",
 			},
 			"view_team_ids": schema.ListAttribute{
+				Optional:    true,
+				Computed:    true,
+				Default:     listdefault.StaticValue(defaultEmptyList),
+				Description: "List of team IDs with view access to the Deployment",
 				ElementType: types.StringType,
-				Required:    true,
-				Description: "View Team IDs",
 			},
 		},
 	}
@@ -178,16 +188,21 @@ func (r *DeploymentAccessResource) Create(ctx context.Context, req resource.Crea
 	err = client.Set(ctx, plan.DeploymentID.ValueUUID(), api.DeploymentAccessSet{
 		AccessControl: api.DeploymentAccessControlSet{
 			ManageActorIDs: manageActorIDs,
-			RunActorIDs:    runActorIDs,
-			ViewActorIDs:   viewActorIDs,
 			ManageTeamIDs:  manageTeamIDs,
+			RunActorIDs:    runActorIDs,
 			RunTeamIDs:     runTeamIDs,
+			ViewActorIDs:   viewActorIDs,
 			ViewTeamIDs:    viewTeamIDs,
 		},
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "create", err))
 
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 }
@@ -199,8 +214,6 @@ func (r *DeploymentAccessResource) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	log.Println("state", state)
 
 	client, err := r.client.DeploymentAccess(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
@@ -217,7 +230,7 @@ func (r *DeploymentAccessResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	// NOTE: we are not currently mapping the response back into State,
-	// as the Read payload is materially different from the Set payload.
+	// as the Read payload is materially different from the Create/Update payloads.
 	// This is something to be revisited in the future.
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -227,11 +240,110 @@ func (r *DeploymentAccessResource) Read(ctx context.Context, req resource.ReadRe
 }
 
 // Update updates the resource and sets the Terraform state.
-func (r *DeploymentAccessResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
-	// no-op, we don't update deployment access, only set it.
+func (r *DeploymentAccessResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan DeploymentAccessResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.DeploymentAccess(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployment Access", err))
+
+		return
+	}
+
+	var manageActorIDs []string
+	resp.Diagnostics.Append(plan.ManageActorIDs.ElementsAs(ctx, &manageActorIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var runActorIDs []string
+	resp.Diagnostics.Append(plan.RunActorIDs.ElementsAs(ctx, &runActorIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var viewActorIDs []string
+	resp.Diagnostics.Append(plan.ViewActorIDs.ElementsAs(ctx, &viewActorIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var manageTeamIDs []string
+	resp.Diagnostics.Append(plan.ManageTeamIDs.ElementsAs(ctx, &manageTeamIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var runTeamIDs []string
+	resp.Diagnostics.Append(plan.RunTeamIDs.ElementsAs(ctx, &runTeamIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var viewTeamIDs []string
+	resp.Diagnostics.Append(plan.ViewTeamIDs.ElementsAs(ctx, &viewTeamIDs, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	err = client.Set(ctx, plan.DeploymentID.ValueUUID(), api.DeploymentAccessSet{
+		AccessControl: api.DeploymentAccessControlSet{
+			ManageActorIDs: manageActorIDs,
+			ManageTeamIDs:  manageTeamIDs,
+			RunActorIDs:    runActorIDs,
+			RunTeamIDs:     runTeamIDs,
+			ViewActorIDs:   viewActorIDs,
+			ViewTeamIDs:    viewTeamIDs,
+		},
+	})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "update", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
-// Delete deletes the resource and removes the Terraform state.
-func (r *DeploymentAccessResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
-	// no-op, we don't delete deployment access, only update it.
+// Delete resets the access control to empty.
+func (r *DeploymentAccessResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state DeploymentAccessResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.DeploymentAccess(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployment Access", err))
+
+		return
+	}
+
+	payload := api.DeploymentAccessSet{}
+	payload.AccessControl.ManageActorIDs = []string{}
+	payload.AccessControl.ViewActorIDs = []string{}
+	payload.AccessControl.ManageTeamIDs = []string{}
+	payload.AccessControl.ViewTeamIDs = []string{}
+	payload.AccessControl.RunActorIDs = []string{}
+	payload.AccessControl.RunTeamIDs = []string{}
+
+	err = client.Set(ctx, state.DeploymentID.ValueUUID(), payload)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Access", "delete", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
