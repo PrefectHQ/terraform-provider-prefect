@@ -80,7 +80,7 @@ func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		Description: "The resource `variable` represents a Prefect Cloud Variable. " +
+		Description: "The resource `variable` represents a Prefect Variable. " +
 			"Variables enable you to store and reuse non-sensitive information in your flows. ",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
