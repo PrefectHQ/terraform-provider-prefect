@@ -13,29 +13,31 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccVariableResource(workspace, workspaceName, name string, value interface{}) string {
+func fixtureAccVariableResource(workspace, name string, value interface{}) string {
 	return fmt.Sprintf(`
 %s
+
 resource "prefect_variable" "test" {
 	name = "%s"
 	value = %v
-	workspace_id = prefect_workspace.%s.id
-	depends_on = [prefect_workspace.%s]
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
 }
-	`, workspace, name, value, workspaceName, workspaceName)
+	`, workspace, name, value)
 }
 
-func fixtureAccVariableResourceWithTags(workspace, workspaceName, name string, value interface{}) string {
+func fixtureAccVariableResourceWithTags(workspace, name string, value interface{}) string {
 	return fmt.Sprintf(`
 %s
+
 resource "prefect_variable" "test" {
 	name = "%s"
 	value = %v
 	tags = ["foo", "bar"]
-	workspace_id = prefect_workspace.%s.id
-	depends_on = [prefect_workspace.%s]
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
 }
-	`, workspace, name, value, workspaceName, workspaceName)
+	`, workspace, name, value)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -54,8 +56,7 @@ func TestAccResource_variable(t *testing.T) {
 	valueObject := `{"foo" = "bar"}`
 	valueObjectExpected := map[string]interface{}{"foo": "bar"}
 
-	workspace, workspaceName := testutils.NewEphemeralWorkspace()
-	workspaceResourceName := "prefect_workspace." + workspaceName
+	workspace := testutils.NewEphemeralWorkspace()
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -67,58 +68,58 @@ func TestAccResource_variable(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName, valueStringForResource),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName, valueStringForResource),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: valueString}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 				),
 			},
 			{
 				// Check updating name of the variable resource
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueStringForResource),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName2, valueStringForResource),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueString}),
 				),
 			},
 			{
 				// Check updating value of the variable resource to a number
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueNumber),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName2, valueNumber),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueNumber}),
 				),
 			},
 			{
 				// Check updating value of the variable resource to a boolean
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueBool),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName2, valueBool),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
 				),
 			},
 			{
 				// Check updating value of the variable resource to a object
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueObject),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName2, valueObject),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueObjectExpected}),
 				),
 			},
 			{
 				// Check updating value of the variable resource to a tuple
-				Config: fixtureAccVariableResource(workspace, workspaceName, randomName2, valueTuple),
+				Config: fixtureAccVariableResource(workspace.Resource, randomName2, valueTuple),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueTupleExpected}),
 				),
 			},
 			{
 				// Check adding tags
-				Config: fixtureAccVariableResourceWithTags(workspace, workspaceName, randomName2, valueBool),
+				Config: fixtureAccVariableResourceWithTags(workspace.Resource, randomName2, valueBool),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckVariableExists(resourceName, workspaceResourceName, &variable),
+					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
 					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
@@ -130,7 +131,7 @@ func TestAccResource_variable(t *testing.T) {
 	})
 }
 
-func testAccCheckVariableExists(variableResourceName string, workspaceResourceName string, variable *api.Variable) resource.TestCheckFunc {
+func testAccCheckVariableExists(variableResourceName string, variable *api.Variable) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		variableResource, exists := state.RootModule().Resources[variableResourceName]
 		if !exists {
@@ -138,9 +139,9 @@ func testAccCheckVariableExists(variableResourceName string, workspaceResourceNa
 		}
 		variableResourceID, _ := uuid.Parse(variableResource.Primary.ID)
 
-		workspaceResource, exists := state.RootModule().Resources[workspaceResourceName]
+		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", workspaceResourceName)
+			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
