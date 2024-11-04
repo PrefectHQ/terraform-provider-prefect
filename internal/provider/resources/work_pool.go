@@ -198,8 +198,8 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -277,8 +277,8 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

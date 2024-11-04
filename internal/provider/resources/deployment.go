@@ -307,20 +307,20 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	var parameters map[string]interface{}
-	resp.Diagnostics.Append(plan.Parameters.Unmarshal(&parameters)...)
+	parameters, diags := helpers.SafeUnmarshal(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var jobVariables map[string]interface{}
-	resp.Diagnostics.Append(plan.JobVariables.Unmarshal(&jobVariables)...)
+	jobVariables, diags := helpers.SafeUnmarshal(plan.JobVariables)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	var parameterOpenAPISchema map[string]interface{}
-	resp.Diagnostics.Append(plan.ParameterOpenAPISchema.Unmarshal(&parameterOpenAPISchema)...)
+	parameterOpenAPISchema, diags := helpers.SafeUnmarshal(plan.ParameterOpenAPISchema)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -473,15 +473,19 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	var parameters map[string]interface{}
-	resp.Diagnostics.Append(model.Parameters.Unmarshal(&parameters)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if !model.Parameters.IsNull() {
+		resp.Diagnostics.Append(model.Parameters.Unmarshal(&parameters)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	var jobVariables map[string]interface{}
-	resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
-	if resp.Diagnostics.HasError() {
-		return
+	if !model.JobVariables.IsNull() {
+		resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	payload := api.DeploymentUpdate{
