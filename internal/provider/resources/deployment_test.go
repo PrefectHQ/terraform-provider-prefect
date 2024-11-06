@@ -241,7 +241,7 @@ func TestAccResource_deployment(t *testing.T) {
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName, testutils.WorkspaceResourceName),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
 				ResourceName:      cfgCreate.DeploymentResourceName,
 				ImportStateVerify: true,
 			},
