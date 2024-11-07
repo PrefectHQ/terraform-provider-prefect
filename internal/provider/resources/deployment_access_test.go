@@ -79,15 +79,13 @@ resource "prefect_deployment_access" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_access(t *testing.T) {
-	workspace, workspaceName := testutils.NewEphemeralWorkspace()
-	workspaceResourceName := "prefect_workspace." + workspaceName
-
+	workspace := testutils.NewEphemeralWorkspace()
 	serviceAccountName := "my-service-account"
 	teamName := "my-team"
 
 	cfgSet := deploymentAccessConfig{
-		WorkspaceResource:     workspace,
-		WorkspaceResourceName: workspaceResourceName,
+		WorkspaceResource:     workspace.Resource,
+		WorkspaceResourceName: testutils.WorkspaceResourceName,
 	}
 
 	var deployment api.Deployment
@@ -100,8 +98,8 @@ func TestAccResource_deployment_access(t *testing.T) {
 			{
 				Config: fixtureAccDeploymentAccess(cfgSet),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists("prefect_deployment.test", workspaceResourceName, &deployment),
-					testAccCheckDeploymentAccessExists("prefect_deployment_access.test", workspaceResourceName, &deploymentAccess),
+					testAccCheckDeploymentExists("prefect_deployment.test", &deployment),
+					testAccCheckDeploymentAccessExists("prefect_deployment_access.test", &deploymentAccess),
 					testAccCheckDeploymentAccessValues(&deploymentAccess, expectedDeploymentAccessValues{
 						manageActors: []api.ObjectActorAccess{
 							{Name: serviceAccountName, Type: api.ServiceAccountAccessor},
@@ -124,7 +122,7 @@ func TestAccResource_deployment_access(t *testing.T) {
 
 // testAccCheckDeploymentAccessExists is a Custom Check Function that
 // verifies that the API object was created correctly.
-func testAccCheckDeploymentAccessExists(deploymentAccessResourceName string, workspaceResourceName string, deploymentAccess *api.DeploymentAccessControl) resource.TestCheckFunc {
+func testAccCheckDeploymentAccessExists(deploymentAccessResourceName string, deploymentAccess *api.DeploymentAccessControl) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the deployment access resource we just created from the state
 		deploymentAccessResource, exists := s.RootModule().Resources[deploymentAccessResourceName]
@@ -134,9 +132,9 @@ func testAccCheckDeploymentAccessExists(deploymentAccessResourceName string, wor
 		deploymentAccessID, _ := uuid.Parse(deploymentAccessResource.Primary.Attributes["deployment_id"])
 
 		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[workspaceResourceName]
+		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", workspaceResourceName)
+			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
