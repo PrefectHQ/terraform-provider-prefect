@@ -9,13 +9,15 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccBlockByName(workspace, name string) string {
+func fixtureAccBlockByName(name string) string {
 	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 
 	return fmt.Sprintf(`
-%s
+data "prefect_workspace" "evergreen" {
+	handle = "github-ci-tests"
+}
 
-resource "prefect_block" "test" {
+resource "prefect_block" "%s" {
   name      = "%s"
   type_slug = "secret"
 
@@ -24,14 +26,14 @@ resource "prefect_block" "test" {
   })
 
   account_id = "%s"
-  workspace_id = prefect_workspace.test.id
+  workspace_id = data.prefect_workspace.evergreen.id
 }
 
 data "prefect_block" "my_existing_secret_by_id" {
   id = prefect_block.%s.id
 
   account_id = "%s"
-  workspace_id = prefect_workspace.test.id
+  workspace_id = data.prefect_workspace.evergreen.id
 
   depends_on = [prefect_block.%s]
 }
@@ -41,19 +43,17 @@ data "prefect_block" "my_existing_secret_by_name" {
   type_slug = "secret"
 
   account_id = "%s"
-  workspace_id = prefect_workspace.test.id
+  workspace_id = data.prefect_workspace.evergreen.id
 
   depends_on = [prefect_block.%s]
 }
-`, workspace, name, aID, name, aID, name, name, aID, name)
+`, name, name, aID, name, aID, name, name, aID, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_block(t *testing.T) {
 	datasourceNameByID := "data.prefect_block.my_existing_secret_by_id"
 	datasourceNameByName := "data.prefect_block.my_existing_secret_by_name"
-
-	workspace := testutils.NewEphemeralWorkspace()
 
 	blockName := "my-block"
 	blockValue := "{\"someKey\":\"someValue\"}"
@@ -64,7 +64,7 @@ func TestAccDatasource_block(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Test block datasource by ID.
-				Config: fixtureAccBlockByName(workspace.Resource, blockName),
+				Config: fixtureAccBlockByName(blockName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(datasourceNameByID, "id"),
 					resource.TestCheckResourceAttr(datasourceNameByID, "name", blockName),
@@ -73,7 +73,7 @@ func TestAccDatasource_block(t *testing.T) {
 			},
 			{
 				// Test block datasource by name.
-				Config: fixtureAccBlockByName(workspace.Resource, blockName),
+				Config: fixtureAccBlockByName(blockName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet(datasourceNameByName, "id"),
 					resource.TestCheckResourceAttr(datasourceNameByName, "name", blockName),
