@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -19,11 +18,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-)
-
-const (
-	blockSchemaRetryCount = 3
-	blockSchemaRetryDelay = 2 * time.Second
 )
 
 type BlockResource struct {
@@ -154,76 +148,6 @@ func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) dia
 	return nil
 }
 
-// getLatestBlockSchema retrieves the latest block schema for a given block type slug.
-//
-// BlockTypes / BlockSchemas are tied to a particular Workspace, and
-// they are created asynchronously after a new Workspace request resolves.
-//
-// This means that if a `prefect_block` is created in the same plan as a
-// new `prefect_workspace`, there is a potential race condition that could occur if the
-// Workspace is created + resolves, but the BlockTypes / BlockSchemas have yet to have
-// been created - this has been observed to happen even with a depends_on relationship defined.
-//
-// To eliminate spurious create failures, test flakiness, and general user confusion,
-// we'll add a retry for these specific operations.
-//
-//nolint:ireturn // returns diagnostic for simpler error handling
-func getLatestBlockSchema(ctx context.Context, client api.PrefectClient, plan BlockResourceModel) (api.BlockSchema, diag.Diagnostic) {
-	var result api.BlockSchema
-
-	blockTypeClient, err := client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		return api.BlockSchema{}, helpers.CreateClientErrorDiagnostic("Block Types", err)
-	}
-
-	blockSchemaClient, err := client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		return api.BlockSchema{}, helpers.CreateClientErrorDiagnostic("Block Schema", err)
-	}
-
-	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
-	if err != nil {
-		return api.BlockSchema{}, helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err)
-	}
-
-	listBlockSchemasFunc := func() ([]*api.BlockSchema, diag.Diagnostic) {
-		blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
-		if err != nil {
-			return []*api.BlockSchema{}, helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err)
-		}
-
-		return blockSchemas, nil
-	}
-
-	for i := 0; i < blockSchemaRetryCount; i++ {
-		// Retrieve the block schemas.
-		blockSchemas, err := listBlockSchemasFunc()
-		if err != nil {
-			return api.BlockSchema{}, err
-		}
-
-		// If block schemas are found, set the latest block schema and break out of the loop.
-		if len(blockSchemas) > 0 {
-			result = *blockSchemas[0]
-
-			break
-		}
-
-		// Sleep for a short duration to allow the API to catch up.
-		time.Sleep(blockSchemaRetryDelay)
-	}
-
-	// If the latest block schema is still nil, set the error diagnostic.
-	if result.ID == uuid.Nil {
-		return api.BlockSchema{}, diag.NewErrorDiagnostic(
-			"No block schemas found",
-			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
-		)
-	}
-
-	return result, nil
-}
-
 // Create will create the Block resource through the API and insert it into the State.
 func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan BlockResourceModel
@@ -233,11 +157,51 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	latestBlockSchema, blockSchemaDiags := getLatestBlockSchema(ctx, r.client, plan)
-	resp.Diagnostics.Append(blockSchemaDiags)
-	if resp.Diagnostics.HasError() {
+	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
+
 		return
 	}
+
+	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
+
+		return
+	}
+
+	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+
+		return
+	}
+
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
+
+		return
+	}
+
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err))
+
+		return
+	}
+
+	if len(blockSchemas) == 0 {
+		resp.Diagnostics.AddError(
+			"No block schemas found",
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
+		)
+
+		return
+	}
+
+	latestBlockSchema := blockSchemas[0]
 
 	// We typed `data` as JSON, as this is the most
 	// flexible way to handle a dynamic schema from the API.
@@ -247,13 +211,6 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	var data map[string]interface{}
 	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
-
 		return
 	}
 
@@ -350,11 +307,51 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	latestBlockSchema, blockSchemaDiags := getLatestBlockSchema(ctx, r.client, plan)
-	resp.Diagnostics.Append(blockSchemaDiags)
-	if resp.Diagnostics.HasError() {
+	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
+
 		return
 	}
+
+	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
+
+		return
+	}
+
+	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
+
+		return
+	}
+
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", fmt.Errorf("failed to get block type for slug=%s: %w", plan.TypeSlug.ValueString(), err)))
+
+		return
+	}
+
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", fmt.Errorf("failed to list block schemas for block type=%s: %w", plan.TypeSlug.ValueString(), err)))
+
+		return
+	}
+
+	if len(blockSchemas) == 0 {
+		resp.Diagnostics.AddError(
+			"No block schemas found",
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
+		)
+
+		return
+	}
+
+	latestBlockSchema := blockSchemas[0]
 
 	blockID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
@@ -366,13 +363,6 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	var data map[string]interface{}
 	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
-
 		return
 	}
 
