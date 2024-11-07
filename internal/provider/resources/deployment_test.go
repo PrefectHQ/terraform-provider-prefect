@@ -233,12 +233,32 @@ func TestAccResource_deployment(t *testing.T) {
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName),
+				ImportStateIdFunc: getResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName),
 				ResourceName:      cfgCreate.DeploymentResourceName,
 				ImportStateVerify: true,
 			},
 		},
 	})
+}
+
+// This function will shadow testutils.GetResourceImportStateID for now until we use ephemeral
+// workspaces in this test, because until then we will need to pass the workspace resource name
+// rather than relying on the constant naem of the ephemeral workspace resource.
+func getResourceWorkspaceImportStateID(resourceName, workspaceResourceName string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		workspace, exists := state.RootModule().Resources[workspaceResourceName]
+		if !exists {
+			return "", fmt.Errorf("resource not found in state: %s", workspaceResourceName)
+		}
+		workspaceID, _ := uuid.Parse(workspace.Primary.ID)
+
+		fetchedResource, exists := state.RootModule().Resources[resourceName]
+		if !exists {
+			return "", fmt.Errorf("resource not found in state: %s", resourceName)
+		}
+
+		return fmt.Sprintf("%s,%s", fetchedResource.Primary.Attributes["id"], workspaceID), nil
+	}
 }
 
 // testAccCheckDeploymentExists is a Custom Check Function that

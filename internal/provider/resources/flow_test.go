@@ -4,32 +4,27 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccFlowCreate(name string, tag string) string {
+func fixtureAccFlowCreate(workspace, name, tag string) string {
 	return fmt.Sprintf(`
-resource "prefect_workspace" "workspace" {
-	handle = "%s"
-	name = "%s"
-}
+%s
 
 resource "prefect_flow" "flow" {
 	name = "%s"
-	workspace_id = prefect_workspace.workspace.id
+	workspace_id = prefect_workspace.test.id
 	tags = ["%s"]
 }
-`, name, name, name, tag)
+`, workspace, name, tag)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_flow(t *testing.T) {
 	resourceName := "prefect_flow.flow"
-	workspaceResourceName := "prefect_workspace.workspace"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.NewRandomPrefixedString()
+	workspace := testutils.NewEphemeralWorkspace()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -37,7 +32,7 @@ func TestAccResource_flow(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the flow resource
-				Config: fixtureAccFlowCreate(randomName, "test1"),
+				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test1"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
@@ -46,7 +41,7 @@ func TestAccResource_flow(t *testing.T) {
 			},
 			{
 				// Check updating the resource
-				Config: fixtureAccFlowCreate(randomName, "test2"),
+				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
@@ -56,7 +51,7 @@ func TestAccResource_flow(t *testing.T) {
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: helpers.GetResourceWorkspaceImportStateID(resourceName, workspaceResourceName),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(resourceName),
 				ResourceName:      resourceName,
 				ImportStateVerify: true,
 			},

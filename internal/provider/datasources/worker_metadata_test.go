@@ -9,31 +9,30 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkerMetadtata() string {
+func fixtureAccWorkerMetadtata(workspace string) string {
 	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 
 	return fmt.Sprintf(`
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
+%s
 
 data "prefect_worker_metadata" "default" {
   account_id = "%s"
-  workspace_id = data.prefect_workspace.evergreen.id
+  workspace_id = prefect_workspace.test.id
 }
-`, aID)
+`, workspace, aID)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_worker_metadata(t *testing.T) {
 	datasourceName := "data.prefect_worker_metadata.default"
+	workspace := testutils.NewEphemeralWorkspace()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkerMetadtata(),
+				Config: fixtureAccWorkerMetadtata(workspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "14"),
 					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.kubernetes"),
