@@ -38,7 +38,8 @@ type deploymentConfig struct {
 
 	FlowName string
 
-	StorageDocumentName string
+	InfrastructureDocumentName string
+	StorageDocumentName        string
 }
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
@@ -59,6 +60,17 @@ resource "prefect_block" "test_gh_repository" {
 	workspace_id = data.prefect_workspace.evergreen.id
 }
 
+resource "prefect_block" "test_k8s_job" {
+	name = "{{.InfrastructureDocumentName}}"
+	type_slug = "kubernetes-job"
+
+	data = jsonencode({
+		"image": "prefecthq/prefect:latest",
+	})
+
+	workspace_id = data.prefect_workspace.evergreen.id
+}
+
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
@@ -72,6 +84,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	enforce_parameter_schema = {{.EnforceParameterSchema}}
 	entrypoint = "{{.Entrypoint}}"
 	flow_id = prefect_flow.{{.FlowName}}.id
+	infrastructure_document_id = prefect_block.test_k8s_job.id
 	job_variables = jsonencode(
 		{{.JobVariables}}
 	)
@@ -111,20 +124,21 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		WorkspaceResourceName:  "data.prefect_workspace.evergreen",
 
-		Description:            "My deployment description",
-		EnforceParameterSchema: false,
-		Entrypoint:             "hello_world.py:hello_world",
-		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           "some-manifest-path",
-		Parameters:             "some-value1",
-		Path:                   "some-path",
-		Paused:                 false,
-		Tags:                   []string{"test1", "test2"},
-		Version:                "v1.1.1",
-		WorkPoolName:           "evergreen-pool",
-		WorkQueueName:          "evergreen-queue",
-		ParameterOpenAPISchema: parameterOpenAPISchema,
-		StorageDocumentName:    testutils.NewRandomPrefixedString(),
+		Description:                "My deployment description",
+		EnforceParameterSchema:     false,
+		Entrypoint:                 "hello_world.py:hello_world",
+		InfrastructureDocumentName: testutils.NewRandomPrefixedString(),
+		JobVariables:               `{"env":{"some-key":"some-value"}}`,
+		ManifestPath:               "some-manifest-path",
+		Parameters:                 "some-value1",
+		Path:                       "some-path",
+		Paused:                     false,
+		Tags:                       []string{"test1", "test2"},
+		Version:                    "v1.1.1",
+		WorkPoolName:               "evergreen-pool",
+		WorkQueueName:              "evergreen-queue",
+		ParameterOpenAPISchema:     parameterOpenAPISchema,
+		StorageDocumentName:        testutils.NewRandomPrefixedString(),
 	}
 
 	cfgUpdate := deploymentConfig{
@@ -169,7 +183,8 @@ func TestAccResource_deployment(t *testing.T) {
 		// ParameterOpenAPISchema is not settable via the Update method.
 		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
 
-		StorageDocumentName: cfgCreate.StorageDocumentName,
+		InfrastructureDocumentName: cfgCreate.InfrastructureDocumentName,
+		StorageDocumentName:        cfgCreate.StorageDocumentName,
 	}
 
 	var deployment api.Deployment
@@ -201,6 +216,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
+					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "infrastructure_document_id"),
 					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
 			},
@@ -227,6 +243,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					resource.TestCheckResourceAttrSet(cfgUpdate.DeploymentResourceName, "infrastructure_document_id"),
 					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
 			},

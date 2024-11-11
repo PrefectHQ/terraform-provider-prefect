@@ -82,6 +82,7 @@ resource "prefect_deployment" "deployment" {
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
+- `infrastructure_document_id` (String) ID of the associated infrastructure document (UUID)
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.

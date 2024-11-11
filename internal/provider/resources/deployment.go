@@ -44,22 +44,23 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
-	Description            types.String          `tfsdk:"description"`
-	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
-	Entrypoint             types.String          `tfsdk:"entrypoint"`
-	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
-	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
-	ManifestPath           types.String          `tfsdk:"manifest_path"`
-	Name                   types.String          `tfsdk:"name"`
-	ParameterOpenAPISchema jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
-	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
-	Path                   types.String          `tfsdk:"path"`
-	Paused                 types.Bool            `tfsdk:"paused"`
-	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
-	Tags                   types.List            `tfsdk:"tags"`
-	Version                types.String          `tfsdk:"version"`
-	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
-	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
+	Description              types.String          `tfsdk:"description"`
+	EnforceParameterSchema   types.Bool            `tfsdk:"enforce_parameter_schema"`
+	Entrypoint               types.String          `tfsdk:"entrypoint"`
+	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
+	InfrastructureDocumentID customtypes.UUIDValue `tfsdk:"infrastructure_document_id"`
+	JobVariables             jsontypes.Normalized  `tfsdk:"job_variables"`
+	ManifestPath             types.String          `tfsdk:"manifest_path"`
+	Name                     types.String          `tfsdk:"name"`
+	ParameterOpenAPISchema   jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
+	Parameters               jsontypes.Normalized  `tfsdk:"parameters"`
+	Path                     types.String          `tfsdk:"path"`
+	Paused                   types.Bool            `tfsdk:"paused"`
+	StorageDocumentID        customtypes.UUIDValue `tfsdk:"storage_document_id"`
+	Tags                     types.List            `tfsdk:"tags"`
+	Version                  types.String          `tfsdk:"version"`
+	WorkPoolName             types.String          `tfsdk:"work_pool_name"`
+	WorkQueueName            types.String          `tfsdk:"work_queue_name"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -145,6 +146,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
 				Required:    true,
+			},
+			"infrastructure_document_id": schema.StringAttribute{
+				Optional:    true,
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Infrastructure document ID (UUID) to associate deployment to",
 			},
 			"paused": schema.BoolAttribute{
 				Description: "Whether or not the deployment is paused.",
@@ -265,6 +272,7 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
+	model.InfrastructureDocumentID = customtypes.NewUUIDValue(deployment.InfrastructureDocumentID)
 	model.ManifestPath = types.StringValue(deployment.ManifestPath)
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
@@ -326,22 +334,23 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		Description:            plan.Description.ValueString(),
-		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
-		Entrypoint:             plan.Entrypoint.ValueString(),
-		FlowID:                 plan.FlowID.ValueUUID(),
-		JobVariables:           jobVariables,
-		ManifestPath:           plan.ManifestPath.ValueString(),
-		Name:                   plan.Name.ValueString(),
-		Parameters:             parameters,
-		Path:                   plan.Path.ValueString(),
-		Paused:                 plan.Paused.ValueBool(),
-		StorageDocumentID:      plan.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                plan.Version.ValueString(),
-		WorkPoolName:           plan.WorkPoolName.ValueString(),
-		WorkQueueName:          plan.WorkQueueName.ValueString(),
-		ParameterOpenAPISchema: parameterOpenAPISchema,
+		Description:              plan.Description.ValueString(),
+		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBool(),
+		Entrypoint:               plan.Entrypoint.ValueString(),
+		FlowID:                   plan.FlowID.ValueUUID(),
+		InfrastructureDocumentID: plan.InfrastructureDocumentID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		ManifestPath:             plan.ManifestPath.ValueString(),
+		Name:                     plan.Name.ValueString(),
+		Parameters:               parameters,
+		Path:                     plan.Path.ValueString(),
+		Paused:                   plan.Paused.ValueBool(),
+		StorageDocumentID:        plan.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  plan.Version.ValueString(),
+		WorkPoolName:             plan.WorkPoolName.ValueString(),
+		WorkQueueName:            plan.WorkQueueName.ValueString(),
+		ParameterOpenAPISchema:   parameterOpenAPISchema,
 	})
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -489,19 +498,20 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		Description:            model.Description.ValueString(),
-		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
-		Entrypoint:             model.Entrypoint.ValueString(),
-		JobVariables:           jobVariables,
-		ManifestPath:           model.ManifestPath.ValueString(),
-		Parameters:             parameters,
-		Path:                   model.Path.ValueString(),
-		Paused:                 model.Paused.ValueBool(),
-		StorageDocumentID:      model.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                model.Version.ValueString(),
-		WorkPoolName:           model.WorkPoolName.ValueString(),
-		WorkQueueName:          model.WorkQueueName.ValueString(),
+		Description:              model.Description.ValueString(),
+		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBool(),
+		Entrypoint:               model.Entrypoint.ValueString(),
+		InfrastructureDocumentID: model.InfrastructureDocumentID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		ManifestPath:             model.ManifestPath.ValueString(),
+		Parameters:               parameters,
+		Path:                     model.Path.ValueString(),
+		Paused:                   model.Paused.ValueBool(),
+		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  model.Version.ValueString(),
+		WorkPoolName:             model.WorkPoolName.ValueString(),
+		WorkQueueName:            model.WorkQueueName.ValueString(),
 	}
 	err = client.Update(ctx, deploymentID, payload)
 

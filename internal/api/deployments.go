@@ -21,59 +21,62 @@ type Deployment struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
-	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
-	Entrypoint             string                 `json:"entrypoint"`
-	FlowID                 uuid.UUID              `json:"flow_id"`
-	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath           string                 `json:"manifest_path,omitempty"`
-	Name                   string                 `json:"name"`
-	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
-	Path                   string                 `json:"path"`
-	Paused                 bool                   `json:"paused"`
-	StorageDocumentID      uuid.UUID              `json:"storage_document_id,omitempty"`
-	Tags                   []string               `json:"tags"`
-	Version                string                 `json:"version,omitempty"`
-	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
+	Description              string                 `json:"description,omitempty"`
+	EnforceParameterSchema   bool                   `json:"enforce_parameter_schema"`
+	Entrypoint               string                 `json:"entrypoint"`
+	FlowID                   uuid.UUID              `json:"flow_id"`
+	InfrastructureDocumentID uuid.UUID              `json:"infrastructure_document_id,omitempty"`
+	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
+	ManifestPath             string                 `json:"manifest_path,omitempty"`
+	Name                     string                 `json:"name"`
+	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]interface{} `json:"parameters,omitempty"`
+	Path                     string                 `json:"path"`
+	Paused                   bool                   `json:"paused"`
+	StorageDocumentID        uuid.UUID              `json:"storage_document_id,omitempty"`
+	Tags                     []string               `json:"tags"`
+	Version                  string                 `json:"version,omitempty"`
+	WorkPoolName             string                 `json:"work_pool_name,omitempty"`
+	WorkQueueName            string                 `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
-	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint             string                 `json:"entrypoint,omitempty"`
-	FlowID                 uuid.UUID              `json:"flow_id"`
-	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath           string                 `json:"manifest_path,omitempty"`
-	Name                   string                 `json:"name"`
-	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
-	Path                   string                 `json:"path,omitempty"`
-	Paused                 bool                   `json:"paused,omitempty"`
-	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
-	Tags                   []string               `json:"tags,omitempty"`
-	Version                string                 `json:"version,omitempty"`
-	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
+	Description              string                 `json:"description,omitempty"`
+	EnforceParameterSchema   bool                   `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               string                 `json:"entrypoint,omitempty"`
+	FlowID                   uuid.UUID              `json:"flow_id"`
+	InfrastructureDocumentID *uuid.UUID             `json:"infrastructure_document_id,omitempty"`
+	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
+	ManifestPath             string                 `json:"manifest_path,omitempty"`
+	Name                     string                 `json:"name"`
+	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]interface{} `json:"parameters,omitempty"`
+	Path                     string                 `json:"path,omitempty"`
+	Paused                   bool                   `json:"paused,omitempty"`
+	StorageDocumentID        *uuid.UUID             `json:"storage_document_id,omitempty"`
+	Tags                     []string               `json:"tags,omitempty"`
+	Version                  string                 `json:"version,omitempty"`
+	WorkPoolName             string                 `json:"work_pool_name,omitempty"`
+	WorkQueueName            string                 `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint             string                 `json:"entrypoint,omitempty"`
-	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath           string                 `json:"manifest_path"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
-	Path                   string                 `json:"path,omitempty"`
-	Paused                 bool                   `json:"paused,omitempty"`
-	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
-	Tags                   []string               `json:"tags,omitempty"`
-	Version                string                 `json:"version,omitempty"`
-	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
+	Description              string                 `json:"description,omitempty"`
+	EnforceParameterSchema   bool                   `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               string                 `json:"entrypoint,omitempty"`
+	InfrastructureDocumentID *uuid.UUID             `json:"infrastructure_document_id,omitempty"`
+	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
+	ManifestPath             string                 `json:"manifest_path"`
+	Parameters               map[string]interface{} `json:"parameters,omitempty"`
+	Path                     string                 `json:"path,omitempty"`
+	Paused                   bool                   `json:"paused,omitempty"`
+	StorageDocumentID        *uuid.UUID             `json:"storage_document_id,omitempty"`
+	Tags                     []string               `json:"tags,omitempty"`
+	Version                  string                 `json:"version,omitempty"`
+	WorkPoolName             string                 `json:"work_pool_name,omitempty"`
+	WorkQueueName            string                 `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentFilter defines the search filter payload
