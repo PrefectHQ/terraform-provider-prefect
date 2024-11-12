@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -130,10 +131,10 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 	}
 }
 
-// getLatestBlockSchema fetches the latest Block Schema for a given Block Type slug.
+// getBlockSchemas fetches the block schemas for a given block type slug.
 //
 //nolint:ireturn // required by Terraform API
-func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockResourceModel) (*api.BlockSchema, diag.Diagnostic) {
+func (r *BlockResource) getBlockSchemas(ctx context.Context, plan BlockResourceModel) ([]*api.BlockSchema, diag.Diagnostic) {
 	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		return nil, helpers.CreateClientErrorDiagnostic("Block Types", err)
@@ -151,17 +152,47 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 
 	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
 	if err != nil {
-		helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err)
+		return nil, helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err)
 	}
 
-	if len(blockSchemas) == 0 {
-		return nil, diag.NewErrorDiagnostic(
+	return blockSchemas, nil
+}
+
+// getLatestBlockSchema fetches the latest block schema for a given block type slug.
+// If no block schemas are returned, the retrieval is retried because Prefect creates
+// them asynchronously after the creation of a workspace.
+//
+//nolint:ireturn // required by Terraform API
+func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockResourceModel) (*api.BlockSchema, diag.Diagnostic) {
+	var blockSchemas []*api.BlockSchema
+	var latestBlockSchema *api.BlockSchema
+	var diags diag.Diagnostic
+
+	err := retry.Do(func() error {
+		blockSchemas, diags = r.getBlockSchemas(ctx, plan)
+		if diags != nil {
+			return fmt.Errorf("unable to get block schemas: %s", diags.Detail())
+		}
+
+		if len(blockSchemas) == 0 {
+			return fmt.Errorf("no block schemas found")
+		}
+
+		latestBlockSchema = blockSchemas[0]
+
+		return nil
+	})
+
+	if err != nil {
+		diags = diag.NewErrorDiagnostic(
 			"No block schemas found",
 			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
 		)
+
+		return nil, diags
 	}
 
-	return blockSchemas[0], nil
+	return latestBlockSchema, nil
 }
 
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
