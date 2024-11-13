@@ -90,8 +90,9 @@ func NewRandomPrefixedString() string {
 
 // Workspace is a struct that represents a workspace for acceptance tests.
 type Workspace struct {
-	Resource string
-	Name     string
+	Resource    string
+	Name        string
+	Description string
 }
 
 // NewEphemeralWorkspace returns a new ephemeral workspace for acceptance tests.
@@ -100,12 +101,14 @@ func NewEphemeralWorkspace() Workspace {
 
 	randomName := NewRandomPrefixedString()
 	workspace.Name = randomName
+	workspace.Description = randomName
 
 	workspace.Resource = fmt.Sprintf(`
 resource "prefect_workspace" "test" {
 	name = "%s"
 	handle = "%s"
-}`, randomName, randomName)
+	description = "%s"
+}`, randomName, randomName, randomName)
 
 	return workspace
 }

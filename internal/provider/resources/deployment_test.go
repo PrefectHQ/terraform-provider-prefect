@@ -17,7 +17,7 @@ import (
 )
 
 type deploymentConfig struct {
-	WorkspaceResourceName string
+	Workspace string
 
 	DeploymentName         string
 	DeploymentResourceName string
@@ -43,9 +43,7 @@ type deploymentConfig struct {
 
 func fixtureAccDeployment(cfg deploymentConfig) string {
 	tmpl := `
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
+{{.Workspace}}
 
 resource "prefect_block" "test_gh_repository" {
 	name = "{{.StorageDocumentName}}"
@@ -56,14 +54,21 @@ resource "prefect_block" "test_gh_repository" {
 		"reference": "main"
 	})
 
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
+}
+
+resource "prefect_work_pool" "{{.WorkPoolName}}" {
+  name         = "{{.WorkPoolName}}"
+  type         = "kubernetes"
+  paused       = false
+  workspace_id = prefect_workspace.test.id
 }
 
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 }
 
 resource "prefect_deployment" "{{.DeploymentName}}" {
@@ -88,7 +93,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	storage_document_id = prefect_block.test_gh_repository.id
 
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
@@ -98,6 +103,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
 	deploymentName := testutils.NewRandomPrefixedString()
 	flowName := testutils.NewRandomPrefixedString()
 
@@ -109,7 +115,7 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentName:         deploymentName,
 		FlowName:               flowName,
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
-		WorkspaceResourceName:  "data.prefect_workspace.evergreen",
+		Workspace:              workspace.Resource,
 
 		Description:            "My deployment description",
 		EnforceParameterSchema: false,
@@ -121,8 +127,8 @@ func TestAccResource_deployment(t *testing.T) {
 		Paused:                 false,
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
-		WorkPoolName:           "evergreen-pool",
-		WorkQueueName:          "evergreen-queue",
+		WorkPoolName:           "some-pool",
+		WorkQueueName:          "default",
 		ParameterOpenAPISchema: parameterOpenAPISchema,
 		StorageDocumentName:    testutils.NewRandomPrefixedString(),
 	}
@@ -132,10 +138,8 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentName:         cfgCreate.DeploymentName,
 		FlowName:               cfgCreate.FlowName,
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
-		WorkspaceResourceName:  cfgCreate.WorkspaceResourceName,
-
-		// There's only one evergreen work pool right now, so let's reuse that.
-		WorkPoolName: cfgCreate.WorkPoolName,
+		Workspace:              cfgCreate.Workspace,
+		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
 		Description:   "My deployment description v2",
@@ -182,7 +186,7 @@ func TestAccResource_deployment(t *testing.T) {
 				// Check creation + existence of the deployment resource
 				Config: fixtureAccDeployment(cfgCreate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName, &deployment),
+					testAccCheckDeploymentExists(cfgCreate.DeploymentResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgCreate.DeploymentName,
 						description:            cfgCreate.Description,
@@ -208,7 +212,7 @@ func TestAccResource_deployment(t *testing.T) {
 				// Check update of existing deployment resource
 				Config: fixtureAccDeployment(cfgUpdate),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, cfgUpdate.WorkspaceResourceName, &deployment),
+					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgUpdate.DeploymentName,
 						description:            cfgUpdate.Description,
@@ -233,7 +237,7 @@ func TestAccResource_deployment(t *testing.T) {
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
-				ImportStateIdFunc: getResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName, cfgCreate.WorkspaceResourceName),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
 				ResourceName:      cfgCreate.DeploymentResourceName,
 				ImportStateVerify: true,
 			},
@@ -241,29 +245,9 @@ func TestAccResource_deployment(t *testing.T) {
 	})
 }
 
-// This function will shadow testutils.GetResourceImportStateID for now until we use ephemeral
-// workspaces in this test, because until then we will need to pass the workspace resource name
-// rather than relying on the constant naem of the ephemeral workspace resource.
-func getResourceWorkspaceImportStateID(resourceName, workspaceResourceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspace, exists := state.RootModule().Resources[workspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("resource not found in state: %s", workspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspace.Primary.ID)
-
-		fetchedResource, exists := state.RootModule().Resources[resourceName]
-		if !exists {
-			return "", fmt.Errorf("resource not found in state: %s", resourceName)
-		}
-
-		return fmt.Sprintf("%s,%s", fetchedResource.Primary.Attributes["id"], workspaceID), nil
-	}
-}
-
 // testAccCheckDeploymentExists is a Custom Check Function that
 // verifies that the API object was created correctly.
-func testAccCheckDeploymentExists(deploymentResourceName string, workspaceResourceName string, deployment *api.Deployment) resource.TestCheckFunc {
+func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api.Deployment) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the deployment resource we just created from the state
 		deploymentResource, exists := s.RootModule().Resources[deploymentResourceName]
@@ -273,9 +257,9 @@ func testAccCheckDeploymentExists(deploymentResourceName string, workspaceResour
 		deploymentID, _ := uuid.Parse(deploymentResource.Primary.ID)
 
 		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[workspaceResourceName]
+		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", workspaceResourceName)
+			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 

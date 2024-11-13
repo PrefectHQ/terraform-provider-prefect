@@ -98,7 +98,7 @@ func TestAccResource_deployment_access(t *testing.T) {
 			{
 				Config: fixtureAccDeploymentAccess(cfgSet),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists("prefect_deployment.test", cfgSet.WorkspaceResourceName, &deployment),
+					testAccCheckDeploymentExists("prefect_deployment.test", &deployment),
 					testAccCheckDeploymentAccessExists("prefect_deployment_access.test", &deploymentAccess),
 					testAccCheckDeploymentAccessValues(&deploymentAccess, expectedDeploymentAccessValues{
 						manageActors: []api.ObjectActorAccess{
