@@ -3,13 +3,13 @@
 page_title: "prefect_work_pool Resource - prefect"
 subcategory: ""
 description: |-
-  The resource work_pool represents a Prefect Cloud Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
+  The resource work_pool represents a Prefect Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
   Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the prefect_worker_metadata data source to bootstrap new Work Pools quickly.
 ---
 
 # prefect_work_pool (Resource)
 
-The resource `work_pool` represents a Prefect Cloud Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
+The resource `work_pool` represents a Prefect Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
 
 Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.
 
@@ -60,7 +60,7 @@ resource "prefect_work_pool" "example" {
 - `description` (String) Description of the work pool
 - `paused` (Boolean) Whether this work pool is paused
 - `type` (String) Type of the work pool, eg. kubernetes, ecs, process, etc.
-- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
+- `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only
 

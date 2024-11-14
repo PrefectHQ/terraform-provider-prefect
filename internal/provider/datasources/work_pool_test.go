@@ -1,38 +1,53 @@
 package datasources_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccSingleWorkPool() string {
-	return `
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
+func fixtureAccSingleWorkPool(workspace, name string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_work_pool" "test" {
+	name = "%s"
+	type = "kubernetes"
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
 }
-data "prefect_work_pool" "evergreen" {
-	name = "evergreen-pool"
-	workspace_id = data.prefect_workspace.evergreen.id
+
+data "prefect_work_pool" "test" {
+	name = "%s"
+	workspace_id = prefect_workspace.test.id
 }
-`
+`, workspace, name, name)
 }
-func fixtureAccMultipleWorkPools() string {
-	return `
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
+
+func fixtureAccMultipleWorkPools(workspace, name string) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_work_pool" "test" {
+	name = "%s"
+	type = "kubernetes"
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
 }
-data "prefect_work_pools" "evergreen" {
-	workspace_id = data.prefect_workspace.evergreen.id
+
+data "prefect_work_pools" "test" {
+	workspace_id = prefect_workspace.test.id
 }
-`
+`, workspace, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_work_pool(t *testing.T) {
-	singleWorkPoolDatasourceName := "data.prefect_work_pool.evergreen"
-	multipleWorkPoolDatasourceName := "data.prefect_work_pools.evergreen"
+	singleWorkPoolDatasourceName := "data.prefect_work_pool.test"
+	multipleWorkPoolDatasourceName := "data.prefect_work_pools.test"
+	workspace := testutils.NewEphemeralWorkspace()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -40,9 +55,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work pool
-				Config: fixtureAccSingleWorkPool(),
+				Config: fixtureAccSingleWorkPool(workspace.Resource, "test-pool"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(singleWorkPoolDatasourceName, "name", "evergreen-pool"),
+					resource.TestCheckResourceAttr(singleWorkPoolDatasourceName, "name", "test-pool"),
 					resource.TestCheckResourceAttrSet(singleWorkPoolDatasourceName, "id"),
 					resource.TestCheckResourceAttrSet(singleWorkPoolDatasourceName, "created"),
 					resource.TestCheckResourceAttrSet(singleWorkPoolDatasourceName, "updated"),
@@ -54,9 +69,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work pools
-				Config: fixtureAccMultipleWorkPools(),
+				Config: fixtureAccMultipleWorkPools(workspace.Resource, "test-pool"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(multipleWorkPoolDatasourceName, "work_pools.0.name", "evergreen-pool"),
+					resource.TestCheckResourceAttr(multipleWorkPoolDatasourceName, "work_pools.0.name", "test-pool"),
 					resource.TestCheckResourceAttrSet(multipleWorkPoolDatasourceName, "work_pools.0.id"),
 					resource.TestCheckResourceAttrSet(multipleWorkPoolDatasourceName, "work_pools.0.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkPoolDatasourceName, "work_pools.0.updated"),

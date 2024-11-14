@@ -1,4 +1,4 @@
-package helpers
+package testutils
 
 import (
 	"fmt"
@@ -8,11 +8,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func GetResourceWorkspaceImportStateID(resourceName string, workspaceName string) resource.ImportStateIdFunc {
+func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
-		workspace, exists := state.RootModule().Resources[workspaceName]
+		workspace, exists := state.RootModule().Resources[WorkspaceResourceName]
 		if !exists {
-			return "", fmt.Errorf("resource not found in state: %s", workspaceName)
+			return "", fmt.Errorf("resource not found in state: %s", WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspace.Primary.ID)
 

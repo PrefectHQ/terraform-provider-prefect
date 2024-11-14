@@ -8,46 +8,49 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkspaceByHandle(handle string) string {
+func fixtureAccWorkspaceByHandle(workspace, handle string) string {
 	return fmt.Sprintf(`
-data "prefect_workspace" "evergreen" {
+%s
+
+data "prefect_workspace" "testdata" {
 	handle = "%s"
+	depends_on = [prefect_workspace.test]
 }
-`, handle)
+`, workspace, handle)
 }
-func fixtureAccWorkspaceByID(id string) string {
+
+func fixtureAccWorkspaceByID(workspace string) string {
 	return fmt.Sprintf(`
-data "prefect_workspace" "evergreen" {
-	id = "%s"
+%s
+
+data "prefect_workspace" "testdata" {
+	id = prefect_workspace.test.id
 }
-`, id)
+`, workspace)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_workspace(t *testing.T) {
-	dataSourceName := "data.prefect_workspace.evergreen"
-	workspaceHandle := "github-ci-tests"
-	workspaceID := "45cfa7c6-e136-471c-859b-3be89d0a99ce"
+	ephemeralWorkspace := testutils.NewEphemeralWorkspace()
+	dataSourceName := "data.prefect_workspace.testdata"
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkspaceByHandle(workspaceHandle),
+				Config: fixtureAccWorkspaceByHandle(ephemeralWorkspace.Resource, ephemeralWorkspace.Name),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "handle", workspaceHandle),
-					resource.TestCheckResourceAttr(dataSourceName, "id", workspaceID),
+					resource.TestCheckResourceAttr(dataSourceName, "handle", ephemeralWorkspace.Name),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "name"),
 				),
 			},
 			{
-				Config: fixtureAccWorkspaceByID(workspaceID),
+				Config: fixtureAccWorkspaceByID(ephemeralWorkspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "handle", workspaceHandle),
-					resource.TestCheckResourceAttr(dataSourceName, "id", workspaceID),
+					resource.TestCheckResourceAttr(dataSourceName, "handle", ephemeralWorkspace.Name),
 					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
 					resource.TestCheckResourceAttrSet(dataSourceName, "name"),

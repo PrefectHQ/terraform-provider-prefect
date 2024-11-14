@@ -24,6 +24,9 @@ const (
 	// RandomStringLength sets the length of the random string used when creating a new random
 	// name for a resource via NewRandomEphemeralWorkspace.
 	RandomStringLength = 10
+
+	// WorkspaceResourceName is the name of the workspace resource.
+	WorkspaceResourceName = "prefect_workspace.test"
 )
 
 // TestAccProvider defines the actual Provider, which is used during acceptance testing.
@@ -80,18 +83,32 @@ func NewTestClient() (api.PrefectClient, error) {
 	return prefectClient, nil
 }
 
+// NewRandomPrefixedString returns a new random prefixed string used for creating ephemeral resources.
 func NewRandomPrefixedString() string {
 	return TestAccPrefix + acctest.RandStringFromCharSet(RandomStringLength, acctest.CharSetAlphaNum)
 }
 
-func NewEphemeralWorkspace() (string, string) {
-	randomName := NewRandomPrefixedString()
+// Workspace is a struct that represents a workspace for acceptance tests.
+type Workspace struct {
+	Resource    string
+	Name        string
+	Description string
+}
 
-	workspace := fmt.Sprintf(`
-resource "prefect_workspace" "%s" {
+// NewEphemeralWorkspace returns a new ephemeral workspace for acceptance tests.
+func NewEphemeralWorkspace() Workspace {
+	workspace := Workspace{}
+
+	randomName := NewRandomPrefixedString()
+	workspace.Name = randomName
+	workspace.Description = randomName
+
+	workspace.Resource = fmt.Sprintf(`
+resource "prefect_workspace" "test" {
 	name = "%s"
 	handle = "%s"
+	description = "%s"
 }`, randomName, randomName, randomName)
 
-	return workspace, randomName
+	return workspace
 }

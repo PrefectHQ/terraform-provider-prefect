@@ -23,21 +23,7 @@
 
 We're continuously adding more Prefect Cloud object support, striving for near-parity by the `v1.x.x` release.
 
-Check back with us to see new additions and improvements - and please don't hesitate to peruse our [Contributing section!](#contributing)
-
-|   Prefect object | Datasource support? | Resource support? | Import support? | Cloud only? |
-| ---------------: | :-----------------: | :---------------: | :-------------: | :---------: |
-|   Account Member |       &check;       |                   |                 |   &check;   |
-|     Account Role |       &check;       |                   |                 |   &check;   |
-|          Account |       &check;       |      &check;      |     &check;     |   &check;   |
-|            Block |       &check;       |      &check;      |     &check;     |             |
-|  Service Account |       &check;       |      &check;      |     &check;     |   &check;   |
-|             Team |       &check;       |                   |                 |   &check;   |
-|         Variable |       &check;       |      &check;      |     &check;     |             |
-|        Work Pool |       &check;       |      &check;      |     &check;     |             |
-| Workspace Access |       &check;       |      &check;      |                 |   &check;   |
-|   Workspace Role |       &check;       |      &check;      |     &check;     |   &check;   |
-|        Workspace |       &check;       |      &check;      |     &check;     |   &check;   |
+See our [Milestone for API parity](https://github.com/PrefectHQ/terraform-provider-prefect/milestone/1) for more information.
 
 ## Contributing
 

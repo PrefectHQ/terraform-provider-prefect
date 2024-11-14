@@ -78,7 +78,7 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 // Schema defines the schema for the resource.
 func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `work_pool` represents a Prefect Cloud Work Pool. " +
+		Description: "The resource `work_pool` represents a Prefect Work Pool. " +
 			"Work Pools represent infrastructure configurations for jobs across several common environments.\n" +
 			"\n" +
 			"Work Pools can be set up with default base job configurations, based on which type. " +
@@ -115,7 +115,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.",
 				Optional:    true,
 			},
 			"name": schema.StringAttribute{
@@ -198,8 +198,8 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -277,8 +277,8 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	baseJobTemplate := map[string]interface{}{}
-	resp.Diagnostics.Append(plan.BaseJobTemplate.Unmarshal(&baseJobTemplate)...)
+	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

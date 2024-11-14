@@ -13,7 +13,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccBlock(workspace, workspaceName, blockName, blockValue string) string {
+func fixtureAccBlock(workspace, blockName, blockValue string) string {
 	return fmt.Sprintf(`
 %s
 resource "prefect_block" "%s" {
@@ -22,9 +22,9 @@ resource "prefect_block" "%s" {
 	data = jsonencode({
 		"value" = "%s"
 	})
-	workspace_id = prefect_workspace.%s.id
-	depends_on = [prefect_workspace.%s]
-}`, workspace, blockName, blockName, blockValue, workspaceName, workspaceName)
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
+}`, workspace, blockName, blockName, blockValue)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -33,10 +33,9 @@ func TestAccResource_block(t *testing.T) {
 	randomValue := testutils.NewRandomPrefixedString()
 	randomValue2 := testutils.NewRandomPrefixedString()
 
-	workspace, workspaceName := testutils.NewEphemeralWorkspace()
+	workspace := testutils.NewEphemeralWorkspace()
 
 	blockResourceName := fmt.Sprintf("prefect_block.%s", randomName)
-	workspaceResourceName := fmt.Sprintf("prefect_workspace.%s", workspaceName)
 
 	// We use this variable to store the fetched block document resource from the API
 	// and it will be shared between the TestSteps via pointer.
@@ -48,9 +47,9 @@ func TestAccResource_block(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Check creation + existence of the block resource
 			{
-				Config: fixtureAccBlock(workspace, workspaceName, randomName, randomValue),
+				Config: fixtureAccBlock(workspace.Resource, randomName, randomValue),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckBlockExists(blockResourceName, workspaceResourceName, &blockDocument),
+					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
 						Name:     randomName,
 						TypeSlug: "secret",
@@ -63,9 +62,9 @@ func TestAccResource_block(t *testing.T) {
 			},
 			// Check updating the value of the block resource
 			{
-				Config: fixtureAccBlock(workspace, workspaceName, randomName, randomValue2),
+				Config: fixtureAccBlock(workspace.Resource, randomName, randomValue2),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckBlockExists(blockResourceName, workspaceResourceName, &blockDocument),
+					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
 						Name:     randomName,
 						TypeSlug: "secret",
@@ -80,7 +79,7 @@ func TestAccResource_block(t *testing.T) {
 			{
 				ImportState:       true,
 				ResourceName:      blockResourceName,
-				ImportStateIdFunc: getBlockImportStateID(blockResourceName, workspaceResourceName),
+				ImportStateIdFunc: getBlockImportStateID(blockResourceName),
 				ImportStateVerify: true,
 			},
 		},
@@ -89,7 +88,7 @@ func TestAccResource_block(t *testing.T) {
 
 // testAccCheckBlockExists is a Custom Check Function that
 // verifies that the API object was created correctly.
-func testAccCheckBlockExists(blockResourceName string, workspaceResourceName string, blockDocument *api.BlockDocument) resource.TestCheckFunc {
+func testAccCheckBlockExists(blockResourceName string, blockDocument *api.BlockDocument) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the block resource we just created from the state
 		blockResource, exists := s.RootModule().Resources[blockResourceName]
@@ -99,9 +98,9 @@ func testAccCheckBlockExists(blockResourceName string, workspaceResourceName str
 		blockID, _ := uuid.Parse(blockResource.Primary.ID)
 
 		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[workspaceResourceName]
+		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", workspaceResourceName)
+			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
@@ -151,11 +150,11 @@ func testAccCheckBlockValues(fetchedBlockDocument *api.BlockDocument, expectedVa
 
 // getBlockImportStateID generates the Import ID used in the test assertion,
 // since we need to construct one that includes the Block ID and the Workspace ID.
-func getBlockImportStateID(blockResourceName string, workspaceResourceName string) resource.ImportStateIdFunc {
+func getBlockImportStateID(blockResourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[workspaceResourceName]
+		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", workspaceResourceName)
+			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
 		}
 		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
