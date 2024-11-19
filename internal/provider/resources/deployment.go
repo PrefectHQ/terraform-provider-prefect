@@ -55,6 +55,7 @@ type DeploymentResourceModel struct {
 	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
 	Path                   types.String          `tfsdk:"path"`
 	Paused                 types.Bool            `tfsdk:"paused"`
+	Schedules              types.List            `tfsdk:"schedules"`
 	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
 	Tags                   types.List            `tfsdk:"tags"`
 	Version                types.String          `tfsdk:"version"`
@@ -119,8 +120,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+					stringplanmodifier.UseStateForUnknown()},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -251,6 +251,66 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"schedules": schema.ListNestedAttribute{
+				Description: "A list of schedules for the deployment.",
+				Optional:    true,
+				Computed:    true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"active": schema.BoolAttribute{
+							Description: "Whether or not the schedule is active.",
+							Optional:    true,
+							Computed:    true,
+							Default:     booldefault.StaticBool(true),
+						},
+						"max_scheduled_runs": schema.NumberAttribute{
+							Description: "The maximum number of scheduled runs for the schedule.",
+							Optional:    true,
+							Computed:    true,
+						},
+						"schedule": schema.SingleNestedAttribute{
+							Description: "The schedule for the deployment.",
+							Required:    true,
+							Attributes: map[string]schema.Attribute{
+								// Timezone is a common field for all schedule kinds.
+								"timezone": schema.StringAttribute{
+									Description: "The timezone of the schedule.",
+									Optional:    true,
+									Computed:    true,
+								},
+								// Schedule kind: interval
+								"interval": schema.NumberAttribute{
+									Description: "The interval of the schedule.",
+									Optional:    true,
+									Computed:    true,
+								},
+								"anchor_date": schema.StringAttribute{
+									Description: "The anchor date of the schedule.",
+									Optional:    true,
+									Computed:    true,
+								},
+								// Schedule kind: cron
+								"cron": schema.StringAttribute{
+									Description: "The cron expression of the schedule.",
+									Optional:    true,
+									Computed:    true,
+								},
+								"day_or": schema.BoolAttribute{
+									Description: "Control croniter behavior for handling day and day_of_week entries.",
+									Optional:    true,
+									Computed:    true,
+								},
+								// Schedule kind: rrule
+								"rrule": schema.StringAttribute{
+									Description: "The rrule expression of the schedule.",
+									Optional:    true,
+									Computed:    true,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 }
@@ -280,6 +340,8 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	}
 	model.Tags = tags
 
+	// TODO: copy schedules to model
+
 	return nil
 }
 
@@ -303,6 +365,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 
 	var tags []string
 	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var schedules []api.ScheduleInstance
+	resp.Diagnostics.Append(plan.Schedules.ElementsAs(ctx, &schedules, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -336,6 +404,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		Parameters:             parameters,
 		Path:                   plan.Path.ValueString(),
 		Paused:                 plan.Paused.ValueBool(),
+		Schedules:              schedules,
 		StorageDocumentID:      plan.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                   tags,
 		Version:                plan.Version.ValueString(),
@@ -453,6 +522,8 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 			"Error creating deployment client",
 			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	deploymentID, err := uuid.Parse(model.ID.ValueString())
@@ -468,6 +539,12 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	var tags []string
 	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var schedules []api.ScheduleInstance
+	resp.Diagnostics.Append(model.Tags.ElementsAs(ctx, &schedules, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -497,6 +574,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
 		Paused:                 model.Paused.ValueBool(),
+		Schedules:              schedules,
 		StorageDocumentID:      model.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                   tags,
 		Version:                model.Version.ValueString(),

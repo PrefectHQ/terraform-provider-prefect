@@ -32,6 +32,7 @@ type Deployment struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path"`
 	Paused                 bool                   `json:"paused"`
+	Schedules              []ScheduleInstance     `json:"schedules,omitempty"`
 	StorageDocumentID      uuid.UUID              `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags"`
 	Version                string                 `json:"version,omitempty"`
@@ -52,6 +53,7 @@ type DeploymentCreate struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	Schedules              []ScheduleInstance     `json:"schedules,omitempty"`
 	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
@@ -69,9 +71,32 @@ type DeploymentUpdate struct {
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
+	Schedules              []ScheduleInstance     `json:"schedules,omitempty"`
 	StorageDocumentID      *uuid.UUID             `json:"storage_document_id,omitempty"`
 	Tags                   []string               `json:"tags,omitempty"`
 	Version                string                 `json:"version,omitempty"`
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
 	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
+}
+
+type Schedule struct {
+	// All schedule kinds specify an interval.
+	Timezone string `json:"timezone"`
+
+	// Schedule kind: interval
+	Interval   int    `json:"interval"`
+	AnchorDate string `json:"anchor_date"`
+
+	// Schedule kind: cron
+	Cron  string `json:"cron"`
+	DayOr bool   `json:"day_or"`
+
+	// Schedule kind: rrule
+	RRule string `json:"rrule"`
+}
+
+type ScheduleInstance struct {
+	Active           bool     `json:"active"`
+	MaxScheduledRuns int      `json:"max_scheduled_runs"`
+	Schedule         Schedule `json:"schedule"`
 }
