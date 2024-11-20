@@ -97,6 +97,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
+
 	return helpers.RenderTemplate(tmpl, cfg)
 }
 
@@ -132,7 +133,7 @@ func TestAccResource_deployment(t *testing.T) {
 		StorageDocumentName:    testutils.NewRandomPrefixedString(),
 	}
 
-	_ = deploymentConfig{
+	cfgUpdate := deploymentConfig{
 		// Keep some values from cfgCreate so we refer to the same resources for the update.
 		DeploymentName:         cfgCreate.DeploymentName,
 		FlowName:               cfgCreate.FlowName,
@@ -207,39 +208,39 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
 			},
-			// {
-			// 	// Check update of existing deployment resource
-			// 	Config: fixtureAccDeployment(cfgUpdate),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, &deployment),
-			// 		testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-			// 			name:                   cfgUpdate.DeploymentName,
-			// 			description:            cfgUpdate.Description,
-			// 			parameterOpenapiSchema: parameterOpenAPISchemaMap,
-			// 		}),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
-			// 		resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
-			// 		resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.0", cfgUpdate.Tags[0]),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.1", cfgUpdate.Tags[1]),
-			// 		resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
-			// 		resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
-			// 		resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
-			// 		resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
-			// 	),
-			// },
+			{
+				// Check update of existing deployment resource
+				Config: fixtureAccDeployment(cfgUpdate),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, &deployment),
+					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
+						name:                   cfgUpdate.DeploymentName,
+						description:            cfgUpdate.Description,
+						parameterOpenapiSchema: parameterOpenAPISchemaMap,
+					}),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.0", cfgUpdate.Tags[0]),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.1", cfgUpdate.Tags[1]),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
+				),
+			},
 			// Import State checks - import by ID (default)
-			// {
-			// 	ImportState:       true,
-			// 	ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
-			// 	ResourceName:      cfgCreate.DeploymentResourceName,
-			// 	ImportStateVerify: true,
-			// },
+			{
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
+				ResourceName:      cfgCreate.DeploymentResourceName,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
