@@ -113,7 +113,7 @@ func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid
 		return fmt.Errorf("failed to encode update payload data: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID)
+	url := fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
