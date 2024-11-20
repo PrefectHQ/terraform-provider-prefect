@@ -107,7 +107,7 @@ func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.U
 	return schedules, nil
 }
 
-func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload []api.DeploymentSchedulePayload) error {
+func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload api.DeploymentSchedulePayload) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
 		return fmt.Errorf("failed to encode update payload data: %w", err)

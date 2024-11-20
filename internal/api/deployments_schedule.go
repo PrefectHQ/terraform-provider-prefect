@@ -9,7 +9,7 @@ import (
 type DeploymentScheduleClient interface {
 	Create(ctx context.Context, deploymentID uuid.UUID, payload []DeploymentSchedulePayload) ([]*DeploymentSchedule, error)
 	Read(ctx context.Context, deploymentID uuid.UUID) ([]*DeploymentSchedule, error)
-	Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload []DeploymentSchedulePayload) error
+	Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload DeploymentSchedulePayload) error
 	Delete(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID) error
 }
 

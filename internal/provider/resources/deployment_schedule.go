@@ -270,19 +270,17 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	cfgUpdate := []api.DeploymentSchedulePayload{
-		{
-			Active:           plan.Active.ValueBool(),
-			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
-			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
-			Schedule: api.Schedule{
-				AnchorDate: plan.AnchorDate.ValueString(),
-				Cron:       plan.Cron.ValueString(),
-				DayOr:      plan.DayOr.ValueBool(),
-				Interval:   plan.Interval.ValueFloat32(),
-				RRule:      plan.RRule.ValueString(),
-				Timezone:   plan.Timezone.ValueString(),
-			},
+	cfgUpdate := api.DeploymentSchedulePayload{
+		Active:           plan.Active.ValueBool(),
+		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+		MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
+		Schedule: api.Schedule{
+			AnchorDate: plan.AnchorDate.ValueString(),
+			Cron:       plan.Cron.ValueString(),
+			DayOr:      plan.DayOr.ValueBool(),
+			Interval:   plan.Interval.ValueFloat32(),
+			RRule:      plan.RRule.ValueString(),
+			Timezone:   plan.Timezone.ValueString(),
 		},
 	}
 
