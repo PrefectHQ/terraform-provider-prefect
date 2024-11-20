@@ -2,10 +2,11 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -118,7 +119,6 @@ func (r *DeploymentScheduleResource) Schema(_ context.Context, _ resource.Schema
 				Description: "Whether or not the schedule is active.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(true),
 			},
 			"max_scheduled_runs": schema.Float32Attribute{
 				Description: "The maximum number of scheduled runs for the schedule.",
@@ -134,7 +134,6 @@ func (r *DeploymentScheduleResource) Schema(_ context.Context, _ resource.Schema
 				Description: "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
 			},
 			// Timezone is a common field for all schedule kinds.
 			"timezone": schema.StringAttribute{
@@ -194,9 +193,9 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
 			Active:           plan.Active.ValueBool(),
-			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
-			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 			Catchup:          plan.Catchup.ValueBool(),
+			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
+			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 			Schedule: api.Schedule{
 				AnchorDate: plan.AnchorDate.ValueString(),
 				Cron:       plan.Cron.ValueString(),
@@ -215,9 +214,12 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
-	for _, schedule := range schedules {
-		copyScheduleModelToResourceModel(schedule, &plan)
+	resp.Diagnostics.Append(validateSchedules(schedules))
+	if resp.Diagnostics.HasError() {
+		return
 	}
+
+	copyScheduleModelToResourceModel(schedules[0], &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -247,6 +249,11 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
+	resp.Diagnostics.Append(validateSchedules(schedules))
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	copyScheduleModelToResourceModel(schedules[0], &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -263,6 +270,13 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
+	// The plan won't have the schedule ID, so we need to get it from the state.
+	var state DeploymentScheduleResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	client, err := r.client.DeploymentSchedule(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployment Schedule", err))
@@ -272,8 +286,9 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 
 	cfgUpdate := api.DeploymentSchedulePayload{
 		Active:           plan.Active.ValueBool(),
-		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+		Catchup:          plan.Catchup.ValueBool(),
 		MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
+		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 		Schedule: api.Schedule{
 			AnchorDate: plan.AnchorDate.ValueString(),
 			Cron:       plan.Cron.ValueString(),
@@ -284,7 +299,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		},
 	}
 
-	err = client.Update(ctx, plan.DeploymentID.ValueUUID(), plan.ID.ValueUUID(), cfgUpdate)
+	err = client.Update(ctx, plan.DeploymentID.ValueUUID(), state.ID.ValueUUID(), cfgUpdate)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Schedule", "update", err))
 
@@ -293,12 +308,16 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 
 	schedules, err := client.Read(ctx, plan.DeploymentID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Schedule", "read", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Schedule", "read after update", err))
 
 		return
 	}
 
-	// this isn't ideal. maybe go back
+	resp.Diagnostics.Append(validateSchedules(schedules))
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	copyScheduleModelToResourceModel(schedules[0], &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -353,4 +372,12 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.Cron = types.StringPointerValue(&schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringPointerValue(&schedule.Schedule.RRule)
+}
+
+func validateSchedules(schedules []*api.DeploymentSchedule) diag.Diagnostic {
+	if len(schedules) != 1 {
+		return diag.NewErrorDiagnostic("Unsupported number of schedules", fmt.Sprintf("Expected 1 schedule, got %d. Only one schedule is supported.", len(schedules)))
+	}
+
+	return nil
 }
