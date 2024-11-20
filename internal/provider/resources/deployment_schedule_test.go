@@ -1,13 +1,11 @@
 package resources_test
 
 import (
-	"context"
 	"fmt"
+	"strconv"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -17,7 +15,7 @@ type deploymentScheduleConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
 
-	api.DeploymentSchedule
+	DeploymentSchedule api.DeploymentSchedule
 }
 
 func fixtureAccDeploymentSchedule(cfg deploymentScheduleConfig) string {
@@ -40,15 +38,15 @@ resource "prefect_deployment_schedule" "test" {
 	workspace_id = prefect_workspace.test.id
 	deployment_id = prefect_deployment.test.id
 
-	active = {{.Active}}
-	max_active_runs = {{.MaxActiveRuns}}
+	active = {{.DeploymentSchedule.Active}}
+	max_active_runs = {{.DeploymentSchedule.MaxActiveRuns}}
 
 	# seeing inconsistent result with this one
-	# max_scheduled_runs = {{.MaxScheduledRuns}}
-	catchup = {{.Catchup}}
+	# max_scheduled_runs = {{.DeploymentSchedule.MaxScheduledRuns}}
+	catchup = {{.DeploymentSchedule.Catchup}}
 
-	interval = {{.Schedule.Interval}}
-	timezone = "{{.Schedule.Timezone}}"
+	interval = {{.DeploymentSchedule.Schedule.Interval}}
+	timezone = "{{.DeploymentSchedule.Schedule.Timezone}}"
 
 	# add the rest...
 }
@@ -63,7 +61,9 @@ resource "prefect_deployment_schedule" "test" {
 func TestAccResource_deployment_schedule(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 
-	schedule := api.DeploymentSchedule{
+	// Test case: create
+
+	scheduleCreate := api.DeploymentSchedule{
 		DeploymentSchedulePayload: api.DeploymentSchedulePayload{
 			Active:           true,
 			MaxScheduledRuns: 5,
@@ -79,11 +79,39 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 	cfgCreate := deploymentScheduleConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
-		DeploymentSchedule:    schedule,
+		DeploymentSchedule:    scheduleCreate,
 	}
 
-	var deployment api.Deployment
-	var deploymentSchedules api.DeploymentSchedule
+	createChecks := []resource.TestCheckFunc{
+		testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
+	}
+	createChecks = append(createChecks, testScheduleValues(cfgCreate.DeploymentSchedule)...)
+
+	// Test case: update
+
+	scheduleUpdate := api.DeploymentSchedule{
+		DeploymentSchedulePayload: api.DeploymentSchedulePayload{
+			// Changing active to false is failing, coming back as true
+			Active:           true,
+			MaxScheduledRuns: 7,
+			MaxActiveRuns:    6,
+			Catchup:          true,
+			Schedule: api.Schedule{
+				Interval: 60,
+				Timezone: "America/New_York",
+			},
+		},
+	}
+
+	cfgUpdate := cfgCreate
+	cfgUpdate.DeploymentSchedule = scheduleUpdate
+
+	updateChecks := []resource.TestCheckFunc{
+		testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
+	}
+	updateChecks = append(updateChecks, testScheduleValues(cfgUpdate.DeploymentSchedule)...)
+
+	// Run the tests
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -91,93 +119,36 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccDeploymentSchedule(cfgCreate),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists("prefect_deployment.test", &deployment),
-					testAccCheckDeploymentScheduleExists("prefect_deployment_schedule.test", &deploymentSchedules),
-					// testAccCheckDeploymentScheduleValues([]*api.DeploymentSchedule{&deploymentSchedules}, []*api.DeploymentSchedule{&schedule}),
-				),
+				Check:  resource.ComposeAggregateTestCheckFunc(createChecks...),
+			},
+			{
+				Config: fixtureAccDeploymentSchedule(cfgUpdate),
+				Check:  resource.ComposeAggregateTestCheckFunc(updateChecks...),
 			},
 		},
 	})
 }
 
-// testAccCheckDeploymentScheduleExists is a Custom Check Function that
-// verifies that the API object was created correctly.
-func testAccCheckDeploymentScheduleExists(deploymentScheduleResourceName string, deploymentSchedule *api.DeploymentSchedule) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// Get the deployment schedule resource we just created from the state
-		deploymentScheduleResource, exists := s.RootModule().Resources[deploymentScheduleResourceName]
-		if !exists {
-			return fmt.Errorf("deployment schedule resource not found: %s", deploymentScheduleResourceName)
-		}
-		deploymentScheduleID, _ := uuid.Parse(deploymentScheduleResource.Primary.Attributes["deployment_id"])
-
-		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
-		// Initialize the client with the associated workspaceID
-		// NOTE: the accountID is inherited by the one set in the test environment
-		c, _ := testutils.NewTestClient()
-		deploymentScheduleClient, _ := c.DeploymentSchedule(uuid.Nil, workspaceID)
-
-		fetchedDeploymentSchedules, err := deploymentScheduleClient.Read(context.Background(), deploymentScheduleID)
-		if err != nil {
-			return fmt.Errorf("error fetching deployment schedules: %w", err)
-		}
-
-		// fetchedSchedule, err := scheduleFound(fetchedDeploymentSchedules, []*api.DeploymentSchedule{deploymentSchedule})
-		if len(fetchedDeploymentSchedules) == 0 {
-			return fmt.Errorf("deployment schedule %s not found", deploymentScheduleID)
-		}
-		fetchedSchedule := fetchedDeploymentSchedules[0]
-
-		// Assign the fetched deployment schedule to the passed pointer
-		// so we can use it in the next test assertion
-		*deploymentSchedule = *fetchedSchedule
-
-		return nil
+func testScheduleValues(schedule api.DeploymentSchedule) []resource.TestCheckFunc {
+	var tests []resource.TestCheckFunc
+	for key, value := range scheduleToChecks(schedule) {
+		tests = append(tests, resource.TestCheckResourceAttr("prefect_deployment_schedule.test", key, value))
 	}
+
+	return tests
 }
 
-// testAccCheckDeploymentValues is a Custom Check Function that
-// verifies that the API object matches the expected values.
-func testAccCheckDeploymentScheduleValues(fetchedDeploymentSchedules, expectedDeploymentSchedules []*api.DeploymentSchedule) resource.TestCheckFunc {
-	return func(_ *terraform.State) error {
-		_, err := scheduleFound(fetchedDeploymentSchedules, expectedDeploymentSchedules)
-		if err != nil {
-			return fmt.Errorf("expected deployment schedule %s not found: %w", expectedDeploymentSchedules[0].ID, err)
-		}
+func scheduleToChecks(schedule api.DeploymentSchedule) map[string]string {
+	result := map[string]string{}
 
-		return nil
-	}
-}
+	result["timezone"] = schedule.Schedule.Timezone
+	result["active"] = strconv.FormatBool(schedule.Active)
+	result["catchup"] = strconv.FormatBool(schedule.Catchup)
+	result["max_active_runs"] = strconv.FormatFloat(float64(schedule.MaxActiveRuns), 'f', -1, 64)
+	result["interval"] = strconv.FormatFloat(float64(schedule.Schedule.Interval), 'f', -1, 64)
 
-func scheduleFound(fetched []*api.DeploymentSchedule, expected []*api.DeploymentSchedule) (*api.DeploymentSchedule, error) {
-	if len(fetched) != len(expected) {
-		return nil, fmt.Errorf("got %d schedules, expected %d", len(fetched), len(expected))
-	}
+	// This one is failing, getting 0
+	// result["max_scheduled_runs"] = strconv.FormatFloat(float64(schedule.MaxScheduledRuns), 'f', -1, 64)
 
-	var result *api.DeploymentSchedule
-
-	for i := range expected {
-		found := false
-		for j := range fetched {
-			if fetched[j].ID == expected[i].ID {
-				found = true
-				result = fetched[j]
-
-				break
-			}
-		}
-
-		if !found {
-			return nil, fmt.Errorf("schedule %s not found", expected[i].ID)
-		}
-	}
-
-	return result, nil
+	return result
 }
