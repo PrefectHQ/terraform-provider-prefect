@@ -1,7 +1,6 @@
 package resources_test
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -52,9 +51,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	result := helpers.RenderTemplate(tmpl, cfg)
-	fmt.Println(result)
-	return result
+	return helpers.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -130,8 +127,10 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 }
 
 func testScheduleValues(schedule api.DeploymentSchedule) []resource.TestCheckFunc {
-	var tests []resource.TestCheckFunc
-	for key, value := range scheduleToChecks(schedule) {
+	checks := scheduleToChecks(schedule)
+	tests := make([]resource.TestCheckFunc, 0, len(checks))
+
+	for key, value := range checks {
 		tests = append(tests, resource.TestCheckResourceAttr("prefect_deployment_schedule.test", key, value))
 	}
 

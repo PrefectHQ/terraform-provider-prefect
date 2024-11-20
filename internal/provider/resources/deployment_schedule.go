@@ -374,6 +374,7 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.RRule = types.StringPointerValue(&schedule.Schedule.RRule)
 }
 
+//nolint:ireturn // required to return a diagnostic
 func validateSchedules(schedules []*api.DeploymentSchedule) diag.Diagnostic {
 	if len(schedules) != 1 {
 		return diag.NewErrorDiagnostic("Unsupported number of schedules", fmt.Sprintf("Expected 1 schedule, got %d. Only one schedule is supported.", len(schedules)))

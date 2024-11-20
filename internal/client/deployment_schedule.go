@@ -136,7 +136,6 @@ func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid
 	return nil
 }
 
-// todo: delete pointed at 0000 uuid
 func (c *DeploymentScheduleClient) Delete(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID) error {
 	url := fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String())
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, http.NoBody)
