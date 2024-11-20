@@ -366,12 +366,12 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.Catchup = types.BoolValue(schedule.Catchup)
 	model.MaxScheduledRuns = types.Float32Value(schedule.MaxScheduledRuns)
 
-	model.Timezone = types.StringPointerValue(&schedule.Schedule.Timezone)
+	model.Timezone = types.StringValue(schedule.Schedule.Timezone)
 	model.Interval = types.Float32Value(schedule.Schedule.Interval)
-	model.AnchorDate = types.StringPointerValue(&schedule.Schedule.AnchorDate)
-	model.Cron = types.StringPointerValue(&schedule.Schedule.Cron)
+	model.AnchorDate = types.StringValue(schedule.Schedule.AnchorDate)
+	model.Cron = types.StringValue(schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
-	model.RRule = types.StringPointerValue(&schedule.Schedule.RRule)
+	model.RRule = types.StringValue(schedule.Schedule.RRule)
 }
 
 //nolint:ireturn // required to return a diagnostic
