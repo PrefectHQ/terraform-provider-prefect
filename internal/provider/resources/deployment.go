@@ -119,7 +119,8 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown()},
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
