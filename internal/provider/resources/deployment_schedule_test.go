@@ -168,20 +168,22 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				Config: fixtureAccDeploymentScheduleInterval(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "active", "true"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "catchup", "false"),
 					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "interval", "30"),
 				),
 			},
 			// Test interval schedule update
-			// Not working yet, getting inconsistent results errors
-			// {
-			// 	Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfg),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
-			// 		resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "active", "false"),
-			// 		resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "catchup", "true"),
-			// 		resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "max_active_runs", "20"),
-			// 	),
-			// },
+			{
+				Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "active", "false"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "catchup", "true"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "max_active_runs", "20"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "timezone", "America/Chicago"),
+				),
+			},
 			// Test cron schedule
 			{
 				Config: fixtureAccDeploymentScheduleCron(fixtureCfg),

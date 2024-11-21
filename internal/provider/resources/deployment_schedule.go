@@ -192,7 +192,7 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
-			Active:           plan.Active.ValueBool(),
+			Active:           plan.Active.ValueBoolPointer(),
 			Catchup:          plan.Catchup.ValueBool(),
 			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
@@ -285,7 +285,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 	}
 
 	cfgUpdate := api.DeploymentSchedulePayload{
-		Active:           plan.Active.ValueBool(),
+		Active:           plan.Active.ValueBoolPointer(),
 		Catchup:          plan.Catchup.ValueBool(),
 		MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
@@ -360,7 +360,7 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 
 	model.DeploymentID = customtypes.NewUUIDValue(schedule.DeploymentID)
 
-	model.Active = types.BoolValue(schedule.Active)
+	model.Active = types.BoolPointerValue(schedule.Active)
 	model.MaxActiveRuns = types.Float32Value(schedule.MaxActiveRuns)
 
 	model.Catchup = types.BoolValue(schedule.Catchup)

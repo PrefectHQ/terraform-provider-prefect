@@ -24,7 +24,7 @@ type DeploymentSchedule struct {
 }
 
 type DeploymentSchedulePayload struct {
-	Active           bool    `json:"active,omitempty"`
+	Active           *bool   `json:"active,omitempty"`
 	MaxScheduledRuns float32 `json:"max_scheduled_runs,omitempty"`
 
 	// Cloud only
