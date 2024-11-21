@@ -18,6 +18,118 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
+// AutomationSchema returns the total schema for an Automation.
+// This includes all of the root-level attributes for an Automation,
+// as well as the Trigger and Actions schemas.
+func AutomationSchema() map[string]schema.Attribute {
+	return map[string]schema.Attribute{
+		"id": schema.StringAttribute{
+			Computed: true,
+			// We cannot use a CustomType due to a conflict with PlanModifiers; see
+			// https://github.com/hashicorp/terraform-plugin-framework/issues/763
+			// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+			Description: "Automation ID (UUID)",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"created": schema.StringAttribute{
+			Computed:    true,
+			CustomType:  customtypes.TimestampType{},
+			Description: "Timestamp of when the resource was created (RFC3339)",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.UseStateForUnknown(),
+			},
+		},
+		"updated": schema.StringAttribute{
+			Computed:    true,
+			CustomType:  customtypes.TimestampType{},
+			Description: "Timestamp of when the resource was updated (RFC3339)",
+		},
+		"account_id": schema.StringAttribute{
+			CustomType:  customtypes.UUIDType{},
+			Description: "Account ID (UUID), defaults to the account set in the provider",
+			Optional:    true,
+		},
+		"name": schema.StringAttribute{
+			Description: "Name of the automation",
+			Required:    true,
+		},
+		"description": schema.StringAttribute{
+			Description: "Description of the automation",
+			Optional:    true,
+			Computed:    true,
+			Default:     stringdefault.StaticString(""),
+		},
+		"enabled": schema.BoolAttribute{
+			Description: "Whether the automation is enabled",
+			Optional:    true,
+			Computed:    true,
+			Default:     booldefault.StaticBool(true),
+		},
+		"trigger":            TriggerSchema(),
+		"actions":            ActionsSchema(),
+		"actions_on_trigger": ActionsSchema(),
+		"actions_on_resolve": ActionsSchema(),
+	}
+}
+
+// TriggerSchema returns the combined resource schema for an Automation Trigger.
+// This combines Resource Triggers and Composite Triggers.
+// We construct the TriggerSchema this way (and not in a single schema from the start)
+// because Composite Triggers are higher-order Triggers that utilize Resource Triggers.
+func TriggerSchema() schema.SingleNestedAttribute {
+	// (1) We start with the Resource Trigger Schema Attributes
+	combinedAttributes := ResourceTriggerSchemaAttributes()
+
+	// (2) Here we add Composite Triggers to the schema
+	combinedAttributes["compound"] = schema.SingleNestedAttribute{
+		Optional:    true,
+		Description: "A composite trigger that requires some number of triggers to have fired within the given time period",
+		Attributes: map[string]schema.Attribute{
+			"triggers": schema.ListNestedAttribute{
+				Required:    true,
+				Description: "The list of triggers that make up this compound trigger",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: ResourceTriggerSchemaAttributes(),
+				},
+			},
+			"require": schema.StringAttribute{
+				Required:    true,
+				Description: "How many triggers must fire ('any', 'all', or a number)",
+			},
+		},
+	}
+	combinedAttributes["sequence"] = schema.SingleNestedAttribute{
+		Optional:    true,
+		Description: "A composite trigger that requires triggers to fire in a specific order",
+		Attributes: map[string]schema.Attribute{
+			"triggers": schema.ListNestedAttribute{
+				Required:    true,
+				Description: "The ordered list of triggers that must fire in sequence",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: ResourceTriggerSchemaAttributes(),
+				},
+			},
+		},
+	}
+
+	// (3) We return the combined Triggers schema
+	return schema.SingleNestedAttribute{
+		Required:    true,
+		Description: "The criteria for which events this Automation covers and how it will respond",
+		Validators: []validator.Object{
+			objectvalidator.ExactlyOneOf(
+				path.MatchRoot("event"),
+				path.MatchRoot("metric"),
+				path.MatchRoot("compound"),
+				path.MatchRoot("sequence"),
+			),
+		},
+		Attributes: combinedAttributes,
+	}
+}
+
 // ResourceTriggerSchemaAttributes returns the attributes for a Resource Trigger.
 // A Resource Trigger is an `event` or `metric` trigger.
 func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
@@ -110,62 +222,6 @@ func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
 				},
 			},
 		},
-	}
-}
-
-// TriggerSchema returns the combined resource schema for an Automation Trigger.
-// This combines Resource Triggers and Composite Triggers.
-// We construct the TriggerSchema this way (and not in a single schema from the start)
-// because Composite Triggers are higher-order Triggers that utilize Resource Triggers.
-func TriggerSchema() schema.SingleNestedAttribute {
-	// (1) We start with the Resource Trigger Schema Attributes
-	combinedAttributes := ResourceTriggerSchemaAttributes()
-
-	// (2) Here we add Composite Triggers to the schema
-	combinedAttributes["compound"] = schema.SingleNestedAttribute{
-		Optional:    true,
-		Description: "A composite trigger that requires some number of triggers to have fired within the given time period",
-		Attributes: map[string]schema.Attribute{
-			"triggers": schema.ListNestedAttribute{
-				Required:    true,
-				Description: "The list of triggers that make up this compound trigger",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: ResourceTriggerSchemaAttributes(),
-				},
-			},
-			"require": schema.StringAttribute{
-				Required:    true,
-				Description: "How many triggers must fire ('any', 'all', or a number)",
-			},
-		},
-	}
-	combinedAttributes["sequence"] = schema.SingleNestedAttribute{
-		Optional:    true,
-		Description: "A composite trigger that requires triggers to fire in a specific order",
-		Attributes: map[string]schema.Attribute{
-			"triggers": schema.ListNestedAttribute{
-				Required:    true,
-				Description: "The ordered list of triggers that must fire in sequence",
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: ResourceTriggerSchemaAttributes(),
-				},
-			},
-		},
-	}
-
-	// (3) We return the combined Triggers schema
-	return schema.SingleNestedAttribute{
-		Required:    true,
-		Description: "The criteria for which events this Automation covers and how it will respond",
-		Validators: []validator.Object{
-			objectvalidator.ExactlyOneOf(
-				path.MatchRoot("event"),
-				path.MatchRoot("metric"),
-				path.MatchRoot("compound"),
-				path.MatchRoot("sequence"),
-			),
-		},
-		Attributes: combinedAttributes,
 	}
 }
 
@@ -440,61 +496,5 @@ func ActionsSchema() schema.ListNestedAttribute {
 				},
 			},
 		},
-	}
-}
-
-// AutomationSchema returns the total schema for an Automation.
-// This includes all of the root-level attributes for an Automation,
-// as well as the Trigger and Actions schemas.
-func AutomationSchema() map[string]schema.Attribute {
-	return map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Computed: true,
-			// We cannot use a CustomType due to a conflict with PlanModifiers; see
-			// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-			// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-			Description: "Automation ID (UUID)",
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
-		},
-		"created": schema.StringAttribute{
-			Computed:    true,
-			CustomType:  customtypes.TimestampType{},
-			Description: "Timestamp of when the resource was created (RFC3339)",
-			PlanModifiers: []planmodifier.String{
-				stringplanmodifier.UseStateForUnknown(),
-			},
-		},
-		"updated": schema.StringAttribute{
-			Computed:    true,
-			CustomType:  customtypes.TimestampType{},
-			Description: "Timestamp of when the resource was updated (RFC3339)",
-		},
-		"account_id": schema.StringAttribute{
-			CustomType:  customtypes.UUIDType{},
-			Description: "Account ID (UUID), defaults to the account set in the provider",
-			Optional:    true,
-		},
-		"name": schema.StringAttribute{
-			Description: "Name of the automation",
-			Required:    true,
-		},
-		"description": schema.StringAttribute{
-			Description: "Description of the automation",
-			Optional:    true,
-			Computed:    true,
-			Default:     stringdefault.StaticString(""),
-		},
-		"enabled": schema.BoolAttribute{
-			Description: "Whether the automation is enabled",
-			Optional:    true,
-			Computed:    true,
-			Default:     booldefault.StaticBool(true),
-		},
-		"trigger":            TriggerSchema(),
-		"actions":            ActionsSchema(),
-		"actions_on_trigger": ActionsSchema(),
-		"actions_on_resolve": ActionsSchema(),
 	}
 }
