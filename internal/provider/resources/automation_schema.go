@@ -115,8 +115,8 @@ func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
 
 // TriggerSchema returns the combined resource schema for an Automation Trigger.
 // This combines Resource Triggers and Composite Triggers.
-// We construct the Schema this way to avoid infinite recursion, as
-// Composite Triggers are higher-order Triggers that utilize Resource Triggers.
+// We construct the TriggerSchema this way (and not in a single schema from the start)
+// because Composite Triggers are higher-order Triggers that utilize Resource Triggers.
 func TriggerSchema() schema.SingleNestedAttribute {
 	// (1) We start with the Resource Trigger Schema Attributes
 	combinedAttributes := ResourceTriggerSchemaAttributes()
@@ -443,6 +443,9 @@ func ActionsSchema() schema.ListNestedAttribute {
 	}
 }
 
+// AutomationSchema returns the total schema for an Automation.
+// This includes all of the root-level attributes for an Automation,
+// as well as the Trigger and Actions schemas.
 func AutomationSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
