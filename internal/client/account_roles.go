@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -38,36 +35,20 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 
 // List returns a list of account roles, based on the provided filter.
 func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*api.AccountRole, error) {
-	var buf bytes.Buffer
 	filterQuery := api.AccountRoleFilter{}
 	filterQuery.AccountRoles.Name.Any = roleNames
 
-	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
-		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		url:          fmt.Sprintf("%s/filter", c.routePrefix),
+		method:       http.MethodPost,
+		body:         filterQuery,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var accountRoles []*api.AccountRole
-	if err := json.NewDecoder(resp.Body).Decode(&accountRoles); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &accountRoles); err != nil {
+		return nil, err
 	}
 
 	return accountRoles, nil
@@ -75,27 +56,17 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 
 // Get returns an account role by ID.
 func (c *AccountRolesClient) Get(ctx context.Context, roleID uuid.UUID) (*api.AccountRole, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()), http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()),
+		body:         http.NoBody,
+		successCodes: successCodesStatusOK,
+		apiKey:       c.apiKey,
 	}
 
 	var accountRole api.AccountRole
-	if err := json.NewDecoder(resp.Body).Decode(&accountRole); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &accountRole); err != nil {
+		return nil, err
 	}
 
 	return &accountRole, nil
