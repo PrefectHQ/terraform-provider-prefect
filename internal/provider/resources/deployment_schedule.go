@@ -83,8 +83,9 @@ func (r *DeploymentScheduleResource) Configure(_ context.Context, req resource.C
 
 func (r *DeploymentScheduleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `deployment_schedule` represents a schedule for a deployment.",
-		Version:     0,
+		Description: "The resource `deployment_schedule` represents a schedule for a deployment. " +
+			"Note that only one schedule is supported per deployment. Support for multiple schedules is planned.",
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

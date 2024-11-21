@@ -3,12 +3,12 @@
 page_title: "prefect_deployment_schedule Resource - prefect"
 subcategory: ""
 description: |-
-  The resource deployment_schedule represents a schedule for a deployment.
+  The resource deployment_schedule represents a schedule for a deployment. Note that only one schedule is supported per deployment. Support for multiple schedules is planned.
 ---
 
 # prefect_deployment_schedule (Resource)
 
-The resource `deployment_schedule` represents a schedule for a deployment.
+The resource `deployment_schedule` represents a schedule for a deployment. Note that only one schedule is supported per deployment. Support for multiple schedules is planned.
 
 ## Example Usage
 
