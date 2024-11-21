@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -89,6 +91,9 @@ func (r *DeploymentScheduleResource) Schema(_ context.Context, _ resource.Schema
 				CustomType:  customtypes.UUIDType{},
 				Description: "Deployment Schedule ID (UUID)",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -270,13 +275,6 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	// The plan won't have the schedule ID, so we need to get it from the state.
-	var state DeploymentScheduleResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	client, err := r.client.DeploymentSchedule(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployment Schedule", err))
@@ -299,7 +297,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		},
 	}
 
-	err = client.Update(ctx, plan.DeploymentID.ValueUUID(), state.ID.ValueUUID(), cfgUpdate)
+	err = client.Update(ctx, plan.DeploymentID.ValueUUID(), plan.ID.ValueUUID(), cfgUpdate)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Schedule", "update", err))
 
