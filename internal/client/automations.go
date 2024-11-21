@@ -13,6 +13,8 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
+var _ = api.AutomationsClient(&AutomationsClient{})
+
 type AutomationsClient struct {
 	hc          *http.Client
 	apiKey      string
@@ -70,7 +72,7 @@ func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automat
 	return &automation, nil
 }
 
-func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationCreate) (*api.Automation, error) {
+func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUpsert) (*api.Automation, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
 		return nil, fmt.Errorf("failed to encode create payload: %w", err)
@@ -103,7 +105,7 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationCr
 	return &automation, nil
 }
 
-func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload api.AutomationUpdate) error {
+func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload api.AutomationUpsert) error {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
 		return fmt.Errorf("failed to encode update payload: %w", err)
