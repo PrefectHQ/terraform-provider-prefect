@@ -23,6 +23,8 @@ type Automation struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 }
+
+// AutomationUpsert is the data needed to create or update an automation.
 type AutomationUpsert struct {
 	Name             string   `json:"name"`
 	Description      string   `json:"description"`
@@ -33,6 +35,11 @@ type AutomationUpsert struct {
 	ActionsOnResolve []Action `json:"actions_on_resolve"`
 }
 
+// Trigger defines the triggering conditions on an Automation.
+// On the API, a Trigger is a polymorphic type and can be represented
+// by several schemas based on the `type` attribute.
+// Here, we'll combine all possible attributes for each type
+// and make them optional.
 type Trigger struct {
 	Type string `json:"type"`
 
@@ -48,8 +55,8 @@ type Trigger struct {
 	// For MetricTrigger
 	Metric *MetricTriggerQuery `json:"metric,omitempty"`
 	// For CompoundTrigger
-	Triggers []Trigger   `json:"triggers,omitempty"`
-	Require  interface{} `json:"require,omitempty"` // int or string ("any"/"all")
+	Triggers []Trigger    `json:"triggers,omitempty"`
+	Require  *interface{} `json:"require,omitempty"` // int or string ("any"/"all")
 }
 
 type MetricTriggerQuery struct {
@@ -119,6 +126,11 @@ func (s *StringOrSlice) UnmarshalJSON(data []byte) error {
 	return fmt.Errorf("ResourceSpecification must be string or string array")
 }
 
+// Action defines the actions that can be taken on an Automation.
+// On the API, an Action is a polymorphic type and can be represented
+// by several schemas based on the `type` attribute.
+// Here, we'll combine all possible attributes for each type
+// and make them optional.
 type Action struct {
 	// On all actions
 	Type string `json:"type"`
