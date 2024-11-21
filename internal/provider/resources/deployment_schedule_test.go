@@ -37,7 +37,6 @@ resource "prefect_deployment_schedule" "test" {
 	active = true
 	catchup = false
 	max_active_runs = 10
-
 	timezone = "America/New_York"
 
 	interval = 30
@@ -72,8 +71,7 @@ resource "prefect_deployment_schedule" "test" {
 	active = false
 	catchup = true
 	max_active_runs = 20
-
-	timezone = "America/New_York"
+	timezone = "America/Chicago"
 
 	interval = 30
 	anchor_date = "2024-01-01T00:00:00Z"
@@ -103,12 +101,6 @@ resource "prefect_deployment_schedule" "test" {
 	workspace_id = prefect_workspace.test.id
 	deployment_id = prefect_deployment.test.id
 
-	active = true
-	catchup = false
-	max_active_runs = 10
-
-	timezone = "America/New_York"
-
 	cron = "* * * * *"
 	day_or = true
 }
@@ -136,12 +128,6 @@ resource "prefect_deployment" "test" {
 resource "prefect_deployment_schedule" "test" {
 	workspace_id = prefect_workspace.test.id
 	deployment_id = prefect_deployment.test.id
-
-	active = true
-	catchup = false
-	max_active_runs = 10
-
-	timezone = "America/New_York"
 
 	rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"
 }
@@ -171,6 +157,7 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "active", "true"),
 					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "catchup", "false"),
 					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "interval", "30"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "timezone", "America/New_York"),
 				),
 			},
 			// Test interval schedule update
@@ -190,6 +177,7 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
 					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "cron", "* * * * *"),
+					resource.TestCheckResourceAttr("prefect_deployment_schedule.test", "day_or", "true"),
 				),
 			},
 			// Test rrule schedule
