@@ -44,6 +44,8 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
+	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
+	ConcurrencyOptions     jsontypes.Normalized  `tfsdk:"concurrency_options"`
 	Description            types.String          `tfsdk:"description"`
 	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
@@ -251,6 +253,17 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"concurrency_limit": schema.Int64Attribute{
+				Description: "The deployment's concurrency limit.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"concurrency_options": schema.StringAttribute{
+				Description: "Concurrency options for the deployment.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
+			},
 		},
 	}
 }
@@ -261,6 +274,7 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
+	model.ConcurrencyLimit = types.Int64Value(int64(deployment.ConcurrencyLimit))
 	model.Description = types.StringValue(deployment.Description)
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
@@ -325,7 +339,15 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	concurrencyOptions, diags := helpers.SafeUnmarshal(plan.ConcurrencyOptions)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
+		ConcurrencyLimit:       int(plan.ConcurrencyLimit.ValueInt64()),
+		ConcurrencyOptions:     concurrencyOptions,
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
@@ -489,6 +511,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
+		ConcurrencyLimit:       int(model.ConcurrencyLimit.ValueInt64()),
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
@@ -552,6 +575,14 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+
+	concurrencyOptionsByteSlice, err := json.Marshal(deployment.ConcurrencyOptions)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("concurrency_options", "Deployment concurrency options", err))
+
+		return
+	}
+	model.ConcurrencyOptions = jsontypes.NewNormalizedValue(string(concurrencyOptionsByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

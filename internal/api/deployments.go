@@ -21,6 +21,8 @@ type Deployment struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
+	ConcurrencyLimit       int                    `json:"concurrency_limit"`
+	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
 	Entrypoint             string                 `json:"entrypoint"`
@@ -41,6 +43,8 @@ type Deployment struct {
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
+	ConcurrencyLimit       int                    `json:"concurrency_limit"`
+	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
@@ -61,6 +65,8 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
+	ConcurrencyLimit       int                    `json:"concurrency_limit,omitempty"`
+	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`

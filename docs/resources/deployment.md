@@ -79,6 +79,8 @@ resource "prefect_deployment" "deployment" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `concurrency_limit` (Integer) The deployment's concurrency limit.
+- `concurrency_options` (Object) Concurrency options for the deployment.
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
