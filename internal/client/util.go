@@ -75,9 +75,23 @@ type requestConfig struct {
 	apiKey string
 }
 
-// successCodesStatusOK is a convenience variable to use for the most common
-// success criteria.
-var successCodesStatusOK = []int{http.StatusOK}
+var (
+	// successCodesStatusOK is a convenience variable to use for the most common
+	// success criteria.
+	successCodesStatusOK = []int{http.StatusOK}
+
+	// successCodesStatusCreated is a convenience variable to use for a common
+	// success criteria of StatusCreated.
+	successCodesStatusCreated = []int{http.StatusCreated}
+
+	// successCodesStatusNoContent is a convenience variable to use for a common
+	// success criteria of StatusNoContent.
+	successCodesStatusNoContent = []int{http.StatusNoContent}
+
+	// successCodesStatusOKOrNoContent is a convenience variable to use for a common
+	// success criteria of either StatusOK or StatusNoContent.
+	successCodesStatusOKOrNoContent = []int{http.StatusOK, http.StatusNoContent}
+)
 
 // request performs an HTTP request with the provided configuration.
 // It returns the response, or an error if the request fails.
