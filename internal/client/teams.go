@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -37,36 +34,20 @@ func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 
 // List returns a list of teams, based on the provided filter.
 func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, error) {
-	var buf bytes.Buffer
 	filterQuery := api.TeamFilter{}
 	filterQuery.Teams.Name.Any = names
 
-	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
-		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/filter", c.routePrefix),
+		body:         &filterQuery,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var teams []*api.Team
-	if err := json.NewDecoder(resp.Body).Decode(&teams); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &teams); err != nil {
+		return nil, fmt.Errorf("failed to list teams: %w", err)
 	}
 
 	return teams, nil

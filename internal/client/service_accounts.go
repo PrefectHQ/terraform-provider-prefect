@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -44,183 +41,109 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 }
 
 func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
-		return nil, fmt.Errorf("failed to encode request data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          sa.routePrefix + "/",
+		body:         &request,
+		apiKey:       sa.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+	var serviceAccount api.ServiceAccount
+	if err := requestWithDecodeResponse(ctx, sa.hc, cfg, &serviceAccount); err != nil {
+		return nil, fmt.Errorf("failed to create service account: %w", err)
 	}
 
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
-
-	var response api.ServiceAccount
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &response, nil
+	return &serviceAccount, nil
 }
 
 func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*api.ServiceAccount, error) {
 	filter := api.ServiceAccountFilter{}
 	filter.ServiceAccounts.Name.Any = names
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
-		return nil, fmt.Errorf("failed to encode filter: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sa.routePrefix+"/filter", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          sa.routePrefix + "/filter",
+		body:         &filter,
+		apiKey:       sa.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var serviceAccounts []*api.ServiceAccount
-	if err := json.NewDecoder(resp.Body).Decode(&serviceAccounts); err != nil { // THIS IS THE RESPONSE
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, sa.hc, cfg, &serviceAccounts); err != nil {
+		return nil, fmt.Errorf("failed to list service accounts: %w", err)
 	}
 
 	return serviceAccounts, nil
 }
 
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.ServiceAccount, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, sa.routePrefix+"/"+botID, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          sa.routePrefix + "/" + botID,
+		body:         http.NoBody,
+		apiKey:       sa.apiKey,
+		successCodes: []int{http.StatusOK, http.StatusNotFound},
 	}
 
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusOK:
-	case http.StatusNotFound:
-		return nil, fmt.Errorf("could not find Service Account")
-	default:
-		bodyBytes, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, string(bodyBytes))
+	var serviceAccount api.ServiceAccount
+	if err := requestWithDecodeResponse(ctx, sa.hc, cfg, &serviceAccount); err != nil {
+		return nil, fmt.Errorf("failed to get service account: %w", err)
 	}
 
-	var response api.ServiceAccount
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &response, nil
+	return &serviceAccount, nil
 }
 
-func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, request api.ServiceAccountUpdateRequest) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
-		return fmt.Errorf("failed to encode request data: %w", err)
+func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, requestPayload api.ServiceAccountUpdateRequest) error {
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          sa.routePrefix + "/" + botID,
+		body:         &requestPayload,
+		apiKey:       sa.apiKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, sa.routePrefix+"/"+botID, &buf)
+	resp, err := request(ctx, sa.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("failed to update service account: %w", err)
 	}
 
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
-	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, sa.routePrefix+"/"+botID, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          sa.routePrefix + "/" + botID,
+		body:         http.NoBody,
+		apiKey:       sa.apiKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
-	setDefaultHeaders(req, sa.apiKey)
 
-	resp, err := sa.hc.Do(req)
+	resp, err := request(ctx, sa.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete service account: %w", err)
 	}
+
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID string, data api.ServiceAccountRotateKeyRequest) (*api.ServiceAccount, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode request data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-	setDefaultHeaders(req, sa.apiKey)
-
-	resp, err := sa.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID),
+		body:         &data,
+		apiKey:       sa.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var serviceAccount api.ServiceAccount
-	if err := json.NewDecoder(resp.Body).Decode(&serviceAccount); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, sa.hc, cfg, &serviceAccount); err != nil {
+		return nil, fmt.Errorf("failed to rotate service account key: %w", err)
 	}
 
 	return &serviceAccount, nil
