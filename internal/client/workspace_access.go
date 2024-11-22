@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -78,32 +75,17 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		requestMethod = http.MethodPut
 	}
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payloads); err != nil {
-		return nil, fmt.Errorf("failed to encode upsert payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       requestMethod,
+		url:          requestPath,
+		body:         &payloads,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var workspaceAccesses []api.WorkspaceAccess
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceAccesses); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &workspaceAccesses); err != nil {
+		return nil, fmt.Errorf("failed to upsert workspace access: %w", err)
 	}
 
 	return &workspaceAccesses[0], nil
@@ -138,33 +120,30 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 		requestPath = fmt.Sprintf("%s/team_access/filter", c.routePrefix)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, requestMethod, requestPath, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       requestMethod,
+		url:          requestPath,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
-	setDefaultHeaders(req, c.apiKey)
 
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
+		return nil, fmt.Errorf("failed to fetch workspace access: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	var workspaceAccess api.WorkspaceAccess
 	var workspaceAccesses []api.WorkspaceAccess
 
 	// If this is a team_access resource, we'll expect a list of WorkspaceAccess objects
 	if accessorType == utils.Team {
-		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccesses); err != nil {
+		if err := decodeResponseBody(resp.Body, &workspaceAccesses); err != nil {
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
 	}
+
 	for _, access := range workspaceAccesses {
 		if access.ID == accessID {
 			workspaceAccess = access
@@ -175,7 +154,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 
 	// Otherwise, we'll expect a single WorkspaceAccess object, fetched by `accessID`
 	if accessorType == utils.User || accessorType == utils.ServiceAccount {
-		if err := json.NewDecoder(resp.Body).Decode(&workspaceAccess); err != nil {
+		if err := decodeResponseBody(resp.Body, &workspaceAccess); err != nil {
 			return nil, fmt.Errorf("failed to decode response: %w", err)
 		}
 	}
@@ -212,23 +191,20 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 		requestPath = fmt.Sprintf("%s/team_access/%s", c.routePrefix, accessorID.String())
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, requestPath, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          requestPath,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
-	setDefaultHeaders(req, c.apiKey)
 
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete workspace access: %w", err)
 	}
+
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
