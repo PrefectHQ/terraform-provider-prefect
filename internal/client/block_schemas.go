@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -47,33 +44,17 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 	filterQuery := &api.BlockSchemaFilter{}
 	filterQuery.BlockSchemas.BlockTypeID.Any = blockTypeIDs
 
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
-		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/filter",
+		body:         filterQuery,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockSchemas []*api.BlockSchema
-	if err := json.NewDecoder(resp.Body).Decode(&blockSchemas); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockSchemas); err != nil {
+		return nil, fmt.Errorf("failed to get block schemas: %w", err)
 	}
 
 	return blockSchemas, nil
