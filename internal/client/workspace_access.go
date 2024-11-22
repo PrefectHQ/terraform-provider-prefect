@@ -140,7 +140,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	// If this is a team_access resource, we'll expect a list of WorkspaceAccess objects
 	if accessorType == utils.Team {
 		if err := decodeResponseBody(resp.Body, &workspaceAccesses); err != nil {
-			return nil, fmt.Errorf("failed to decode response: %w", err)
+			return nil, fmt.Errorf("failed to list workspace accesses: %w", err)
 		}
 	}
 
@@ -155,7 +155,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	// Otherwise, we'll expect a single WorkspaceAccess object, fetched by `accessID`
 	if accessorType == utils.User || accessorType == utils.ServiceAccount {
 		if err := decodeResponseBody(resp.Body, &workspaceAccess); err != nil {
-			return nil, fmt.Errorf("failed to decode response: %w", err)
+			return nil, fmt.Errorf("failed to get workspace access: %w", err)
 		}
 	}
 

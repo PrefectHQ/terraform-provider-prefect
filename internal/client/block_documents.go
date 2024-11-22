@@ -167,7 +167,7 @@ func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, pa
 
 	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("failed to encode update payload data: %w", err)
+		return fmt.Errorf("failed to upsert block document access: %w", err)
 	}
 	defer resp.Body.Close()
 
