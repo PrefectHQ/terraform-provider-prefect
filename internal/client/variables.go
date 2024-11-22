@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -42,33 +39,17 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 
 // Create returns details for a new variable.
 func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (*api.Variable, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         &data,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var variable api.Variable
-	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &variable); err != nil {
+		return nil, fmt.Errorf("failed to create variable: %w", err)
 	}
 
 	return &variable, nil
@@ -84,28 +65,17 @@ func (c *VariablesClient) List(ctx context.Context, filter api.VariableFilter) (
 
 // Get returns details for a variable by ID.
 func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+variableID.String(), http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var variable api.Variable
-	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &variable); err != nil {
+		return nil, fmt.Errorf("failed to get variable: %w", err)
 	}
 
 	return &variable, nil
@@ -113,28 +83,17 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 
 // GetByName returns details for a variable by name.
 func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Variable, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/name/"+name, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/name/" + name,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var variable api.Variable
-	if err := json.NewDecoder(resp.Body).Decode(&variable); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &variable); err != nil {
+		return nil, fmt.Errorf("failed to get variable by name: %w", err)
 	}
 
 	return &variable, nil
@@ -142,53 +101,40 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 
 // Update modifies an existing variable by ID.
 func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data api.VariableUpdate) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return fmt.Errorf("failed to encode data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         &data,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+variableID.String(), &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("failed to update variable: %w", err)
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
-	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 // Delete removes a variable by ID.
 func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+variableID.String(), http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete variable: %w", err)
 	}
+
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
