@@ -85,7 +85,7 @@ var successCodesStatusOK = []int{http.StatusOK}
 func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http.Response, error) {
 	var body io.Reader
 
-	if cfg.body != nil {
+	if cfg.body != nil && cfg.body != http.NoBody {
 		var buf bytes.Buffer
 		if err := json.NewEncoder(&buf).Encode(cfg.body); err != nil {
 			return nil, fmt.Errorf("failed to encode body data: %w", err)
