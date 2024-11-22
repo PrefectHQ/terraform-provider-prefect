@@ -123,12 +123,17 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("http error: %w", err)
 	}
 
+	success := false
 	for _, successCode := range cfg.successCodes {
-		if resp.StatusCode != successCode {
-			errorBody, _ := io.ReadAll(resp.Body)
+		if resp.StatusCode == successCode {
+			success = true
 
-			return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+			break
 		}
+	}
+
+	if !success {
+		return nil, fmt.Errorf("status code %s", resp.Status)
 	}
 
 	return resp, nil
