@@ -22,7 +22,7 @@ type Deployment struct {
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
 	ConcurrencyLimit       int                    `json:"concurrency_limit"`
-	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
+	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
 	Entrypoint             string                 `json:"entrypoint"`
@@ -44,7 +44,7 @@ type Deployment struct {
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
 	ConcurrencyLimit       int                    `json:"concurrency_limit"`
-	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
+	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
@@ -66,7 +66,7 @@ type DeploymentCreate struct {
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
 	ConcurrencyLimit       int                    `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions     map[string]interface{} `json:"concurrency_options,omitempty"`
+	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
@@ -87,4 +87,9 @@ type DeploymentUpdate struct {
 // example request payload:
 // {"deployments": {"handle": {"any_": ["test"]}}}.
 type DeploymentFilter struct {
+}
+
+// ConcurrencyOptions is a representation of the deployment concurrency options.
+type ConcurrencyOptions struct {
+	CollisionStrategy string `json:"collision_strategy,omitempty"`
 }
