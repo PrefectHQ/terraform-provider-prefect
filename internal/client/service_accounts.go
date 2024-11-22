@@ -83,7 +83,7 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.Se
 		url:          sa.routePrefix + "/" + botID,
 		body:         http.NoBody,
 		apiKey:       sa.apiKey,
-		successCodes: []int{http.StatusOK, http.StatusNotFound},
+		successCodes: successCodesStatusOK,
 	}
 
 	var serviceAccount api.ServiceAccount
