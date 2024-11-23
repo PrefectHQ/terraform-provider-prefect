@@ -44,14 +44,14 @@ type Trigger struct {
 	Type string `json:"type"`
 
 	// For EventTrigger
-	Match        *ResourceSpecification `json:"match,omitempty"`
-	MatchRelated *ResourceSpecification `json:"match_related,omitempty"`
+	Match        map[string]interface{} `json:"match,omitempty"`
+	MatchRelated map[string]interface{} `json:"match_related,omitempty"`
 	Posture      *string                `json:"posture,omitempty"`
 	After        []string               `json:"after,omitempty"`
 	Expect       []string               `json:"expect,omitempty"`
 	ForEach      []string               `json:"for_each,omitempty"`
-	Threshold    *int                   `json:"threshold,omitempty"`
-	Within       *string                `json:"within,omitempty"` // Duration string
+	Threshold    *int64                 `json:"threshold,omitempty"`
+	Within       *float64               `json:"within,omitempty"` // Duration string
 	// For MetricTrigger
 	Metric *MetricTriggerQuery `json:"metric,omitempty"`
 	// For CompoundTrigger
@@ -135,35 +135,37 @@ type Action struct {
 	// On all actions
 	Type string `json:"type"`
 
-	// On WorkPoolAction, WorkQueueAction, DeploymentAction, and AutomationAction
+	// On Deployment, Work Pool, Work Queue, and Automation actions
 	Source *string `json:"source,omitempty"`
 
-	// DeploymentAction fields
-	DeploymentID *uuid.UUID `json:"deployment_id,omitempty"`
-
-	// WorkPoolAction fields
-	WorkPoolID *uuid.UUID `json:"work_pool_id,omitempty"`
-
-	// WorkQueueAction fields
-	WorkQueueID *uuid.UUID `json:"work_queue_id,omitempty"`
-
-	// AutomationAction fields
+	// On Automation actions
 	AutomationID *uuid.UUID `json:"automation_id,omitempty"`
 
-	// RunDeployment fields
+	// On Webhook and Notification actions
+	BlockDocumentID *uuid.UUID `json:"block_document_id,omitempty"`
+
+	// On Deployment actions
+	DeploymentID *uuid.UUID `json:"deployment_id,omitempty"`
+
+	// On Work Pool actions
+	WorkPoolID *uuid.UUID `json:"work_pool_id,omitempty"`
+
+	// On Work Queue actions
+	WorkQueueID *uuid.UUID `json:"work_queue_id,omitempty"`
+
+	// On Run Deployment action
 	Parameters   map[string]interface{} `json:"parameters,omitempty"`
 	JobVariables map[string]interface{} `json:"job_variables,omitempty"`
 
-	// ChangeFlowRunState fields
+	// On Send Notification action
+	Subject *string `json:"subject,omitempty"`
+	Body    *string `json:"body,omitempty"`
+
+	// On Call Webhook action
+	Payload *string `json:"payload,omitempty"`
+
+	// On Change Flow Run State action
 	Name    *string `json:"name,omitempty"`
 	State   *string `json:"state,omitempty"`
 	Message *string `json:"message,omitempty"`
-
-	// Webhook fields
-	BlockDocumentID *uuid.UUID `json:"block_document_id,omitempty"`
-	Payload         *string    `json:"payload,omitempty"`
-
-	// Notification fields
-	Subject *string `json:"subject,omitempty"`
-	Body    *string `json:"body,omitempty"`
 }

@@ -1,21 +1,24 @@
 package resources
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 )
 
-// AutomationsResourceModel defines the Terraform resource model.
-type AutomationsResourceModel struct {
-	ID        types.String               `tfsdk:"id"`
-	Created   customtypes.TimestampValue `tfsdk:"created"`
-	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
+// AutomationResourceModel defines the Terraform resource model.
+type AutomationResourceModel struct {
+	ID          types.String               `tfsdk:"id"`
+	Created     customtypes.TimestampValue `tfsdk:"created"`
+	Updated     customtypes.TimestampValue `tfsdk:"updated"`
+	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
 
-	Name             types.String  `tfsdk:"name"`
-	Description      types.String  `tfsdk:"description"`
-	Enabled          types.Bool    `tfsdk:"enabled"`
-	Trigger          TriggerModel  `tfsdk:"trigger"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Enabled     types.Bool   `tfsdk:"enabled"`
+	Trigger     TriggerModel `tfsdk:"trigger"`
+
 	Actions          []ActionModel `tfsdk:"actions"`
 	ActionsOnTrigger []ActionModel `tfsdk:"actions_on_trigger"`
 	ActionsOnResolve []ActionModel `tfsdk:"actions_on_resolve"`
@@ -31,14 +34,14 @@ type TriggerModel struct {
 
 // EventTriggerModel represents an event-based trigger
 type EventTriggerModel struct {
-	Posture      types.String `tfsdk:"posture"`
-	Match        types.Map    `tfsdk:"match"`
-	MatchRelated types.Map    `tfsdk:"match_related"`
-	After        types.Set    `tfsdk:"after"`
-	Expect       types.Set    `tfsdk:"expect"`
-	ForEach      types.Set    `tfsdk:"for_each"`
-	Threshold    types.Int64  `tfsdk:"threshold"`
-	Within       types.Int64  `tfsdk:"within"`
+	Posture      types.String         `tfsdk:"posture"`
+	Match        jsontypes.Normalized `tfsdk:"match"`
+	MatchRelated jsontypes.Normalized `tfsdk:"match_related"`
+	After        types.List           `tfsdk:"after"`
+	Expect       types.List           `tfsdk:"expect"`
+	ForEach      types.List           `tfsdk:"for_each"`
+	Threshold    types.Int64          `tfsdk:"threshold"`
+	Within       types.Float64        `tfsdk:"within"`
 }
 
 // MetricTriggerModel represents a metric-based trigger
@@ -68,70 +71,40 @@ type SequenceTriggerModel struct {
 
 // ActionModel represents a single action in an automation
 type ActionModel struct {
-	RunDeployment      *RunDeploymentAction    `tfsdk:"run-deployment"`
-	SendNotification   *SendNotificationAction `tfsdk:"send-notification"`
-	CallWebhook        *CallWebhookAction      `tfsdk:"call-webhook"`
-	PauseDeployment    *DeploymentAction       `tfsdk:"pause-deployment"`
-	ResumeDeployment   *DeploymentAction       `tfsdk:"resume-deployment"`
-	CancelFlowRun      *EmptyAction            `tfsdk:"cancel-flow-run"`
-	ChangeFlowRunState *FlowRunStateAction     `tfsdk:"change-flow-run-state"`
-	PauseWorkQueue     *WorkQueueAction        `tfsdk:"pause-work-queue"`
-	ResumeWorkQueue    *WorkQueueAction        `tfsdk:"resume-work-queue"`
-	PauseWorkPool      *WorkPoolAction         `tfsdk:"pause-work-pool"`
-	ResumeWorkPool     *WorkPoolAction         `tfsdk:"resume-work-pool"`
-	PauseAutomation    *AutomationAction       `tfsdk:"pause-automation"`
-	ResumeAutomation   *AutomationAction       `tfsdk:"resume-automation"`
-	SuspendFlowRun     *EmptyAction            `tfsdk:"suspend-flow-run"`
-	ResumeFlowRun      *EmptyAction            `tfsdk:"resume-flow-run"`
-	DeclareIncident    *EmptyAction            `tfsdk:"declare-incident"`
-	DoNothing          *EmptyAction            `tfsdk:"do-nothing"`
-}
+	// On all actions
+	Type types.String `tfsdk:"type"`
 
-// Common action types
-type RunDeploymentAction struct {
-	Source       types.String `tfsdk:"source"`
-	DeploymentID types.String `tfsdk:"deployment_id"`
-	Parameters   types.Map    `tfsdk:"parameters"`
-	JobVariables types.Map    `tfsdk:"job_variables"`
-}
+	// On Deployment, Work Pool, Work Queue, and Automation actions
+	Source types.String `tfsdk:"source"`
 
-type SendNotificationAction struct {
-	BlockDocumentID types.String `tfsdk:"block_document_id"`
-	Subject         types.String `tfsdk:"subject"`
-	Body            types.String `tfsdk:"body"`
-}
+	// On Automation actions
+	AutomationID customtypes.UUIDValue `tfsdk:"automation_id"`
 
-type CallWebhookAction struct {
-	BlockDocumentID types.String `tfsdk:"block_document_id"`
-	Payload         types.String `tfsdk:"payload"`
-}
+	// On Webhook and Notification actions
+	BlockDocumentID customtypes.UUIDValue `tfsdk:"block_document_id"`
 
-type FlowRunStateAction struct {
+	// On Deployment actions
+	DeploymentID customtypes.UUIDValue `tfsdk:"deployment_id"`
+
+	// On Work Pool actions
+	WorkPoolID customtypes.UUIDValue `tfsdk:"work_pool_id"`
+
+	// On Work Queue actions
+	WorkQueueID customtypes.UUIDValue `tfsdk:"work_queue_id"`
+
+	// On Run Deployment action
+	Parameters   jsontypes.Normalized `tfsdk:"parameters"`
+	JobVariables jsontypes.Normalized `tfsdk:"job_variables"`
+
+	// On Send Notification action
+	Subject types.String `tfsdk:"subject"`
+	Body    types.String `tfsdk:"body"`
+
+	// On Call Webhook action
+	Payload types.String `tfsdk:"payload"`
+
+	// On Flow Run State Change action
 	Name    types.String `tfsdk:"name"`
 	State   types.String `tfsdk:"state"`
 	Message types.String `tfsdk:"message"`
 }
-
-// Actions that require source/id pattern
-type DeploymentAction struct {
-	Source       types.String `tfsdk:"source"`
-	DeploymentID types.String `tfsdk:"deployment_id"`
-}
-
-type WorkQueueAction struct {
-	Source      types.String `tfsdk:"source"`
-	WorkQueueID types.String `tfsdk:"work_queue_id"`
-}
-
-type WorkPoolAction struct {
-	Source     types.String `tfsdk:"source"`
-	WorkPoolID types.String `tfsdk:"work_pool_id"`
-}
-
-type AutomationAction struct {
-	Source       types.String `tfsdk:"source"`
-	AutomationID types.String `tfsdk:"automation_id"`
-}
-
-// For actions that don't require any configuration
-type EmptyAction struct{}

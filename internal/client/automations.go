@@ -78,6 +78,13 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 		return nil, fmt.Errorf("failed to encode create payload: %w", err)
 	}
 
+	// Pretty print the JSON for debugging
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, buf.Bytes(), "", "    "); err != nil {
+		return nil, fmt.Errorf("failed to format JSON: %w", err)
+	}
+	fmt.Printf("Create automation payload:\n%s\n", prettyJSON.String())
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
