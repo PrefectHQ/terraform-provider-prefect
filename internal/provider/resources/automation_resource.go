@@ -2,16 +2,17 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -73,15 +74,11 @@ func (r *AutomationResource) Schema(_ context.Context, _ resource.SchemaRequest,
 func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan AutomationResourceModel
 
-	tflog.Info(ctx, "WE ARE HERE")
-
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("plan: %+v", plan))
 
 	automationClient, err := r.client.Automations(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
@@ -90,30 +87,10 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	trigger, diags := validateAndCreateTriggerPayload(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-
-	actions, diags := createActionsPayload(plan.Actions)
-	resp.Diagnostics.Append(diags...)
-
-	actionsOnTrigger, diags := createActionsPayload(plan.ActionsOnTrigger)
-	resp.Diagnostics.Append(diags...)
-
-	actionsOnResolve, diags := createActionsPayload(plan.ActionsOnResolve)
-	resp.Diagnostics.Append(diags...)
-
+	createAutomationRequest := api.AutomationUpsert{}
+	resp.Diagnostics.Append(copyModelToAutomationRequest(ctx, &createAutomationRequest, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	createAutomationRequest := api.AutomationUpsert{
-		Name:             plan.Name.ValueString(),
-		Description:      plan.Description.ValueString(),
-		Enabled:          plan.Enabled.ValueBool(),
-		Trigger:          *trigger,
-		Actions:          actions,
-		ActionsOnTrigger: actionsOnTrigger,
-		ActionsOnResolve: actionsOnResolve,
 	}
 
 	createdAutomation, err := automationClient.Create(ctx, createAutomationRequest)
@@ -123,18 +100,12 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// TODO: move to translation helper function
-	plan.ID = types.StringValue(createdAutomation.ID.String())
-	plan.Created = customtypes.NewTimestampPointerValue(createdAutomation.Created)
-	plan.Updated = customtypes.NewTimestampPointerValue(createdAutomation.Updated)
-	plan.Name = types.StringValue(createdAutomation.Name)
-	plan.Description = types.StringValue(createdAutomation.Description)
-	plan.Enabled = types.BoolValue(createdAutomation.Enabled)
+	resp.Diagnostics.Append(copyAutomationToModel(ctx, createdAutomation, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	// TODO: do we need to re-set the trigger here?
-
-	diags = resp.State.Set(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -199,50 +170,240 @@ func (r *AutomationResource) ConfigValidators(ctx context.Context) []resource.Co
 	}
 }
 
-func validateAndCreateTriggerPayload(ctx context.Context, plan AutomationResourceModel) (*api.Trigger, diag.Diagnostics) {
+// copyAutomationToModel copies an Automation response payload => Terraform model.
+// This helper is used when an API response needs to be translated for Terraform state.
+func copyAutomationToModel(ctx context.Context, automation *api.Automation, tfModel *AutomationResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	switch {
-	case plan.Trigger.Event != nil:
-		var after, expect, forEach []string
-		diags.Append(plan.Trigger.Event.After.ElementsAs(ctx, &after, false)...)
-		diags.Append(plan.Trigger.Event.Expect.ElementsAs(ctx, &expect, false)...)
-		diags.Append(plan.Trigger.Event.ForEach.ElementsAs(ctx, &forEach, false)...)
+	// Map base attributes
+	tfModel.ID = types.StringValue(automation.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(automation.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(automation.Updated)
+	tfModel.Name = types.StringValue(automation.Name)
+	tfModel.Description = types.StringValue(automation.Description)
+	tfModel.Enabled = types.BoolValue(automation.Enabled)
 
-		match, diagnostics := helpers.SafeUnmarshal(plan.Trigger.Event.Match)
+	// Map actions
+	actions, diagnostics := createActionsForModel(automation.Actions)
+	diags.Append(diagnostics...)
+	actionsOnTrigger, diagnostics := createActionsForModel(automation.ActionsOnTrigger)
+	diags.Append(diagnostics...)
+	actionsOnResolve, diagnostics := createActionsForModel(automation.ActionsOnResolve)
+	diags.Append(diagnostics...)
+	if diags.HasError() {
+		return diags
+	}
+	tfModel.Actions = actions
+	tfModel.ActionsOnTrigger = actionsOnTrigger
+	tfModel.ActionsOnResolve = actionsOnResolve
+
+	// Map trigger
+	switch automation.Trigger.Type {
+	case "event":
+		diags.Append(mapResourceTriggerToModel(ctx, automation, tfModel)...)
+	case "metric":
+		diags.Append(mapResourceTriggerToModel(ctx, automation, tfModel)...)
+	case "compound":
+	case "sequence":
+	default:
+		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", automation.Trigger.Type))
+	}
+
+	return diags
+}
+
+// mapResourceTriggerToModel maps an `event` or `metric` trigger
+// from an Automation response payload => Terraform model.
+// We map these separately, so we can re-use this helper for `compound` and `sequence` triggers.
+func mapResourceTriggerToModel(ctx context.Context, automation *api.Automation, tfModel *AutomationResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	switch automation.Trigger.Type {
+	case "event":
+		tfModel.Trigger.Event = &EventTriggerModel{
+			Posture:   types.StringValue(*automation.Trigger.Posture),
+			Threshold: types.Int64Value(*automation.Trigger.Threshold),
+			Within:    types.Float64Value(*automation.Trigger.Within),
+		}
+
+		// Parse and set Match and MatchRelated (JSON)
+		byteSlice, err := json.Marshal(automation.Trigger.Match)
+		if err != nil {
+			diags.Append(helpers.SerializeDataErrorDiagnostic("match", "Automation trigger match", err))
+
+			return diags
+		}
+		tfModel.Trigger.Event.Match = jsontypes.NewNormalizedValue(string(byteSlice))
+
+		byteSlice, err = json.Marshal(automation.Trigger.MatchRelated)
+		if err != nil {
+			diags.Append(helpers.SerializeDataErrorDiagnostic("match_related", "Automation trigger match related", err))
+
+			return diags
+		}
+		tfModel.Trigger.Event.MatchRelated = jsontypes.NewNormalizedValue(string(byteSlice))
+
+		// Parse and set After, Expect, and ForEach (lists)
+		after, diagnostics := types.ListValueFrom(ctx, types.StringType, automation.Trigger.After)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.SafeUnmarshal(plan.Trigger.Event.MatchRelated)
+		expect, diagnostics := types.ListValueFrom(ctx, types.StringType, automation.Trigger.Expect)
+		diags.Append(diagnostics...)
+		forEach, diagnostics := types.ListValueFrom(ctx, types.StringType, automation.Trigger.ForEach)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
-			return nil, diags
+			return diags
 		}
 
-		return &api.Trigger{
+		tfModel.Trigger.Event.After = after
+		tfModel.Trigger.Event.Expect = expect
+		tfModel.Trigger.Event.ForEach = forEach
+	case "metric":
+		// TODO: map metric trigger to model
+	default:
+		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", automation.Trigger.Type))
+	}
+
+	return diags
+}
+
+func createActionsForModel(apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	actions := make([]ActionModel, 0)
+
+	for _, action := range apiActions {
+		actionModel := ActionModel{}
+		actionModel.Type = types.StringValue(action.Type)
+		actionModel.Source = types.StringPointerValue(action.Source)
+		actionModel.AutomationID = customtypes.NewUUIDPointerValue(action.AutomationID)
+		actionModel.BlockDocumentID = customtypes.NewUUIDPointerValue(action.BlockDocumentID)
+		actionModel.DeploymentID = customtypes.NewUUIDPointerValue(action.DeploymentID)
+		actionModel.WorkPoolID = customtypes.NewUUIDPointerValue(action.WorkPoolID)
+		actionModel.WorkQueueID = customtypes.NewUUIDPointerValue(action.WorkQueueID)
+		actionModel.Subject = types.StringPointerValue(action.Subject)
+		actionModel.Body = types.StringPointerValue(action.Body)
+		actionModel.Payload = types.StringPointerValue(action.Payload)
+		actionModel.Name = types.StringPointerValue(action.Name)
+		actionModel.State = types.StringPointerValue(action.State)
+		actionModel.Message = types.StringPointerValue(action.Message)
+
+		// Only set parameters and job variables if they are set in the API.
+		// Otherwise, the string `"null"` is set to the Terraform model, which will
+		// create an inconsistent result error if no value is set in HCL.
+		if action.Parameters != nil {
+			byteSlice, err := json.Marshal(action.Parameters)
+			if err != nil {
+				diags.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Automation action parameters", err))
+
+				return nil, diags
+			}
+			actionModel.Parameters = jsontypes.NewNormalizedValue(string(byteSlice))
+		}
+		if action.JobVariables != nil {
+			byteSlice, err := json.Marshal(action.JobVariables)
+			if err != nil {
+				diags.Append(helpers.SerializeDataErrorDiagnostic("job_variables", "Automation action job variables", err))
+
+				return nil, diags
+			}
+			actionModel.JobVariables = jsontypes.NewNormalizedValue(string(byteSlice))
+		}
+
+		actions = append(actions, actionModel)
+	}
+
+	return actions, diags
+}
+
+// copyModelToAutomationRequest copies the Terraform model => AutomationUpsert request payload.
+// This helper is used when a Terraform configuration needs to be translated for an API call.
+func copyModelToAutomationRequest(ctx context.Context, automationRequest *api.AutomationUpsert, tfModel *AutomationResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	// Map base attributes
+	automationRequest.Name = tfModel.Name.ValueString()
+	automationRequest.Description = tfModel.Description.ValueString()
+	automationRequest.Enabled = tfModel.Enabled.ValueBool()
+
+	// Map actions
+	actions, diagnostics := createActionsForAutomationRequest(tfModel.Actions)
+	diags.Append(diagnostics...)
+	actionsOnTrigger, diagnostics := createActionsForAutomationRequest(tfModel.ActionsOnTrigger)
+	diags.Append(diagnostics...)
+	actionsOnResolve, diagnostics := createActionsForAutomationRequest(tfModel.ActionsOnResolve)
+	diags.Append(diagnostics...)
+	if diags.HasError() {
+		return diags
+	}
+	automationRequest.Actions = actions
+	automationRequest.ActionsOnTrigger = actionsOnTrigger
+	automationRequest.ActionsOnResolve = actionsOnResolve
+
+	// Map trigger
+	switch {
+	case tfModel.Trigger.Event != nil:
+		diags.Append(mapResourceTriggerToAutomationRequest(ctx, automationRequest, tfModel)...)
+	case tfModel.Trigger.Metric != nil:
+		diags.Append(mapResourceTriggerToAutomationRequest(ctx, automationRequest, tfModel)...)
+	// case tfModel.Trigger.Compound != nil:
+	// case tfModel.Trigger.Sequence != nil:
+	default:
+		diags.AddError("Invalid Trigger Type", "No valid trigger type specified")
+		return diags
+	}
+
+	return diags
+}
+
+// mapResourceTriggerToAutomationRequest maps an `event` or `metric` trigger
+// from a Terraform model => AutomationUpsert request payload.
+// We map these separately, so we can re-use this helper for `compound` and `sequence` triggers.
+func mapResourceTriggerToAutomationRequest(ctx context.Context, automationRequest *api.AutomationUpsert, tfModel *AutomationResourceModel) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	switch {
+	case tfModel.Trigger.Event != nil:
+		var after, expect, forEach []string
+		diags.Append(tfModel.Trigger.Event.After.ElementsAs(ctx, &after, false)...)
+		diags.Append(tfModel.Trigger.Event.Expect.ElementsAs(ctx, &expect, false)...)
+		diags.Append(tfModel.Trigger.Event.ForEach.ElementsAs(ctx, &forEach, false)...)
+
+		match, diagnostics := helpers.SafeUnmarshal(tfModel.Trigger.Event.Match)
+		diags.Append(diagnostics...)
+		matchRelated, diagnostics := helpers.SafeUnmarshal(tfModel.Trigger.Event.MatchRelated)
+		diags.Append(diagnostics...)
+
+		if diags.HasError() {
+			return diags
+		}
+
+		automationRequest.Trigger = api.Trigger{
 			Type:         "event",
-			Posture:      plan.Trigger.Event.Posture.ValueStringPointer(),
+			Posture:      tfModel.Trigger.Event.Posture.ValueStringPointer(),
 			Match:        match,
 			MatchRelated: matchRelated,
 			After:        after,
 			Expect:       expect,
 			ForEach:      forEach,
-			Threshold:    plan.Trigger.Event.Threshold.ValueInt64Pointer(),
-			Within:       plan.Trigger.Event.Within.ValueFloat64Pointer(),
-		}, nil
-
-	// case plan.Trigger.Metric != nil:
-	// 	return api.Trigger{Metric: plan.Trigger.Metric}, nil
-	// case plan.Trigger.Compound != nil:
-	// 	return api.Trigger{Compound: plan.Trigger.Compound}, nil
-	// case plan.Trigger.Sequence != nil:
-	// 	return api.Trigger{Sequence: plan.Trigger.Sequence}, nil
+			Threshold:    tfModel.Trigger.Event.Threshold.ValueInt64Pointer(),
+			Within:       tfModel.Trigger.Event.Within.ValueFloat64Pointer(),
+		}
+	case tfModel.Trigger.Metric != nil:
+		// TODO: map metric trigger to automation request
 	default:
 		diags.AddError("Invalid Trigger Type", "No valid trigger type specified")
-		return nil, diags
 	}
+
+	return diags
 }
 
-func createActionsPayload(tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
+// createActionsForAutomationRequest creates an Actions payload for an AutomationUpsert request.
+// This helper is used when constructing the overall AutomationUpsert request payload
+// from a given Terraform model.
+func createActionsForAutomationRequest(tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	actions := make([]api.Action, 0)
 
 	for _, tfAction := range tfActions {
@@ -262,20 +423,21 @@ func createActionsPayload(tfActions []ActionModel) ([]api.Action, diag.Diagnosti
 		apiAction.State = tfAction.State.ValueStringPointer()
 		apiAction.Message = tfAction.Message.ValueStringPointer()
 
-		parameters, diags := helpers.SafeUnmarshal(tfAction.Parameters)
-		if diags.HasError() {
-			return nil, diags
-		}
-		apiAction.Parameters = parameters
+		// Parse and set parameters + job variables (JSON)
+		parameters, diagnostics := helpers.SafeUnmarshal(tfAction.Parameters)
+		diags.Append(diagnostics...)
+		jobVariables, diagnostics := helpers.SafeUnmarshal(tfAction.JobVariables)
+		diags.Append(diagnostics...)
 
-		jobVariables, diags := helpers.SafeUnmarshal(tfAction.JobVariables)
 		if diags.HasError() {
 			return nil, diags
 		}
+
+		apiAction.Parameters = parameters
 		apiAction.JobVariables = jobVariables
 
 		actions = append(actions, apiAction)
 	}
 
-	return actions, nil
+	return actions, diags
 }
