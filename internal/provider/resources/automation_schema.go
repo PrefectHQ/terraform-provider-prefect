@@ -195,13 +195,15 @@ func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
 			Optional:    true,
 			Description: "A trigger that fires based on the results of a metric query",
 			Attributes: map[string]schema.Attribute{
-				"posture": schema.StringAttribute{
-					Computed:    true,
-					Description: "The posture of this trigger (Metric)",
-					Validators: []validator.String{
-						stringvalidator.OneOf("Metric"),
-					},
-					Default: stringdefault.StaticString("Metric"),
+				"match": schema.StringAttribute{
+					Optional:    true,
+					Description: "Labels for resources which this trigger will match",
+					CustomType:  jsontypes.NormalizedType{},
+				},
+				"match_related": schema.StringAttribute{
+					Optional:    true,
+					Description: "Labels for related resources which this trigger will match",
+					CustomType:  jsontypes.NormalizedType{},
 				},
 				"metric": schema.SingleNestedAttribute{
 					Required: true,
@@ -209,18 +211,28 @@ func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
 						"name": schema.StringAttribute{
 							Required:    true,
 							Description: "The name of the metric to query",
+							Validators: []validator.String{
+								stringvalidator.OneOf(utils.AllMetricNames...),
+							},
 						},
 						"operator": schema.StringAttribute{
 							Required:    true,
-							Description: "The operator to compare the metric value against the threshold",
+							Description: "The comparative operator used to evaluate the query result against the threshold value",
+							Validators: []validator.String{
+								stringvalidator.OneOf(utils.AllMetricOperators...),
+							},
 						},
 						"threshold": schema.Float64Attribute{
 							Required:    true,
-							Description: "The threshold value to compare against",
+							Description: "The threshold value against which we'll compare the query results",
 						},
-						"range": schema.Int64Attribute{
+						"range": schema.Float64Attribute{
 							Required:    true,
-							Description: "The time range in seconds over which to evaluate the metric",
+							Description: "The lookback duration (seconds) for a metric query. This duration is used to determine the time range over which the query will be executed.",
+						},
+						"firing_for": schema.Float64Attribute{
+							Required:    true,
+							Description: "The duration (seconds) for which the metric query must breach OR resolve continuously before the state is updated and actions are triggered.",
 						},
 					},
 				},

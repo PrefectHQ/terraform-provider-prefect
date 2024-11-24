@@ -25,3 +25,16 @@ var AllAutomationActionTypes = []string{
 	"pause-work-pool",
 	"resume-work-pool",
 }
+
+var AllMetricOperators = []string{
+	"<",
+	">",
+	">=",
+	"<=",
+}
+
+var AllMetricNames = []string{
+	"lateness",
+	"duration",
+	"successes",
+}

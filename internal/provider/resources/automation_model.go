@@ -46,8 +46,9 @@ type EventTriggerModel struct {
 
 // MetricTriggerModel represents a metric-based trigger
 type MetricTriggerModel struct {
-	Posture types.String     `tfsdk:"posture"`
-	Metric  MetricQueryModel `tfsdk:"metric"`
+	Match        jsontypes.Normalized `tfsdk:"match"`
+	MatchRelated jsontypes.Normalized `tfsdk:"match_related"`
+	Metric       MetricQueryModel     `tfsdk:"metric"`
 }
 
 // MetricQueryModel represents the metric query configuration
@@ -55,7 +56,8 @@ type MetricQueryModel struct {
 	Name      types.String  `tfsdk:"name"`
 	Operator  types.String  `tfsdk:"operator"`
 	Threshold types.Float64 `tfsdk:"threshold"`
-	Range     types.Int64   `tfsdk:"range"`
+	Range     types.Float64 `tfsdk:"range"`
+	FiringFor types.Float64 `tfsdk:"firing_for"`
 }
 
 // CompoundTriggerModel represents a compound trigger

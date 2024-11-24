@@ -1,3 +1,5 @@
+// TODO: rename helpers for consistency
+// TODO: ensure helper argument names make sense
 package resources
 
 import (
@@ -13,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -113,10 +116,101 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 
 // Read refreshes the Terraform state with the latest data.
 func (r *AutomationResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state AutomationResourceModel
+
+	diags := req.State.Get(ctx, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.Automations(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Automation", err))
+
+		return
+	}
+
+	automationID, err := uuid.Parse(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Automation", err))
+
+		return
+	}
+
+	automation, err := client.Get(ctx, automationID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyAutomationToModel(ctx, automation, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan AutomationResourceModel
+
+	// Populate the model from resource configuration and emit diagnostics on error
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	automationClient, err := r.client.Automations(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Automation", err))
+
+		return
+	}
+
+	updateAutomationRequest := api.AutomationUpsert{}
+	resp.Diagnostics.Append(copyModelToAutomationRequest(ctx, &updateAutomationRequest, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tflog.Info(ctx, fmt.Sprintf("planID: %+v", plan.ID.ValueString()))
+
+	automationID, err := uuid.Parse(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Automation", err))
+
+		return
+	}
+
+	err = automationClient.Update(ctx, automationID, updateAutomationRequest)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "update", err))
+
+		return
+	}
+
+	updatedAutomation, err := automationClient.Get(ctx, automationID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyAutomationToModel(ctx, updatedAutomation, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -218,6 +312,21 @@ func copyAutomationToModel(ctx context.Context, automation *api.Automation, tfMo
 func mapResourceTriggerToModel(ctx context.Context, automation *api.Automation, tfModel *AutomationResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
+	// Parse Match and MatchRelated (JSON) regardless of type,
+	// as they are common on Resource Trigger schemas.
+	matchByteSlice, err := json.Marshal(automation.Trigger.Match)
+	if err != nil {
+		diags.Append(helpers.SerializeDataErrorDiagnostic("match", "Automation trigger match", err))
+
+		return diags
+	}
+	matchRelatedByteSlice, err := json.Marshal(automation.Trigger.MatchRelated)
+	if err != nil {
+		diags.Append(helpers.SerializeDataErrorDiagnostic("match_related", "Automation trigger match related", err))
+
+		return diags
+	}
+
 	switch automation.Trigger.Type {
 	case "event":
 		tfModel.Trigger.Event = &EventTriggerModel{
@@ -226,22 +335,9 @@ func mapResourceTriggerToModel(ctx context.Context, automation *api.Automation, 
 			Within:    types.Float64Value(*automation.Trigger.Within),
 		}
 
-		// Parse and set Match and MatchRelated (JSON)
-		byteSlice, err := json.Marshal(automation.Trigger.Match)
-		if err != nil {
-			diags.Append(helpers.SerializeDataErrorDiagnostic("match", "Automation trigger match", err))
-
-			return diags
-		}
-		tfModel.Trigger.Event.Match = jsontypes.NewNormalizedValue(string(byteSlice))
-
-		byteSlice, err = json.Marshal(automation.Trigger.MatchRelated)
-		if err != nil {
-			diags.Append(helpers.SerializeDataErrorDiagnostic("match_related", "Automation trigger match related", err))
-
-			return diags
-		}
-		tfModel.Trigger.Event.MatchRelated = jsontypes.NewNormalizedValue(string(byteSlice))
+		// Set Match and MatchRelated, which we parsed above.
+		tfModel.Trigger.Event.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
+		tfModel.Trigger.Event.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
 
 		// Parse and set After, Expect, and ForEach (lists)
 		after, diagnostics := types.ListValueFrom(ctx, types.StringType, automation.Trigger.After)
@@ -258,8 +354,22 @@ func mapResourceTriggerToModel(ctx context.Context, automation *api.Automation, 
 		tfModel.Trigger.Event.After = after
 		tfModel.Trigger.Event.Expect = expect
 		tfModel.Trigger.Event.ForEach = forEach
+
 	case "metric":
-		// TODO: map metric trigger to model
+		tfModel.Trigger.Metric = &MetricTriggerModel{
+			Metric: MetricQueryModel{
+				Name:      types.StringValue(automation.Trigger.Metric.Name),
+				Threshold: types.Float64Value(automation.Trigger.Metric.Threshold),
+				Operator:  types.StringValue(automation.Trigger.Metric.Operator),
+				Range:     types.Float64Value(automation.Trigger.Metric.Range),
+				FiringFor: types.Float64Value(automation.Trigger.Metric.FiringFor),
+			},
+		}
+
+		// Set Match and MatchRelated, which we parsed above.
+		tfModel.Trigger.Metric.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
+		tfModel.Trigger.Metric.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
+
 	default:
 		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", automation.Trigger.Type))
 	}
@@ -390,7 +500,28 @@ func mapResourceTriggerToAutomationRequest(ctx context.Context, automationReques
 			Within:       tfModel.Trigger.Event.Within.ValueFloat64Pointer(),
 		}
 	case tfModel.Trigger.Metric != nil:
-		// TODO: map metric trigger to automation request
+		match, diagnostics := helpers.SafeUnmarshal(tfModel.Trigger.Metric.Match)
+		diags.Append(diagnostics...)
+		matchRelated, diagnostics := helpers.SafeUnmarshal(tfModel.Trigger.Metric.MatchRelated)
+		diags.Append(diagnostics...)
+
+		if diags.HasError() {
+			return diags
+		}
+
+		automationRequest.Trigger = api.Trigger{
+			Type:         "metric",
+			Match:        match,
+			MatchRelated: matchRelated,
+			Metric: &api.MetricTriggerQuery{
+				Name:      tfModel.Trigger.Metric.Metric.Name.ValueString(),
+				Threshold: tfModel.Trigger.Metric.Metric.Threshold.ValueFloat64(),
+				Operator:  tfModel.Trigger.Metric.Metric.Operator.ValueString(),
+				Range:     tfModel.Trigger.Metric.Metric.Range.ValueFloat64(),
+				FiringFor: tfModel.Trigger.Metric.Metric.FiringFor.ValueFloat64(),
+			},
+		}
+
 	default:
 		diags.AddError("Invalid Trigger Type", "No valid trigger type specified")
 	}

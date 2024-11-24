@@ -43,18 +43,22 @@ type AutomationUpsert struct {
 type Trigger struct {
 	Type string `json:"type"`
 
-	// For EventTrigger
+	// For EventTrigger and MetricTrigger
 	Match        map[string]interface{} `json:"match,omitempty"`
 	MatchRelated map[string]interface{} `json:"match_related,omitempty"`
 	Posture      *string                `json:"posture,omitempty"`
-	After        []string               `json:"after,omitempty"`
-	Expect       []string               `json:"expect,omitempty"`
-	ForEach      []string               `json:"for_each,omitempty"`
-	Threshold    *int64                 `json:"threshold,omitempty"`
-	Within       *float64               `json:"within,omitempty"` // Duration string
+
+	// For EventTrigger
+	After     []string `json:"after,omitempty"`
+	Expect    []string `json:"expect,omitempty"`
+	ForEach   []string `json:"for_each,omitempty"`
+	Threshold *int64   `json:"threshold,omitempty"`
+	Within    *float64 `json:"within,omitempty"` // Duration string
+
 	// For MetricTrigger
 	Metric *MetricTriggerQuery `json:"metric,omitempty"`
-	// For CompoundTrigger
+
+	// For CompoundTrigger and SequenceTrigger
 	Triggers []Trigger    `json:"triggers,omitempty"`
 	Require  *interface{} `json:"require,omitempty"` // int or string ("any"/"all")
 }
@@ -63,8 +67,8 @@ type MetricTriggerQuery struct {
 	Name      string  `json:"name"`
 	Threshold float64 `json:"threshold"`
 	Operator  string  `json:"operator"` // "<", "<=", ">", ">="
-	Range     int     `json:"range"`
-	FiringFor int     `json:"firing_for"`
+	Range     float64 `json:"range"`
+	FiringFor float64 `json:"firing_for"`
 }
 
 // ResourceSpecification is a composite type that returns a map
