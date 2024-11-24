@@ -5,6 +5,12 @@ const ServiceAccount string = "SERVICE_ACCOUNT"
 const User string = "USER"
 const Team string = "TEAM"
 
+// Automation Trigger Types.
+const TriggerTypeMetric string = "metric"
+const TriggerTypeEvent string = "event"
+const TriggerTypeCompound string = "compound"
+const TriggerTypeSequence string = "sequence"
+
 // Automation Action Types.
 var AllAutomationActionTypes = []string{
 	"do-nothing",
@@ -33,7 +39,7 @@ var AllMetricOperators = []string{
 	"<=",
 }
 
-var AllMetricNames = []string{
+var AllTriggerMetricNames = []string{
 	"lateness",
 	"duration",
 	"successes",

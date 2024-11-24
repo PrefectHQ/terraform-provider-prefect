@@ -24,12 +24,17 @@ type AutomationResourceModel struct {
 	ActionsOnResolve []ActionModel `tfsdk:"actions_on_resolve"`
 }
 
-// TriggerModel represents the top-level trigger configuration
+// ResourceTriggerModel comprises the event and metric trigger models.
+type ResourceTriggerModel struct {
+	Event  *EventTriggerModel  `tfsdk:"event"`
+	Metric *MetricTriggerModel `tfsdk:"metric"`
+}
+
+// TriggerModel comprises all trigger types, including compound and sequence.
 type TriggerModel struct {
-	Event    *EventTriggerModel    `tfsdk:"event"`
-	Metric   *MetricTriggerModel   `tfsdk:"metric"`
-	Compound *CompoundTriggerModel `tfsdk:"compound"`
-	Sequence *SequenceTriggerModel `tfsdk:"sequence"`
+	ResourceTriggerModel
+	Compound *CompositeTriggerAttributesModel `tfsdk:"compound"`
+	Sequence *CompositeTriggerAttributesModel `tfsdk:"sequence"`
 }
 
 // EventTriggerModel represents an event-based trigger
@@ -60,15 +65,12 @@ type MetricQueryModel struct {
 	FiringFor types.Float64 `tfsdk:"firing_for"`
 }
 
-// CompoundTriggerModel represents a compound trigger
-type CompoundTriggerModel struct {
-	Require  types.String   `tfsdk:"require"`
-	Triggers []TriggerModel `tfsdk:"triggers"`
-}
-
-// SequenceTriggerModel represents a sequence trigger
-type SequenceTriggerModel struct {
-	Triggers []TriggerModel `tfsdk:"triggers"`
+// CompositeTriggerAttributesModel represents the shared
+// attributes of a compound or sequence trigger.
+type CompositeTriggerAttributesModel struct {
+	Triggers []ResourceTriggerModel `tfsdk:"triggers"`
+	Within   types.Float64          `tfsdk:"within"`
+	Require  types.Dynamic          `tfsdk:"require"` // only exists on compound triggers
 }
 
 // ActionModel represents a single action in an automation

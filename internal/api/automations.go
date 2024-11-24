@@ -53,7 +53,7 @@ type Trigger struct {
 	Expect    []string `json:"expect,omitempty"`
 	ForEach   []string `json:"for_each,omitempty"`
 	Threshold *int64   `json:"threshold,omitempty"`
-	Within    *float64 `json:"within,omitempty"` // Duration string
+	Within    *float64 `json:"within,omitempty"`
 
 	// For MetricTrigger
 	Metric *MetricTriggerQuery `json:"metric,omitempty"`
