@@ -253,8 +253,29 @@ func ActionsSchema() schema.ListNestedAttribute {
 	return schema.ListNestedAttribute{
 		Description: "List of actions to perform when the automation is triggered",
 		Optional:    true,
-		// Computed:    true,
-		// Default: listdefault.StaticValue(basetypes.NewListValueMust(types.ObjectType{}, []attr.Value{})),
+		Computed:    true,
+		Default: listdefault.StaticValue(basetypes.NewListValueMust(
+			types.ObjectType{
+				AttrTypes: map[string]attr.Type{
+					"type":              types.StringType,
+					"source":            types.StringType,
+					"automation_id":     customtypes.UUIDType{},
+					"block_document_id": customtypes.UUIDType{},
+					"deployment_id":     customtypes.UUIDType{},
+					"work_pool_id":      customtypes.UUIDType{},
+					"work_queue_id":     customtypes.UUIDType{},
+					"subject":           types.StringType,
+					"body":              types.StringType,
+					"payload":           types.StringType,
+					"name":              types.StringType,
+					"state":             types.StringType,
+					"message":           types.StringType,
+					"parameters":        jsontypes.NormalizedType{},
+					"job_variables":     jsontypes.NormalizedType{},
+				},
+			},
+			[]attr.Value{},
+		)),
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
 				"type": schema.StringAttribute{

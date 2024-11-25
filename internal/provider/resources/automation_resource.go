@@ -1,5 +1,3 @@
-// TODO: rename helpers for consistency
-// TODO: ensure helper argument names make sense
 package resources
 
 import (
@@ -93,7 +91,7 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createAutomationRequest := api.AutomationUpsert{}
-	resp.Diagnostics.Append(copyModelToAutomationRequest(ctx, &createAutomationRequest, &plan)...)
+	resp.Diagnostics.Append(mapAutomationTerraformToAPI(ctx, &createAutomationRequest, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -105,7 +103,7 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyAutomationToModel(ctx, createdAutomation, &plan)...)
+	resp.Diagnostics.Append(mapAutomationAPIToTerraform(ctx, createdAutomation, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -147,7 +145,7 @@ func (r *AutomationResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(copyAutomationToModel(ctx, automation, &state)...)
+	resp.Diagnostics.Append(mapAutomationAPIToTerraform(ctx, automation, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -176,7 +174,7 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	updateAutomationRequest := api.AutomationUpsert{}
-	resp.Diagnostics.Append(copyModelToAutomationRequest(ctx, &updateAutomationRequest, &plan)...)
+	resp.Diagnostics.Append(mapAutomationTerraformToAPI(ctx, &updateAutomationRequest, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -204,7 +202,7 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyAutomationToModel(ctx, updatedAutomation, &plan)...)
+	resp.Diagnostics.Append(mapAutomationAPIToTerraform(ctx, updatedAutomation, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -266,25 +264,25 @@ func (r *AutomationResource) ConfigValidators(ctx context.Context) []resource.Co
 	}
 }
 
-// copyAutomationToModel copies an Automation response payload => Terraform model.
+// mapAutomationAPIToTerraform copies an Automation API object => Terraform model.
 // This helper is used when an API response needs to be translated for Terraform state.
-func copyAutomationToModel(ctx context.Context, automation *api.Automation, tfModel *AutomationResourceModel) diag.Diagnostics {
+func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automation, tfModel *AutomationResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Map base attributes
-	tfModel.ID = types.StringValue(automation.ID.String())
-	tfModel.Created = customtypes.NewTimestampPointerValue(automation.Created)
-	tfModel.Updated = customtypes.NewTimestampPointerValue(automation.Updated)
-	tfModel.Name = types.StringValue(automation.Name)
-	tfModel.Description = types.StringValue(automation.Description)
-	tfModel.Enabled = types.BoolValue(automation.Enabled)
+	tfModel.ID = types.StringValue(apiAutomation.ID.String())
+	tfModel.Created = customtypes.NewTimestampPointerValue(apiAutomation.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(apiAutomation.Updated)
+	tfModel.Name = types.StringValue(apiAutomation.Name)
+	tfModel.Description = types.StringValue(apiAutomation.Description)
+	tfModel.Enabled = types.BoolValue(apiAutomation.Enabled)
 
 	// Map actions
-	actions, diagnostics := createActionsForModel(automation.Actions)
+	actions, diagnostics := mapActionsAPIToTerraform(apiAutomation.Actions)
 	diags.Append(diagnostics...)
-	actionsOnTrigger, diagnostics := createActionsForModel(automation.ActionsOnTrigger)
+	actionsOnTrigger, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnTrigger)
 	diags.Append(diagnostics...)
-	actionsOnResolve, diagnostics := createActionsForModel(automation.ActionsOnResolve)
+	actionsOnResolve, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnResolve)
 	diags.Append(diagnostics...)
 	if diags.HasError() {
 		return diags
@@ -294,47 +292,44 @@ func copyAutomationToModel(ctx context.Context, automation *api.Automation, tfMo
 	tfModel.ActionsOnResolve = actionsOnResolve
 
 	// Map trigger
-	switch automation.Trigger.Type {
+	switch apiAutomation.Trigger.Type {
 	case utils.TriggerTypeEvent, utils.TriggerTypeMetric:
-		diags.Append(mapResourceTriggerToModel(ctx, &automation.Trigger, &tfModel.Trigger.ResourceTriggerModel)...)
+		diags.Append(mapTriggerAPIToTerraform(ctx, &apiAutomation.Trigger, &tfModel.Trigger.ResourceTriggerModel)...)
 
 	case utils.TriggerTypeCompound, utils.TriggerTypeSequence:
-		within := types.Float64PointerValue(automation.Trigger.Within)
 
-		// pointer to either `tfModel.Trigger.Compound` or `tfModel.Trigger.Sequence`
-		// so we can set the shared `.Triggers` field via referencing this pointer.
-		var compositeTrigger *CompositeTriggerAttributesModel
-
-		if automation.Trigger.Type == utils.TriggerTypeCompound {
-			// TODO: handle this properly instead of hardcoding it
-			// dataToPersist.Require = types.DynamicValue(types.StringValue("any"))
-			tfModel.Trigger.Compound.Within = within
-			compositeTrigger = tfModel.Trigger.Compound
-		}
-
-		if automation.Trigger.Type == utils.TriggerTypeSequence {
-			tfModel.Trigger.Sequence.Within = within
-			compositeTrigger = tfModel.Trigger.Sequence
-		}
-
+		// Iterate through API's composite triggers, map them to a Terraform model.
 		compositeTriggers := make([]ResourceTriggerModel, 0)
-		for _, apiTrigger := range automation.Trigger.Triggers {
+		for _, apiTrigger := range apiAutomation.Trigger.Triggers {
 			resourceTriggerModel := ResourceTriggerModel{}
-			diags.Append(mapResourceTriggerToModel(ctx, &apiTrigger, &resourceTriggerModel)...)
+			diags.Append(mapTriggerAPIToTerraform(ctx, &apiTrigger, &resourceTriggerModel)...)
 			compositeTriggers = append(compositeTriggers, resourceTriggerModel)
 		}
-		compositeTrigger.Triggers = compositeTriggers
+
+		within := types.Float64PointerValue(apiAutomation.Trigger.Within)
+
+		if apiAutomation.Trigger.Type == utils.TriggerTypeCompound {
+			// NOTE: we'll carry forward whatever .Require value that
+			// exists in State, so we don't need to re-set it here.
+			tfModel.Trigger.Compound.Within = within
+			tfModel.Trigger.Compound.Triggers = compositeTriggers
+		}
+
+		if apiAutomation.Trigger.Type == utils.TriggerTypeSequence {
+			tfModel.Trigger.Sequence.Within = within
+			tfModel.Trigger.Sequence.Triggers = compositeTriggers
+		}
 	default:
-		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", automation.Trigger.Type))
+		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", apiAutomation.Trigger.Type))
 	}
 
 	return diags
 }
 
-// mapResourceTriggerToModel maps an `event` or `metric` trigger
-// from an Automation response payload => Terraform model.
+// mapTriggerAPIToTerraform maps an `event` or `metric` trigger
+// from an Automation API object => Terraform model.
 // We map these separately, so we can re-use this helper for `compound` and `sequence` triggers.
-func mapResourceTriggerToModel(ctx context.Context, apiTrigger *api.Trigger, modelTrigger *ResourceTriggerModel) diag.Diagnostics {
+func mapTriggerAPIToTerraform(ctx context.Context, apiTrigger *api.Trigger, tfTriggerModel *ResourceTriggerModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Parse Match and MatchRelated (JSON) regardless of type,
@@ -354,15 +349,15 @@ func mapResourceTriggerToModel(ctx context.Context, apiTrigger *api.Trigger, mod
 
 	switch apiTrigger.Type {
 	case utils.TriggerTypeEvent:
-		modelTrigger.Event = &EventTriggerModel{
+		tfTriggerModel.Event = &EventTriggerModel{
 			Posture:   types.StringPointerValue(apiTrigger.Posture),
 			Threshold: types.Int64PointerValue(apiTrigger.Threshold),
 			Within:    types.Float64PointerValue(apiTrigger.Within),
 		}
 
 		// Set Match and MatchRelated, which we parsed above.
-		modelTrigger.Event.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
-		modelTrigger.Event.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
+		tfTriggerModel.Event.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
+		tfTriggerModel.Event.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
 
 		// Parse and set After, Expect, and ForEach (lists)
 		after, diagnostics := types.ListValueFrom(ctx, types.StringType, apiTrigger.After)
@@ -376,12 +371,12 @@ func mapResourceTriggerToModel(ctx context.Context, apiTrigger *api.Trigger, mod
 			return diags
 		}
 
-		modelTrigger.Event.After = after
-		modelTrigger.Event.Expect = expect
-		modelTrigger.Event.ForEach = forEach
+		tfTriggerModel.Event.After = after
+		tfTriggerModel.Event.Expect = expect
+		tfTriggerModel.Event.ForEach = forEach
 
 	case utils.TriggerTypeMetric:
-		modelTrigger.Metric = &MetricTriggerModel{
+		tfTriggerModel.Metric = &MetricTriggerModel{
 			Metric: MetricQueryModel{
 				Name:      types.StringValue(apiTrigger.Metric.Name),
 				Threshold: types.Float64Value(apiTrigger.Metric.Threshold),
@@ -392,8 +387,8 @@ func mapResourceTriggerToModel(ctx context.Context, apiTrigger *api.Trigger, mod
 		}
 
 		// Set Match and MatchRelated, which we parsed above.
-		modelTrigger.Metric.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
-		modelTrigger.Metric.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
+		tfTriggerModel.Metric.Match = jsontypes.NewNormalizedValue(string(matchByteSlice))
+		tfTriggerModel.Metric.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
 
 	default:
 		diags.AddError("Invalid Trigger Type", fmt.Sprintf("Invalid trigger type: %s", apiTrigger.Type))
@@ -402,10 +397,14 @@ func mapResourceTriggerToModel(ctx context.Context, apiTrigger *api.Trigger, mod
 	return diags
 }
 
-func createActionsForModel(apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
+// mapActionsAPIToTerraform maps an Automation API Actions payload => Terraform model.
+// This helper is used when an API response needs to be translated for Terraform state.
+// NOTE: we are re-constructing the response list every time (rather than updating member items in-place),
+// because there is no guarantee that the API returns the list in the same order as the Terraform model.
+func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	var actions []ActionModel
+	tfActionsModel := make([]ActionModel, 0)
 
 	for _, action := range apiActions {
 		actionModel := ActionModel{}
@@ -450,61 +449,69 @@ func createActionsForModel(apiActions []api.Action) ([]ActionModel, diag.Diagnos
 			actionModel.JobVariables = jsontypes.NewNormalizedValue("{}")
 		}
 
-		actions = append(actions, actionModel)
+		tfActionsModel = append(tfActionsModel, actionModel)
 	}
 
-	return actions, diags
+	return tfActionsModel, diags
 }
 
-// copyModelToAutomationRequest copies the Terraform model => AutomationUpsert request payload.
+// mapAutomationTerraformToAPI copies the Terraform model => AutomationUpsert request payload.
 // This helper is used when a Terraform configuration needs to be translated for an API call.
-func copyModelToAutomationRequest(ctx context.Context, automationRequest *api.AutomationUpsert, tfModel *AutomationResourceModel) diag.Diagnostics {
+func mapAutomationTerraformToAPI(ctx context.Context, apiAutomation *api.AutomationUpsert, tfModel *AutomationResourceModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	// Map base attributes
-	automationRequest.Name = tfModel.Name.ValueString()
-	automationRequest.Description = tfModel.Description.ValueString()
-	automationRequest.Enabled = tfModel.Enabled.ValueBool()
+	apiAutomation.Name = tfModel.Name.ValueString()
+	apiAutomation.Description = tfModel.Description.ValueString()
+	apiAutomation.Enabled = tfModel.Enabled.ValueBool()
 
 	// Map actions
-	actions, diagnostics := createActionsForAutomationRequest(tfModel.Actions)
+	actions, diagnostics := mapActionsTerraformToAPI(tfModel.Actions)
 	diags.Append(diagnostics...)
-	actionsOnTrigger, diagnostics := createActionsForAutomationRequest(tfModel.ActionsOnTrigger)
+	actionsOnTrigger, diagnostics := mapActionsTerraformToAPI(tfModel.ActionsOnTrigger)
 	diags.Append(diagnostics...)
-	actionsOnResolve, diagnostics := createActionsForAutomationRequest(tfModel.ActionsOnResolve)
+	actionsOnResolve, diagnostics := mapActionsTerraformToAPI(tfModel.ActionsOnResolve)
 	diags.Append(diagnostics...)
 	if diags.HasError() {
 		return diags
 	}
-	automationRequest.Actions = actions
-	automationRequest.ActionsOnTrigger = actionsOnTrigger
-	automationRequest.ActionsOnResolve = actionsOnResolve
+	apiAutomation.Actions = actions
+	apiAutomation.ActionsOnTrigger = actionsOnTrigger
+	apiAutomation.ActionsOnResolve = actionsOnResolve
 
 	// Map trigger
 	switch {
 	case tfModel.Trigger.Event != nil, tfModel.Trigger.Metric != nil:
-		diags.Append(mapResourceTriggerToAutomationRequest(ctx, &automationRequest.Trigger, &tfModel.Trigger.ResourceTriggerModel)...)
-	case tfModel.Trigger.Compound != nil, tfModel.Trigger.Sequence != nil:
-		if tfModel.Trigger.Compound != nil {
-			automationRequest.Trigger.Type = utils.TriggerTypeCompound
-			automationRequest.Trigger.Within = tfModel.Trigger.Compound.Within.ValueFloat64Pointer()
+		diags.Append(mapTriggerTerraformToAPI(ctx, &apiAutomation.Trigger, &tfModel.Trigger.ResourceTriggerModel)...)
 
-			requireValue, diagnostics := getUnderlyingRequireValue(*tfModel.Trigger.Compound)
-			diags.Append(diagnostics...)
-			automationRequest.Trigger.Require = &requireValue
-		}
-		if tfModel.Trigger.Sequence != nil {
-			automationRequest.Trigger.Type = utils.TriggerTypeSequence
-			automationRequest.Trigger.Within = tfModel.Trigger.Sequence.Within.ValueFloat64Pointer()
-		}
+	case tfModel.Trigger.Compound != nil:
+		apiAutomation.Trigger.Type = utils.TriggerTypeCompound
+		apiAutomation.Trigger.Within = tfModel.Trigger.Compound.Within.ValueFloat64Pointer()
+
+		requireValue, diagnostics := getUnderlyingRequireValue(*tfModel.Trigger.Compound)
+		diags.Append(diagnostics...)
+		apiAutomation.Trigger.Require = &requireValue
 
 		compositeTriggers := make([]api.Trigger, 0)
 		for _, trigger := range tfModel.Trigger.Compound.Triggers {
 			apiTrigger := api.Trigger{}
-			diags.Append(mapResourceTriggerToAutomationRequest(ctx, &apiTrigger, &trigger)...)
+			diags.Append(mapTriggerTerraformToAPI(ctx, &apiTrigger, &trigger)...)
 			compositeTriggers = append(compositeTriggers, apiTrigger)
 		}
-		automationRequest.Trigger.Triggers = compositeTriggers
+		apiAutomation.Trigger.Triggers = compositeTriggers
+
+	case tfModel.Trigger.Sequence != nil:
+		apiAutomation.Trigger.Type = utils.TriggerTypeSequence
+		apiAutomation.Trigger.Within = tfModel.Trigger.Sequence.Within.ValueFloat64Pointer()
+
+		compositeTriggers := make([]api.Trigger, 0)
+		for _, trigger := range tfModel.Trigger.Sequence.Triggers {
+			apiTrigger := api.Trigger{}
+			diags.Append(mapTriggerTerraformToAPI(ctx, &apiTrigger, &trigger)...)
+			compositeTriggers = append(compositeTriggers, apiTrigger)
+		}
+		apiAutomation.Trigger.Triggers = compositeTriggers
+
 	default:
 		diags.AddError("Invalid Trigger Type", "No valid trigger type specified")
 		return diags
@@ -513,22 +520,22 @@ func copyModelToAutomationRequest(ctx context.Context, automationRequest *api.Au
 	return diags
 }
 
-// mapResourceTriggerToAutomationRequest maps an `event` or `metric` trigger
+// mapTriggerTerraformToAPI maps an `event` or `metric` trigger
 // from a Terraform model => AutomationUpsert request payload.
 // We map these separately, so we can re-use this helper for `compound` and `sequence` triggers.
-func mapResourceTriggerToAutomationRequest(ctx context.Context, apiTrigger *api.Trigger, modelTrigger *ResourceTriggerModel) diag.Diagnostics {
+func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTriggerModel *ResourceTriggerModel) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	switch {
-	case modelTrigger.Event != nil:
+	case tfTriggerModel.Event != nil:
 		var after, expect, forEach []string
-		diags.Append(modelTrigger.Event.After.ElementsAs(ctx, &after, false)...)
-		diags.Append(modelTrigger.Event.Expect.ElementsAs(ctx, &expect, false)...)
-		diags.Append(modelTrigger.Event.ForEach.ElementsAs(ctx, &forEach, false)...)
+		diags.Append(tfTriggerModel.Event.After.ElementsAs(ctx, &after, false)...)
+		diags.Append(tfTriggerModel.Event.Expect.ElementsAs(ctx, &expect, false)...)
+		diags.Append(tfTriggerModel.Event.ForEach.ElementsAs(ctx, &forEach, false)...)
 
-		match, diagnostics := helpers.SafeUnmarshal(modelTrigger.Event.Match)
+		match, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Event.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.SafeUnmarshal(modelTrigger.Event.MatchRelated)
+		matchRelated, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Event.MatchRelated)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
@@ -537,19 +544,19 @@ func mapResourceTriggerToAutomationRequest(ctx context.Context, apiTrigger *api.
 
 		*apiTrigger = api.Trigger{
 			Type:         utils.TriggerTypeEvent,
-			Posture:      modelTrigger.Event.Posture.ValueStringPointer(),
+			Posture:      tfTriggerModel.Event.Posture.ValueStringPointer(),
 			Match:        match,
 			MatchRelated: matchRelated,
 			After:        after,
 			Expect:       expect,
 			ForEach:      forEach,
-			Threshold:    modelTrigger.Event.Threshold.ValueInt64Pointer(),
-			Within:       modelTrigger.Event.Within.ValueFloat64Pointer(),
+			Threshold:    tfTriggerModel.Event.Threshold.ValueInt64Pointer(),
+			Within:       tfTriggerModel.Event.Within.ValueFloat64Pointer(),
 		}
-	case modelTrigger.Metric != nil:
-		match, diagnostics := helpers.SafeUnmarshal(modelTrigger.Metric.Match)
+	case tfTriggerModel.Metric != nil:
+		match, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Metric.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.SafeUnmarshal(modelTrigger.Metric.MatchRelated)
+		matchRelated, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Metric.MatchRelated)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
@@ -561,11 +568,11 @@ func mapResourceTriggerToAutomationRequest(ctx context.Context, apiTrigger *api.
 			Match:        match,
 			MatchRelated: matchRelated,
 			Metric: &api.MetricTriggerQuery{
-				Name:      modelTrigger.Metric.Metric.Name.ValueString(),
-				Threshold: modelTrigger.Metric.Metric.Threshold.ValueFloat64(),
-				Operator:  modelTrigger.Metric.Metric.Operator.ValueString(),
-				Range:     modelTrigger.Metric.Metric.Range.ValueFloat64(),
-				FiringFor: modelTrigger.Metric.Metric.FiringFor.ValueFloat64(),
+				Name:      tfTriggerModel.Metric.Metric.Name.ValueString(),
+				Threshold: tfTriggerModel.Metric.Metric.Threshold.ValueFloat64(),
+				Operator:  tfTriggerModel.Metric.Metric.Operator.ValueString(),
+				Range:     tfTriggerModel.Metric.Metric.Range.ValueFloat64(),
+				FiringFor: tfTriggerModel.Metric.Metric.FiringFor.ValueFloat64(),
 			},
 		}
 
@@ -576,10 +583,10 @@ func mapResourceTriggerToAutomationRequest(ctx context.Context, apiTrigger *api.
 	return diags
 }
 
-// createActionsForAutomationRequest creates an Actions payload for an AutomationUpsert request.
+// mapActionsTerraformToAPI creates an Actions payload for an AutomationUpsert request.
 // This helper is used when constructing the overall AutomationUpsert request payload
 // from a given Terraform model.
-func createActionsForAutomationRequest(tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
+func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actions := make([]api.Action, 0)
@@ -623,7 +630,7 @@ func createActionsForAutomationRequest(tfActions []ActionModel) ([]api.Action, d
 // getUnderlyingRequireValue extracts the underlying value from a CompositeTriggerAttributesModel's Require field.
 // This helper is used when constructing the overall AutomationUpsert request payload
 // from a given Terraform model, as the .Require attribute is a types.DynamicValue.
-func getUnderlyingRequireValue(plan CompositeTriggerAttributesModel) (interface{}, diag.Diagnostics) {
+func getUnderlyingRequireValue(plan CompoundTriggerAttributesModel) (interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var value interface{}
 
