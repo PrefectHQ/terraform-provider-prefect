@@ -96,6 +96,7 @@ func TriggerSchema() schema.SingleNestedAttribute {
 				Required:    true,
 				Description: "How many triggers must fire ('any', 'all', or a number)",
 			}
+
 			return attrs
 		}(),
 	}

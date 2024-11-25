@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -250,10 +251,36 @@ func (r *AutomationResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 // ImportState imports the resource into Terraform state.
+// Valid import IDs:
+// <automation_id>
+// <automation_id>,<workspace_id>.
 func (r *AutomationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	parts := strings.Split(req.ID, ",")
+
+	if len(parts) > 2 || len(parts) == 0 {
+		resp.Diagnostics.AddError(
+			"Error importing Automation",
+			"Import ID must be in the format of <automation_id> OR <automation_id>,<workspace_id>",
+		)
+
+		return
+	}
+
+	automationID := parts[0]
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), automationID)...)
+
+	if len(parts) == 2 && parts[1] != "" {
+		workspaceID, err := uuid.Parse(parts[1])
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
+
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
+	}
 }
 
-func (r *AutomationResource) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
+func (r *AutomationResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
 		resourcevalidator.ExactlyOneOf(
 			path.MatchRoot("trigger").AtName(utils.TriggerTypeEvent),
@@ -300,7 +327,8 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 
 		// Iterate through API's composite triggers, map them to a Terraform model.
 		compositeTriggers := make([]ResourceTriggerModel, 0)
-		for _, apiTrigger := range apiAutomation.Trigger.Triggers {
+		for i := range apiAutomation.Trigger.Triggers {
+			apiTrigger := apiAutomation.Trigger.Triggers[i]
 			resourceTriggerModel := ResourceTriggerModel{}
 			diags.Append(mapTriggerAPIToTerraform(ctx, &apiTrigger, &resourceTriggerModel)...)
 			compositeTriggers = append(compositeTriggers, resourceTriggerModel)
@@ -406,7 +434,9 @@ func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diag
 
 	tfActionsModel := make([]ActionModel, 0)
 
-	for _, action := range apiActions {
+	for i := range apiActions {
+		action := apiActions[i]
+
 		actionModel := ActionModel{}
 		actionModel.Type = types.StringValue(action.Type)
 		actionModel.Source = types.StringPointerValue(action.Source)
@@ -514,6 +544,7 @@ func mapAutomationTerraformToAPI(ctx context.Context, apiAutomation *api.Automat
 
 	default:
 		diags.AddError("Invalid Trigger Type", "No valid trigger type specified")
+
 		return diags
 	}
 
@@ -591,7 +622,8 @@ func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagn
 
 	actions := make([]api.Action, 0)
 
-	for _, tfAction := range tfActions {
+	for i := range tfActions {
+		tfAction := tfActions[i]
 		apiAction := api.Action{}
 
 		apiAction.Type = tfAction.Type.ValueString()

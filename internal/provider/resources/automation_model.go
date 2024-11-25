@@ -37,7 +37,7 @@ type TriggerModel struct {
 	Sequence *SequenceTriggerAttributesModel `tfsdk:"sequence"`
 }
 
-// EventTriggerModel represents an event-based trigger
+// EventTriggerModel represents an event-based trigger.
 type EventTriggerModel struct {
 	Posture      types.String         `tfsdk:"posture"`
 	Match        jsontypes.Normalized `tfsdk:"match"`
@@ -49,14 +49,14 @@ type EventTriggerModel struct {
 	Within       types.Float64        `tfsdk:"within"`
 }
 
-// MetricTriggerModel represents a metric-based trigger
+// MetricTriggerModel represents a metric-based trigger.
 type MetricTriggerModel struct {
 	Match        jsontypes.Normalized `tfsdk:"match"`
 	MatchRelated jsontypes.Normalized `tfsdk:"match_related"`
 	Metric       MetricQueryModel     `tfsdk:"metric"`
 }
 
-// MetricQueryModel represents the metric query configuration
+// MetricQueryModel represents the metric query configuration.
 type MetricQueryModel struct {
 	Name      types.String  `tfsdk:"name"`
 	Operator  types.String  `tfsdk:"operator"`
@@ -78,7 +78,7 @@ type CompoundTriggerAttributesModel struct {
 	Require  types.Dynamic          `tfsdk:"require"`
 }
 
-// ActionModel represents a single action in an automation
+// ActionModel represents a single action in an automation.
 type ActionModel struct {
 	// On all actions
 	Type types.String `tfsdk:"type"`

@@ -78,14 +78,6 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 		return nil, fmt.Errorf("failed to encode create payload: %w", err)
 	}
 
-	// TODO: remove this logging
-	// Pretty print the JSON for debugging
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, buf.Bytes(), "", "    "); err != nil {
-		return nil, fmt.Errorf("failed to format JSON: %w", err)
-	}
-	fmt.Printf("Create automation payload:\n%s\n", prettyJSON.String())
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
@@ -118,14 +110,6 @@ func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload ap
 	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
 		return fmt.Errorf("failed to encode update payload: %w", err)
 	}
-
-	// TODO: remove this logging
-	// Pretty print the JSON for debugging
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, buf.Bytes(), "", "    "); err != nil {
-		return fmt.Errorf("failed to format JSON: %w", err)
-	}
-	fmt.Printf("Update automation payload:\n%s\n", prettyJSON.String())
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s", c.routePrefix, id), &buf)
 	if err != nil {
