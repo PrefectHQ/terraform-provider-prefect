@@ -77,7 +77,7 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 
 func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload api.AutomationUpsert) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
+		method:       http.MethodPut,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
 		body:         payload,
 		apiKey:       c.apiKey,
