@@ -75,10 +75,3 @@ type DeploymentUpdate struct {
 	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
 	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
 }
-
-// DeploymentFilter defines the search filter payload
-// when searching for deployements by name.
-// example request payload:
-// {"deployments": {"handle": {"any_": ["test"]}}}.
-type DeploymentFilter struct {
-}
