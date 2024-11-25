@@ -1,6 +1,9 @@
 NAME=prefect
 BINARY=terraform-provider-${NAME}
 
+TESTS?=""
+LOG_LEVEL?="INFO"
+
 default: build
 .PHONY: default
 
@@ -9,14 +12,15 @@ help:
 	@echo ""
 	@echo "This project defines the following build targets:"
 	@echo ""
-	@echo "  build      - compiles source code to build/"
-	@echo "  clean      - removes built artifacts"
-	@echo "  lint       - run static code analysis"
-	@echo "  test       - run automated unit tests"
-	@echo "  testacc    - run automated acceptance tests"
-	@echo "  docs       - builds Terraform documentation"
-	@echo "  dev-new    - creates a new dev testfile (args: resource=<resource> name=<name>)"
-	@echo "  dev-clean  - cleans up dev directory"
+	@echo "  build       - compiles source code to build/"
+	@echo "  clean       - removes built artifacts"
+	@echo "  lint        - run static code analysis"
+	@echo "  test        - run automated unit tests"
+	@echo "  testacc     - run automated acceptance tests"
+	@echo "  testacc-dev - run automated acceptance tests from a local machine (args TESTS=<tests> LOG_LEVEL=<level>)"
+	@echo "  docs        - builds Terraform documentation"
+	@echo "  dev-new     - creates a new dev testfile (args: resource=<resource> name=<name>)"
+	@echo "  dev-clean   - cleans up dev directory"
 .PHONY: help
 
 build: $(BINARY)
@@ -44,6 +48,10 @@ test:
 testacc:
 	TF_ACC=1 make test
 .PHONY: testacc
+
+testacc-dev:
+	./scripts/testacc-dev $(TESTS) $(LOG_LEVEL)
+.PHONY: testacc-dev
 
 docs:
 	mkdir -p docs
