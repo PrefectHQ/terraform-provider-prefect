@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -49,28 +46,17 @@ func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.Block
 	reqURL := fmt.Sprintf("%s/%s", c.routePrefix, id.String())
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocument api.BlockDocument
-	if err := json.NewDecoder(resp.Body).Decode(&blockDocument); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockDocument); err != nil {
+		return nil, fmt.Errorf("failed to get block document: %w", err)
 	}
 
 	return &blockDocument, nil
@@ -82,169 +68,108 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 	reqURL := strings.ReplaceAll(c.routePrefix, "block_documents", newRoutePrefix)
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocument api.BlockDocument
-	if err := json.NewDecoder(resp.Body).Decode(&blockDocument); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockDocument); err != nil {
+		return nil, fmt.Errorf("failed to get block document: %w", err)
 	}
 
 	return &blockDocument, nil
 }
 
 func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocumentCreate) (*api.BlockDocument, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var blockDocument api.BlockDocument
-	if err := json.NewDecoder(resp.Body).Decode(&blockDocument); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockDocument); err != nil {
+		return nil, fmt.Errorf("failed to create block document: %w", err)
 	}
 
 	return &blockDocument, nil
 }
 
 func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload api.BlockDocumentUpdate) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return fmt.Errorf("failed to encode update payload data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update block document: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete block document: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api.BlockDocumentAccess, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
+	reqURL := fmt.Sprintf("%s/%s/access", c.routePrefix, id.String())
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocumentAccess api.BlockDocumentAccess
-	if err := json.NewDecoder(resp.Body).Decode(&blockDocumentAccess); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockDocumentAccess); err != nil {
+		return nil, fmt.Errorf("failed to get block document access: %w", err)
 	}
 
 	return &blockDocumentAccess, nil
 }
 
 func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, payload api.BlockDocumentAccessUpsert) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return fmt.Errorf("failed to encode update payload data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()),
+		body:         payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()), &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to upsert block document access: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }

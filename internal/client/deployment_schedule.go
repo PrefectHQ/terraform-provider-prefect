@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -45,62 +42,33 @@ func (c *Client) DeploymentSchedule(accountID, workspaceID uuid.UUID) (api.Deplo
 }
 
 func (c *DeploymentScheduleClient) Create(ctx context.Context, deploymentID uuid.UUID, payload []api.DeploymentSchedulePayload) ([]*api.DeploymentSchedule, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(payload); err != nil {
-		return nil, fmt.Errorf("error encoding payload: %w", err)
-	}
-
-	url := fmt.Sprintf("%s/%s/%s", c.routePrefix, deploymentID, "schedules")
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
+		body:         &payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var schedules []*api.DeploymentSchedule
-	if err := json.NewDecoder(resp.Body).Decode(&schedules); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &schedules); err != nil {
+		return nil, fmt.Errorf("failed to create deployment schedules: %w", err)
 	}
 
 	return schedules, nil
 }
 
 func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.UUID) ([]*api.DeploymentSchedule, error) {
-	url := fmt.Sprintf("%s/%s/%s", c.routePrefix, deploymentID, "schedules")
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var schedules []*api.DeploymentSchedule
-	if err := json.NewDecoder(resp.Body).Decode(&schedules); err != nil {
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &schedules); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -108,54 +76,37 @@ func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.U
 }
 
 func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload api.DeploymentSchedulePayload) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return fmt.Errorf("failed to encode update payload data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
+		body:         &payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	url := fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String())
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, url, &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update deployment schedule: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (c *DeploymentScheduleClient) Delete(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID) error {
-	url := fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String())
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete deployment schedule: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }

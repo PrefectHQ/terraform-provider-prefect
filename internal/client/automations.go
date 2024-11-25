@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -45,113 +42,71 @@ func (c *Client) Automations(accountID uuid.UUID, workspaceID uuid.UUID) (api.Au
 }
 
 func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automation, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, id), http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var automation api.Automation
-	if err := json.NewDecoder(resp.Body).Decode(&automation); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &automation); err != nil {
+		return nil, fmt.Errorf("failed to get automation: %w", err)
 	}
 
 	return &automation, nil
 }
 
 func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUpsert) (*api.Automation, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return nil, fmt.Errorf("failed to encode create payload: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var automation api.Automation
-	if err := json.NewDecoder(resp.Body).Decode(&automation); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &automation); err != nil {
+		return nil, fmt.Errorf("failed to create automation: %w", err)
 	}
 
 	return &automation, nil
 }
 
 func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload api.AutomationUpsert) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&payload); err != nil {
-		return fmt.Errorf("failed to encode update payload: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         payload,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s", c.routePrefix, id), &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update automation: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 func (c *AutomationsClient) Delete(ctx context.Context, id uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id), http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete automation: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }

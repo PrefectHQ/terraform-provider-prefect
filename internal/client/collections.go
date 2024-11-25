@@ -2,9 +2,7 @@ package client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -53,27 +51,17 @@ func (c *CollectionsClient) GetWorkerMetadataViews(ctx context.Context) (api.Wor
 
 	url := fmt.Sprintf("%s/%s", c.routePrefix, routeSuffix)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          url,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var workerTypeByPackage api.WorkerTypeByPackage
-	if err := json.NewDecoder(resp.Body).Decode(&workerTypeByPackage); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &workerTypeByPackage); err != nil {
+		return nil, fmt.Errorf("failed to get worker type by package: %w", err)
 	}
 
 	return workerTypeByPackage, nil
