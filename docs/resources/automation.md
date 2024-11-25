@@ -10,7 +10,236 @@ description: |-
 
 The resource `automations` represents a Prefect Automation.
 
+## Example Usage
 
+```terraform
+# example:
+# An automation with an event trigger
+resource "prefect_automation" "event_trigger" {
+  name        = "tfp-test-event-trigger"
+  description = "ayu carumba"
+  enabled     = true
+
+  trigger = {
+    event = {
+      posture = "Reactive"
+      match = jsonencode({
+        "prefect.resource.id" : "prefect.flow-run.*"
+      })
+      match_related = jsonencode({
+        "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
+        "prefect.resource.role" : "flow"
+      })
+      after     = ["prefect.flow-run.completed"]
+      expect    = ["prefect.flow-run.failed"]
+      for_each  = ["prefect.resource.id"]
+      threshold = 1
+      within    = 60
+    }
+  }
+  actions = [
+    {
+      type   = "run-deployment"
+      source = "inferred"
+      parameters = jsonencode({
+        "param1" = "value1"
+        "param2" = "value2"
+      })
+      job_variables = jsonencode({
+        "var1" = "value1"
+        "var2" = "value2"
+        "var3" = 3
+        "var4" = true
+        "var5" = {
+          "key1" = "value1"
+        }
+      })
+    },
+    {
+      type = "declare-incident"
+    }
+  ]
+}
+
+# example:
+# An automation with a metric trigger
+resource "prefect_automation" "metric_trigger" {
+  name        = "tfp-test-metric-trigger"
+  description = "boom shakkala"
+  enabled     = true
+
+  trigger = {
+    metric = {
+      posture       = "Metric"
+      match         = jsonencode({})
+      match_related = jsonencode({})
+      metric = {
+        name       = "duration"
+        operator   = ">="
+        threshold  = 10
+        range      = 300
+        firing_for = 300
+      }
+    }
+  }
+  actions = [
+    {
+      type    = "change-flow-run-state"
+      state   = "FAILED"
+      name    = "Failed by automation"
+      message = "Flow run failed due to {{ event.reason }}"
+    }
+  ]
+  actions_on_trigger = []
+  actions_on_resolve = []
+}
+
+# example:
+# An automation with a compound trigger
+resource "prefect_automation" "compound_trigger" {
+  name        = "tfp-test-compound-trigger"
+  description = "compound trigger dos!"
+  enabled     = true
+
+  trigger = {
+    compound = {
+      require = "any"
+      within  = 300
+      triggers = [
+        {
+          event = {
+            expect = ["prefect.flow-run.Failed"]
+            match = jsonencode({
+              "prefect.resource.id" = "prefect.flow-run.*"
+            })
+            match_related = jsonencode({
+              "prefect.resource.id"   = "prefect.flow-run.*"
+              "prefect.resource.role" = "flow"
+            })
+            for_each  = []
+            after     = []
+            posture   = "Reactive"
+            threshold = 1
+            within    = 0
+          }
+        },
+        {
+          event = {
+            expect = ["prefect.flow-run.NonExistent"]
+            match = jsonencode({
+              "prefect.resource.id" = "prefect.flow-run.*"
+            })
+            match_related = jsonencode({
+              "prefect.resource.id"   = "prefect.flow-run.*"
+              "prefect.resource.role" = "flow"
+            })
+            # for_each = []
+            # after = []
+            posture   = "Reactive"
+            threshold = 1
+            within    = 0
+          }
+        }
+      ]
+    }
+  }
+
+  actions = [
+    {
+      type   = "run-deployment"
+      source = "inferred"
+      job_variables = jsonencode({
+        "var1" = "value1"
+        "var2" = "value2"
+        "var3" = 3
+        "var4" = true
+        "var5" = {
+          "key1" = "value1"
+        }
+      })
+    }
+  ]
+}
+
+# example:
+# An automation with a sequence trigger
+resource "prefect_automation" "sequence_trigger" {
+  name        = "tfp-test-sequence-trigger"
+  description = "sequence trigger tres!"
+  enabled     = true
+
+  trigger = {
+    sequence = {
+      within = 300
+      triggers = [
+        {
+          event = {
+            expect = ["prefect.flow-run.Pending"]
+            match = jsonencode({
+              "prefect.resource.id" = "prefect.flow-run.*"
+            })
+            match_related = jsonencode({})
+            for_each      = []
+            posture       = "Reactive"
+            threshold     = 1
+            within        = 0
+          }
+        },
+        {
+          event = {
+            expect = ["prefect.flow-run.Running"]
+            match = jsonencode({
+              "prefect.resource.id" = "prefect.flow-run.*"
+            })
+            match_related = jsonencode({})
+            for_each      = []
+            posture       = "Reactive"
+            threshold     = 1
+            within        = 0
+          }
+        },
+        {
+          event = {
+            expect = ["prefect.flow-run.Completed"]
+            match = jsonencode({
+              "prefect.resource.id" = "prefect.flow-run.*"
+            })
+            match_related = jsonencode({})
+            for_each      = []
+            posture       = "Reactive"
+            threshold     = 1
+            within        = 0
+          }
+        }
+      ]
+    }
+  }
+
+  actions = [
+    {
+      type              = "send-notification"
+      block_document_id = "123e4567-e89b-12d3-a456-426614174000"
+      subject           = "Flow Run Failed: {{ event.resource['prefect.resource.name'] }}"
+      body              = "Flow run {{ event.resource['prefect.resource.id'] }} failed at {{ event.occurred }}"
+    }
+  ]
+  actions_on_trigger = [
+    {
+      type    = "change-flow-run-state"
+      state   = "FAILED"
+      name    = "Failed by automation"
+      message = "Flow run failed due to {{ event.resource['prefect.resource.name'] }}"
+    }
+  ]
+  actions_on_resolve = [
+    {
+      type              = "call-webhook"
+      block_document_id = "123e4567-e89b-12d3-a456-426614174000"
+      payload           = "{\"flow_run_id\": \"{{ event.resource['prefect.resource.id'] }}\", \"status\": \"{{ event.event }}\"}"
+    }
+  ]
+}
+```
 
 <!-- schema generated by tfplugindocs -->
 ## Schema
@@ -78,8 +307,8 @@ Optional:
 - `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
 - `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
 - `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)
 - `within` (Number) The time period in seconds over which the events must occur
 
@@ -93,8 +322,8 @@ Required:
 
 Optional:
 
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 
 <a id="nestedatt--trigger--compound--triggers--metric--metric"></a>
 ### Nested Schema for `trigger.compound.triggers.metric.metric`
@@ -123,8 +352,8 @@ Optional:
 - `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
 - `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
 - `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)
 - `within` (Number) The time period in seconds over which the events must occur
 
@@ -138,8 +367,8 @@ Required:
 
 Optional:
 
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 
 <a id="nestedatt--trigger--metric--metric"></a>
 ### Nested Schema for `trigger.metric.metric`
@@ -185,8 +414,8 @@ Optional:
 - `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
 - `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
 - `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)
 - `within` (Number) The time period in seconds over which the events must occur
 
@@ -200,8 +429,8 @@ Required:
 
 Optional:
 
-- `match` (String) Labels for resources which this trigger will match
-- `match_related` (String) Labels for related resources which this trigger will match
+- `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
+- `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 
 <a id="nestedatt--trigger--sequence--triggers--metric--metric"></a>
 ### Nested Schema for `trigger.sequence.triggers.metric.metric`
@@ -232,10 +461,10 @@ Optional:
 - `block_document_id` (String) (Webhook / Notification) ID of the block to use
 - `body` (String) (Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
-- `job_variables` (String) (Deployment) Job variables to pass to the created flow run
+- `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
-- `parameters` (String) (Deployment) Parameters to pass to the deployment
+- `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
@@ -257,10 +486,10 @@ Optional:
 - `block_document_id` (String) (Webhook / Notification) ID of the block to use
 - `body` (String) (Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
-- `job_variables` (String) (Deployment) Job variables to pass to the created flow run
+- `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
-- `parameters` (String) (Deployment) Parameters to pass to the deployment
+- `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
@@ -282,13 +511,30 @@ Optional:
 - `block_document_id` (String) (Webhook / Notification) ID of the block to use
 - `body` (String) (Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
-- `job_variables` (String) (Deployment) Job variables to pass to the created flow run
+- `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
-- `parameters` (String) (Deployment) Parameters to pass to the deployment
+- `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
 - `subject` (String) (Notification) Subject of the notification
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# prefect_automation resources can be imported by the Automation ID
+terraform import prefect_automation.my_automation 00000000-0000-0000-0000-000000000000
+
+# Pass an optional, comma-separated value following the identifier
+# if you need to import a resource in a different workspace
+# from the one that your provider is configured with
+# NOTE: you must specify the workspace_id attribute in the addressed resource
+#
+# <block_id>,<workspace_id>
+terraform import prefect_automation.my_automation 00000000-0000-0000-0000-000000000000,11111111-1111-1111-1111-111111111111
+```
