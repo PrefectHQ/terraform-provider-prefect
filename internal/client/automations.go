@@ -111,7 +111,7 @@ func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload ap
 		return fmt.Errorf("failed to encode update payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, id), &buf)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, fmt.Sprintf("%s/%s", c.routePrefix, id), &buf)
 	if err != nil {
 		return fmt.Errorf("error creating request: %w", err)
 	}
