@@ -2,8 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -69,65 +67,6 @@ type MetricTriggerQuery struct {
 	Operator  string  `json:"operator"` // "<", "<=", ">", ">="
 	Range     float64 `json:"range"`
 	FiringFor float64 `json:"firing_for"`
-}
-
-// ResourceSpecification is a composite type that returns a map
-// where the keys are strings and the values
-// can be either (1) a string or (2) a list of strings.
-//
-// ex:
-//
-//	{
-//	  "resource_type": "aws_s3_bucket",
-//	  "tags": ["tag1", "tag2"]
-//	}
-//
-// This is used for the `match` and `match_related` fields.
-type ResourceSpecification map[string]StringOrSlice
-
-type StringOrSlice struct {
-	String     string
-	StringList []string
-	IsList     bool
-}
-
-// For marshalling a ResourceSpecification to JSON.
-func (s StringOrSlice) MarshalJSON() ([]byte, error) {
-	var val interface{}
-	val = s.StringList
-	if !s.IsList {
-		val = s.String
-	}
-
-	bytes, err := json.Marshal(val)
-	if err != nil {
-		return nil, fmt.Errorf("marshal string or slice: %w", err)
-	}
-
-	return bytes, nil
-}
-
-// For unmarshalling a ResourceSpecification from JSON.
-func (s *StringOrSlice) UnmarshalJSON(data []byte) error {
-	// Try as string first
-	var str string
-	if err := json.Unmarshal(data, &str); err == nil {
-		s.String = str
-		s.IsList = false
-
-		return nil
-	}
-
-	// Try as string slice
-	var strList []string
-	if err := json.Unmarshal(data, &strList); err == nil {
-		s.StringList = strList
-		s.IsList = true
-
-		return nil
-	}
-
-	return fmt.Errorf("ResourceSpecification must be string or string array")
 }
 
 // Action defines the actions that can be taken on an Automation.

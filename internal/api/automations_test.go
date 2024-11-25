@@ -10,45 +10,6 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func TestResourceSpecificationModel(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name string
-		json string
-		want api.ResourceSpecification
-	}{
-		{
-			name: "Single String",
-			json: `{"prefect.resource.id":"flow-123"}`,
-			want: api.ResourceSpecification{"prefect.resource.id": api.StringOrSlice{String: "flow-123", IsList: false}},
-		},
-		{
-			name: "String List",
-			json: `{"prefect.resource.id":["flow-123","flow-456"]}`,
-			want: api.ResourceSpecification{"prefect.resource.id": api.StringOrSlice{StringList: []string{"flow-123", "flow-456"}, IsList: true}},
-		},
-		{
-			name: "Empty Dict",
-			json: `{}`,
-			want: api.ResourceSpecification{},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			var got api.ResourceSpecification
-			err := json.Unmarshal([]byte(tt.json), &got)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, got)
-
-			bytes, err := json.Marshal(got)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.json, string(bytes))
-		})
-	}
-}
-
 func TestActionModel(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
