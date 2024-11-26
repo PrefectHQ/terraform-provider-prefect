@@ -4,7 +4,7 @@ page_title: "prefect_team Data Source - prefect"
 subcategory: ""
 description: |-
   Get information about an existing Team by their name.
-  
+
   Use this data source to obtain team IDs to manage Workspace Access.
 ---
 
