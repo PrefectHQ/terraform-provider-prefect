@@ -14,6 +14,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
+	"k8s.io/utils/ptr"
 )
 
 type deploymentConfig struct {
@@ -30,6 +31,7 @@ type deploymentConfig struct {
 	Parameters             string
 	Path                   string
 	Paused                 bool
+	PullSteps              []api.PullStep
 	Tags                   []string
 	Version                string
 	WorkPoolName           string
@@ -91,6 +93,14 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
+	pull_steps = [
+		{{- range .PullSteps}}
+	  {
+			type = "{{.Type}}"
+			directory = "{{.Directory}}"
+		}
+		{{- end}}
+	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
 	workspace_id = prefect_workspace.test.id
@@ -125,6 +135,12 @@ func TestAccResource_deployment(t *testing.T) {
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
+		PullSteps: []api.PullStep{
+			{
+				Type:      "set_working_directory",
+				Directory: ptr.To("/some/directory"),
+			},
+		},
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
 		WorkPoolName:           "some-pool",
@@ -199,6 +215,9 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.#", "1"),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.0.type", cfgCreate.PullSteps[0].Type),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.0.directory", *cfgCreate.PullSteps[0].Directory),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.0", cfgCreate.Tags[0]),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.1", cfgCreate.Tags[1]),
