@@ -357,26 +357,32 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 						"directory": schema.StringAttribute{
 							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonDirectoryAttributes),
 						},
 						"repository": schema.StringAttribute{
 							Description: "(For type 'git_clone') The URL of the repository to clone.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
 						},
 						"branch": schema.StringAttribute{
 							Description: "(For type 'git_clone') The branch to clone. If not provided, the default branch is used.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
 						},
 						"access_token": schema.StringAttribute{
 							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
 						},
 						"bucket": schema.StringAttribute{
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
 						},
 						"folder": schema.StringAttribute{
 							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
 							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
 						},
 					},
 				},
@@ -843,3 +849,47 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }
+
+// validatorsForConflictingAttributes provides a list of string validators
+// used in a ConflictsWith validator for a specific attribute.
+//
+// This approach is used in lieu of a ConfigValidators method because we take
+// advantage of 'MatchRelative' to use the current context of the list objects
+// (ListNestedAttribute).
+//
+// Also, expressing validators on each attribute lets us
+// be more concise when defining the conflicting attributes. Defining them in
+// ConfigValidators instead would be much more verbose, and disconnected from
+// the source of truth.
+func validatorsForConflictingAttributes(attributes []string) []validator.String {
+	pathExpressions := make([]path.Expression, 0)
+
+	for _, key := range attributes {
+		pathExpressions = append(pathExpressions, path.MatchRelative().AtParent().AtName(key))
+	}
+
+	return []validator.String{
+		stringvalidator.ConflictsWith(pathExpressions...),
+	}
+}
+
+var (
+	directoryAttributes = []string{
+		"directory",
+	}
+
+	gitCloneAttributes = []string{
+		"repository",
+		"branch",
+		"access_token",
+	}
+
+	pullFromAttributes = []string{
+		"bucket",
+		"folder",
+	}
+
+	nonDirectoryAttributes = append(gitCloneAttributes, pullFromAttributes...)
+	nonGitCloneAttributes  = append(directoryAttributes, pullFromAttributes...)
+	nonPullFromAttributes  = append(directoryAttributes, gitCloneAttributes...)
+)
