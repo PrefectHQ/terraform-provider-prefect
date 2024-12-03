@@ -129,10 +129,10 @@ Required:
 
 Optional:
 
-- `access_token` (String) Access token for the repository.
+- `access_token` (String) Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) The branch to clone. If not provided, the default branch is used.
 - `bucket` (String) The name of the bucket where files are stored.
-- `credentials` (String) Credentials to use for the pull step.
+- `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
 - `directory` (String) The directory to set as the working directory.
 - `folder` (String) The folder in the bucket where files are stored.
 - `repository` (String) The URL of the repository to clone.

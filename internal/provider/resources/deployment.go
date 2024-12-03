@@ -312,7 +312,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				PlanModifiers: []planmodifier.List{
 					// Pull steps are only set on create, so any change in their value will require a resource
-					// of the resource.
+					// of the resource. See https://github.com/PrefectHQ/prefect/issues/11052 for more context.
 					listplanmodifier.RequiresReplace(),
 				},
 				Default: listdefault.StaticValue(basetypes.NewListValueMust(
@@ -347,7 +347,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							},
 						},
 						"credentials": schema.StringAttribute{
-							Description: "Credentials to use for the pull step.",
+							Description: "Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.",
 							Optional:    true,
 						},
 						"requires": schema.StringAttribute{
@@ -367,7 +367,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Optional:    true,
 						},
 						"access_token": schema.StringAttribute{
-							Description: "Access token for the repository.",
+							Description: "Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
 							Optional:    true,
 						},
 						"bucket": schema.StringAttribute{
