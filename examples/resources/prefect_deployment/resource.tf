@@ -44,8 +44,26 @@ resource "prefect_deployment" "deployment" {
       "some-parameter2" : { "type" : "string" }
     }
   })
-  path                = "./foo/bar"
-  paused              = false
+  path   = "./foo/bar"
+  paused = false
+  pull_steps = [
+    {
+      type      = "set_working_directory",
+      directory = "/some/directory",
+    },
+    {
+      type         = "git_clone"
+      repository   = "https://github.com/some/repo"
+      branch       = "main"
+      access_token = "123abc"
+    },
+    {
+      type     = "pull_from_s3",
+      requires = "prefect-aws>=0.3.4"
+      bucket   = "some-bucket",
+      folder   = "some-folder",
+    }
+  ]
   storage_document_id = prefect_block.test_gh_repository.id
   version             = "v1.1.1"
   work_pool_name      = "some-testing-pool"
