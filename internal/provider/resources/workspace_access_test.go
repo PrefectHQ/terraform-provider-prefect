@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -14,44 +13,38 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
-const workspaceDatsourceName = "data.prefect_workspace.evergreen"
-
-func fixtureAccWorkspaceAccessResourceForBot(botName string) string {
+func fixtureAccWorkspaceAccessResourceForBot(workspace string) string {
 	return fmt.Sprintf(`
+%s
 data "prefect_workspace_role" "developer" {
 	name = "Developer"
 }
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
 resource "prefect_service_account" "bot" {
-	name = "%s"
+	name = "test-bot"
 }
 resource "prefect_workspace_access" "bot_access" {
 	accessor_type = "SERVICE_ACCOUNT"
 	accessor_id = prefect_service_account.bot.id
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.developer.id
-}`, botName)
+}`, workspace)
 }
 
-func fixtureAccWorkspaceAccessResourceUpdateForBot(botName string) string {
+func fixtureAccWorkspaceAccessResourceUpdateForBot(workspace string) string {
 	return fmt.Sprintf(`
+%s
 data "prefect_workspace_role" "runner" {
 	name = "Runner"
 }
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
 resource "prefect_service_account" "bot" {
-	name = "%s"
+	name = "test-bot"
 }
 resource "prefect_workspace_access" "bot_access" {
 	accessor_type = "SERVICE_ACCOUNT"
 	accessor_id = prefect_service_account.bot.id
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.runner.id
-}`, botName)
+}`, workspace)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -60,8 +53,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 	botResourceName := "prefect_service_account.bot"
 	developerRoleDatsourceName := "data.prefect_workspace_role.developer"
 	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
-
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	workspace := testutils.NewEphemeralWorkspace()
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -72,24 +64,24 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkspaceAccessResourceForBot(randomName),
+				Config: fixtureAccWorkspaceAccessResourceForBot(workspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, workspaceDatsourceName, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, developerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
 				),
 			},
 			{
-				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(randomName),
+				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(workspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, workspaceDatsourceName, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, runnerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				),
 			},
@@ -97,42 +89,38 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 	})
 }
 
-func fixtureAccWorkspaceAccessResourceForTeam() string {
-	return `
+func fixtureAccWorkspaceAccessResourceForTeam(workspace string) string {
+	return fmt.Sprintf(`
+%s
 data "prefect_workspace_role" "viewer" {
 	name = "Viewer"
 }
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
 data "prefect_team" "my_team" {
 	name = "my-team"
 }
 resource "prefect_workspace_access" "team_access" {
 	accessor_type = "TEAM"
 	accessor_id = data.prefect_team.my_team.id
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.viewer.id
-}`
+}`, workspace)
 }
 
-func fixtureAccWorkspaceAccessResourceUpdateForTeam() string {
-	return `
+func fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace string) string {
+	return fmt.Sprintf(`
+%s
 data "prefect_workspace_role" "runner" {
 	name = "Runner"
 }
-data "prefect_workspace" "evergreen" {
-	handle = "github-ci-tests"
-}
 data "prefect_team" "my_team" {
 	name = "my-team"
 }
 resource "prefect_workspace_access" "team_access" {
 	accessor_type = "TEAM"
 	accessor_id = data.prefect_team.my_team.id
-	workspace_id = data.prefect_workspace.evergreen.id
+	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.runner.id
-}`
+}`, workspace)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -141,6 +129,7 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 	teamResourceName := "data.prefect_team.my_team"
 	viewerRoleDatsourceName := "data.prefect_workspace_role.viewer"
 	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
+	workspace := testutils.NewEphemeralWorkspace()
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -151,24 +140,24 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkspaceAccessResourceForTeam(),
+				Config: fixtureAccWorkspaceAccessResourceForTeam(workspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, workspaceDatsourceName, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, viewerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", viewerRoleDatsourceName, "id"),
 				),
 			},
 			{
-				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(),
+				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace.Resource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
-					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, workspaceDatsourceName, &workspaceAccess),
+					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, runnerRoleDatsourceName),
 					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", workspaceDatsourceName, "id"),
+					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				),
 			},
@@ -176,16 +165,16 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 	})
 }
 
-func testAccCheckWorkspaceAccessExists(accessorType string, accessResourceName string, workspaceDatasourceName string, access *api.WorkspaceAccess) resource.TestCheckFunc {
+func testAccCheckWorkspaceAccessExists(accessorType string, accessResourceName string, access *api.WorkspaceAccess) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		workspaceAccessResource, exists := state.RootModule().Resources[accessResourceName]
 		if !exists {
 			return fmt.Errorf("Resource not found in state: %s", accessResourceName)
 		}
 
-		workspaceDatsource, exists := state.RootModule().Resources[workspaceDatasourceName]
+		workspaceDatsource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", workspaceDatasourceName)
+			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
 		}
 
 		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)

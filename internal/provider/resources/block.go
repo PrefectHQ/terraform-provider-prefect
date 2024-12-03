@@ -19,7 +19,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
 type BlockResource struct {
@@ -132,6 +131,70 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 	}
 }
 
+// getBlockSchemas fetches the block schemas for a given block type slug.
+//
+//nolint:ireturn // required by Terraform API
+func (r *BlockResource) getBlockSchemas(ctx context.Context, plan BlockResourceModel) ([]*api.BlockSchema, diag.Diagnostic) {
+	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		return nil, helpers.CreateClientErrorDiagnostic("Block Types", err)
+	}
+
+	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		return nil, helpers.CreateClientErrorDiagnostic("Block Schema", err)
+	}
+
+	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
+	if err != nil {
+		return nil, helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err)
+	}
+
+	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
+	if err != nil {
+		return nil, helpers.ResourceClientErrorDiagnostic("Block Schema", "list", err)
+	}
+
+	return blockSchemas, nil
+}
+
+// getLatestBlockSchema fetches the latest block schema for a given block type slug.
+// If no block schemas are returned, the retrieval is retried because Prefect creates
+// them asynchronously after the creation of a workspace.
+//
+//nolint:ireturn // required by Terraform API
+func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockResourceModel) (*api.BlockSchema, diag.Diagnostic) {
+	var blockSchemas []*api.BlockSchema
+	var latestBlockSchema *api.BlockSchema
+	var diags diag.Diagnostic
+
+	err := retry.Do(func() error {
+		blockSchemas, diags = r.getBlockSchemas(ctx, plan)
+		if diags != nil {
+			return fmt.Errorf("unable to get block schemas: %s", diags.Detail())
+		}
+
+		if len(blockSchemas) == 0 {
+			return fmt.Errorf("no block schemas found")
+		}
+
+		latestBlockSchema = blockSchemas[0]
+
+		return nil
+	})
+
+	if err != nil {
+		diags = diag.NewErrorDiagnostic(
+			"No block schemas found",
+			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
+		)
+
+		return nil, diags
+	}
+
+	return latestBlockSchema, nil
+}
+
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) diag.Diagnostics {
@@ -159,18 +222,6 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
-
-		return
-	}
-	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
-
-		return
-	}
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -178,52 +229,11 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	// NOTE: here, we add retries for BlockType and BlockSchema fetches.
-	// BlockTypes / BlockSchemas are tied to a particular Workspace, and
-	// they are created asynchronously after a new Workspace request resolves.
-	// This means that if a `prefect_block` is created in the same plan as a
-	// new `prefect_workspace`, there is a potential race condition that could occur if the
-	// Workspace is created + resolves, but the BlockTypes / BlockSchemas have yet to have
-	// been created - this has been observed to happen even with a depends_on relationship defined.
-	// To eliminate spurious create failures, test flakiness, and general user confusion,
-	// we'll add a retry for these specific operations.
-	blockType, err := retry.DoWithData(
-		func() (*api.BlockType, error) {
-			return blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
-		},
-		utils.DefaultRetryOptions...,
-	)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", err))
-
+	latestBlockSchema, blockSchemaDiags := r.getLatestBlockSchema(ctx, plan)
+	resp.Diagnostics.Append(blockSchemaDiags)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	blockSchemas, err := retry.DoWithData(
-		func() ([]*api.BlockSchema, error) {
-			blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
-			if err != nil {
-				return nil, fmt.Errorf("http request to fetch block schemas failed: %w", err)
-			}
-
-			if len(blockSchemas) == 0 {
-				return nil, fmt.Errorf("no block schemas found for %s block type slug", plan.TypeSlug.ValueString())
-			}
-
-			return blockSchemas, nil
-		},
-		utils.DefaultRetryOptions...,
-	)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Failed to fetch block schemas",
-			fmt.Sprintf("Failed to fetch block schemas for %s block type slug due to: %s", plan.TypeSlug.ValueString(), err.Error()),
-		)
-
-		return
-	}
-
-	latestBlockSchema := blockSchemas[0]
 
 	// We typed `data` as JSON, as this is the most
 	// flexible way to handle a dynamic schema from the API.
@@ -329,20 +339,6 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	blockTypeClient, err := r.client.BlockTypes(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Types", err))
-
-		return
-	}
-
-	blockSchemaClient, err := r.client.BlockSchemas(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Schema", err))
-
-		return
-	}
-
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -350,30 +346,11 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	blockType, err := blockTypeClient.GetBySlug(ctx, plan.TypeSlug.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get_by_slug", fmt.Errorf("failed to get block type for slug=%s: %w", plan.TypeSlug.ValueString(), err)))
-
+	latestBlockSchema, blockSchemaDiags := r.getLatestBlockSchema(ctx, plan)
+	resp.Diagnostics.Append(blockSchemaDiags)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	blockSchemas, err := blockSchemaClient.List(ctx, []uuid.UUID{blockType.ID})
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "list", fmt.Errorf("failed to list block schemas for block type=%s: %w", plan.TypeSlug.ValueString(), err)))
-
-		return
-	}
-
-	if len(blockSchemas) == 0 {
-		resp.Diagnostics.AddError(
-			"No block schemas found",
-			fmt.Sprintf("No block schemas found for %s block type slug", plan.TypeSlug.ValueString()),
-		)
-
-		return
-	}
-
-	latestBlockSchema := blockSchemas[0]
 
 	blockID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {

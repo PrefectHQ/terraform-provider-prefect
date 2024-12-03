@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -e
+
+# This script runs the acceptance tests from a local machine.
+#
+# It collects the required environment variables from 1Password
+# using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
+#
+# To run specific tests, add the test name as the first argument:
+#   ./scripts/testacc-dev TestAccResource_deployment
+#
+# To adjust the log level, specify it as the second argument:
+#   ./scripts/testacc-dev TestAccResource_deployment DEBUG
+#
+# Log levels are listed here:
+#   https://developer.hashicorp.com/terraform/internals/debugging
+
+vault_entry='op://Platform/Terraform provider acceptance test secrets'
+
+tests=${1:-""}
+log_level=${2:-"INFO"}
+
+run_arg=""
+if [ "${tests}" == "" ]; then
+  echo "no specific test configured, running all"
+else
+  echo "specific test(s) configured: ${tests}"
+  run_arg="-run ${tests}"
+fi
+
+TF_ACC=1 \
+  TF_LOG=${log_level} \
+  PREFECT_API_URL=$(op read "${vault_entry}/PREFECT_API_URL") \
+  PREFECT_API_KEY=$(op read "${vault_entry}/PREFECT_API_KEY") \
+  PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/PREFECT_CLOUD_ACCOUNT_ID") \
+  gotestsum --max-fails=50 ./... -count=1 -v ${run_arg}

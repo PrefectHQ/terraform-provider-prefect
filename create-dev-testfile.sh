@@ -36,9 +36,12 @@ provider "prefect" {}
 resource "${resource}" "${name}" {}
 EOF
 
+  cmd="cd ${dev_file_target} && terraform plan"
   echo ""
   echo "run:"
-  echo "cd ${dev_file_target} && terraform plan"
+  echo "${cmd}"
+  echo "(copied to clipboard)"
+  printf "${cmd}" | pbcopy
 }
 
 main $@

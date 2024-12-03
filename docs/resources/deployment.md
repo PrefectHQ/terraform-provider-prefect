@@ -18,6 +18,18 @@ resource "prefect_workspace" "workspace" {
   name   = "my-workspace"
 }
 
+resource "prefect_block" "demo_github_repository" {
+  name      = "demo-github-repository"
+  type_slug = "github-repository"
+
+  data = jsonencode({
+    "repository_url" : "https://github.com/foo/bar",
+    "reference" : "main"
+  })
+
+  workspace_id = prefect_workspace.workspace.id
+}
+
 resource "prefect_flow" "flow" {
   name         = "my-flow"
   workspace_id = prefect_workspace.workspace.id
@@ -40,11 +52,19 @@ resource "prefect_deployment" "deployment" {
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
   })
-  path            = "./foo/bar"
-  paused          = false
-  version         = "v1.1.1"
-  work_pool_name  = "mitch-testing-pool"
-  work_queue_name = "default"
+  parameter_openapi_schema = jsonencode({
+    "type" : "object",
+    "properties" : {
+      "some-parameter" : { "type" : "string" }
+      "some-parameter2" : { "type" : "string" }
+    }
+  })
+  path                = "./foo/bar"
+  paused              = false
+  storage_document_id = prefect_block.test_gh_repository.id
+  version             = "v1.1.1"
+  work_pool_name      = "some-testing-pool"
+  work_queue_name     = "default"
 }
 ```
 
@@ -64,9 +84,11 @@ resource "prefect_deployment" "deployment" {
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
+- `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
+- `storage_document_id` (String) ID of the associated storage document (UUID)
 - `tags` (List of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.

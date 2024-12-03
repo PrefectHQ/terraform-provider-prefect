@@ -7,13 +7,16 @@ import "github.com/google/uuid"
 //nolint:interfacebloat // we'll accept a larger PrefectClient interface
 type PrefectClient interface {
 	Accounts(accountID uuid.UUID) (AccountsClient, error)
+	Automations(accountID uuid.UUID, workspaceID uuid.UUID) (AutomationsClient, error)
 	AccountMemberships(accountID uuid.UUID) (AccountMembershipsClient, error)
 	AccountRoles(accountID uuid.UUID) (AccountRolesClient, error)
 	BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (BlockDocumentClient, error)
 	BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (BlockSchemaClient, error)
 	BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (BlockTypeClient, error)
-	Collections() (CollectionsClient, error)
+	Collections(accountID uuid.UUID, workspaceID uuid.UUID) (CollectionsClient, error)
 	Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentsClient, error)
+	DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentAccessClient, error)
+	DeploymentSchedule(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentScheduleClient, error)
 	Teams(accountID uuid.UUID) (TeamsClient, error)
 	Flows(accountID uuid.UUID, workspaceID uuid.UUID) (FlowsClient, error)
 	Workspaces(accountID uuid.UUID) (WorkspacesClient, error)

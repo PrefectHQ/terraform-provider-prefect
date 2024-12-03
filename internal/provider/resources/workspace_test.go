@@ -6,38 +6,18 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkspaceCreate(name string) string {
-	return fmt.Sprintf(`
-resource "prefect_workspace" "workspace" {
-	name = "%s"
-	handle = "%s"
-}
-`, name, name)
-}
-
-func fixtureAccWorkspaceUpdate(name string, description string) string {
-	return fmt.Sprintf(`
-resource "prefect_workspace" "workspace" {
-	name = "%s"
-	handle = "%s"
-	description = "%s"
-}`, name, name, description)
-}
-
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_workspace(t *testing.T) {
-	resourceName := "prefect_workspace.workspace"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	randomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	emptyDescription := ""
-	randomDescription := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	ephemeralWorkspaceCreate := testutils.NewEphemeralWorkspace()
+	ephemeralWorkspaceUpdate := testutils.NewEphemeralWorkspace()
+
+	resourceName := testutils.WorkspaceResourceName
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -49,31 +29,31 @@ func TestAccResource_workspace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the workspace resource
-				Config: fixtureAccWorkspaceCreate(randomName),
+				Config: ephemeralWorkspaceCreate.Resource,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckWorkspaceExists(resourceName, &workspace),
-					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: randomName, Handle: randomName, Description: &emptyDescription}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "handle", randomName),
-					resource.TestCheckResourceAttr(resourceName, "description", ""),
+					testAccCheckWorkspaceExists(&workspace),
+					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: ephemeralWorkspaceCreate.Name, Handle: ephemeralWorkspaceCreate.Name, Description: &ephemeralWorkspaceCreate.Description}),
+					resource.TestCheckResourceAttr(resourceName, "name", ephemeralWorkspaceCreate.Name),
+					resource.TestCheckResourceAttr(resourceName, "handle", ephemeralWorkspaceCreate.Name),
+					resource.TestCheckResourceAttr(resourceName, "description", ephemeralWorkspaceCreate.Description),
 				),
 			},
 			{
 				// Check update of existing workspace resource
-				Config: fixtureAccWorkspaceUpdate(randomName2, randomDescription),
+				Config: ephemeralWorkspaceUpdate.Resource,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckWorkspaceExists(resourceName, &workspace),
-					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: randomName2, Handle: randomName2, Description: &randomDescription}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName, "handle", randomName2),
-					resource.TestCheckResourceAttr(resourceName, "description", randomDescription),
+					testAccCheckWorkspaceExists(&workspace),
+					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: ephemeralWorkspaceUpdate.Name, Handle: ephemeralWorkspaceUpdate.Name, Description: &ephemeralWorkspaceUpdate.Description}),
+					resource.TestCheckResourceAttr(resourceName, "name", ephemeralWorkspaceUpdate.Name),
+					resource.TestCheckResourceAttr(resourceName, "handle", ephemeralWorkspaceUpdate.Name),
+					resource.TestCheckResourceAttr(resourceName, "description", ephemeralWorkspaceUpdate.Description),
 				),
 			},
 			// Import State checks - import by handle
 			{
 				ImportState:         true,
 				ResourceName:        resourceName,
-				ImportStateId:       randomName2,
+				ImportStateId:       ephemeralWorkspaceUpdate.Name,
 				ImportStateIdPrefix: "handle/",
 				ImportStateVerify:   true,
 			},
@@ -87,11 +67,11 @@ func TestAccResource_workspace(t *testing.T) {
 	})
 }
 
-func testAccCheckWorkspaceExists(workspaceResourceName string, workspace *api.Workspace) resource.TestCheckFunc {
+func testAccCheckWorkspaceExists(workspace *api.Workspace) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		workspaceResource, found := state.RootModule().Resources[workspaceResourceName]
+		workspaceResource, found := state.RootModule().Resources[testutils.WorkspaceResourceName]
 		if !found {
-			return fmt.Errorf("Resource not found in state: %s", workspaceResourceName)
+			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
 		}
 
 		// Create a new client, and use the default configurations from the environment
