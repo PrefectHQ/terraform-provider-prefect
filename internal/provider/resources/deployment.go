@@ -355,27 +355,27 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Optional:    true,
 						},
 						"directory": schema.StringAttribute{
-							Description: "The directory to set as the working directory.",
+							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
 							Optional:    true,
 						},
 						"repository": schema.StringAttribute{
-							Description: "The URL of the repository to clone.",
+							Description: "(For type 'git_clone') The URL of the repository to clone.",
 							Optional:    true,
 						},
 						"branch": schema.StringAttribute{
-							Description: "The branch to clone. If not provided, the default branch is used.",
+							Description: "(For type 'git_clone') The branch to clone. If not provided, the default branch is used.",
 							Optional:    true,
 						},
 						"access_token": schema.StringAttribute{
-							Description: "Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
+							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
 							Optional:    true,
 						},
 						"bucket": schema.StringAttribute{
-							Description: "The name of the bucket where files are stored.",
+							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
 							Optional:    true,
 						},
 						"folder": schema.StringAttribute{
-							Description: "The folder in the bucket where files are stored.",
+							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
 							Optional:    true,
 						},
 					},

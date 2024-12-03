@@ -129,13 +129,13 @@ Required:
 
 Optional:
 
-- `access_token` (String) Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
-- `branch` (String) The branch to clone. If not provided, the default branch is used.
-- `bucket` (String) The name of the bucket where files are stored.
+- `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
+- `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
+- `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
-- `directory` (String) The directory to set as the working directory.
-- `folder` (String) The folder in the bucket where files are stored.
-- `repository` (String) The URL of the repository to clone.
+- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `repository` (String) (For type 'git_clone') The URL of the repository to clone.
 - `requires` (String) A list of Python package dependencies.
 
 ## Import
