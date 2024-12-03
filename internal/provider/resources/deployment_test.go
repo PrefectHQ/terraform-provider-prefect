@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -94,12 +95,35 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	pull_steps = [
-		{{- range .PullSteps}}
+		{{range .PullSteps}}
 	  {
 			type = "{{.Type}}"
+
+			{{- if .Directory }}
 			directory = "{{.Directory}}"
-		}
-		{{- end}}
+			{{- end }}
+
+			{{- if .Repository }}
+			repository = "{{.Repository}}"
+			{{- end }}
+
+			{{- if .Branch }}
+			branch = "{{.Branch}}"
+			{{- end }}
+
+			{{- if .AccessToken }}
+			access_token = "{{.AccessToken}}"
+			{{- end }}
+
+			{{- if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{- end}}
+
+			{{- if .Folder }}
+			folder = "{{.Folder}}"
+			{{- end}}
+		},
+		{{end}}
 	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
@@ -189,6 +213,25 @@ func TestAccResource_deployment(t *testing.T) {
 		// ParameterOpenAPISchema is not settable via the Update method.
 		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
 
+		// PullSteps require a replacement of the resource.
+		PullSteps: []api.PullStep{
+			{
+				Type:      "set_working_directory",
+				Directory: ptr.To("/some/directory"),
+			},
+			{
+				Type:        "git_clone",
+				Repository:  ptr.To("https://github.com/prefecthq/prefect"),
+				Branch:      ptr.To("main"),
+				AccessToken: ptr.To("123abc"),
+			},
+			{
+				Type:   "pull_from_s3",
+				Bucket: ptr.To("some-bucket"),
+				Folder: ptr.To("some-folder"),
+			},
+		},
+
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
@@ -206,6 +249,7 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgCreate.DeploymentName,
 						description:            cfgCreate.Description,
+						pullSteps:              cfgCreate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
@@ -215,9 +259,6 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.#", "1"),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.0.type", cfgCreate.PullSteps[0].Type),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "pull_steps.0.directory", *cfgCreate.PullSteps[0].Directory),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.0", cfgCreate.Tags[0]),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.1", cfgCreate.Tags[1]),
@@ -235,6 +276,7 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgUpdate.DeploymentName,
 						description:            cfgUpdate.Description,
+						pullSteps:              cfgUpdate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
@@ -304,6 +346,7 @@ type expectedDeploymentValues struct {
 	name                   string
 	description            string
 	parameterOpenapiSchema map[string]interface{}
+	pullSteps              []api.PullStep
 }
 
 // testAccCheckDeploymentValues is a Custom Check Function that
@@ -320,6 +363,10 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		equal, diffs := helpers.ObjectsEqual(expectedValues.parameterOpenapiSchema, fetchedDeployment.ParameterOpenAPISchema)
 		if !equal {
 			return fmt.Errorf("Found unexpected differences in deployment parameter_openapi_schema: %s", strings.Join(diffs, "\n"))
+		}
+
+		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
+			return fmt.Errorf("Expected pull steps to be %v, got %v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
 		}
 
 		return nil
