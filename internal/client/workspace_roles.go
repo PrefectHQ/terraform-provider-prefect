@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -38,33 +35,17 @@ func (c *Client) WorkspaceRoles(accountID uuid.UUID) (api.WorkspaceRolesClient, 
 
 // Create creates a new workspace role.
 func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRoleUpsert) (*api.WorkspaceRole, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode create payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/", c.routePrefix), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix,
+		body:         &data,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var workspaceRole api.WorkspaceRole
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceRole); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &workspaceRole); err != nil {
+		return nil, fmt.Errorf("failed to create workspace role: %w", err)
 	}
 
 	return &workspaceRole, nil
@@ -72,89 +53,58 @@ func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRol
 
 // Update modifies an existing workspace role by ID.
 func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.UUID, data api.WorkspaceRoleUpsert) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return fmt.Errorf("failed to encode update payload data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, workspaceRoleID.String()),
+		body:         &data,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, fmt.Sprintf("%s/%s", c.routePrefix, workspaceRoleID.String()), &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update workspace role: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 // Delete removes a workspace role by ID.
 func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete workspace role: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 // List returns a list of workspace roles, based on the provided filter.
 func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]*api.WorkspaceRole, error) {
-	var buf bytes.Buffer
 	filterQuery := api.WorkspaceRoleFilter{}
 	filterQuery.WorkspaceRoles.Name.Any = roleNames
 
-	if err := json.NewEncoder(&buf).Encode(&filterQuery); err != nil {
-		return nil, fmt.Errorf("failed to encode filter payload data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/filter", c.routePrefix), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/filter", c.routePrefix),
+		body:         &filterQuery,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var workspaceRoles []*api.WorkspaceRole
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceRoles); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &workspaceRoles); err != nil {
+		return nil, fmt.Errorf("failed to list workspace roles: %w", err)
 	}
 
 	return workspaceRoles, nil
@@ -162,28 +112,17 @@ func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]
 
 // Get returns a workspace role by ID.
 func (c *WorkspaceRolesClient) Get(ctx context.Context, id uuid.UUID) (*api.WorkspaceRole, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/%s", c.routePrefix, id.String()), http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var workspaceRole api.WorkspaceRole
-	if err := json.NewDecoder(resp.Body).Decode(&workspaceRole); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &workspaceRole); err != nil {
+		return nil, fmt.Errorf("failed to get workspace role: %w", err)
 	}
 
 	return &workspaceRole, nil

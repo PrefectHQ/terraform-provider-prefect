@@ -498,6 +498,8 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 			"Error creating deployment client",
 			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	deploymentID, err := uuid.Parse(model.ID.ValueString())

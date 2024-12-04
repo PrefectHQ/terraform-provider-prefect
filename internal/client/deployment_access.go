@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -45,61 +42,37 @@ func (c *Client) DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (a
 }
 
 func (c *DeploymentAccessClient) Read(ctx context.Context, deploymentID uuid.UUID) (*api.DeploymentAccessControl, error) {
-	url := fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var accessControl api.DeploymentAccessControl
-	if err := json.NewDecoder(resp.Body).Decode(&accessControl); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &accessControl); err != nil {
+		return nil, fmt.Errorf("failed to get deployment access control: %w", err)
 	}
 
 	return &accessControl, nil
 }
 
 func (c *DeploymentAccessClient) Set(ctx context.Context, deploymentID uuid.UUID, accessControl api.DeploymentAccessSet) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&accessControl); err != nil {
-		return fmt.Errorf("failed to encode access control: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
+		body:         &accessControl,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
-	url := fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+		return fmt.Errorf("failed to set deployment access control: %w", err)
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
-	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }

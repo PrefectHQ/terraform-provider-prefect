@@ -82,13 +82,6 @@ type DeploymentUpdate struct {
 	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
 }
 
-// DeploymentFilter defines the search filter payload
-// when searching for deployements by name.
-// example request payload:
-// {"deployments": {"handle": {"any_": ["test"]}}}.
-type DeploymentFilter struct {
-}
-
 // ConcurrencyOptions is a representation of the deployment concurrency options.
 type ConcurrencyOptions struct {
 	CollisionStrategy string `json:"collision_strategy,omitempty"`

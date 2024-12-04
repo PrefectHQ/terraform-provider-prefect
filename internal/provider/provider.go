@@ -230,6 +230,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewAccountMemberDataSource,
 		datasources.NewAccountMembersDataSource,
 		datasources.NewAccountRoleDataSource,
+		datasources.NewAutomationDataSource,
 		datasources.NewBlockDataSource,
 		datasources.NewServiceAccountDataSource,
 		datasources.NewTeamDataSource,
@@ -247,16 +248,18 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewAccountResource,
-		resources.NewFlowResource,
-		resources.NewDeploymentResource,
+		resources.NewAutomationResource,
+		resources.NewBlockAccessResource,
+		resources.NewBlockResource,
 		resources.NewDeploymentAccessResource,
+		resources.NewDeploymentResource,
+		resources.NewDeploymentScheduleResource,
+		resources.NewFlowResource,
 		resources.NewServiceAccountResource,
 		resources.NewVariableResource,
 		resources.NewWorkPoolResource,
 		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
 		resources.NewWorkspaceRoleResource,
-		resources.NewBlockResource,
-		resources.NewBlockAccessResource,
 	}
 }

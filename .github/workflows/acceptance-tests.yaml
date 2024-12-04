@@ -25,7 +25,7 @@ jobs:
     permissions:
       contents: read
     name: Acceptance Tests
-    environment: Acceptance Tests
+    environment: ${{ github.event_name == 'push' && 'Acceptance Tests (main)' || 'Acceptance Tests' }}
     runs-on: ubuntu-latest
     steps:
       - if: |
