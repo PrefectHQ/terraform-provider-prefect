@@ -312,19 +312,21 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	}
 	model.Tags = tags
 
-	concurrencyOptionsObject, diags := types.ObjectValue(
-		map[string]attr.Type{
-			"collision_strategy": types.StringType,
-		},
-		map[string]attr.Value{
-			"collision_strategy": types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
-		},
-	)
-	if diags.HasError() {
-		return diags
-	}
+	if deployment.ConcurrencyOptions != nil {
+		concurrencyOptionsObject, diags := types.ObjectValue(
+			map[string]attr.Type{
+				"collision_strategy": types.StringType,
+			},
+			map[string]attr.Value{
+				"collision_strategy": types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
+			},
+		)
+		if diags.HasError() {
+			return diags
+		}
 
-	model.ConcurrencyOptions = concurrencyOptionsObject
+		model.ConcurrencyOptions = concurrencyOptionsObject
+	}
 
 	return nil
 }
@@ -371,12 +373,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	concurrencyOptions := api.ConcurrencyOptions{
-		CollisionStrategy: getUnescapedValue(plan.ConcurrencyOptions, "collision_strategy"),
-	}
-
-	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		ConcurrencyOptions:     concurrencyOptions,
+	createPayload := api.DeploymentCreate{
 		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
@@ -394,7 +391,17 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		WorkPoolName:           plan.WorkPoolName.ValueString(),
 		WorkQueueName:          plan.WorkQueueName.ValueString(),
 		ParameterOpenAPISchema: parameterOpenAPISchema,
-	})
+	}
+
+	if !plan.ConcurrencyOptions.IsNull() {
+		concurrencyOptions := api.ConcurrencyOptions{
+			CollisionStrategy: getUnescapedValue(plan.ConcurrencyOptions, "collision_strategy"),
+		}
+
+		createPayload.ConcurrencyOptions = &concurrencyOptions
+	}
+
+	deployment, err := client.Create(ctx, createPayload)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment",
@@ -542,12 +549,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
-	concurrencyOptions := api.ConcurrencyOptions{
-		CollisionStrategy: getUnescapedValue(model.ConcurrencyOptions, "collision_strategy"),
-	}
-
 	payload := api.DeploymentUpdate{
-		ConcurrencyOptions:     concurrencyOptions,
 		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
@@ -563,6 +565,15 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkPoolName:           model.WorkPoolName.ValueString(),
 		WorkQueueName:          model.WorkQueueName.ValueString(),
 	}
+
+	if !model.ConcurrencyOptions.IsNull() {
+		concurrencyOptions := api.ConcurrencyOptions{
+			CollisionStrategy: getUnescapedValue(model.ConcurrencyOptions, "collision_strategy"),
+		}
+
+		payload.ConcurrencyOptions = &concurrencyOptions
+	}
+
 	err = client.Update(ctx, deploymentID, payload)
 
 	if err != nil {
