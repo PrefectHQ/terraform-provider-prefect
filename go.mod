@@ -2,7 +2,7 @@ module github.com/prefecthq/terraform-provider-prefect
 
 go 1.22.7
 
-toolchain go1.23.3
+toolchain go1.22.9
 
 require (
 	github.com/avast/retry-go/v4 v4.6.0
