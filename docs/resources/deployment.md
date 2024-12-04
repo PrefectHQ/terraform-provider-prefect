@@ -79,8 +79,8 @@ resource "prefect_deployment" "deployment" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `concurrency_limit` (Integer) The deployment's concurrency limit.
-- `concurrency_options` (Object) Concurrency options for the deployment.
+- `concurrency_limit` (Number) The deployment's concurrency limit.
+- `concurrency_options` (Attributes) Concurrency options for the deployment. (see [below for nested schema](#nestedatt--concurrency_options))
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
@@ -102,6 +102,13 @@ resource "prefect_deployment" "deployment" {
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Workspace ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+<a id="nestedatt--concurrency_options"></a>
+### Nested Schema for `concurrency_options`
+
+Required:
+
+- `collision_strategy` (String) Enumeration of concurrency collision strategies.
 
 ## Import
 

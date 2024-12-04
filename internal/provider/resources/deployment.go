@@ -271,8 +271,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Attributes: map[string]schema.Attribute{
 					"collision_strategy": schema.StringAttribute{
 						Description: "Enumeration of concurrency collision strategies.",
-						Optional:    true,
-						Computed:    true,
+						Required:    true,
 						Validators: []validator.String{
 							stringvalidator.OneOf("ENQUEUE", "CANCEL_NEW"),
 						},
