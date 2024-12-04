@@ -21,25 +21,25 @@ type Deployment struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
-	ConcurrencyLimit       int64                  `json:"concurrency_limit"`
-	ConcurrencyOptions     *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
-	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
-	Entrypoint             string                 `json:"entrypoint"`
-	FlowID                 uuid.UUID              `json:"flow_id"`
-	GlobalConcurrencyLimit GlobalConcurrencyLimit `json:"global_concurrency_limit"`
-	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath           string                 `json:"manifest_path,omitempty"`
-	Name                   string                 `json:"name"`
-	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
-	Path                   string                 `json:"path"`
-	Paused                 bool                   `json:"paused"`
-	StorageDocumentID      uuid.UUID              `json:"storage_document_id,omitempty"`
-	Tags                   []string               `json:"tags"`
-	Version                string                 `json:"version,omitempty"`
-	WorkPoolName           string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName          string                 `json:"work_queue_name,omitempty"`
+	ConcurrencyLimit       *int64                  `json:"concurrency_limit"`
+	ConcurrencyOptions     *ConcurrencyOptions     `json:"concurrency_options,omitempty"`
+	Description            string                  `json:"description,omitempty"`
+	EnforceParameterSchema bool                    `json:"enforce_parameter_schema"`
+	Entrypoint             string                  `json:"entrypoint"`
+	FlowID                 uuid.UUID               `json:"flow_id"`
+	GlobalConcurrencyLimit *GlobalConcurrencyLimit `json:"global_concurrency_limit"`
+	JobVariables           map[string]interface{}  `json:"job_variables,omitempty"`
+	ManifestPath           string                  `json:"manifest_path,omitempty"`
+	Name                   string                  `json:"name"`
+	ParameterOpenAPISchema map[string]interface{}  `json:"parameter_openapi_schema,omitempty"`
+	Parameters             map[string]interface{}  `json:"parameters,omitempty"`
+	Path                   string                  `json:"path"`
+	Paused                 bool                    `json:"paused"`
+	StorageDocumentID      uuid.UUID               `json:"storage_document_id,omitempty"`
+	Tags                   []string                `json:"tags"`
+	Version                string                  `json:"version,omitempty"`
+	WorkPoolName           string                  `json:"work_pool_name,omitempty"`
+	WorkQueueName          string                  `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.

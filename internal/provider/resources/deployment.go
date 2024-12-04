@@ -288,10 +288,6 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
-	// The concurrency_limit field in the response payload is deprecated, and will always be 0
-	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
-	model.ConcurrencyLimit = types.Int64Value(int64(deployment.GlobalConcurrencyLimit.Limit))
-
 	model.Description = types.StringValue(deployment.Description)
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
@@ -310,6 +306,12 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		return diags
 	}
 	model.Tags = tags
+
+	// The concurrency_limit field in the response payload is deprecated, and will always be 0
+	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
+	if deployment.GlobalConcurrencyLimit != nil {
+		model.ConcurrencyLimit = types.Int64Value(int64(deployment.GlobalConcurrencyLimit.Limit))
+	}
 
 	if deployment.ConcurrencyOptions != nil {
 		concurrencyOptionsObject, diags := types.ObjectValue(
