@@ -21,12 +21,13 @@ type Deployment struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
-	ConcurrencyLimit       int                    `json:"concurrency_limit"`
 	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
+	ConcurrencyLimit       int64                  `json:"concurrency_limit"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema"`
 	Entrypoint             string                 `json:"entrypoint"`
 	FlowID                 uuid.UUID              `json:"flow_id"`
+	GlobalConcurrencyLimit GlobalConcurrencyLimit `json:"global_concurrency_limit"`
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Name                   string                 `json:"name"`
@@ -43,8 +44,8 @@ type Deployment struct {
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
-	ConcurrencyLimit       int                    `json:"concurrency_limit"`
 	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
+	ConcurrencyLimit       *int64                 `json:"concurrency_limit,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
@@ -65,8 +66,8 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	ConcurrencyLimit       int                    `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions     ConcurrencyOptions     `json:"concurrency_options,omitempty"`
+	ConcurrencyLimit       *int64                 `json:"concurrency_limit,omitempty"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
@@ -85,4 +86,15 @@ type DeploymentUpdate struct {
 // ConcurrencyOptions is a representation of the deployment concurrency options.
 type ConcurrencyOptions struct {
 	CollisionStrategy string `json:"collision_strategy,omitempty"`
+}
+
+// GlobalConcurrencyLimit is a representation of the deployment global concurrency limit.
+type GlobalConcurrencyLimit struct {
+	Limit int `json:"limit"`
+
+	// BaseModel
+	// Active             bool   `json:"active"`
+	// Name               string `json:"name"`
+	// ActiveSlots        int    `json:"active_slots"`
+	// SlotDecayPerSecond int    `json:"slot_decay_per_second"`
 }

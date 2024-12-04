@@ -289,7 +289,10 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
-	model.ConcurrencyLimit = types.Int64Value(int64(deployment.ConcurrencyLimit))
+	// The concurrency_limit field in the response payload is deprecated, and will always be 0
+	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
+	model.ConcurrencyLimit = types.Int64Value(int64(deployment.GlobalConcurrencyLimit.Limit))
+
 	model.Description = types.StringValue(deployment.Description)
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
@@ -373,8 +376,8 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
-		ConcurrencyLimit:       int(plan.ConcurrencyLimit.ValueInt64()),
 		ConcurrencyOptions:     concurrencyOptions,
+		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
@@ -544,8 +547,8 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:       int(model.ConcurrencyLimit.ValueInt64()),
 		ConcurrencyOptions:     concurrencyOptions,
+		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
