@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -17,6 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 
@@ -45,7 +47,7 @@ type DeploymentResourceModel struct {
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
-	ConcurrencyOptions     jsontypes.Normalized  `tfsdk:"concurrency_options"`
+	ConcurrencyOptions     types.Object          `tfsdk:"concurrency_options"`
 	Description            types.String          `tfsdk:"description"`
 	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
@@ -258,11 +260,20 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 			},
-			"concurrency_options": schema.StringAttribute{
+			"concurrency_options": schema.SingleNestedAttribute{
 				Description: "Concurrency options for the deployment.",
 				Optional:    true,
 				Computed:    true,
-				CustomType:  jsontypes.NormalizedType{},
+				Attributes: map[string]schema.Attribute{
+					"collision_strategy": schema.StringAttribute{
+						Description: "Enumeration of concurrency collision strategies.",
+						Optional:    true,
+						Computed:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("ENQUEUE", "CANCEL_NEW"),
+						},
+					},
+				},
 			},
 		},
 	}
@@ -293,6 +304,20 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		return diags
 	}
 	model.Tags = tags
+
+	concurrencyOptionsObject, diags := types.ObjectValue(
+		map[string]attr.Type{
+			"collision_strategy": types.StringType,
+		},
+		map[string]attr.Value{
+			"collision_strategy": types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
+		},
+	)
+	if diags.HasError() {
+		return diags
+	}
+
+	model.ConcurrencyOptions = concurrencyOptionsObject
 
 	return nil
 }
@@ -339,10 +364,8 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	concurrencyOptions, diags := helpers.SafeUnmarshal(plan.ConcurrencyOptions)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
+	concurrencyOptions := api.ConcurrencyOptions{
+		CollisionStrategy: getUnescapedValue(plan.ConcurrencyOptions, "collision_strategy"),
 	}
 
 	deployment, err := client.Create(ctx, api.DeploymentCreate{
@@ -512,8 +535,13 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
+	concurrencyOptions := api.ConcurrencyOptions{
+		CollisionStrategy: getUnescapedValue(model.ConcurrencyOptions, "collision_strategy"),
+	}
+
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:       int(model.ConcurrencyLimit.ValueInt64()),
+		ConcurrencyOptions:     concurrencyOptions,
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
@@ -577,14 +605,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
-
-	concurrencyOptionsByteSlice, err := json.Marshal(deployment.ConcurrencyOptions)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("concurrency_options", "Deployment concurrency options", err))
-
-		return
-	}
-	model.ConcurrencyOptions = jsontypes.NewNormalizedValue(string(concurrencyOptionsByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
@@ -676,4 +696,27 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
+}
+
+// getUnescapedValue returns the unescaped value of a key in an Object.
+// For some reason, without this function we see the value in the HTTP payload
+// has escaped quotes. For example: "\"ENQUEUE\""
+// This leads to Pydantic validation errors so we need to make sure we've stripped
+// out any quotes from the value.
+//
+// There is very likely a better way to do this, or a way to avoid this entirely.
+func getUnescapedValue(obj types.Object, key string) string {
+	attrs := obj.Attributes()
+	var result string
+
+	if val, ok := attrs[key]; ok {
+		result = strings.Trim(val.String(), `"`)
+
+		// This didn't seem impactful in testing, but let's keep it to be safe.
+		result = strings.ReplaceAll(result, `\"`, `"`)
+
+		return result
+	}
+
+	return "problemescaping"
 }
