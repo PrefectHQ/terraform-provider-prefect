@@ -92,6 +92,9 @@ type ConcurrencyOptions struct {
 type GlobalConcurrencyLimit struct {
 	Limit int `json:"limit"`
 
+	// These other fields exist in the response payload, but we don't make use of them at the
+	// moment, so we'll leave them disabled for now.
+	//
 	// BaseModel
 	// Active             bool   `json:"active"`
 	// Name               string `json:"name"`
