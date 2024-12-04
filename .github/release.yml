@@ -11,9 +11,11 @@ changelog:
     - title: Exciting New Features 🎉
       labels:
         - enhancement
+        - feature
     - title: Fixes
       labels:
         - bugfix
+        - bug
     - title: Dependency Updates
       labels:
         - dependencies
