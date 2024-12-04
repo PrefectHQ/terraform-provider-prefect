@@ -1,11 +1,8 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -47,33 +44,17 @@ func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.Work
 
 // Create returns details for a new work pool.
 func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (*api.WorkPool, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return nil, fmt.Errorf("failed to encode data: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         &data,
+		successCodes: successCodesStatusCreated,
+		apiKey:       c.apiKey,
 	}
 
 	var pool api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pool); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &pool); err != nil {
+		return nil, fmt.Errorf("failed to create work pool: %w", err)
 	}
 
 	return &pool, nil
@@ -81,33 +62,17 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 
 // List returns a list of work pools matching filter criteria.
 func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) ([]*api.WorkPool, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&filter); err != nil {
-		return nil, fmt.Errorf("failed to encode filter: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.routePrefix+"/filter", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/filter",
+		body:         &filter,
+		successCodes: successCodesStatusOK,
+		apiKey:       c.apiKey,
 	}
 
 	var pools []*api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pools); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &pools); err != nil {
+		return nil, fmt.Errorf("failed to list work pools: %w", err)
 	}
 
 	return pools, nil
@@ -115,28 +80,17 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 
 // Get returns details for a work pool by name.
 func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.routePrefix+"/"+name, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/" + name,
+		successCodes: successCodesStatusOK,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
 	}
 
 	var pool api.WorkPool
-	if err := json.NewDecoder(resp.Body).Decode(&pool); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &pool); err != nil {
+		return nil, fmt.Errorf("failed to get work pool: %w", err)
 	}
 
 	return &pool, nil
@@ -144,53 +98,38 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 
 // Update modifies an existing work pool by name.
 func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.WorkPoolUpdate) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&data); err != nil {
-		return fmt.Errorf("failed to encode data: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          c.routePrefix + "/" + name,
+		body:         &data,
+		successCodes: successCodesStatusOKOrNoContent,
+		apiKey:       c.apiKey,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPatch, c.routePrefix+"/"+name, &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update work pool: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
 // Delete removes a work pool by name.
 func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, c.routePrefix+"/"+name, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          c.routePrefix + "/" + name,
+		successCodes: successCodesStatusOKOrNoContent,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
 	}
 
-	setDefaultHeaders(req, c.apiKey)
-
-	resp, err := c.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete work pool: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
-		errorBody, _ := io.ReadAll(resp.Body)
-
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
