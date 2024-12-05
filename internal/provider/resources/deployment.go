@@ -48,7 +48,7 @@ type DeploymentResourceModel struct {
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
-	ConcurrencyOptions     types.Object          `tfsdk:"concurrency_options"`
+	ConcurrencyOptions     *ConcurrencyOptions   `tfsdk:"concurrency_options"`
 	Description            types.String          `tfsdk:"description"`
 	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
@@ -65,6 +65,12 @@ type DeploymentResourceModel struct {
 	Version                types.String          `tfsdk:"version"`
 	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
 	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
+}
+
+// ConcurrentOptions represents the concurrency options for a deployment.
+type ConcurrencyOptions struct {
+	// CollisionStrategy is the strategy to use when a deployment reaches its concurrency limit.
+	CollisionStrategy types.String `tfsdk:"collision_strategy"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -314,19 +320,9 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	}
 
 	if deployment.ConcurrencyOptions != nil {
-		concurrencyOptionsObject, diags := types.ObjectValue(
-			map[string]attr.Type{
-				"collision_strategy": types.StringType,
-			},
-			map[string]attr.Value{
-				"collision_strategy": types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
-			},
-		)
-		if diags.HasError() {
-			return diags
+		model.ConcurrencyOptions = &ConcurrencyOptions{
+			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
-
-		model.ConcurrencyOptions = concurrencyOptionsObject
 	}
 
 	return nil
@@ -394,12 +390,10 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		ParameterOpenAPISchema: parameterOpenAPISchema,
 	}
 
-	if !plan.ConcurrencyOptions.IsNull() {
-		concurrencyOptions := api.ConcurrencyOptions{
-			CollisionStrategy: getUnescapedValue(plan.ConcurrencyOptions, "collision_strategy"),
+	if plan.ConcurrencyOptions != nil {
+		createPayload.ConcurrencyOptions = &api.ConcurrencyOptions{
+			CollisionStrategy: plan.ConcurrencyOptions.CollisionStrategy.ValueString(),
 		}
-
-		createPayload.ConcurrencyOptions = &concurrencyOptions
 	}
 
 	deployment, err := client.Create(ctx, createPayload)
@@ -567,12 +561,10 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkQueueName:          model.WorkQueueName.ValueString(),
 	}
 
-	if !model.ConcurrencyOptions.IsNull() {
-		concurrencyOptions := api.ConcurrencyOptions{
-			CollisionStrategy: getUnescapedValue(model.ConcurrencyOptions, "collision_strategy"),
+	if !model.ConcurrencyOptions.CollisionStrategy.IsNull() {
+		payload.ConcurrencyOptions = &api.ConcurrencyOptions{
+			CollisionStrategy: model.ConcurrencyOptions.CollisionStrategy.ValueString(),
 		}
-
-		payload.ConcurrencyOptions = &concurrencyOptions
 	}
 
 	err = client.Update(ctx, deploymentID, payload)
@@ -715,27 +707,4 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
-}
-
-// getUnescapedValue returns the unescaped value of a key in an Object.
-// For some reason, without this function we see the value in the HTTP payload
-// has escaped quotes. For example: "\"ENQUEUE\""
-// This leads to Pydantic validation errors so we need to make sure we've stripped
-// out any quotes from the value.
-//
-// There is very likely a better way to do this, or a way to avoid this entirely.
-func getUnescapedValue(obj types.Object, key string) string {
-	attrs := obj.Attributes()
-	var result string
-
-	if val, ok := attrs[key]; ok {
-		result = strings.Trim(val.String(), `"`)
-
-		// This didn't seem impactful in testing, but let's keep it to be safe.
-		result = strings.ReplaceAll(result, `\"`, `"`)
-
-		return result
-	}
-
-	return "problemescaping"
 }
