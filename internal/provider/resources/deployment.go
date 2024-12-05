@@ -310,7 +310,7 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// The concurrency_limit field in the response payload is deprecated, and will always be 0
 	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
 	if deployment.GlobalConcurrencyLimit != nil {
-		model.ConcurrencyLimit = types.Int64Value(int64(deployment.GlobalConcurrencyLimit.Limit))
+		model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
 	}
 
 	if deployment.ConcurrencyOptions != nil {

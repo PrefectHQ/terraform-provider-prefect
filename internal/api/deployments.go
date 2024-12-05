@@ -90,7 +90,7 @@ type ConcurrencyOptions struct {
 
 // GlobalConcurrencyLimit is a representation of the deployment global concurrency limit.
 type GlobalConcurrencyLimit struct {
-	Limit int `json:"limit"`
+	Limit int64 `json:"limit"`
 
 	// These other fields exist in the response payload, but we don't make use of them at the
 	// moment, so we'll leave them disabled for now.
