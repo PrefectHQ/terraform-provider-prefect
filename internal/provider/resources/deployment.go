@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,6 +48,8 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
+	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
+	ConcurrencyOptions     *ConcurrencyOptions   `tfsdk:"concurrency_options"`
 	Description            types.String          `tfsdk:"description"`
 	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
@@ -64,6 +67,12 @@ type DeploymentResourceModel struct {
 	Version                types.String          `tfsdk:"version"`
 	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
 	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
+}
+
+// ConcurrentOptions represents the concurrency options for a deployment.
+type ConcurrencyOptions struct {
+	// CollisionStrategy is the strategy to use when a deployment reaches its concurrency limit.
+	CollisionStrategy types.String `tfsdk:"collision_strategy"`
 }
 
 // PullStepModel represents a pull step in a deployment.
@@ -303,6 +312,28 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"concurrency_limit": schema.Int64Attribute{
+				Description: "The deployment's concurrency limit.",
+				Optional:    true,
+				Computed:    true,
+				Validators: []validator.Int64{
+					int64validator.AtLeast(1),
+				},
+			},
+			"concurrency_options": schema.SingleNestedAttribute{
+				Description: "Concurrency options for the deployment.",
+				Optional:    true,
+				Computed:    true,
+				Attributes: map[string]schema.Attribute{
+					"collision_strategy": schema.StringAttribute{
+						Description: "Enumeration of concurrency collision strategies.",
+						Required:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("ENQUEUE", "CANCEL_NEW"),
+						},
+					},
+				},
+			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
 			// In the resource schema, we only make `type` required. The other attributes are needed
 			// based on the pull step type, which we'll validate in the resource layer.
@@ -468,6 +499,18 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	}
 	model.Tags = tags
 
+	// The concurrency_limit field in the response payload is deprecated, and will always be 0
+	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
+	if deployment.GlobalConcurrencyLimit != nil {
+		model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+	}
+
+	if deployment.ConcurrencyOptions != nil {
+		model.ConcurrencyOptions = &ConcurrencyOptions{
+			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
+		}
+	}
+
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
 	diags.Append(diags...)
 	if diags.HasError() {
@@ -527,7 +570,8 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	deployment, err := client.Create(ctx, api.DeploymentCreate{
+	createPayload := api.DeploymentCreate{
+		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            plan.Description.ValueString(),
 		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
@@ -545,7 +589,15 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		WorkPoolName:           plan.WorkPoolName.ValueString(),
 		WorkQueueName:          plan.WorkQueueName.ValueString(),
 		ParameterOpenAPISchema: parameterOpenAPISchema,
-	})
+	}
+
+	if plan.ConcurrencyOptions != nil {
+		createPayload.ConcurrencyOptions = &api.ConcurrencyOptions{
+			CollisionStrategy: plan.ConcurrencyOptions.CollisionStrategy.ValueString(),
+		}
+	}
+
+	deployment, err := client.Create(ctx, createPayload)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating deployment",
@@ -694,6 +746,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
+		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            model.Description.ValueString(),
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
@@ -708,6 +761,13 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkPoolName:           model.WorkPoolName.ValueString(),
 		WorkQueueName:          model.WorkQueueName.ValueString(),
 	}
+
+	if !model.ConcurrencyOptions.CollisionStrategy.IsNull() {
+		payload.ConcurrencyOptions = &api.ConcurrencyOptions{
+			CollisionStrategy: model.ConcurrencyOptions.CollisionStrategy.ValueString(),
+		}
+	}
+
 	err = client.Update(ctx, deploymentID, payload)
 
 	if err != nil {

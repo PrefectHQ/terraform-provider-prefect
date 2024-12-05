@@ -24,6 +24,8 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
+	ConcurrencyLimit       int
+	CollisionStrategy      string
 	Description            string
 	EnforceParameterSchema bool
 	Entrypoint             string
@@ -77,6 +79,10 @@ resource "prefect_flow" "{{.FlowName}}" {
 resource "prefect_deployment" "{{.DeploymentName}}" {
 	name = "{{.DeploymentName}}"
 	description = "{{.Description}}"
+	concurrency_limit = {{.ConcurrencyLimit}}
+	concurrency_options = {
+		collision_strategy = "{{.CollisionStrategy}}"
+	}
 	enforce_parameter_schema = {{.EnforceParameterSchema}}
 	entrypoint = "{{.Entrypoint}}"
 	flow_id = prefect_flow.{{.FlowName}}.id
@@ -151,6 +157,8 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		Workspace:              workspace.Resource,
 
+		ConcurrencyLimit:       1,
+		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
 		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world",
@@ -182,15 +190,17 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		Description:   "My deployment description v2",
-		Entrypoint:    "hello_world.py:hello_world2",
-		JobVariables:  `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:  "some-manifest-path2",
-		Parameters:    "some-value2",
-		Path:          "some-path2",
-		Paused:        true,
-		Version:       "v1.1.2",
-		WorkQueueName: "default",
+		ConcurrencyLimit:  2,
+		CollisionStrategy: "CANCEL_NEW",
+		Description:       "My deployment description v2",
+		Entrypoint:        "hello_world.py:hello_world2",
+		JobVariables:      `{"env":{"some-key":"some-value2"}}`,
+		ManifestPath:      "some-manifest-path2",
+		Parameters:        "some-value2",
+		Path:              "some-path2",
+		Paused:            true,
+		Version:           "v1.1.2",
+		WorkQueueName:     "default",
 
 		// Enforcing parameter schema  returns the following error:
 		//
@@ -252,6 +262,8 @@ func TestAccResource_deployment(t *testing.T) {
 						pullSteps:              cfgCreate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgCreate.ConcurrencyLimit)),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgCreate.CollisionStrategy),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
@@ -279,6 +291,8 @@ func TestAccResource_deployment(t *testing.T) {
 						pullSteps:              cfgUpdate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgUpdate.ConcurrencyLimit)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgUpdate.CollisionStrategy),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
