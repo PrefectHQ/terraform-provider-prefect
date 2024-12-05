@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
+	"k8s.io/utils/ptr"
 )
 
 type deploymentConfig struct {
@@ -32,6 +34,7 @@ type deploymentConfig struct {
 	Parameters             string
 	Path                   string
 	Paused                 bool
+	PullSteps              []api.PullStep
 	Tags                   []string
 	Version                string
 	WorkPoolName           string
@@ -97,6 +100,37 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
+	pull_steps = [
+		{{range .PullSteps}}
+	  {
+			type = "{{.Type}}"
+
+			{{- if .Directory }}
+			directory = "{{.Directory}}"
+			{{- end }}
+
+			{{- if .Repository }}
+			repository = "{{.Repository}}"
+			{{- end }}
+
+			{{- if .Branch }}
+			branch = "{{.Branch}}"
+			{{- end }}
+
+			{{- if .AccessToken }}
+			access_token = "{{.AccessToken}}"
+			{{- end }}
+
+			{{- if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{- end}}
+
+			{{- if .Folder }}
+			folder = "{{.Folder}}"
+			{{- end}}
+		},
+		{{end}}
+	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
 	workspace_id = prefect_workspace.test.id
@@ -133,6 +167,12 @@ func TestAccResource_deployment(t *testing.T) {
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
+		PullSteps: []api.PullStep{
+			{
+				Type:      "set_working_directory",
+				Directory: ptr.To("/some/directory"),
+			},
+		},
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
 		WorkPoolName:           "some-pool",
@@ -183,6 +223,25 @@ func TestAccResource_deployment(t *testing.T) {
 		// ParameterOpenAPISchema is not settable via the Update method.
 		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
 
+		// PullSteps require a replacement of the resource.
+		PullSteps: []api.PullStep{
+			{
+				Type:      "set_working_directory",
+				Directory: ptr.To("/some/directory"),
+			},
+			{
+				Type:        "git_clone",
+				Repository:  ptr.To("https://github.com/prefecthq/prefect"),
+				Branch:      ptr.To("main"),
+				AccessToken: ptr.To("123abc"),
+			},
+			{
+				Type:   "pull_from_s3",
+				Bucket: ptr.To("some-bucket"),
+				Folder: ptr.To("some-folder"),
+			},
+		},
+
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
@@ -200,6 +259,7 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgCreate.DeploymentName,
 						description:            cfgCreate.Description,
+						pullSteps:              cfgCreate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgCreate.ConcurrencyLimit)),
@@ -228,6 +288,7 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgUpdate.DeploymentName,
 						description:            cfgUpdate.Description,
+						pullSteps:              cfgUpdate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgUpdate.ConcurrencyLimit)),
@@ -299,6 +360,7 @@ type expectedDeploymentValues struct {
 	name                   string
 	description            string
 	parameterOpenapiSchema map[string]interface{}
+	pullSteps              []api.PullStep
 }
 
 // testAccCheckDeploymentValues is a Custom Check Function that
@@ -315,6 +377,10 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		equal, diffs := helpers.ObjectsEqual(expectedValues.parameterOpenapiSchema, fetchedDeployment.ParameterOpenAPISchema)
 		if !equal {
 			return fmt.Errorf("Found unexpected differences in deployment parameter_openapi_schema: %s", strings.Join(diffs, "\n"))
+		}
+
+		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
+			return fmt.Errorf("Expected pull steps to be %v, got %v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
 		}
 
 		return nil

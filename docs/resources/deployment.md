@@ -59,8 +59,26 @@ resource "prefect_deployment" "deployment" {
       "some-parameter2" : { "type" : "string" }
     }
   })
-  path                = "./foo/bar"
-  paused              = false
+  path   = "./foo/bar"
+  paused = false
+  pull_steps = [
+    {
+      type      = "set_working_directory",
+      directory = "/some/directory",
+    },
+    {
+      type         = "git_clone"
+      repository   = "https://github.com/some/repo"
+      branch       = "main"
+      access_token = "123abc"
+    },
+    {
+      type     = "pull_from_s3",
+      requires = "prefect-aws>=0.3.4"
+      bucket   = "some-bucket",
+      folder   = "some-folder",
+    }
+  ]
   storage_document_id = prefect_block.test_gh_repository.id
   version             = "v1.1.1"
   work_pool_name      = "some-testing-pool"
@@ -90,6 +108,7 @@ resource "prefect_deployment" "deployment" {
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
+- `pull_steps` (Attributes List) Pull steps to prepare flows for a deployment run. (see [below for nested schema](#nestedatt--pull_steps))
 - `storage_document_id` (String) ID of the associated storage document (UUID)
 - `tags` (List of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
@@ -109,6 +128,25 @@ resource "prefect_deployment" "deployment" {
 Required:
 
 - `collision_strategy` (String) Enumeration of concurrency collision strategies.
+
+
+<a id="nestedatt--pull_steps"></a>
+### Nested Schema for `pull_steps`
+
+Required:
+
+- `type` (String) The type of pull step
+
+Optional:
+
+- `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
+- `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
+- `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
+- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `repository` (String) (For type 'git_clone') The URL of the repository to clone.
+- `requires` (String) A list of Python package dependencies.
 
 ## Import
 

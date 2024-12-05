@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -60,6 +61,7 @@ type DeploymentResourceModel struct {
 	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
 	Path                   types.String          `tfsdk:"path"`
 	Paused                 types.Bool            `tfsdk:"paused"`
+	PullSteps              []PullStepModel       `tfsdk:"pull_steps"`
 	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
 	Tags                   types.List            `tfsdk:"tags"`
 	Version                types.String          `tfsdk:"version"`
@@ -71,6 +73,54 @@ type DeploymentResourceModel struct {
 type ConcurrencyOptions struct {
 	// CollisionStrategy is the strategy to use when a deployment reaches its concurrency limit.
 	CollisionStrategy types.String `tfsdk:"collision_strategy"`
+}
+
+// PullStepModel represents a pull step in a deployment.
+type PullStepModel struct {
+	// Type is the type of pull step.
+	// One of:
+	// - set_working_directory
+	// - git_clone
+	// - pull_from_azure_blob_storage
+	// - pull_from_gcs
+	// - pull_from_s3
+	Type types.String `tfsdk:"type"`
+
+	// Credentials is the credentials to use for the pull step.
+	// Used on all PullStep types.
+	Credentials types.String `tfsdk:"credentials"`
+
+	// Requires is a list of Python package dependencies.
+	Requires types.String `tfsdk:"requires"`
+
+	//
+	// Fields for set_working_directory
+	//
+
+	Directory types.String `tfsdk:"directory"`
+
+	//
+	// Fields for git_clone
+	//
+
+	// The URL of the repository to clone.
+	Repository types.String `tfsdk:"repository"`
+
+	// The branch to clone. If not provided, the default branch is used.
+	Branch types.String `tfsdk:"branch"`
+
+	// Access token for the repository.
+	AccessToken types.String `tfsdk:"access_token"`
+
+	//
+	// Fields for pull_from_{cloud}
+	//
+
+	// The name of the bucket where files are stored.
+	Bucket types.String `tfsdk:"bucket"`
+
+	// The folder in the bucket where files are stored.
+	Folder types.String `tfsdk:"folder"`
 }
 
 // NewDeploymentResource returns a new DeploymentResource.
@@ -284,8 +334,144 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					},
 				},
 			},
+			// Pull steps are polymorphic and can have different schemas based on the pull step type.
+			// In the resource schema, we only make `type` required. The other attributes are needed
+			// based on the pull step type, which we'll validate in the resource layer.
+			"pull_steps": schema.ListNestedAttribute{
+				Description: "Pull steps to prepare flows for a deployment run.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.List{
+					// Pull steps are only set on create, so any change in their value will require a resource
+					// of the resource. See https://github.com/PrefectHQ/prefect/issues/11052 for more context.
+					listplanmodifier.RequiresReplace(),
+				},
+				Default: listdefault.StaticValue(basetypes.NewListValueMust(
+					types.ObjectType{
+						AttrTypes: map[string]attr.Type{
+							"type":         types.StringType,
+							"credentials":  types.StringType,
+							"requires":     types.StringType,
+							"directory":    types.StringType,
+							"repository":   types.StringType,
+							"branch":       types.StringType,
+							"access_token": types.StringType,
+							"bucket":       types.StringType,
+							"folder":       types.StringType,
+						},
+					},
+					[]attr.Value{},
+				)),
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"type": schema.StringAttribute{
+							Description: "The type of pull step",
+							Required:    true,
+							Validators: []validator.String{
+								stringvalidator.OneOf(
+									"set_working_directory",
+									"git_clone",
+									"pull_from_azure_blob_storage",
+									"pull_from_gcs",
+									"pull_from_s3",
+								),
+							},
+						},
+						"credentials": schema.StringAttribute{
+							Description: "Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.",
+							Optional:    true,
+						},
+						"requires": schema.StringAttribute{
+							Description: "A list of Python package dependencies.",
+							Optional:    true,
+						},
+						"directory": schema.StringAttribute{
+							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonDirectoryAttributes),
+						},
+						"repository": schema.StringAttribute{
+							Description: "(For type 'git_clone') The URL of the repository to clone.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+						},
+						"branch": schema.StringAttribute{
+							Description: "(For type 'git_clone') The branch to clone. If not provided, the default branch is used.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+						},
+						"access_token": schema.StringAttribute{
+							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+						},
+						"bucket": schema.StringAttribute{
+							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
+						},
+						"folder": schema.StringAttribute{
+							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
+							Optional:    true,
+							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
+						},
+					},
+				},
+			},
 		},
 	}
+}
+
+func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	pullSteps := make([]api.PullStep, 0)
+
+	for i := range tfPullSteps {
+		tfPullStep := tfPullSteps[i]
+
+		apiPullStep := api.PullStep{
+			Type:        tfPullStep.Type.ValueString(),
+			Credentials: tfPullStep.Credentials.ValueStringPointer(),
+			Requires:    tfPullStep.Requires.ValueStringPointer(),
+			Directory:   tfPullStep.Directory.ValueStringPointer(),
+			Repository:  tfPullStep.Repository.ValueStringPointer(),
+			Branch:      tfPullStep.Branch.ValueStringPointer(),
+			AccessToken: tfPullStep.AccessToken.ValueStringPointer(),
+			Bucket:      tfPullStep.Bucket.ValueStringPointer(),
+			Folder:      tfPullStep.Folder.ValueStringPointer(),
+		}
+
+		pullSteps = append(pullSteps, apiPullStep)
+	}
+
+	return pullSteps, diags
+}
+
+func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	tfPullStepsModel := make([]PullStepModel, 0)
+
+	for i := range pullSteps {
+		pullStep := pullSteps[i]
+
+		pullStepModel := PullStepModel{
+			Type:        types.StringValue(pullStep.Type),
+			Credentials: types.StringPointerValue(pullStep.Credentials),
+			Requires:    types.StringPointerValue(pullStep.Requires),
+			Directory:   types.StringPointerValue(pullStep.Directory),
+			Repository:  types.StringPointerValue(pullStep.Repository),
+			Branch:      types.StringPointerValue(pullStep.Branch),
+			AccessToken: types.StringPointerValue(pullStep.AccessToken),
+			Bucket:      types.StringPointerValue(pullStep.Bucket),
+			Folder:      types.StringPointerValue(pullStep.Folder),
+		}
+
+		tfPullStepsModel = append(tfPullStepsModel, pullStepModel)
+	}
+
+	return tfPullStepsModel, diags
 }
 
 // copyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
@@ -324,6 +510,14 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
 	}
+
+	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
+	diags.Append(diags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	model.PullSteps = pullSteps
 
 	return nil
 }
@@ -370,6 +564,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	pullSteps, diags := mapPullStepsTerraformToAPI(plan.PullSteps)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createPayload := api.DeploymentCreate{
 		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            plan.Description.ValueString(),
@@ -382,6 +582,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		Parameters:             parameters,
 		Path:                   plan.Path.ValueString(),
 		Paused:                 plan.Paused.ValueBool(),
+		PullSteps:              pullSteps,
 		StorageDocumentID:      plan.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                   tags,
 		Version:                plan.Version.ValueString(),
@@ -708,3 +909,47 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }
+
+// validatorsForConflictingAttributes provides a list of string validators
+// used in a ConflictsWith validator for a specific attribute.
+//
+// This approach is used in lieu of a ConfigValidators method because we take
+// advantage of 'MatchRelative' to use the current context of the list objects
+// (ListNestedAttribute).
+//
+// Also, expressing validators on each attribute lets us
+// be more concise when defining the conflicting attributes. Defining them in
+// ConfigValidators instead would be much more verbose, and disconnected from
+// the source of truth.
+func validatorsForConflictingAttributes(attributes []string) []validator.String {
+	pathExpressions := make([]path.Expression, 0)
+
+	for _, key := range attributes {
+		pathExpressions = append(pathExpressions, path.MatchRelative().AtParent().AtName(key))
+	}
+
+	return []validator.String{
+		stringvalidator.ConflictsWith(pathExpressions...),
+	}
+}
+
+var (
+	directoryAttributes = []string{
+		"directory",
+	}
+
+	gitCloneAttributes = []string{
+		"repository",
+		"branch",
+		"access_token",
+	}
+
+	pullFromAttributes = []string{
+		"bucket",
+		"folder",
+	}
+
+	nonDirectoryAttributes = append(gitCloneAttributes, pullFromAttributes...)
+	nonGitCloneAttributes  = append(directoryAttributes, pullFromAttributes...)
+	nonPullFromAttributes  = append(directoryAttributes, gitCloneAttributes...)
+)
