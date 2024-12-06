@@ -45,16 +45,21 @@ data "prefect_deployment" "existing_by_id_string" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `id` (String) Deployment ID (UUID)
+- `name` (String) Name of the deployment
+- `workspace_id` (String) Workspace ID (UUID) to associate deployment to
+
+### Read-Only
+
 - `concurrency_limit` (Number) The deployment's concurrency limit.
 - `concurrency_options` (Attributes) Concurrency options for the deployment. (see [below for nested schema](#nestedatt--concurrency_options))
+- `created` (String) Timestamp of when the resource was created (RFC3339)
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
-- `id` (String) Deployment ID (UUID)
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
-- `name` (String) Name of the deployment
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
@@ -62,20 +67,15 @@ data "prefect_deployment" "existing_by_id_string" {
 - `pull_steps` (Attributes List) Pull steps to prepare flows for a deployment run. (see [below for nested schema](#nestedatt--pull_steps))
 - `storage_document_id` (String) ID of the associated storage document (UUID)
 - `tags` (List of String) Tags associated with the deployment
+- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.
 - `work_queue_name` (String) The work queue for the deployment. If no work queue is set, work will not be scheduled.
-- `workspace_id` (String) Workspace ID (UUID) to associate deployment to
-
-### Read-Only
-
-- `created` (String) Timestamp of when the resource was created (RFC3339)
-- `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 <a id="nestedatt--concurrency_options"></a>
 ### Nested Schema for `concurrency_options`
 
-Required:
+Read-Only:
 
 - `collision_strategy` (String) Enumeration of concurrency collision strategies.
 
@@ -83,11 +83,7 @@ Required:
 <a id="nestedatt--pull_steps"></a>
 ### Nested Schema for `pull_steps`
 
-Required:
-
-- `type` (String) The type of pull step
-
-Optional:
+Read-Only:
 
 - `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
@@ -97,3 +93,4 @@ Optional:
 - `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
 - `requires` (String) A list of Python package dependencies.
+- `type` (String) The type of pull step
