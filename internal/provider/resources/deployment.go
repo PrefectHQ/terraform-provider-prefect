@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -238,6 +239,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Default:     stringdefault.StaticString("{}"),
 			},
 			"work_queue_name": schema.StringAttribute{
 				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
@@ -299,12 +301,14 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Default:     stringdefault.StaticString("{}"),
 			},
 			"parameter_openapi_schema": schema.StringAttribute{
 				Description: "The parameter schema of the flow, including defaults.",
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Default:     stringdefault.StaticString("{}"),
 				// OpenAPI schema is also only set on create, and
 				// we do not support modifying this value. Therefore, any changes
 				// to this attribute will force a replacement.
@@ -315,7 +319,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
 				Optional:    true,
-				Computed:    true,
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
@@ -323,7 +326,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"concurrency_options": schema.SingleNestedAttribute{
 				Description: "Concurrency options for the deployment.",
 				Optional:    true,
-				Computed:    true,
 				Attributes: map[string]schema.Attribute{
 					"collision_strategy": schema.StringAttribute{
 						Description: "Enumeration of concurrency collision strategies.",
@@ -527,7 +529,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	var plan DeploymentResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -762,7 +764,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkQueueName:          model.WorkQueueName.ValueString(),
 	}
 
-	if !model.ConcurrencyOptions.CollisionStrategy.IsNull() {
+	if model.ConcurrencyOptions != nil {
 		payload.ConcurrencyOptions = &api.ConcurrencyOptions{
 			CollisionStrategy: model.ConcurrencyOptions.CollisionStrategy.ValueString(),
 		}

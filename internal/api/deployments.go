@@ -69,7 +69,7 @@ type DeploymentCreate struct {
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
 	ConcurrencyLimit       *int64                 `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions     *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
+	ConcurrencyOptions     *ConcurrencyOptions    `json:"concurrency_options"`
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`

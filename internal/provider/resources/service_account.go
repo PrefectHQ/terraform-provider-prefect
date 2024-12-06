@@ -427,7 +427,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// Practitioners can rotate their Service Account API Key my modifying the
+	// Practitioners can rotate their Service Account API Key by modifying the
 	// `api_key_expiration` attribute. If the provided value is different than the current
 	// value, we'll call the RotateKey method on the client, which returns the
 	// ServiceAccount object with the new API Key value included in the response.
