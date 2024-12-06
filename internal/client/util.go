@@ -133,7 +133,9 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 	}
 
 	if !success {
-		return nil, fmt.Errorf("status code %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf("status code=%s, error=%s", resp.Status, body)
 	}
 
 	return resp, nil
