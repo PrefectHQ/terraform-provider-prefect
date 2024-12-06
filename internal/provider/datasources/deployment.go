@@ -73,11 +73,13 @@ The Deployment ID takes precedence over deployment name.
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
+				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
 			},
 			"workspace_id": schema.StringAttribute{
+				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) to associate deployment to",
 				Optional:    true,
@@ -88,98 +90,82 @@ The Deployment ID takes precedence over deployment name.
 				Optional:    true,
 			},
 			"flow_id": schema.StringAttribute{
+				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
-				Optional:    true,
 			},
 			"paused": schema.BoolAttribute{
-				Description: "Whether or not the deployment is paused.",
-				Optional:    true,
 				Computed:    true,
+				Description: "Whether or not the deployment is paused.",
 			},
 			"enforce_parameter_schema": schema.BoolAttribute{
-				Description: "Whether or not the deployment should enforce the parameter schema.",
-				Optional:    true,
 				Computed:    true,
+				Description: "Whether or not the deployment should enforce the parameter schema.",
 			},
 			"storage_document_id": schema.StringAttribute{
-				Optional:    true,
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the associated storage document (UUID)",
 			},
 			"manifest_path": schema.StringAttribute{
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The path to the flow's manifest file, relative to the chosen storage.",
 			},
 			"job_variables": schema.StringAttribute{
-				Description: "Overrides for the flow's infrastructure configuration.",
-				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Description: "Overrides for the flow's infrastructure configuration.",
 			},
 			"work_queue_name": schema.StringAttribute{
-				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The work queue for the deployment. If no work queue is set, work will not be scheduled.",
 			},
 			"work_pool_name": schema.StringAttribute{
-				Description: "The name of the deployment's work pool.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The name of the deployment's work pool.",
 			},
 			"description": schema.StringAttribute{
-				Description: "A description for the deployment.",
-				Optional:    true,
 				Computed:    true,
+				Description: "A description for the deployment.",
 			},
 			"path": schema.StringAttribute{
-				Description: "The path to the working directory for the workflow, relative to remote storage or an absolute path.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The path to the working directory for the workflow, relative to remote storage or an absolute path.",
 			},
 			"version": schema.StringAttribute{
-				Description: "An optional version for the deployment.",
-				Optional:    true,
 				Computed:    true,
+				Description: "An optional version for the deployment.",
 			},
 			"entrypoint": schema.StringAttribute{
-				Description: "The path to the entrypoint for the workflow, relative to the path.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The path to the entrypoint for the workflow, relative to the path.",
 			},
 			"tags": schema.ListAttribute{
+				Computed:    true,
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
 			},
 			"parameters": schema.StringAttribute{
-				Description: "Parameters for flow runs scheduled by the deployment.",
-				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Description: "Parameters for flow runs scheduled by the deployment.",
 			},
 			"parameter_openapi_schema": schema.StringAttribute{
-				Description: "The parameter schema of the flow, including defaults.",
-				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Description: "The parameter schema of the flow, including defaults.",
 			},
 			"concurrency_limit": schema.Int64Attribute{
-				Description: "The deployment's concurrency limit.",
-				Optional:    true,
 				Computed:    true,
+				Description: "The deployment's concurrency limit.",
 			},
 			"concurrency_options": schema.SingleNestedAttribute{
-				Description: "Concurrency options for the deployment.",
-				Optional:    true,
 				Computed:    true,
+				Description: "Concurrency options for the deployment.",
 				Attributes: map[string]schema.Attribute{
 					"collision_strategy": schema.StringAttribute{
+						Computed:    true,
 						Description: "Enumeration of concurrency collision strategies.",
-						Required:    true,
 					},
 				},
 			},
@@ -188,45 +174,44 @@ The Deployment ID takes precedence over deployment name.
 			// based on the pull step type, which we'll validate in the resource layer.
 			"pull_steps": schema.ListNestedAttribute{
 				Description: "Pull steps to prepare flows for a deployment run.",
-				Optional:    true,
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"type": schema.StringAttribute{
+							Computed:    true,
 							Description: "The type of pull step",
-							Required:    true,
 						},
 						"credentials": schema.StringAttribute{
+							Computed:    true,
 							Description: "Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.",
-							Optional:    true,
 						},
 						"requires": schema.StringAttribute{
+							Computed:    true,
 							Description: "A list of Python package dependencies.",
-							Optional:    true,
 						},
 						"directory": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
-							Optional:    true,
 						},
 						"repository": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'git_clone') The URL of the repository to clone.",
-							Optional:    true,
 						},
 						"branch": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'git_clone') The branch to clone. If not provided, the default branch is used.",
-							Optional:    true,
 						},
 						"access_token": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
-							Optional:    true,
 						},
 						"bucket": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
-							Optional:    true,
 						},
 						"folder": schema.StringAttribute{
+							Computed:    true,
 							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
-							Optional:    true,
 						},
 					},
 				},
