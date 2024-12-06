@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -179,8 +178,6 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	tflog.Info(ctx, fmt.Sprintf("planID: %+v", plan.ID.ValueString()))
 
 	automationID, err := uuid.Parse(plan.ID.ValueString())
 	if err != nil {
@@ -494,9 +491,6 @@ func mapAutomationTerraformToAPI(ctx context.Context, apiAutomation *api.Automat
 	apiAutomation.Name = tfModel.Name.ValueString()
 	apiAutomation.Description = tfModel.Description.ValueString()
 	apiAutomation.Enabled = tfModel.Enabled.ValueBool()
-
-	tflog.Info(ctx, fmt.Sprintf("apiAutomation.Enabled: %+v", apiAutomation.Enabled))
-	tflog.Info(ctx, fmt.Sprintf("tfModel.Enabled: %+v", tfModel.Enabled.ValueBool()))
 
 	// Map actions
 	actions, diagnostics := mapActionsTerraformToAPI(tfModel.Actions)
