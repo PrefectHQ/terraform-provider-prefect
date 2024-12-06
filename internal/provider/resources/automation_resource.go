@@ -79,7 +79,7 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 	var plan AutomationResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -494,6 +494,9 @@ func mapAutomationTerraformToAPI(ctx context.Context, apiAutomation *api.Automat
 	apiAutomation.Name = tfModel.Name.ValueString()
 	apiAutomation.Description = tfModel.Description.ValueString()
 	apiAutomation.Enabled = tfModel.Enabled.ValueBool()
+
+	tflog.Info(ctx, fmt.Sprintf("apiAutomation.Enabled: %+v", apiAutomation.Enabled))
+	tflog.Info(ctx, fmt.Sprintf("tfModel.Enabled: %+v", tfModel.Enabled.ValueBool()))
 
 	// Map actions
 	actions, diagnostics := mapActionsTerraformToAPI(tfModel.Actions)

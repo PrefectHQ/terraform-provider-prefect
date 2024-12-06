@@ -527,7 +527,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	var plan DeploymentResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
