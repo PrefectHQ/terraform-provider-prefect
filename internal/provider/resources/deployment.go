@@ -476,8 +476,9 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 	return tfPullStepsModel, diags
 }
 
-// copyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
-func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
+// CopyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
+// The function is exported for reuse in the Deployment datasource.
+func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(deployment.ID.String())
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
@@ -609,7 +610,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &plan)...)
+	resp.Diagnostics.Append(CopyDeploymentToModel(ctx, deployment, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -666,7 +667,7 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
+	resp.Diagnostics.Append(CopyDeploymentToModel(ctx, deployment, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -791,7 +792,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	resp.Diagnostics.Append(copyDeploymentToModel(ctx, deployment, &model)...)
+	resp.Diagnostics.Append(CopyDeploymentToModel(ctx, deployment, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
