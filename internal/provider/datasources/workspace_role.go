@@ -23,9 +23,7 @@ type WorkspaceRoleDataSource struct {
 // WorkspaceRoleDataSourceModel defines the Terraform data source model
 // the TF data source configuration will be unmarshalled into this struct.
 type WorkspaceRoleDataSourceModel struct {
-	ID      customtypes.UUIDValue      `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	helpers.BaseModel
 
 	Name            types.String          `tfsdk:"name"`
 	Description     types.String          `tfsdk:"description"`
