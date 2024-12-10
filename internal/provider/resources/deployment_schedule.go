@@ -22,9 +22,7 @@ type DeploymentScheduleResource struct {
 }
 
 type DeploymentScheduleResourceModel struct {
-	ID      customtypes.UUIDValue      `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	helpers.BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
