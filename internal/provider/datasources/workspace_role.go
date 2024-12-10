@@ -23,7 +23,7 @@ type WorkspaceRoleDataSource struct {
 // WorkspaceRoleDataSourceModel defines the Terraform data source model
 // the TF data source configuration will be unmarshalled into this struct.
 type WorkspaceRoleDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	Name            types.String          `tfsdk:"name"`
 	Description     types.String          `tfsdk:"description"`

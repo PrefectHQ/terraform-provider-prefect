@@ -22,7 +22,7 @@ type ServiceAccountDataSource struct {
 
 // ServiceAccountDataSourceModel defines the Terraform data source model.
 type ServiceAccountDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	Name            types.String          `tfsdk:"name"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`

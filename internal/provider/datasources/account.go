@@ -22,7 +22,7 @@ type AccountDataSource struct {
 
 // AccountDataSourceModel defines the Terraform data source model.
 type AccountDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	Name         types.String `tfsdk:"name"`
 	Handle       types.String `tfsdk:"handle"`

@@ -23,7 +23,7 @@ type WorkspaceDataSource struct {
 
 // WorkspaceDataSourceModel defines the Terraform data source model.
 type WorkspaceDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 

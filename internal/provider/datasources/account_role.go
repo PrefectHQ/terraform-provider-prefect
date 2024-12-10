@@ -25,7 +25,7 @@ type AccountRoleDataSource struct {
 // AccountRoleDataSource defines the Terraform data source model
 // the TF data source configuration will be unmarshalled into this struct.
 type AccountRoleDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	Name         types.String          `tfsdk:"name"`
 	Permissions  types.List            `tfsdk:"permissions"`

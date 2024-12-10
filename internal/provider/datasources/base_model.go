@@ -1,4 +1,4 @@
-package helpers
+package datasources
 
 import "github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 

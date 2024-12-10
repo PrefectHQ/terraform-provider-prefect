@@ -27,7 +27,7 @@ type VariableDataSource struct {
 
 // VariableDataSourceModel defines the Terraform data source model.
 type VariableDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`

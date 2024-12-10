@@ -21,7 +21,7 @@ type TeamDataSource struct {
 }
 
 type TeamDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`

@@ -4,12 +4,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 // AutomationResourceModel defines the Terraform resource model.
 type AutomationDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`

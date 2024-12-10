@@ -26,7 +26,7 @@ type blockDataSource struct {
 
 // BlockDataSourceModel defines the Terraform data source model.
 type BlockDataSourceModel struct {
-	helpers.BaseModel
+	BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
