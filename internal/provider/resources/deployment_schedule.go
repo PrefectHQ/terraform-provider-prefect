@@ -223,6 +223,12 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	// The list of schedules returned by Create should only include the created schedule,
+	// not a list of all schedules on the deployment, so we can assume the first and only
+	// schedule in the list is the one we created.
+	//
+	// Additionally, we couldn't use getResourceByID here because of a race condition:
+	// we'd need an ID in the state to compare against, which doesn't exist yet.
 	copyScheduleModelToResourceModel(schedules[0], &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -258,7 +264,12 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	copyScheduleModelToResourceModel(schedules[0], &state)
+	schedule, err := getScheduleByID(state, schedules)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
+	}
+
+	copyScheduleModelToResourceModel(schedule, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -315,7 +326,12 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	copyScheduleModelToResourceModel(schedules[0], &plan)
+	schedule, err := getScheduleByID(plan, schedules)
+	if err != nil {
+		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
+	}
+
+	copyScheduleModelToResourceModel(schedule, &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -371,11 +387,28 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.RRule = types.StringValue(schedule.Schedule.RRule)
 }
 
+// validateSchedules ensures that the list of schedules is not empty.
+// It returns an error diagnostic if the list is empty.
+//
 //nolint:ireturn // required to return a diagnostic
 func validateSchedules(schedules []*api.DeploymentSchedule) diag.Diagnostic {
-	if len(schedules) != 1 {
-		return diag.NewErrorDiagnostic("Unsupported number of schedules", fmt.Sprintf("Expected 1 schedule, got %d. Only one schedule is supported.", len(schedules)))
+	if len(schedules) == 0 {
+		return diag.NewErrorDiagnostic(
+			"Schedule not found",
+			"No schedules found for the deployment",
+		)
 	}
 
 	return nil
+}
+
+// getScheduleByID gets a schedule by ID from a list of schedules.
+func getScheduleByID(model DeploymentScheduleResourceModel, schedules []*api.DeploymentSchedule) (*api.DeploymentSchedule, error) {
+	for i := range schedules {
+		if model.ID.ValueUUID() == schedules[i].ID {
+			return schedules[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("schedule with ID %s not found", model.ID.ValueUUID())
 }
