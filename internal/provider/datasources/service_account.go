@@ -22,9 +22,7 @@ type ServiceAccountDataSource struct {
 
 // ServiceAccountDataSourceModel defines the Terraform data source model.
 type ServiceAccountDataSourceModel struct {
-	ID      customtypes.UUIDValue      `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	BaseModel
 
 	Name            types.String          `tfsdk:"name"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`

@@ -43,11 +43,10 @@ type VariableResource struct {
 //
 // V0: Value is types.String.
 type VariableResourceModelV0 struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	BaseModel
+
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
@@ -56,11 +55,10 @@ type VariableResourceModelV0 struct {
 
 // V1: Value is types.Dynamic.
 type VariableResourceModelV1 struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	BaseModel
+
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	Name  types.String  `tfsdk:"name"`
 	Value types.Dynamic `tfsdk:"value"`
@@ -197,9 +195,11 @@ func (r *VariableResource) UpgradeState(_ context.Context) map[int64]resource.St
 				// that is tied to the old schema version, we need to copy
 				// the existing state into the new schema version.
 				upgradedStateData := VariableResourceModelV1{
-					ID:          priorStateData.ID,
-					Created:     priorStateData.Created,
-					Updated:     priorStateData.Updated,
+					BaseModel: BaseModel{
+						ID:      priorStateData.ID,
+						Created: priorStateData.Created,
+						Updated: priorStateData.Updated,
+					},
 					AccountID:   priorStateData.AccountID,
 					WorkspaceID: priorStateData.WorkspaceID,
 					Name:        priorStateData.Name,

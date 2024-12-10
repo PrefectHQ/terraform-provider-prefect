@@ -23,10 +23,9 @@ type WorkspaceDataSource struct {
 
 // WorkspaceDataSourceModel defines the Terraform data source model.
 type WorkspaceDataSourceModel struct {
-	ID        customtypes.UUIDValue      `tfsdk:"id"`
-	Created   customtypes.TimestampValue `tfsdk:"created"`
-	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
+	BaseModel
+
+	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Handle      types.String `tfsdk:"handle"`

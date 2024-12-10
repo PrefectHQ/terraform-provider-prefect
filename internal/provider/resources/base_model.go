@@ -1,11 +1,14 @@
-package helpers
+package resources
 
-import "github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+import (
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+)
 
 // BaseModel is embedded in all other types and defines fields
 // common to all Prefect data models.
 type BaseModel struct {
-	ID      customtypes.UUIDValue      `tfsdk:"id"`
+	ID      types.String               `tfsdk:"id"`
 	Created customtypes.TimestampValue `tfsdk:"created"`
 	Updated customtypes.TimestampValue `tfsdk:"updated"`
 }

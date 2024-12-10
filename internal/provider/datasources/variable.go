@@ -27,11 +27,10 @@ type VariableDataSource struct {
 
 // VariableDataSourceModel defines the Terraform data source model.
 type VariableDataSourceModel struct {
-	ID          customtypes.UUIDValue      `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	BaseModel
+
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	Name  types.String  `tfsdk:"name"`
 	Value types.Dynamic `tfsdk:"value"`

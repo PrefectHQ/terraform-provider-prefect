@@ -34,11 +34,10 @@ type FlowResource struct {
 
 // FlowResourceModel defines the Terraform resource model.
 type FlowResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	BaseModel
+
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 
 	Name types.String `tfsdk:"name"`
 	Tags types.List   `tfsdk:"tags"`

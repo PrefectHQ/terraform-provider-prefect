@@ -31,10 +31,9 @@ type WorkspaceResource struct {
 
 // WorkspaceResourceModel defines the Terraform resource model.
 type WorkspaceResourceModel struct {
-	ID        types.String               `tfsdk:"id"`
-	Created   customtypes.TimestampValue `tfsdk:"created"`
-	Updated   customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID customtypes.UUIDValue      `tfsdk:"account_id"`
+	BaseModel
+
+	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Handle      types.String `tfsdk:"handle"`
