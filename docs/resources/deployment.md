@@ -67,10 +67,10 @@ resource "prefect_deployment" "deployment" {
       directory = "/some/directory",
     },
     {
-      type         = "git_clone"
-      repository   = "https://github.com/some/repo"
-      branch       = "main"
-      access_token = "123abc"
+      type               = "git_clone"
+      repository         = "https://github.com/some/repo"
+      branch             = "main"
+      access_token       = "123abc"
       include_submodules = true
     },
     {
