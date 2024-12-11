@@ -117,6 +117,12 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   if .AccessToken }}
 			access_token = "{{.AccessToken}}"
 			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
 			{{- end }}
 
 			{{- with .PullStepPullFromAzureBlobStorage }}
@@ -127,6 +133,12 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   if .Folder }}
 			folder = "{{.Folder}}"
 			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
 			{{- end }}
 
 			{{- with .PullStepPullFromGCS }}
@@ -137,6 +149,12 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   if .Folder }}
 			folder = "{{.Folder}}"
 			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
 			{{- end }}
 
 			{{- with .PullStepPullFromS3 }}
@@ -147,6 +165,12 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   if .Folder }}
 			folder = "{{.Folder}}"
 			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
 			{{- end }}
 		},
 		{{end}}
@@ -262,6 +286,10 @@ func TestAccResource_deployment(t *testing.T) {
 				PullStepPullFromS3: &api.PullStepPullFrom{
 					Bucket: ptr.To("some-bucket"),
 					Folder: ptr.To("some-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("some-credentials"),
+						Requires:    ptr.To("prefect-aws>=0.3.4"),
+					},
 				},
 			},
 		},
