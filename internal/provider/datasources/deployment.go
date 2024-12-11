@@ -331,9 +331,11 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// type because struct embedding does not automatically make the embedding
 	// struct convertible to the embedded type.
 	compatibleModel := &resources.DeploymentResourceModel{
-		ID:      model.ID,
-		Created: model.Created,
-		Updated: model.Updated,
+		BaseModel: resources.BaseModel{
+			ID:      model.ID,
+			Created: model.Created,
+			Updated: model.Updated,
+		},
 
 		AccountID:              model.AccountID,
 		ConcurrencyLimit:       model.ConcurrencyLimit,
