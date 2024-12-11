@@ -127,6 +127,9 @@ type PullStepGitClone struct {
 
 	// Access token for the repository.
 	AccessToken *string `json:"access_token,omitempty"`
+
+	// IncludeSubmodules determines whether to include submodules when cloning the repository.
+	IncludeSubmodules *bool `json:"include_submodules,omitempty"`
 }
 
 // PullStepSetWorkingDirectory is a representation of a pull step that sets the working directory.

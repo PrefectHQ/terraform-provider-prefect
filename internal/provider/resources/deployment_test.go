@@ -117,6 +117,9 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   if .AccessToken }}
 			access_token = "{{.AccessToken}}"
 			{{-   end }}
+			{{-   if .IncludeSubmodules }}
+			include_submodules = {{.IncludeSubmodules}}
+			{{-   end }}
 			{{-   if .Credentials }}
 			credentials = "{{.Credentials}}"
 			{{-   end }}
@@ -277,9 +280,10 @@ func TestAccResource_deployment(t *testing.T) {
 			},
 			{
 				PullStepGitClone: &api.PullStepGitClone{
-					Repository:  ptr.To("https://github.com/prefecthq/prefect"),
-					Branch:      ptr.To("main"),
-					AccessToken: ptr.To("123abc"),
+					Repository:        ptr.To("https://github.com/prefecthq/prefect"),
+					Branch:            ptr.To("main"),
+					AccessToken:       ptr.To("123abc"),
+					IncludeSubmodules: ptr.To(true),
 				},
 			},
 			{
@@ -432,7 +436,7 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		}
 
 		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
-			return fmt.Errorf("Expected pull steps to be %v, got %v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
+			return fmt.Errorf("Expected pull steps to be: \n%v\n got \n%v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
 		}
 
 		return nil

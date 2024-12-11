@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/boolvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -112,6 +113,9 @@ type PullStepModel struct {
 
 	// Access token for the repository.
 	AccessToken types.String `tfsdk:"access_token"`
+
+	// IncludeSubmodules is whether to include submodules in the clone.
+	IncludeSubmodules types.Bool `tfsdk:"include_submodules"`
 
 	//
 	// Fields for pull_from_{cloud}
@@ -351,15 +355,16 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Default: listdefault.StaticValue(basetypes.NewListValueMust(
 					types.ObjectType{
 						AttrTypes: map[string]attr.Type{
-							"type":         types.StringType,
-							"credentials":  types.StringType,
-							"requires":     types.StringType,
-							"directory":    types.StringType,
-							"repository":   types.StringType,
-							"branch":       types.StringType,
-							"access_token": types.StringType,
-							"bucket":       types.StringType,
-							"folder":       types.StringType,
+							"type":               types.StringType,
+							"credentials":        types.StringType,
+							"requires":           types.StringType,
+							"directory":          types.StringType,
+							"repository":         types.StringType,
+							"branch":             types.StringType,
+							"access_token":       types.StringType,
+							"bucket":             types.StringType,
+							"folder":             types.StringType,
+							"include_submodules": types.BoolType,
 						},
 					},
 					[]attr.Value{},
@@ -390,32 +395,39 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 						"directory": schema.StringAttribute{
 							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonDirectoryAttributes),
+							Validators: []validator.String{
+								stringvalidator.ConflictsWith(pathExpressionsForAttributes(nonDirectoryAttributes)...),
+							},
 						},
 						"repository": schema.StringAttribute{
 							Description: "(For type 'git_clone') The URL of the repository to clone.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+							Validators:  stringConflictsWithValidators(nonGitCloneAttributes),
 						},
 						"branch": schema.StringAttribute{
 							Description: "(For type 'git_clone') The branch to clone. If not provided, the default branch is used.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+							Validators:  stringConflictsWithValidators(nonGitCloneAttributes),
 						},
 						"access_token": schema.StringAttribute{
 							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonGitCloneAttributes),
+							Validators:  stringConflictsWithValidators(nonGitCloneAttributes),
+						},
+						"include_submodules": schema.BoolAttribute{
+							Description: "(For type 'git_clone') Whether to include submodules when cloning the repository.",
+							Optional:    true,
+							Validators:  boolConflictsWithValidators(nonGitCloneAttributes),
 						},
 						"bucket": schema.StringAttribute{
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
+							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
 						"folder": schema.StringAttribute{
 							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
 							Optional:    true,
-							Validators:  validatorsForConflictingAttributes(nonPullFromAttributes),
+							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
 					},
 				},
@@ -449,10 +461,11 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 		switch tfPullStep.Type.ValueString() {
 		case "git_clone":
 			apiPullStep.PullStepGitClone = &api.PullStepGitClone{
-				PullStepCommon: pullStepCommon,
-				Repository:     tfPullStep.Repository.ValueStringPointer(),
-				Branch:         tfPullStep.Branch.ValueStringPointer(),
-				AccessToken:    tfPullStep.AccessToken.ValueStringPointer(),
+				PullStepCommon:    pullStepCommon,
+				Repository:        tfPullStep.Repository.ValueStringPointer(),
+				Branch:            tfPullStep.Branch.ValueStringPointer(),
+				AccessToken:       tfPullStep.AccessToken.ValueStringPointer(),
+				IncludeSubmodules: tfPullStep.IncludeSubmodules.ValueBoolPointer(),
 			}
 
 		case "set_working_directory":
@@ -492,6 +505,7 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 			pullStepModel.Repository = types.StringPointerValue(pullStep.PullStepGitClone.Repository)
 			pullStepModel.Branch = types.StringPointerValue(pullStep.PullStepGitClone.Branch)
 			pullStepModel.AccessToken = types.StringPointerValue(pullStep.PullStepGitClone.AccessToken)
+			pullStepModel.IncludeSubmodules = types.BoolPointerValue(pullStep.PullStepGitClone.IncludeSubmodules)
 
 			// common fields
 			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepGitClone.Credentials)
@@ -982,7 +996,7 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 	}
 }
 
-// validatorsForConflictingAttributes provides a list of string validators
+// pathExpressionsForAttributes provides a list of path expressions
 // used in a ConflictsWith validator for a specific attribute.
 //
 // This approach is used in lieu of a ConfigValidators method because we take
@@ -993,15 +1007,29 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 // be more concise when defining the conflicting attributes. Defining them in
 // ConfigValidators instead would be much more verbose, and disconnected from
 // the source of truth.
-func validatorsForConflictingAttributes(attributes []string) []validator.String {
+func pathExpressionsForAttributes(attributes []string) []path.Expression {
 	pathExpressions := make([]path.Expression, 0)
 
 	for _, key := range attributes {
 		pathExpressions = append(pathExpressions, path.MatchRelative().AtParent().AtName(key))
 	}
 
+	return pathExpressions
+}
+
+// stringConflictsWithValidators provides a list of string validators
+// for a specific attribute, allowing for more concise schema definitions.
+func stringConflictsWithValidators(attributes []string) []validator.String {
 	return []validator.String{
-		stringvalidator.ConflictsWith(pathExpressions...),
+		stringvalidator.ConflictsWith(pathExpressionsForAttributes(attributes)...),
+	}
+}
+
+// boolConflictsWithValidators provides a list of bool validators
+// for a specific attribute, allowing for more concise schema definitions.
+func boolConflictsWithValidators(attributes []string) []validator.Bool {
+	return []validator.Bool{
+		boolvalidator.ConflictsWith(pathExpressionsForAttributes(attributes)...),
 	}
 }
 
@@ -1014,6 +1042,7 @@ var (
 		"repository",
 		"branch",
 		"access_token",
+		"include_submodules",
 	}
 
 	pullFromAttributes = []string{
