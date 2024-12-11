@@ -432,16 +432,42 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 	for i := range tfPullSteps {
 		tfPullStep := tfPullSteps[i]
 
-		apiPullStep := api.PullStep{
-			Type:        tfPullStep.Type.ValueString(),
+		pullStepCommon := api.PullStepCommon{
 			Credentials: tfPullStep.Credentials.ValueStringPointer(),
 			Requires:    tfPullStep.Requires.ValueStringPointer(),
-			Directory:   tfPullStep.Directory.ValueStringPointer(),
-			Repository:  tfPullStep.Repository.ValueStringPointer(),
-			Branch:      tfPullStep.Branch.ValueStringPointer(),
-			AccessToken: tfPullStep.AccessToken.ValueStringPointer(),
-			Bucket:      tfPullStep.Bucket.ValueStringPointer(),
-			Folder:      tfPullStep.Folder.ValueStringPointer(),
+		}
+
+		// Steps that pull from remote storage have the same fields.
+		// Define the struct here for reuse in each of those cases.
+		pullStepPullFrom := api.PullStepPullFrom{
+			PullStepCommon: pullStepCommon,
+			Bucket:         tfPullStep.Bucket.ValueStringPointer(),
+			Folder:         tfPullStep.Folder.ValueStringPointer(),
+		}
+
+		var apiPullStep api.PullStep
+		switch tfPullStep.Type.ValueString() {
+		case "git_clone":
+			apiPullStep.PullStepGitClone = &api.PullStepGitClone{
+				PullStepCommon: pullStepCommon,
+				Repository:     tfPullStep.Repository.ValueStringPointer(),
+				Branch:         tfPullStep.Branch.ValueStringPointer(),
+				AccessToken:    tfPullStep.AccessToken.ValueStringPointer(),
+			}
+
+		case "set_working_directory":
+			apiPullStep.PullStepSetWorkingDirectory = &api.PullStepSetWorkingDirectory{
+				Directory: tfPullStep.Directory.ValueStringPointer(),
+			}
+
+		case "pull_from_azure_blob_storage":
+			apiPullStep.PullStepPullFromAzureBlobStorage = &pullStepPullFrom
+
+		case "pull_from_gcs":
+			apiPullStep.PullStepPullFromGCS = &pullStepPullFrom
+
+		case "pull_from_s3":
+			apiPullStep.PullStepPullFromS3 = &pullStepPullFrom
 		}
 
 		pullSteps = append(pullSteps, apiPullStep)
@@ -458,16 +484,59 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 	for i := range pullSteps {
 		pullStep := pullSteps[i]
 
-		pullStepModel := PullStepModel{
-			Type:        types.StringValue(pullStep.Type),
-			Credentials: types.StringPointerValue(pullStep.Credentials),
-			Requires:    types.StringPointerValue(pullStep.Requires),
-			Directory:   types.StringPointerValue(pullStep.Directory),
-			Repository:  types.StringPointerValue(pullStep.Repository),
-			Branch:      types.StringPointerValue(pullStep.Branch),
-			AccessToken: types.StringPointerValue(pullStep.AccessToken),
-			Bucket:      types.StringPointerValue(pullStep.Bucket),
-			Folder:      types.StringPointerValue(pullStep.Folder),
+		var pullStepModel PullStepModel
+
+		// PullStepGitClone
+		if pullStep.PullStepGitClone != nil {
+			pullStepModel.Type = types.StringValue("git_clone")
+			pullStepModel.Repository = types.StringPointerValue(pullStep.PullStepGitClone.Repository)
+			pullStepModel.Branch = types.StringPointerValue(pullStep.PullStepGitClone.Branch)
+			pullStepModel.AccessToken = types.StringPointerValue(pullStep.PullStepGitClone.AccessToken)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepGitClone.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepGitClone.Requires)
+		}
+
+		// PullStepSetWorkingDirectory
+		if pullStep.PullStepSetWorkingDirectory != nil {
+			pullStepModel.Type = types.StringValue("set_working_directory")
+			pullStepModel.Directory = types.StringValue(*pullStep.PullStepSetWorkingDirectory.Directory)
+
+			// common fields not used on this pull step type
+		}
+
+		// PullStepPullFromAzureBlobStorage
+		if pullStep.PullStepPullFromAzureBlobStorage != nil {
+			pullStepModel.Type = types.StringValue("pull_from_azure_blob_storage")
+			pullStepModel.Bucket = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Bucket)
+			pullStepModel.Folder = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Folder)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Requires)
+		}
+
+		// PullStepPullFromGCS
+		if pullStep.PullStepPullFromGCS != nil {
+			pullStepModel.Type = types.StringValue("pull_from_gcs")
+			pullStepModel.Bucket = types.StringPointerValue(pullStep.PullStepPullFromGCS.Bucket)
+			pullStepModel.Folder = types.StringPointerValue(pullStep.PullStepPullFromGCS.Folder)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepPullFromGCS.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepPullFromGCS.Requires)
+		}
+
+		// PullStepPullFromS3
+		if pullStep.PullStepPullFromS3 != nil {
+			pullStepModel.Type = types.StringValue("pull_from_s3")
+			pullStepModel.Bucket = types.StringPointerValue(pullStep.PullStepPullFromS3.Bucket)
+			pullStepModel.Folder = types.StringPointerValue(pullStep.PullStepPullFromS3.Folder)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepPullFromS3.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepPullFromS3.Requires)
 		}
 
 		tfPullStepsModel = append(tfPullStepsModel, pullStepModel)
