@@ -32,9 +32,7 @@ type AccountResource struct {
 
 // AccountResourceModel defines the Terraform resource model.
 type AccountResourceModel struct {
-	ID      types.String               `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	BaseModel
 
 	Name         types.String `tfsdk:"name"`
 	Handle       types.String `tfsdk:"handle"`

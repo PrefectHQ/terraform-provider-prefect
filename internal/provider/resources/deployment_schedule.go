@@ -22,7 +22,11 @@ type DeploymentScheduleResource struct {
 }
 
 type DeploymentScheduleResourceModel struct {
-	helpers.BaseModel
+	// This model uses UUIDValue for the ID type, while most other
+	// resources use types.String. This may eventually be made consistent.
+	ID      customtypes.UUIDValue      `tfsdk:"id"`
+	Created customtypes.TimestampValue `tfsdk:"created"`
+	Updated customtypes.TimestampValue `tfsdk:"updated"`
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`

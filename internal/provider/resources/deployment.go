@@ -43,9 +43,7 @@ type DeploymentResource struct {
 
 // DeploymentResourceModel defines the Terraform resource model.
 type DeploymentResourceModel struct {
-	ID      types.String               `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
