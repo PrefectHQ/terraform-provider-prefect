@@ -101,33 +101,80 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	pull_steps = [
-		{{range .PullSteps}}
+	  {{range .PullSteps}}
 	  {
-			type = "{{.Type}}"
-
-			{{- if .Directory }}
+			{{- with .PullStepSetWorkingDirectory }}
+			type = "set_working_directory"
 			directory = "{{.Directory}}"
-			{{- end }}
+			{{- end}}
 
-			{{- if .Repository }}
+			{{- with .PullStepGitClone }}
+			type = "git_clone"
 			repository = "{{.Repository}}"
-			{{- end }}
-
-			{{- if .Branch }}
+			{{-   if .Branch }}
 			branch = "{{.Branch}}"
-			{{- end }}
-
-			{{- if .AccessToken }}
+			{{-   end }}
+			{{-   if .AccessToken }}
 			access_token = "{{.AccessToken}}"
+			{{-   end }}
+			{{-   if .IncludeSubmodules }}
+			include_submodules = {{.IncludeSubmodules}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
 			{{- end }}
 
-			{{- if .Bucket }}
+			{{- with .PullStepPullFromAzureBlobStorage }}
+			type = "pull_from_azure_blob_storage"
+			{{-   if .Bucket }}
 			bucket = "{{.Bucket}}"
-			{{- end}}
-
-			{{- if .Folder }}
+			{{-   end}}
+			{{-   if .Folder }}
 			folder = "{{.Folder}}"
-			{{- end}}
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPullFromGCS }}
+			type = "pull_from_gcs"
+			{{-   if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{-   end}}
+			{{-   if .Folder }}
+			folder = "{{.Folder}}"
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPullFromS3 }}
+			type = "pull_from_s3"
+			{{-   if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{-   end}}
+			{{-   if .Folder }}
+			folder = "{{.Folder}}"
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
 		},
 		{{end}}
 	]
@@ -169,8 +216,9 @@ func TestAccResource_deployment(t *testing.T) {
 		Paused:                 false,
 		PullSteps: []api.PullStep{
 			{
-				Type:      "set_working_directory",
-				Directory: ptr.To("/some/directory"),
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/directory"),
+				},
 			},
 		},
 		Tags:                   []string{"test1", "test2"},
@@ -226,19 +274,27 @@ func TestAccResource_deployment(t *testing.T) {
 		// PullSteps require a replacement of the resource.
 		PullSteps: []api.PullStep{
 			{
-				Type:      "set_working_directory",
-				Directory: ptr.To("/some/directory"),
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/other/directory"),
+				},
 			},
 			{
-				Type:        "git_clone",
-				Repository:  ptr.To("https://github.com/prefecthq/prefect"),
-				Branch:      ptr.To("main"),
-				AccessToken: ptr.To("123abc"),
+				PullStepGitClone: &api.PullStepGitClone{
+					Repository:        ptr.To("https://github.com/prefecthq/prefect"),
+					Branch:            ptr.To("main"),
+					AccessToken:       ptr.To("123abc"),
+					IncludeSubmodules: ptr.To(true),
+				},
 			},
 			{
-				Type:   "pull_from_s3",
-				Bucket: ptr.To("some-bucket"),
-				Folder: ptr.To("some-folder"),
+				PullStepPullFromS3: &api.PullStepPullFrom{
+					Bucket: ptr.To("some-bucket"),
+					Folder: ptr.To("some-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("some-credentials"),
+						Requires:    ptr.To("prefect-aws>=0.3.4"),
+					},
+				},
 			},
 		},
 
@@ -380,7 +436,7 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		}
 
 		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
-			return fmt.Errorf("Expected pull steps to be %v, got %v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
+			return fmt.Errorf("Expected pull steps to be: \n%v\n got \n%v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
 		}
 
 		return nil

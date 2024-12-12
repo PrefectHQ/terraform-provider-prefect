@@ -67,10 +67,11 @@ resource "prefect_deployment" "deployment" {
       directory = "/some/directory",
     },
     {
-      type         = "git_clone"
-      repository   = "https://github.com/some/repo"
-      branch       = "main"
-      access_token = "123abc"
+      type               = "git_clone"
+      repository         = "https://github.com/some/repo"
+      branch             = "main"
+      access_token       = "123abc"
+      include_submodules = true
     },
     {
       type     = "pull_from_s3",
@@ -145,6 +146,7 @@ Optional:
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
 - `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
 - `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
 - `requires` (String) A list of Python package dependencies.
 

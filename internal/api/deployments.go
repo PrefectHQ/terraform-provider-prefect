@@ -105,34 +105,19 @@ type GlobalConcurrencyLimit struct {
 	// SlotDecayPerSecond int    `json:"slot_decay_per_second"`
 }
 
-// PullStep contains instructions for preparing your flows for a deployment run.
-type PullStep struct {
-	// Type is the type of pull step.
-	// One of:
-	// - set_working_directory
-	// - git_clone
-	// - pull_from_azure_blob_storage
-	// - pull_from_gcs
-	// - pull_from_s3
-	Type string `json:"type"`
-
+// PullStepCommon is a representation of the common fields for certain pull steps.
+type PullStepCommon struct {
 	// Credentials is the credentials to use for the pull step.
 	// Used on all PullStep types.
 	Credentials *string `json:"credentials,omitempty"`
 
 	// Requires is a list of Python package dependencies.
 	Requires *string `json:"requires,omitempty"`
+}
 
-	//
-	// Fields for set_working_directory
-	//
-
-	// The directory to set as the working directory.
-	Directory *string `json:"directory,omitempty"`
-
-	//
-	// Fields for git_clone
-	//
+// PullStepGitClone is a representation of a pull step that clones a git repository.
+type PullStepGitClone struct {
+	PullStepCommon
 
 	// The URL of the repository to clone.
 	Repository *string `json:"repository,omitempty"`
@@ -143,13 +128,32 @@ type PullStep struct {
 	// Access token for the repository.
 	AccessToken *string `json:"access_token,omitempty"`
 
-	//
-	// Fields for pull_from_{cloud}
-	//
+	// IncludeSubmodules determines whether to include submodules when cloning the repository.
+	IncludeSubmodules *bool `json:"include_submodules,omitempty"`
+}
+
+// PullStepSetWorkingDirectory is a representation of a pull step that sets the working directory.
+type PullStepSetWorkingDirectory struct {
+	// The directory to set as the working directory.
+	Directory *string `json:"directory,omitempty"`
+}
+
+// PullStepPullFrom is a representation of a pull step that pulls from a remote storage bucket.
+type PullStepPullFrom struct {
+	PullStepCommon
 
 	// The name of the bucket where files are stored.
 	Bucket *string `json:"bucket,omitempty"`
 
 	// The folder in the bucket where files are stored.
 	Folder *string `json:"folder,omitempty"`
+}
+
+// PullStep contains instructions for preparing your flows for a deployment run.
+type PullStep struct {
+	PullStepGitClone                 *PullStepGitClone            `json:"prefect.deployments.steps.git_clone,omitempty"`
+	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory `json:"prefect.deployments.steps.set_working_directory,omitempty"`
+	PullStepPullFromAzureBlobStorage *PullStepPullFrom            `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
+	PullStepPullFromGCS              *PullStepPullFrom            `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
+	PullStepPullFromS3               *PullStepPullFrom            `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
 }

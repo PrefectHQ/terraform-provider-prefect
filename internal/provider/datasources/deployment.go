@@ -205,6 +205,10 @@ The Deployment ID takes precedence over deployment name.
 							Computed:    true,
 							Description: "(For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.",
 						},
+						"include_submodules": schema.BoolAttribute{
+							Computed:    true,
+							Description: "(For type 'git_clone') Whether to include submodules when cloning the repository.",
+						},
 						"bucket": schema.StringAttribute{
 							Computed:    true,
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
