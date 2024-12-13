@@ -167,3 +167,18 @@ The `tfplugindocs` CLI will:
 3. Crawl and extract all named examples in `examples/**` + add those HCL configurations into the examples section of each `.md`
 
 **NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `make docs` and push any udpates to the working branch
+
+## Development considerations
+
+Here are some considerations to keep in mind when developing for the provider.
+
+### Prefect Cloud endpoints
+
+The provider can be configured to target a Prefect Cloud instance, or a self-hosted Prefect instance
+using the `endpoint` field.
+
+Prefect Cloud API endpoints often require a `workspace_id` to be configured, either on the provider or on the resource itself.
+A helper function named `validateCloudEndpoint` in the `internal/client` package can be used in each client creation method
+to validate that a `workspace_id` is configured, and provide an informative error if not.
+
+If the API endpoint does not require a `workspace_id`, such as `accounts`, you can omit this helper function.
