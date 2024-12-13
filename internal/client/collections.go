@@ -30,8 +30,8 @@ func (c *Client) Collections(accountID, workspaceID uuid.UUID) (api.CollectionsC
 		workspaceID = c.defaultWorkspaceID
 	}
 
-	if helpers.IsCloudEndpoint(c.endpoint) && (accountID == uuid.Nil || workspaceID == uuid.Nil) {
-		return nil, fmt.Errorf("prefect Cloud endpoints require an account_id and workspace_id to be set on either the provider or the resource")
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
 	}
 
 	return &CollectionsClient{

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 // getAccountScopedURL constructs a URL for an account-scoped route.
@@ -62,6 +63,16 @@ func setDefaultHeaders(request *http.Request, apiKey string) {
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
+}
+
+// validateCloudEndpoint validates that proper configuration is provided
+// when the endpoint points to Prefect Cloud.
+func validateCloudEndpoint(endpoint string, accountID, workspaceID uuid.UUID) error {
+	if helpers.IsCloudEndpoint(endpoint) && (accountID == uuid.Nil || workspaceID == uuid.Nil) {
+		return fmt.Errorf("prefect Cloud endpoints require an account_id and workspace_id to be set on either the provider or the resource")
+	}
+
+	return nil
 }
 
 // requestConfig is a configuration object for an HTTP request.
