@@ -26,11 +26,13 @@ func (c *Client) WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (ap
 	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
+
 	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
 	}
-	if accountID == uuid.Nil || workspaceID == uuid.Nil {
-		return nil, fmt.Errorf("both accountID and workspaceID must be defined")
+
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
 	}
 
 	return &WorkspaceAccessClient{
