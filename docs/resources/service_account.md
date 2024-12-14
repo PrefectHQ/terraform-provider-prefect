@@ -32,9 +32,42 @@ resource "time_rotating" "ninety_days" {
 }
 # Pass the time_rotating resource to the `api_key_expiration` attribute
 # in order to automate the rotation of the Service Account key
-resource "prefect_service_account" "example" {
+resource "prefect_service_account" "example_rotate_time_key" {
   name               = "my-service-account"
   api_key_expiration = time_rotating.ninety_days.rotation_rfc3339
+}
+
+# Optionally, rotate non-expiring Service Account keys
+# using the `api_key_keepers` attribute, which is an
+# arbitrary map of values that, if changed, will
+# trigger a key rotation (but not a re-creation of the Service Account)
+resource "prefect_service_account" "example_rotate_forever_key" {
+  name               = "my-service-account"
+  api_key_expiration = null # never expires
+  api_key_keepers = {
+    foo = "value-1"
+    bar = "value-2"
+  }
+}
+
+# Use the optional `old_key_expires_in_seconds`, which applies
+# a TTL to the old key when rotation takes place.
+# This is useful to ensure that your consumers don't experience
+# downtime when the new key is being rolled out.
+resource "prefect_service_account" "example_old_key_expires_later" {
+  name                       = "my-service-account"
+  old_key_expires_in_seconds = 300
+
+  # Remember that `old_key_expires_in_seconds` is only applied
+  # when a key rotation takes place, such as changing the
+  # `api_key_expiration` attribute
+  api_key_expiration = time_rotating.ninety_days.rotation_rfc3339
+
+  # or the `api_key_keepers` attribute
+  api_key_keepers = {
+    foo = "value-1"
+    bar = "value-2"
+  }
 }
 ```
 
@@ -50,6 +83,7 @@ resource "prefect_service_account" "example" {
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `account_role_name` (String) Account Role name of the service account (one of: Admin, Member, Owner)
 - `api_key_expiration` (String) Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.
+- `api_key_keepers` (Map of String) A map of values that, if changed, will trigger a key rotation (but not a re-creation of the Service Account)
 - `old_key_expires_in_seconds` (Number) Provide this field to set an expiration for the currently active api key. If not provided or provided Null, the current key will be deleted. If provided, it cannot be more than 48 hours (172800 seconds) in the future.
 
 ### Read-Only
