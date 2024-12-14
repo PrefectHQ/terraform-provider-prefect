@@ -31,7 +31,11 @@ terraform {
   }
 }
 
-provider "prefect" {}
+provider "prefect" {
+$([ -n "$PREFECT_API_URL" ] && echo '  endpoint = "'$PREFECT_API_URL'"')
+$([ -n "$PREFECT_API_KEY" ] && echo '  api_key = "'$PREFECT_API_KEY'"')
+$([ -n "$PREFECT_CLOUD_ACCOUNT_ID" ] && echo '  account_id = "'$PREFECT_CLOUD_ACCOUNT_ID'"')
+}
 
 resource "${resource}" "${name}" {}
 EOF
