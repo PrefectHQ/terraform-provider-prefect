@@ -35,6 +35,8 @@ type WebhookDataSourceModel struct {
 }
 
 // NewWebhookDataSource returns a new WebhookDataSource.
+//
+//nolint:ireturn // required by Terraform API
 func NewWebhookDataSource() datasource.DataSource {
 	return &WebhookDataSource{}
 }
@@ -154,25 +156,20 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	var operation string
 	if !model.ID.IsNull() {
 		operation = "get"
-		webhook, err = client.Get(ctx, model.AccountID.ValueString(), model.WorkspaceID.ValueString(), model.ID.ValueString())
+		webhook, err = client.Get(ctx, model.ID.ValueString())
 	} else if !model.Name.IsNull() {
 		var webhooks []*api.Webhook
 		operation = "list"
-		webhooks, err = client.List(ctx, model.AccountID.ValueString(), model.WorkspaceID.ValueString())
+		webhooks, err = client.List(ctx, []string{model.Name.ValueString()})
 
 		// The error from the API call should take precedence
-		// followed by this custom error if a specific webhook is not returned
-		if err == nil {
-			for _, wh := range webhooks {
-				if wh.Name == model.Name.ValueString() {
-					webhook = wh
-					break
-				}
-			}
+		// followed by this custom error if a specific service account is not returned
+		if err == nil && len(webhooks) != 1 {
+			err = fmt.Errorf("a Webhook with the name=%s could not be found", model.Name.ValueString())
+		}
 
-			if webhook == nil {
-				err = fmt.Errorf("a Webhook with the name=%s could not be found", model.Name.ValueString())
-			}
+		if len(webhooks) == 1 {
+			webhook = webhooks[0]
 		}
 	}
 

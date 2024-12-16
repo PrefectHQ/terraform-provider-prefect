@@ -1,171 +1,136 @@
 package client
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 )
 
-type webhooksClient struct {
+var _ = api.WebhooksClient(&WebhooksClient{})
+
+// WebhooksClient is a client for working with webhooks.
+type WebhooksClient struct {
 	hc          *http.Client
 	apiKey      string
 	routePrefix string
 }
 
+// Webhooks returns a WebhooksClient.
+//
+//nolint:ireturn // required to support PrefectClient mocking
 func (c *Client) Webhooks(accountID, workspaceID uuid.UUID) (api.WebhooksClient, error) {
-	if c.apiKey == "" {
-		return nil, fmt.Errorf("apiKey is not set")
+	if accountID == uuid.Nil {
+		accountID = c.defaultAccountID
 	}
 
-	if c.endpoint == "" {
-		return nil, fmt.Errorf("endpoint is not set")
+	if workspaceID == uuid.Nil {
+		workspaceID = c.defaultWorkspaceID
 	}
 
-	routePrefix := fmt.Sprintf("%s/api/accounts/%s/workspaces/%s/webhooks", c.endpoint, accountID, workspaceID)
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
+	}
 
-	return &webhooksClient{
+	return &WebhooksClient{
 		hc:          c.hc,
 		apiKey:      c.apiKey,
-		routePrefix: routePrefix,
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
 	}, nil
 }
 
-func (wc *webhooksClient) Create(ctx context.Context, accountID, workspaceID string, request api.WebhookCreateRequest) (*api.Webhook, error) {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
-		return nil, fmt.Errorf("failed to encode request data: %w", err)
+// Create creates a new webhook.
+func (c *WebhooksClient) Create(ctx context.Context, createPayload api.WebhookCreateRequest) (*api.Webhook, error) {
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         &createPayload,
+		successCodes: successCodesStatusCreated,
+		apiKey:       c.apiKey,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, wc.routePrefix+"/", &buf)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+	var webhook api.Webhook
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &webhook); err != nil {
+		return nil, fmt.Errorf("failed to create webhook: %w", err)
 	}
 
-	setDefaultHeaders(req, wc.apiKey)
-
-	resp, err := wc.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		errorBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
-
-	var response api.Webhook
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &response, nil
+	return &webhook, nil
 }
 
-func (wc *webhooksClient) Get(ctx context.Context, accountID, workspaceID, webhookID string) (*api.Webhook, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, wc.routePrefix+"/"+webhookID, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+// Get returns details for a webhook by ID.
+func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhook, error) {
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/" + webhookID,
+		successCodes: successCodesStatusOK,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
 	}
 
-	setDefaultHeaders(req, wc.apiKey)
-
-	resp, err := wc.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	var webhook api.Webhook
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &webhook); err != nil {
+		return nil, fmt.Errorf("failed to get webhook: %w", err)
 	}
 
-	var response api.Webhook
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
-	}
-
-	return &response, nil
+	return &webhook, nil
 }
 
-func (wc *webhooksClient) Update(ctx context.Context, accountID, workspaceID, webhookID string, request api.WebhookUpdateRequest) error {
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(&request); err != nil {
-		return fmt.Errorf("failed to encode request data: %w", err)
+// Update modifies an existing webhook by ID.
+func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePayload api.WebhookUpdateRequest) error {
+	cfg := requestConfig{
+		method:       http.MethodPatch,
+		url:          c.routePrefix + "/" + webhookID,
+		body:         &updatePayload,
+		successCodes: successCodesStatusOKOrNoContent,
+		apiKey:       c.apiKey,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, wc.routePrefix+"/"+webhookID, &buf)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
-	}
-
-	setDefaultHeaders(req, wc.apiKey)
-
-	resp, err := wc.hc.Do(req)
-	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to update webhook: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
-func (wc *webhooksClient) Delete(ctx context.Context, accountID, workspaceID, webhookID string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, wc.routePrefix+"/"+webhookID, http.NoBody)
-	if err != nil {
-		return fmt.Errorf("error creating request: %w", err)
+// Delete removes a webhook by ID.
+func (c *WebhooksClient) Delete(ctx context.Context, webhookID string) error {
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          c.routePrefix + "/" + webhookID,
+		successCodes: successCodesStatusOKOrNoContent,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
 	}
 
-	setDefaultHeaders(req, wc.apiKey)
-
-	resp, err := wc.hc.Do(req)
+	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return fmt.Errorf("http error: %w", err)
+		return fmt.Errorf("failed to delete webhook: %w", err)
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
-	}
 
 	return nil
 }
 
-func (w *webhooksClient) List(ctx context.Context, accountID, workspaceID string) ([]*api.Webhook, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/", w.routePrefix), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
-	}
+// List returns a list of webhooks matching filter criteria.
+func (c *WebhooksClient) List(ctx context.Context, names []string) ([]*api.Webhook, error) {
+	filter := api.WebhookFilter{}
+	filter.Webhooks.Name.Any = names
 
-	setDefaultHeaders(req, w.apiKey)
-
-	resp, err := w.hc.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("http error: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorBody, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("status code %s, error=%s", resp.Status, errorBody)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/",
+		body:         http.NoBody,
+		successCodes: successCodesStatusOK,
+		apiKey:       c.apiKey,
 	}
 
 	var webhooks []*api.Webhook
-	if err := json.NewDecoder(resp.Body).Decode(&webhooks); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &webhooks); err != nil {
+		return nil, fmt.Errorf("failed to list webhooks: %w", err)
 	}
 
 	return webhooks, nil

@@ -93,5 +93,3 @@ require (
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/prefecthq/terraform-provider-prefect => /Users/adeeb.rahman/Documents/dev/personal/terraform-provider-prefect

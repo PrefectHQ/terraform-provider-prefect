@@ -39,6 +39,8 @@ type WebhookResourceModel struct {
 }
 
 // NewWebhookResource returns a new WebhookResource.
+//
+//nolint:ireturn // required by Terraform API
 func NewWebhookResource() resource.Resource {
 	return &WebhookResource{}
 }
@@ -156,7 +158,7 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		Template:    plan.Template.ValueString(),
 	}
 
-	webhook, err := webhookClient.Create(ctx, plan.AccountID.ValueString(), plan.WorkspaceID.ValueString(), createReq)
+	webhook, err := webhookClient.Create(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
 
@@ -198,12 +200,13 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 
 	var webhook *api.Webhook
 	if !state.ID.IsNull() {
-		webhook, err = client.Get(ctx, state.AccountID.ValueString(), state.WorkspaceID.ValueString(), state.ID.ValueString())
+		webhook, err = client.Get(ctx, state.ID.ValueString())
 	} else {
 		resp.Diagnostics.AddError(
 			"ID is unset",
 			"Webhook ID must be set to retrieve the resource.",
 		)
+
 		return
 	}
 
@@ -246,14 +249,14 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		Template:    plan.Template.ValueString(),
 	}
 
-	err = client.Update(ctx, plan.AccountID.ValueString(), plan.WorkspaceID.ValueString(), state.ID.ValueString(), updateReq)
+	err = client.Update(ctx, state.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "update", err))
 
 		return
 	}
 
-	webhook, err := client.Get(ctx, plan.AccountID.ValueString(), plan.WorkspaceID.ValueString(), state.ID.ValueString())
+	webhook, err := client.Get(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
@@ -284,7 +287,7 @@ func (r *WebhookResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	err = client.Delete(ctx, state.AccountID.ValueString(), state.WorkspaceID.ValueString(), state.ID.ValueString())
+	err = client.Delete(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "delete", err))
 
