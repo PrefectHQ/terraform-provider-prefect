@@ -173,6 +173,8 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	// Extract the endpoint from the provider configuration.
+	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
 	copyWebhookResponseToModel(webhook, &plan)
 	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
@@ -225,6 +227,8 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	// Extract the endpoint from the provider configuration.
+	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
 	copyWebhookResponseToModel(webhook, &state)
 	state.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
@@ -273,6 +277,8 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	// Extract the endpoint from the provider configuration.
+	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
 	copyWebhookResponseToModel(webhook, &plan)
 	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
