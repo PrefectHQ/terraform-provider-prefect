@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -36,7 +37,7 @@ type WebhookResourceModel struct {
 	Template    types.String               `tfsdk:"template"`
 	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	Slug        types.String               `tfsdk:"slug"`
+	Endpoint    types.String               `tfsdk:"endpoint"`
 }
 
 // NewWebhookResource returns a new WebhookResource.
@@ -110,18 +111,20 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
+				Computed:    true,
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"workspace_id": schema.StringAttribute{
+				Computed:    true,
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 			},
-			"slug": schema.StringAttribute{
+			"endpoint": schema.StringAttribute{
 				Computed:    true,
-				Description: "Slug of the webhook",
+				Description: "The fully-formed webhook endpoint, eg. https://api.prefect.cloud/SLUG",
 			},
 		},
 	}
@@ -138,7 +141,6 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Template = types.StringValue(webhook.Template)
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
-	tfModel.Slug = types.StringValue(webhook.Slug)
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -172,6 +174,7 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	copyWebhookResponseToModel(webhook, &plan)
+	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -223,6 +226,7 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	copyWebhookResponseToModel(webhook, &state)
+	state.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -270,6 +274,7 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	copyWebhookResponseToModel(webhook, &plan)
+	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/%s", webhook.Slug))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
