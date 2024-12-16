@@ -8,11 +8,10 @@ import (
 
 // AutomationResourceModel defines the Terraform resource model.
 type AutomationResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	BaseModel
+
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`

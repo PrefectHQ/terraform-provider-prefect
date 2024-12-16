@@ -3,12 +3,12 @@
 page_title: "prefect_deployment_schedule Resource - prefect"
 subcategory: ""
 description: |-
-  The resource deployment_schedule represents a schedule for a deployment. Note that only one schedule is supported per deployment. Support for multiple schedules is planned.
+  The resource deployment_schedule represents a schedule for a deployment.
 ---
 
 # prefect_deployment_schedule (Resource)
 
-The resource `deployment_schedule` represents a schedule for a deployment. Note that only one schedule is supported per deployment. Support for multiple schedules is planned.
+The resource `deployment_schedule` represents a schedule for a deployment.
 
 ## Example Usage
 
@@ -31,7 +31,7 @@ resource "prefect_deployment" "test" {
   flow_id      = prefect_flow.test.id
 }
 
-resource "prefect_deployment_schedule" "test" {
+resource "prefect_deployment_schedule" "test_interval" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
@@ -40,15 +40,35 @@ resource "prefect_deployment_schedule" "test" {
   max_active_runs = 10
   timezone        = "America/New_York"
 
-  # Option: Interval schedule
+  # Interval-specific fields
   interval    = 30
   anchor_date = "2024-01-01T00:00:00Z"
+}
 
-  # Option: Cron schedule
+resource "prefect_deployment_schedule" "test_cron" {
+  workspace_id  = data.prefect_workspace.test.id
+  deployment_id = prefect_deployment.test.id
+
+  active          = true
+  catchup         = false
+  max_active_runs = 10
+  timezone        = "America/New_York"
+
+  # Cron-specific fields
   cron   = "0 0 * * *"
   day_or = true
+}
 
-  # Option: RRule schedule
+resource "prefect_deployment_schedule" "test_rrule" {
+  workspace_id  = data.prefect_workspace.test.id
+  deployment_id = prefect_deployment.test.id
+
+  active          = true
+  catchup         = false
+  max_active_runs = 10
+  timezone        = "America/New_York"
+
+  # RRule-specific fields
   rrule = "FREQ=DAILY;INTERVAL=1"
 }
 ```

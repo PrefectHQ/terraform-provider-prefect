@@ -26,8 +26,13 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 	if accountID == uuid.Nil {
 		accountID = c.defaultAccountID
 	}
+
 	if workspaceID == uuid.Nil {
 		workspaceID = c.defaultWorkspaceID
+	}
+
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
 	}
 
 	return &VariablesClient{

@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -38,9 +39,7 @@ type ServiceAccountResource struct {
 }
 
 type ServiceAccountResourceModel struct {
-	ID      types.String               `tfsdk:"id"`
-	Created customtypes.TimestampValue `tfsdk:"created"`
-	Updated customtypes.TimestampValue `tfsdk:"updated"`
+	BaseModel
 
 	Name            types.String          `tfsdk:"name"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
@@ -51,6 +50,7 @@ type ServiceAccountResourceModel struct {
 	APIKeyName             types.String               `tfsdk:"api_key_name"`
 	APIKeyCreated          customtypes.TimestampValue `tfsdk:"api_key_created"`
 	APIKeyExpiration       customtypes.TimestampValue `tfsdk:"api_key_expiration"`
+	APIKeyKeepers          types.Map                  `tfsdk:"api_key_keepers"`
 	OldKeyExpiresInSeconds types.Int32                `tfsdk:"old_key_expires_in_seconds"`
 	APIKey                 types.String               `tfsdk:"api_key"`
 }
@@ -159,6 +159,11 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of the API Key expiration (RFC3339). If left as null, the API Key will not expire. Modify this attribute to force a key rotation.",
+			},
+			"api_key_keepers": schema.MapAttribute{
+				Optional:    true,
+				Description: "A map of values that, if changed, will trigger a key rotation (but not a re-creation of the Service Account)",
+				ElementType: types.StringType,
 			},
 			"old_key_expires_in_seconds": schema.Int32Attribute{
 				Optional:    true,
@@ -427,13 +432,19 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	// Practitioners can rotate their Service Account API Key my modifying the
+	// Practitioners can rotate their Service Account API Key by modifying the
 	// `api_key_expiration` attribute. If the provided value is different than the current
 	// value, we'll call the RotateKey method on the client, which returns the
 	// ServiceAccount object with the new API Key value included in the response.
 	providedExpiration := plan.APIKeyExpiration.ValueTimePointer()
 	currentExpiration := serviceAccount.APIKey.Expiration
-	if !ArePointerTimesEqual(providedExpiration, currentExpiration) {
+
+	// Optionally, practitioners can rotate the key by modifying the `api_key_keepers` map.
+	// This is useful for rotating keys that are not expiring.
+	currentKeepers := state.APIKeyKeepers.Elements()
+	providedKeepers := plan.APIKeyKeepers.Elements()
+
+	if !ArePointerTimesEqual(providedExpiration, currentExpiration) || !maps.Equal(currentKeepers, providedKeepers) {
 		serviceAccount, err = client.RotateKey(ctx, plan.ID.ValueString(), api.ServiceAccountRotateKeyRequest{
 			APIKeyExpiration:       providedExpiration,
 			OldKeyExpiresInSeconds: plan.OldKeyExpiresInSeconds.ValueInt32(),

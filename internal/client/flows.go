@@ -31,6 +31,10 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 		workspaceID = c.defaultWorkspaceID
 	}
 
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
+	}
+
 	return &FlowsClient{
 		hc:          c.hc,
 		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),

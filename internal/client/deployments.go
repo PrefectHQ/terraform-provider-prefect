@@ -31,6 +31,10 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 		workspaceID = c.defaultWorkspaceID
 	}
 
+	if err := validateCloudEndpoint(c.endpoint, accountID, workspaceID); err != nil {
+		return nil, err
+	}
+
 	return &DeploymentsClient{
 		hc:          c.hc,
 		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),

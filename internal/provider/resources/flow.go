@@ -34,11 +34,10 @@ type FlowResource struct {
 
 // FlowResourceModel defines the Terraform resource model.
 type FlowResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
+	BaseModel
+
+	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
+	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 
 	Name types.String `tfsdk:"name"`
 	Tags types.List   `tfsdk:"tags"`
@@ -156,7 +155,7 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 	var plan FlowResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
-	resp.Diagnostics.Append(req.Config.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

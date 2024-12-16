@@ -59,8 +59,27 @@ resource "prefect_deployment" "deployment" {
       "some-parameter2" : { "type" : "string" }
     }
   })
-  path                = "./foo/bar"
-  paused              = false
+  path   = "./foo/bar"
+  paused = false
+  pull_steps = [
+    {
+      type      = "set_working_directory",
+      directory = "/some/directory",
+    },
+    {
+      type               = "git_clone"
+      repository         = "https://github.com/some/repo"
+      branch             = "main"
+      access_token       = "123abc"
+      include_submodules = true
+    },
+    {
+      type     = "pull_from_s3",
+      requires = "prefect-aws>=0.3.4"
+      bucket   = "some-bucket",
+      folder   = "some-folder",
+    }
+  ]
   storage_document_id = prefect_block.test_gh_repository.id
   version             = "v1.1.1"
   work_pool_name      = "some-testing-pool"
@@ -79,6 +98,8 @@ resource "prefect_deployment" "deployment" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `concurrency_limit` (Number) The deployment's concurrency limit.
+- `concurrency_options` (Attributes) Concurrency options for the deployment. (see [below for nested schema](#nestedatt--concurrency_options))
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
@@ -88,6 +109,7 @@ resource "prefect_deployment" "deployment" {
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
+- `pull_steps` (Attributes List) Pull steps to prepare flows for a deployment run. (see [below for nested schema](#nestedatt--pull_steps))
 - `storage_document_id` (String) ID of the associated storage document (UUID)
 - `tags` (List of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
@@ -100,6 +122,33 @@ resource "prefect_deployment" "deployment" {
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Workspace ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+<a id="nestedatt--concurrency_options"></a>
+### Nested Schema for `concurrency_options`
+
+Required:
+
+- `collision_strategy` (String) Enumeration of concurrency collision strategies.
+
+
+<a id="nestedatt--pull_steps"></a>
+### Nested Schema for `pull_steps`
+
+Required:
+
+- `type` (String) The type of pull step
+
+Optional:
+
+- `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
+- `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
+- `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
+- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
+- `repository` (String) (For type 'git_clone') The URL of the repository to clone.
+- `requires` (String) A list of Python package dependencies.
 
 ## Import
 

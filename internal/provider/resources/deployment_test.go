@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
+	"k8s.io/utils/ptr"
 )
 
 type deploymentConfig struct {
@@ -22,6 +24,8 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
+	ConcurrencyLimit       int
+	CollisionStrategy      string
 	Description            string
 	EnforceParameterSchema bool
 	Entrypoint             string
@@ -30,6 +34,7 @@ type deploymentConfig struct {
 	Parameters             string
 	Path                   string
 	Paused                 bool
+	PullSteps              []api.PullStep
 	Tags                   []string
 	Version                string
 	WorkPoolName           string
@@ -74,6 +79,10 @@ resource "prefect_flow" "{{.FlowName}}" {
 resource "prefect_deployment" "{{.DeploymentName}}" {
 	name = "{{.DeploymentName}}"
 	description = "{{.Description}}"
+	concurrency_limit = {{.ConcurrencyLimit}}
+	concurrency_options = {
+		collision_strategy = "{{.CollisionStrategy}}"
+	}
 	enforce_parameter_schema = {{.EnforceParameterSchema}}
 	entrypoint = "{{.Entrypoint}}"
 	flow_id = prefect_flow.{{.FlowName}}.id
@@ -91,6 +100,84 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
+	pull_steps = [
+	  {{range .PullSteps}}
+	  {
+			{{- with .PullStepSetWorkingDirectory }}
+			type = "set_working_directory"
+			directory = "{{.Directory}}"
+			{{- end}}
+
+			{{- with .PullStepGitClone }}
+			type = "git_clone"
+			repository = "{{.Repository}}"
+			{{-   if .Branch }}
+			branch = "{{.Branch}}"
+			{{-   end }}
+			{{-   if .AccessToken }}
+			access_token = "{{.AccessToken}}"
+			{{-   end }}
+			{{-   if .IncludeSubmodules }}
+			include_submodules = {{.IncludeSubmodules}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPullFromAzureBlobStorage }}
+			type = "pull_from_azure_blob_storage"
+			{{-   if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{-   end}}
+			{{-   if .Folder }}
+			folder = "{{.Folder}}"
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPullFromGCS }}
+			type = "pull_from_gcs"
+			{{-   if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{-   end}}
+			{{-   if .Folder }}
+			folder = "{{.Folder}}"
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPullFromS3 }}
+			type = "pull_from_s3"
+			{{-   if .Bucket }}
+			bucket = "{{.Bucket}}"
+			{{-   end}}
+			{{-   if .Folder }}
+			folder = "{{.Folder}}"
+			{{-   end}}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+		},
+		{{end}}
+	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
 	workspace_id = prefect_workspace.test.id
@@ -117,6 +204,8 @@ func TestAccResource_deployment(t *testing.T) {
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		Workspace:              workspace.Resource,
 
+		ConcurrencyLimit:       1,
+		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
 		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world",
@@ -125,6 +214,13 @@ func TestAccResource_deployment(t *testing.T) {
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
+		PullSteps: []api.PullStep{
+			{
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/directory"),
+				},
+			},
+		},
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
 		WorkPoolName:           "some-pool",
@@ -142,15 +238,17 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		Description:   "My deployment description v2",
-		Entrypoint:    "hello_world.py:hello_world2",
-		JobVariables:  `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:  "some-manifest-path2",
-		Parameters:    "some-value2",
-		Path:          "some-path2",
-		Paused:        true,
-		Version:       "v1.1.2",
-		WorkQueueName: "default",
+		ConcurrencyLimit:  2,
+		CollisionStrategy: "CANCEL_NEW",
+		Description:       "My deployment description v2",
+		Entrypoint:        "hello_world.py:hello_world2",
+		JobVariables:      `{"env":{"some-key":"some-value2"}}`,
+		ManifestPath:      "some-manifest-path2",
+		Parameters:        "some-value2",
+		Path:              "some-path2",
+		Paused:            true,
+		Version:           "v1.1.2",
+		WorkQueueName:     "default",
 
 		// Enforcing parameter schema  returns the following error:
 		//
@@ -173,6 +271,33 @@ func TestAccResource_deployment(t *testing.T) {
 		// ParameterOpenAPISchema is not settable via the Update method.
 		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
 
+		// PullSteps require a replacement of the resource.
+		PullSteps: []api.PullStep{
+			{
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/other/directory"),
+				},
+			},
+			{
+				PullStepGitClone: &api.PullStepGitClone{
+					Repository:        ptr.To("https://github.com/prefecthq/prefect"),
+					Branch:            ptr.To("main"),
+					AccessToken:       ptr.To("123abc"),
+					IncludeSubmodules: ptr.To(true),
+				},
+			},
+			{
+				PullStepPullFromS3: &api.PullStepPullFrom{
+					Bucket: ptr.To("some-bucket"),
+					Folder: ptr.To("some-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("some-credentials"),
+						Requires:    ptr.To("prefect-aws>=0.3.4"),
+					},
+				},
+			},
+		},
+
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
@@ -190,8 +315,11 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgCreate.DeploymentName,
 						description:            cfgCreate.Description,
+						pullSteps:              cfgCreate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgCreate.ConcurrencyLimit)),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgCreate.CollisionStrategy),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
@@ -216,8 +344,11 @@ func TestAccResource_deployment(t *testing.T) {
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
 						name:                   cfgUpdate.DeploymentName,
 						description:            cfgUpdate.Description,
+						pullSteps:              cfgUpdate.PullSteps,
 						parameterOpenapiSchema: parameterOpenAPISchemaMap,
 					}),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgUpdate.ConcurrencyLimit)),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgUpdate.CollisionStrategy),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
@@ -285,6 +416,7 @@ type expectedDeploymentValues struct {
 	name                   string
 	description            string
 	parameterOpenapiSchema map[string]interface{}
+	pullSteps              []api.PullStep
 }
 
 // testAccCheckDeploymentValues is a Custom Check Function that
@@ -301,6 +433,10 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		equal, diffs := helpers.ObjectsEqual(expectedValues.parameterOpenapiSchema, fetchedDeployment.ParameterOpenAPISchema)
 		if !equal {
 			return fmt.Errorf("Found unexpected differences in deployment parameter_openapi_schema: %s", strings.Join(diffs, "\n"))
+		}
+
+		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
+			return fmt.Errorf("Expected pull steps to be: \n%v\n got \n%v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
 		}
 
 		return nil
