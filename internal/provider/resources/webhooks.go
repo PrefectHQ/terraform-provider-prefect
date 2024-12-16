@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -86,8 +87,10 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Description of the webhook",
 			},
 			"enabled": schema.BoolAttribute{
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				Description: "Whether the webhook is enabled",
+				Default:     booldefault.StaticBool(true),
 			},
 			"template": schema.StringAttribute{
 				Required:    true,
@@ -97,6 +100,9 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was created (RFC3339)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -104,14 +110,14 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Account ID (UUID)",
+				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"workspace_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Workspace ID (UUID)",
+				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 			},
 			"slug": schema.StringAttribute{
 				Computed:    true,

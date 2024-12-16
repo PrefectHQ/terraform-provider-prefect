@@ -98,12 +98,12 @@ var webhookAttributes = map[string]schema.Attribute{
 	},
 	"account_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Account ID (UUID)",
+		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
 	},
 	"workspace_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
-		Description: "Workspace ID (UUID)",
+		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 		Optional:    true,
 	},
 	"slug": schema.StringAttribute{
