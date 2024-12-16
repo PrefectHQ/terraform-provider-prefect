@@ -80,7 +80,7 @@ func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhoo
 // Update modifies an existing webhook by ID.
 func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePayload api.WebhookUpdateRequest) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
+		method:       http.MethodPut,
 		url:          c.routePrefix + "/" + webhookID,
 		body:         &updatePayload,
 		successCodes: successCodesStatusOKOrNoContent,

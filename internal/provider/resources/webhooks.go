@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -84,8 +85,10 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Name of the webhook",
 			},
 			"description": schema.StringAttribute{
+				Computed:    true,
 				Optional:    true,
 				Description: "Description of the webhook",
+				Default:     stringdefault.StaticString(""),
 			},
 			"enabled": schema.BoolAttribute{
 				Optional:    true,
@@ -319,9 +322,38 @@ func (r *WebhookResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 // ImportState imports the resource into Terraform state.
 func (r *WebhookResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "name/") {
-		name := strings.TrimPrefix(req.ID, "name/")
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+	// we'll allow input values in the form of:
+	// - "workspace_id,id"
+	// - "id"
+	maxInputCount := 2
+	inputParts := strings.Split(req.ID, ",")
+
+	// eg. "foo,bar,baz"
+	if len(inputParts) > maxInputCount {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+		)
+
+		return
+	}
+
+	// eg. ",foo" or "foo,"
+	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+		)
+
+		return
+	}
+
+	if len(inputParts) == maxInputCount {
+		workspaceID := inputParts[0]
+		id := inputParts[1]
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
 	} else {
 		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	}
