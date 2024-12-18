@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -184,9 +183,8 @@ func testAccCheckWorkPoolValues(fetchedWorkPool *api.WorkPool, valuesToCheck *ap
 			return fmt.Errorf("Expected work pool paused to be %t, got %t", valuesToCheck.IsPaused, fetchedWorkPool.IsPaused)
 		}
 
-		equal, diffs := helpers.ObjectsEqual(valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate)
-		if !equal {
-			return fmt.Errorf("Found unexpected differences in work pool base_job_template: %s", strings.Join(diffs, "\n"))
+		if err := helpers.CompareNormalizedJSON(valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate); err != nil {
+			return fmt.Errorf("JSON objects not equal: %w", err)
 		}
 
 		return nil
