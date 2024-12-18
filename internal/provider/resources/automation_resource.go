@@ -391,11 +391,11 @@ func mapTriggerAPIToTerraform(ctx context.Context, apiTrigger *api.Trigger, tfTr
 		tfTriggerModel.Event.MatchRelated = jsontypes.NewNormalizedValue(string(matchRelatedByteSlice))
 
 		// Parse and set After, Expect, and ForEach (lists)
-		after, diagnostics := types.ListValueFrom(ctx, types.StringType, apiTrigger.After)
+		after, diagnostics := types.SetValueFrom(ctx, types.StringType, apiTrigger.After)
 		diags.Append(diagnostics...)
-		expect, diagnostics := types.ListValueFrom(ctx, types.StringType, apiTrigger.Expect)
+		expect, diagnostics := types.SetValueFrom(ctx, types.StringType, apiTrigger.Expect)
 		diags.Append(diagnostics...)
-		forEach, diagnostics := types.ListValueFrom(ctx, types.StringType, apiTrigger.ForEach)
+		forEach, diagnostics := types.SetValueFrom(ctx, types.StringType, apiTrigger.ForEach)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
