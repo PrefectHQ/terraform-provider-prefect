@@ -304,9 +304,9 @@ Required:
 
 Optional:
 
-- `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
-- `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
-- `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
+- `after` (Set of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
+- `expect` (Set of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
+- `for_each` (Set of String) Evaluate the trigger separately for each distinct value of these labels on the resource
 - `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
 - `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)
@@ -349,9 +349,9 @@ Required:
 
 Optional:
 
-- `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
-- `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
-- `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
+- `after` (Set of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
+- `expect` (Set of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
+- `for_each` (Set of String) Evaluate the trigger separately for each distinct value of these labels on the resource
 - `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
 - `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)
@@ -411,9 +411,9 @@ Required:
 
 Optional:
 
-- `after` (List of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
-- `expect` (List of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
-- `for_each` (List of String) Evaluate the trigger separately for each distinct value of these labels on the resource
+- `after` (Set of String) The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately
+- `expect` (Set of String) The event(s) this trigger is expecting to see. If empty, this trigger will match any event
+- `for_each` (Set of String) Evaluate the trigger separately for each distinct value of these labels on the resource
 - `match` (String) (JSON) Resource specification labels which this trigger will match. Use `jsonencode()`.
 - `match_related` (String) (JSON) Resource specification labels for related resources which this trigger will match. Use `jsonencode()`.
 - `threshold` (Number) The number of events required for this trigger to fire (Reactive) or expected (Proactive)

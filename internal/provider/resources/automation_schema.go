@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -143,26 +144,26 @@ func ResourceTriggerSchemaAttributes() map[string]schema.Attribute {
 					CustomType:  jsontypes.NormalizedType{},
 					Default:     stringdefault.StaticString("{}"),
 				},
-				"after": schema.ListAttribute{
+				"after": schema.SetAttribute{
 					Optional:    true,
 					Computed:    true,
 					Description: "The event(s) which must first been seen to fire this trigger. If empty, then fire this trigger immediately",
 					ElementType: types.StringType,
-					Default:     listdefault.StaticValue(basetypes.NewListValueMust(types.StringType, []attr.Value{})),
+					Default:     setdefault.StaticValue(basetypes.NewSetValueMust(types.StringType, []attr.Value{})),
 				},
-				"expect": schema.ListAttribute{
+				"expect": schema.SetAttribute{
 					Optional:    true,
 					Computed:    true,
 					Description: "The event(s) this trigger is expecting to see. If empty, this trigger will match any event",
 					ElementType: types.StringType,
-					Default:     listdefault.StaticValue(basetypes.NewListValueMust(types.StringType, []attr.Value{})),
+					Default:     setdefault.StaticValue(basetypes.NewSetValueMust(types.StringType, []attr.Value{})),
 				},
-				"for_each": schema.ListAttribute{
+				"for_each": schema.SetAttribute{
 					Optional:    true,
 					Computed:    true,
 					Description: "Evaluate the trigger separately for each distinct value of these labels on the resource",
 					ElementType: types.StringType,
-					Default:     listdefault.StaticValue(basetypes.NewListValueMust(types.StringType, []attr.Value{})),
+					Default:     setdefault.StaticValue(basetypes.NewSetValueMust(types.StringType, []attr.Value{})),
 				},
 				"threshold": schema.Int64Attribute{
 					Optional:    true,
