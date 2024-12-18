@@ -304,6 +304,13 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.TestCheckJSONAttr(eventTriggerAutomationResourceNameAndPath, "actions.0.job_variables", `{"string_var":"value1","int_var":2,"bool_var":true}`),
 				),
 			},
+			// Import State checks - import by automation_id
+			{
+				ImportState:       true,
+				ResourceName:      eventTriggerAutomationResourceNameAndPath,
+				ImportStateIdFunc: getAutomationImportStateID(eventTriggerAutomationResourceNameAndPath),
+				ImportStateVerify: true,
+			},
 			{
 				Config: fixtureAccAutomationResourceMetricTrigger(automationFixtureConfig{
 					EphemeralWorkspace:             ephemeralWorkspace.Resource,
@@ -328,6 +335,13 @@ func TestAccResource_automation(t *testing.T) {
 					resource.TestCheckResourceAttr(metricTriggerAutomationResourceNameAndPath, "actions.0.name", "Failed by automation"),
 					resource.TestCheckResourceAttr(metricTriggerAutomationResourceNameAndPath, "actions.0.message", "Flow run failed"),
 				),
+			},
+			// Import State checks - import by automation_id
+			{
+				ImportState:       true,
+				ResourceName:      metricTriggerAutomationResourceNameAndPath,
+				ImportStateIdFunc: getAutomationImportStateID(metricTriggerAutomationResourceNameAndPath),
+				ImportStateVerify: true,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
@@ -440,5 +454,23 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 		*automation = *fetchedAutomation
 
 		return nil
+	}
+}
+
+func getAutomationImportStateID(automationResourceName string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
+		if !exists {
+			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		}
+		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
+
+		automationResource, exists := state.RootModule().Resources[automationResourceName]
+		if !exists {
+			return "", fmt.Errorf("Resource not found in state: %s", automationResourceName)
+		}
+		automationID := automationResource.Primary.ID
+
+		return fmt.Sprintf("%s,%s", automationID, workspaceID), nil
 	}
 }

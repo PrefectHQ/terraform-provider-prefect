@@ -275,6 +275,12 @@ func (r *AutomationResource) ImportState(ctx context.Context, req resource.Impor
 		}
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
+
+	// We need to set the trigger to an empty TriggerModel during import
+	// to avoid null value errors (Value Conversion Errors) from the provider framework.
+	// The `trigger` attribute is non-nullable, but because it is modeled
+	// by pointing to another struct, the framework expects a value to exist.
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("trigger"), TriggerModel{})...)
 }
 
 func (r *AutomationResource) ConfigValidators(_ context.Context) []resource.ConfigValidator {
