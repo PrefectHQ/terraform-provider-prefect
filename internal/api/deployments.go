@@ -10,7 +10,7 @@ import (
 type DeploymentsClient interface {
 	Create(ctx context.Context, data DeploymentCreate) (*Deployment, error)
 	Get(ctx context.Context, deploymentID uuid.UUID) (*Deployment, error)
-	List(ctx context.Context, handleNames []string) ([]*Deployment, error)
+	GetByName(ctx context.Context, flowName, deploymentName string) (*Deployment, error)
 	Update(ctx context.Context, deploymentID uuid.UUID, data DeploymentUpdate) error
 	Delete(ctx context.Context, deploymentID uuid.UUID) error
 }
