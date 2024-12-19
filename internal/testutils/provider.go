@@ -1,10 +1,8 @@
 package testutils
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -13,8 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	prefectProvider "github.com/prefecthq/terraform-provider-prefect/internal/provider"
@@ -115,31 +111,4 @@ resource "prefect_workspace" "test" {
 }`, randomName, randomName, randomName)
 
 	return workspace
-}
-
-// TestCheckJSONAttr is a helper function to check if a Terraform resource attribute matches a JSON string.
-// This will normalize for key order, since it uses reflect.DeepEqual.
-func TestCheckJSONAttr(name, key, expected string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[name]
-		if !ok {
-			return fmt.Errorf("resource not found: %s", name)
-		}
-
-		actual := rs.Primary.Attributes[key]
-
-		var expectedJSON, actualJSON interface{}
-		if err := json.Unmarshal([]byte(expected), &expectedJSON); err != nil {
-			return fmt.Errorf("expected value is not valid JSON: %w", err)
-		}
-		if err := json.Unmarshal([]byte(actual), &actualJSON); err != nil {
-			return fmt.Errorf("actual value is not valid JSON: %w", err)
-		}
-
-		if !reflect.DeepEqual(expectedJSON, actualJSON) {
-			return fmt.Errorf("%s: expected %s, got %s", key, expected, actual)
-		}
-
-		return nil
-	}
 }
