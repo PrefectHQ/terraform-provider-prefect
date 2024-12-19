@@ -813,20 +813,16 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	var parameters map[string]interface{}
-	if !model.Parameters.IsNull() {
-		resp.Diagnostics.Append(model.Parameters.Unmarshal(&parameters)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	parameters, diags := helpers.UnmarshalOptional(model.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	var jobVariables map[string]interface{}
-	if !model.JobVariables.IsNull() {
-		resp.Diagnostics.Append(model.JobVariables.Unmarshal(&jobVariables)...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	jobVariables, diags := helpers.UnmarshalOptional(model.JobVariables)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	payload := api.DeploymentUpdate{
