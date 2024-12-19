@@ -44,6 +44,7 @@ data "prefect_deployment" "test_by_id" {
 
 data "prefect_deployment" "test_by_name" {
   name = prefect_deployment.test.name
+  flow_name = prefect_flow.test.name
 
   account_id = "%s"
   workspace_id = prefect_workspace.test.id
