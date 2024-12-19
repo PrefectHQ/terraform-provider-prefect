@@ -30,12 +30,8 @@ data "prefect_deployment" "existing_by_id_string" {
 
 # Get deployment by name using Terraform name reference.
 data "prefect_deployment" "existing_by_id_string" {
-  name = prefect_deployment.my_existing_deployment.name
-  # the flow_name field is not available on the Deployment resource
-  # because it isn't a part of the object in the API. However, it's
-  # required by the API to get a Deployment by name, so here we
-  # provide the string value.
-  flow_name = "example_flow"
+  flow_name = prefect_flow.my_existing_flow.name
+  name      = prefect_deployment.my_existing_deployment.name
 }
 
 # Get deployment by name string.
