@@ -2,7 +2,6 @@ package resources_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"testing"
@@ -11,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -51,12 +49,16 @@ func TestAccResource_work_pool(t *testing.T) {
 	poolType2 := "ecs"
 
 	baseJobTemplate := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker.")
-	var baseJobTemplateMap map[string]interface{}
-	_ = json.Unmarshal([]byte(baseJobTemplate), &baseJobTemplateMap)
+	baseJobTemplateExpected, err := testutils.NormalizedValueForJSON(baseJobTemplate)
+	if err != nil {
+		t.Fatalf("error marshalling baseJobTemplateMap to normalized JSON: %s", err.Error())
+	}
 
 	baseJobTemplate2 := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker!")
-	var baseJobTemplateMap2 map[string]interface{}
-	_ = json.Unmarshal([]byte(baseJobTemplate2), &baseJobTemplateMap2)
+	baseJobTemplateExpected2, err := testutils.NormalizedValueForJSON(baseJobTemplate2)
+	if err != nil {
+		t.Fatalf("error marshalling baseJobTemplateMap to normalized JSON: %s", err.Error())
+	}
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -76,7 +78,8 @@ func TestAccResource_work_pool(t *testing.T) {
 				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName, poolType, baseJobTemplate, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap, IsPaused: true}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: true}),
+					resource.TestCheckResourceAttr(workPoolResourceName, "base_job_template", baseJobTemplateExpected),
 					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
 					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "true"),
@@ -88,7 +91,7 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: false}),
 					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
 					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
@@ -100,10 +103,7 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
-					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
-					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
+					resource.TestCheckResourceAttr(workPoolResourceName, "base_job_template", baseJobTemplateExpected2),
 				),
 			},
 			{
@@ -112,7 +112,7 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType, IsPaused: false}),
 				),
 			},
 			{
@@ -121,7 +121,7 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, &workPool),
-					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, BaseJobTemplate: baseJobTemplateMap2, IsPaused: false}),
+					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName2, Type: poolType2, IsPaused: false}),
 				),
 			},
 			// Import State checks - import by workspace_id,name (dynamic)
@@ -181,10 +181,6 @@ func testAccCheckWorkPoolValues(fetchedWorkPool *api.WorkPool, valuesToCheck *ap
 
 		if fetchedWorkPool.IsPaused != valuesToCheck.IsPaused {
 			return fmt.Errorf("Expected work pool paused to be %t, got %t", valuesToCheck.IsPaused, fetchedWorkPool.IsPaused)
-		}
-
-		if err := helpers.CompareNormalizedJSON(valuesToCheck.BaseJobTemplate, fetchedWorkPool.BaseJobTemplate); err != nil {
-			return fmt.Errorf("JSON objects not equal: %w", err)
 		}
 
 		return nil
