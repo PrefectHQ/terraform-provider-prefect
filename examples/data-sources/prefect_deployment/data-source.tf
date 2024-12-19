@@ -10,10 +10,12 @@ data "prefect_deployment" "existing_by_id_string" {
 
 # Get deployment by name using Terraform name reference.
 data "prefect_deployment" "existing_by_id_string" {
-  name = prefect_deployment.my_existing_deployment.name
+  flow_name = prefect_flow.my_existing_flow.name
+  name      = prefect_deployment.my_existing_deployment.name
 }
 
 # Get deployment by name string.
 data "prefect_deployment" "existing_by_id_string" {
-  name = "my_existing_deployment"
+  name      = "my_existing_deployment"
+  flow_name = "example_flow"
 }

@@ -33,6 +33,9 @@ type deploymentDataSource struct {
 type DeploymentDataSourceModel struct {
 	// The model requires the same fields, so reuse the fields defined in the resource model.
 	resources.DeploymentResourceModel
+
+	// The following fields are specific to the Deployment datasource.
+	FlowName types.String `tfsdk:"flow_name"`
 }
 
 // NewDeploymentDataSource is a helper function to simplify the provider implementation.
@@ -93,6 +96,13 @@ The Deployment ID takes precedence over deployment name.
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
+			},
+			// flow_name is specific to the datasource because it's used in the API endpoint
+			// to find a deployment by name.
+			"flow_name": schema.StringAttribute{
+				Computed:    true,
+				Optional:    true,
+				Description: "Flow name associated with the deployment",
 			},
 			"paused": schema.BoolAttribute{
 				Computed:    true,
@@ -243,7 +253,10 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	// If both are set, we prefer the ID
 	var deployment *api.Deployment
 	var operation string
-	if !model.ID.IsNull() {
+	var getErr error
+
+	switch {
+	case !model.ID.IsNull():
 		var deploymentID uuid.UUID
 		deploymentID, err = uuid.Parse(model.ID.ValueString())
 		if err != nil {
@@ -257,25 +270,20 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		}
 
 		operation = "get"
-		deployment, err = client.Get(ctx, deploymentID)
-	} else if !model.Name.IsNull() {
-		var deployments []*api.Deployment
-		operation = "list"
-		deployments, err = client.List(ctx, []string{model.Name.ValueString()})
+		deployment, getErr = client.Get(ctx, deploymentID)
+	case !model.FlowName.IsNull() && !model.Name.IsNull():
+		operation = "get by name"
+		deployment, getErr = client.GetByName(ctx, model.FlowName.ValueString(), model.Name.ValueString())
+	default:
+		resp.Diagnostics.AddError(
+			"Either id, or name and flow_name are unset",
+			"Please configure either id, or name and flow_name.",
+		)
 
-		if len(deployments) != 1 {
-			resp.Diagnostics.AddError(
-				"Could not find Deployment",
-				fmt.Sprintf("Could not find Deployment with name %s", model.Name.ValueString()),
-			)
-
-			return
-		}
-
-		deployment = deployments[0]
+		return
 	}
 
-	if err != nil {
+	if getErr != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment", operation, err))
 
 		return
