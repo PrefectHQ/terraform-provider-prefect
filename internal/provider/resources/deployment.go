@@ -630,19 +630,19 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	parameters, diags := helpers.SafeUnmarshal(plan.Parameters)
+	parameters, diags := helpers.UnmarshalOptional(plan.Parameters)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	jobVariables, diags := helpers.SafeUnmarshal(plan.JobVariables)
+	jobVariables, diags := helpers.UnmarshalOptional(plan.JobVariables)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	parameterOpenAPISchema, diags := helpers.SafeUnmarshal(plan.ParameterOpenAPISchema)
+	parameterOpenAPISchema, diags := helpers.UnmarshalOptional(plan.ParameterOpenAPISchema)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

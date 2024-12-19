@@ -210,7 +210,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	baseJobTemplate, diags := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -292,7 +292,7 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	baseJobTemplate, diags := helpers.SafeUnmarshal(plan.BaseJobTemplate)
+	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
