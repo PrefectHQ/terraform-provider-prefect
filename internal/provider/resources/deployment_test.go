@@ -193,10 +193,7 @@ func TestAccResource_deployment(t *testing.T) {
 	flowName := testutils.NewRandomPrefixedString()
 
 	parameterOpenAPISchema := `{"type": "object", "properties": {"some-parameter": {"type": "string"}}}`
-	expectedParameterOpenAPISchema, err := testutils.NormalizedValueForJSON(parameterOpenAPISchema)
-	if err != nil {
-		t.Fatalf("error generating expected parameter openapi schema: %s", err)
-	}
+	expectedParameterOpenAPISchema := testutils.NormalizedValueForJSON(t, parameterOpenAPISchema)
 
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,

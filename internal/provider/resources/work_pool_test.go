@@ -49,16 +49,10 @@ func TestAccResource_work_pool(t *testing.T) {
 	poolType2 := "ecs"
 
 	baseJobTemplate := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker.")
-	baseJobTemplateExpected, err := testutils.NormalizedValueForJSON(baseJobTemplate)
-	if err != nil {
-		t.Fatalf("error marshalling baseJobTemplateMap to normalized JSON: %s", err.Error())
-	}
+	baseJobTemplateExpected := testutils.NormalizedValueForJSON(t, baseJobTemplate)
 
 	baseJobTemplate2 := fmt.Sprintf(baseJobTemplateTpl, "The name given to infrastructure created by a worker!")
-	baseJobTemplateExpected2, err := testutils.NormalizedValueForJSON(baseJobTemplate2)
-	if err != nil {
-		t.Fatalf("error marshalling baseJobTemplateMap to normalized JSON: %s", err.Error())
-	}
+	baseJobTemplateExpected2 := testutils.NormalizedValueForJSON(t, baseJobTemplate2)
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
