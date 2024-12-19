@@ -2,10 +2,12 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -174,7 +176,9 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 
 // copyWorkPoolToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) {
+//
+//nolint:ireturn // required to return Diagnostics
+func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) diag.Diagnostic {
 	tfModel.ID = types.StringValue(pool.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
@@ -185,6 +189,15 @@ func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) {
 	tfModel.Name = types.StringValue(pool.Name)
 	tfModel.Paused = types.BoolValue(pool.IsPaused)
 	tfModel.Type = types.StringValue(pool.Type)
+
+	byteSlice, err := json.Marshal(pool.BaseJobTemplate)
+	if err != nil {
+		return helpers.SerializeDataErrorDiagnostic("data", "Base Job Template", err)
+	}
+
+	tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(string(byteSlice))
+
+	return nil
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -197,8 +210,8 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
-	resp.Diagnostics.Append(diag...)
+	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -224,7 +237,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	copyWorkPoolToModel(pool, &plan)
+	resp.Diagnostics.Append(copyWorkPoolToModel(pool, &plan))
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -259,7 +272,10 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	copyWorkPoolToModel(pool, &state)
+	resp.Diagnostics.Append(copyWorkPoolToModel(pool, &state))
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -276,8 +292,8 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	baseJobTemplate, diag := helpers.SafeUnmarshal(plan.BaseJobTemplate)
-	resp.Diagnostics.Append(diag...)
+	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -308,29 +324,10 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	// If the base job template from the retrieved work pool is equal
-	// to the base job template from the plan (taking into account that the
-	// fields could be in a different order), then we will use the plan's definition
-	// of the base job template in the state. This avoids "inconsistent value"
-	// errors.
-	//
-	// If the two are not equal, then something has gone wrong so we should
-	// exit and alert the user of the differences.
-	equal, diffs := helpers.ObjectsEqual(baseJobTemplate, pool.BaseJobTemplate)
-	if !equal {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("base_job_template"),
-			"Unexpected difference in base_job_templates",
-			fmt.Sprintf(
-				"Expected the provided base_job_template to be equal to the one retrieved from the API, differences: %s",
-				strings.Join(diffs, "\n"),
-			),
-		)
-
+	resp.Diagnostics.Append(copyWorkPoolToModel(pool, &plan))
+	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	copyWorkPoolToModel(pool, &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
