@@ -254,7 +254,9 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	var deployment *api.Deployment
 	var operation string
 	var getErr error
-	if !model.ID.IsNull() {
+
+	switch {
+	case !model.ID.IsNull():
 		var deploymentID uuid.UUID
 		deploymentID, err = uuid.Parse(model.ID.ValueString())
 		if err != nil {
@@ -269,9 +271,16 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 		operation = "get"
 		deployment, getErr = client.Get(ctx, deploymentID)
-	} else if !model.Name.IsNull() {
+	case !model.FlowName.IsNull() && !model.Name.IsNull():
 		operation = "get by name"
 		deployment, getErr = client.GetByName(ctx, model.FlowName.ValueString(), model.Name.ValueString())
+	default:
+		resp.Diagnostics.AddError(
+			"Either id, or name and flow_name are unset",
+			"Please configure either id, or name and flow_name.",
+		)
+
+		return
 	}
 
 	if getErr != nil {
