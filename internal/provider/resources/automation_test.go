@@ -40,9 +40,19 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
         "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
         "prefect.resource.role" : "flow"
       })
-      after     = ["prefect.flow-run.completed"]
-      expect    = ["prefect.flow-run.failed"]
-      for_each  = ["prefect.resource.id"]
+      after     = [
+				"prefect.flow-run.Completed",
+				"prefect.flow-run.Succeeded",
+			]
+      expect    = [
+				"prefect.flow-run.Failed",
+				"prefect.flow-run.Cancelled",
+				"prefect.flow-run.Crashed",
+			]
+      for_each  = [
+				"prefect.resource.id",
+				"prefect.resource.role",
+			]
       threshold = 1
       within    = 60
     }
@@ -141,6 +151,19 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
               "prefect.resource.role" = "flow"
             })
             posture = "Reactive"
+            after = [
+              "prefect.flow-run.Completed",
+              "prefect.flow-run.Succeeded",
+            ]
+            expect = [
+              "prefect.flow-run.Failed",
+              "prefect.flow-run.Cancelled",
+              "prefect.flow-run.Crashed",
+            ]
+            for_each = [
+              "prefect.resource.id",
+              "prefect.resource.role",
+            ]
             threshold = 1
             within = 0
           }
@@ -286,12 +309,16 @@ func TestAccResource_automation(t *testing.T) {
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "description", "description for test-event-automation"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "enabled", "true"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.posture", "Reactive"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.after.#", "1"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.after.0", "prefect.flow-run.completed"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.#", "1"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.0", "prefect.flow-run.failed"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.for_each.#", "1"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.after.#", "2"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.after.0", "prefect.flow-run.Completed"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.after.1", "prefect.flow-run.Succeeded"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.#", "3"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.0", "prefect.flow-run.Cancelled"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.1", "prefect.flow-run.Crashed"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect.2", "prefect.flow-run.Failed"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.for_each.#", "2"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.for_each.0", "prefect.resource.id"),
+					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.for_each.1", "prefect.resource.role"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.threshold", "1"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "trigger.event.within", "60"),
 					resource.TestCheckResourceAttr(eventTriggerAutomationResourceNameAndPath, "actions.#", "1"),
@@ -357,13 +384,18 @@ func TestAccResource_automation(t *testing.T) {
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.require", "any"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.within", "302"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.#", "2"),
-					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.#", "1"),
-					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.0", "prefect.flow-run.Failed"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.#", "3"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.0", "prefect.flow-run.Cancelled"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.1", "prefect.flow-run.Crashed"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.expect.2", "prefect.flow-run.Failed"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.match", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":"prefect.flow-run.*"}`)),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.match_related", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":"prefect.flow-run.*","prefect.resource.role":"flow"}`)),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.posture", "Reactive"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.threshold", "1"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.within", "0"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.after.#", "2"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.after.0", "prefect.flow-run.Completed"),
+					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.0.event.after.1", "prefect.flow-run.Succeeded"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.1.event.expect.#", "1"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.1.event.expect.0", "prefect.flow-run.Completed"),
 					resource.TestCheckResourceAttr(compoundTriggerAutomationResourceNameAndPath, "trigger.compound.triggers.1.event.match", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":"prefect.flow-run.*"}`)),

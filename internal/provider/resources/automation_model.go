@@ -41,9 +41,9 @@ type EventTriggerModel struct {
 	Posture      types.String         `tfsdk:"posture"`
 	Match        jsontypes.Normalized `tfsdk:"match"`
 	MatchRelated jsontypes.Normalized `tfsdk:"match_related"`
-	After        types.List           `tfsdk:"after"`
-	Expect       types.List           `tfsdk:"expect"`
-	ForEach      types.List           `tfsdk:"for_each"`
+	After        types.Set            `tfsdk:"after"`
+	Expect       types.Set            `tfsdk:"expect"`
+	ForEach      types.Set            `tfsdk:"for_each"`
 	Threshold    types.Int64          `tfsdk:"threshold"`
 	Within       types.Float64        `tfsdk:"within"`
 }
