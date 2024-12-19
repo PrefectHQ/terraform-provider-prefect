@@ -567,9 +567,9 @@ func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTr
 		diags.Append(tfTriggerModel.Event.Expect.ElementsAs(ctx, &expect, false)...)
 		diags.Append(tfTriggerModel.Event.ForEach.ElementsAs(ctx, &forEach, false)...)
 
-		match, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Event.Match)
+		match, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Event.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Event.MatchRelated)
+		matchRelated, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Event.MatchRelated)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
@@ -588,9 +588,9 @@ func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTr
 			Within:       tfTriggerModel.Event.Within.ValueFloat64Pointer(),
 		}
 	case tfTriggerModel.Metric != nil:
-		match, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Metric.Match)
+		match, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Metric.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.SafeUnmarshal(tfTriggerModel.Metric.MatchRelated)
+		matchRelated, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Metric.MatchRelated)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
@@ -644,9 +644,9 @@ func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagn
 		apiAction.Message = tfAction.Message.ValueStringPointer()
 
 		// Parse and set parameters + job variables (JSON)
-		parameters, diagnostics := helpers.SafeUnmarshal(tfAction.Parameters)
+		parameters, diagnostics := helpers.UnmarshalOptional(tfAction.Parameters)
 		diags.Append(diagnostics...)
-		jobVariables, diagnostics := helpers.SafeUnmarshal(tfAction.JobVariables)
+		jobVariables, diagnostics := helpers.UnmarshalOptional(tfAction.JobVariables)
 		diags.Append(diagnostics...)
 
 		if diags.HasError() {
