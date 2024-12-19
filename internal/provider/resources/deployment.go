@@ -600,8 +600,25 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	if diags.HasError() {
 		return diags
 	}
-
 	model.PullSteps = pullSteps
+
+	parametersByteSlice, err := json.Marshal(deployment.Parameters)
+	if err != nil {
+		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err)}
+	}
+	model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+
+	jobVariablesByteSlice, err := json.Marshal(deployment.JobVariables)
+	if err != nil {
+		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("job_variables", "Deployment job variables", err)}
+	}
+	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
+
+	parameterOpenAPISchemaByteSlice, err := json.Marshal(deployment.ParameterOpenAPISchema)
+	if err != nil {
+		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err)}
+	}
+	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
 
 	return nil
 }
@@ -753,24 +770,6 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	parametersByteSlice, err := json.Marshal(deployment.Parameters)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
-	}
-	model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
-
-	jobVariablesByteSlice, err := json.Marshal(deployment.JobVariables)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("job_variables", "Deployment job variables", err))
-	}
-	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
-
-	parameterOpenAPISchemaByteSlice, err := json.Marshal(deployment.ParameterOpenAPISchema)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err))
-	}
-	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -873,30 +872,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	parametersByteSlice, err := json.Marshal(deployment.Parameters)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameters", "Deployment parameters", err))
-
-		return
-	}
-	model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
-
-	jobVariablesByteSlice, err := json.Marshal(deployment.JobVariables)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("job_variables", "Deployment job variables", err))
-
-		return
-	}
-	model.JobVariables = jsontypes.NewNormalizedValue(string(jobVariablesByteSlice))
-
-	parameterOpenAPISchemaByteSlice, err := json.Marshal(deployment.ParameterOpenAPISchema)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err))
-
-		return
-	}
-	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
