@@ -2,11 +2,9 @@ package resources_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -195,8 +193,10 @@ func TestAccResource_deployment(t *testing.T) {
 	flowName := testutils.NewRandomPrefixedString()
 
 	parameterOpenAPISchema := `{"type": "object", "properties": {"some-parameter": {"type": "string"}}}`
-	var parameterOpenAPISchemaMap map[string]interface{}
-	_ = json.Unmarshal([]byte(parameterOpenAPISchema), &parameterOpenAPISchemaMap)
+	expectedParameterOpenAPISchema, err := testutils.NormalizedValueForJSON(parameterOpenAPISchema)
+	if err != nil {
+		t.Fatalf("error generating expected parameter openapi schema: %s", err)
+	}
 
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,
@@ -313,10 +313,9 @@ func TestAccResource_deployment(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists(cfgCreate.DeploymentResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-						name:                   cfgCreate.DeploymentName,
-						description:            cfgCreate.Description,
-						pullSteps:              cfgCreate.PullSteps,
-						parameterOpenapiSchema: parameterOpenAPISchemaMap,
+						name:        cfgCreate.DeploymentName,
+						description: cfgCreate.Description,
+						pullSteps:   cfgCreate.PullSteps,
 					}),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgCreate.ConcurrencyLimit)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgCreate.CollisionStrategy),
@@ -325,6 +324,7 @@ func TestAccResource_deployment(t *testing.T) {
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
+					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
 					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
@@ -342,18 +342,18 @@ func TestAccResource_deployment(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, &deployment),
 					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
-						name:                   cfgUpdate.DeploymentName,
-						description:            cfgUpdate.Description,
-						pullSteps:              cfgUpdate.PullSteps,
-						parameterOpenapiSchema: parameterOpenAPISchemaMap,
+						name:        cfgUpdate.DeploymentName,
+						description: cfgUpdate.Description,
+						pullSteps:   cfgUpdate.PullSteps,
 					}),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgUpdate.ConcurrencyLimit)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgUpdate.CollisionStrategy),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
+					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
 					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),
@@ -413,10 +413,9 @@ func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api
 }
 
 type expectedDeploymentValues struct {
-	name                   string
-	description            string
-	parameterOpenapiSchema map[string]interface{}
-	pullSteps              []api.PullStep
+	name        string
+	description string
+	pullSteps   []api.PullStep
 }
 
 // testAccCheckDeploymentValues is a Custom Check Function that
@@ -428,11 +427,6 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 		}
 		if fetchedDeployment.Description != expectedValues.description {
 			return fmt.Errorf("Expected deployment description to be %s, got %s", expectedValues.description, fetchedDeployment.Description)
-		}
-
-		equal, diffs := helpers.ObjectsEqual(expectedValues.parameterOpenapiSchema, fetchedDeployment.ParameterOpenAPISchema)
-		if !equal {
-			return fmt.Errorf("Found unexpected differences in deployment parameter_openapi_schema: %s", strings.Join(diffs, "\n"))
 		}
 
 		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
