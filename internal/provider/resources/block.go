@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -76,7 +75,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"\n" +
 			"Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute." +
 			"\n" +
-			"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).",
+			"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)." +
+			"\n" +
+			"*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -197,17 +198,14 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) diag.Diagnostics {
-	// NOTE: we will map the `data` key OUTSIDE of this helper function, as we will
-	// need to skip this step for the POST /block_documents endpoint,
-	// which always returns masked data + will create inconsistent state between the
-	// plan <> fetched value - for Create(), we'll fall back to the user-configured JSON payload,
-	// whereas for Read() / Update() we can ask the API for unmasked values to ensure a consistent
-	// state drift check.
 	tfModel.ID = types.StringValue(block.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(block.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 	tfModel.Name = types.StringValue(block.Name)
 	tfModel.TypeSlug = types.StringValue(block.BlockType.Slug)
+
+	// NOTE: we do not persist the fetched .Data value from the API -> State.
+	// See the `Read()` and `Update()` methods for more context.
 
 	return nil
 }
@@ -263,6 +261,13 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// NOTE: we're not persisting the fetched .Data value from the API -> State.
+	// Normally, we would also copy the retrieved Block's Data field into the
+	// plan object before setting the current state.
+	//
+	// However, the API's POST method does not return unmasked data, so we'll
+	// fall back to the user-configured JSON payload. Otherwise, there will always
+	// be a state conflict between the plan <> fetched value.
 	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -314,14 +319,14 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	byteSlice, err := json.Marshal(block.Data)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
-
-		return
-	}
-	state.Data = jsontypes.NewNormalizedValue(string(byteSlice))
+	// NOTE: we're not persisting the fetched .Data value from the API -> State.
+	// Normally, we would also copy the retrieved Block's Data field into the
+	// plan object before setting the current state.
+	//
+	// However, the API's GET method does not return the `$ref` expression if it
+	// was specified in the Data field on the Block resource. This leads to
+	// "inconsistent result after apply" errors. For now, we'll skip copying the
+	// retrieved Block's Data field and use what was specified in the plan.
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -393,7 +398,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
+	// NOTE: we're not persisting the fetched .Data value from the API -> State.
 	// Normally, we would also copy the retrieved Block's Data field into the
 	// plan object before setting the current state.
 	//
