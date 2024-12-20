@@ -30,12 +30,14 @@ data "prefect_deployment" "existing_by_id_string" {
 
 # Get deployment by name using Terraform name reference.
 data "prefect_deployment" "existing_by_id_string" {
-  name = prefect_deployment.my_existing_deployment.name
+  flow_name = prefect_flow.my_existing_flow.name
+  name      = prefect_deployment.my_existing_deployment.name
 }
 
 # Get deployment by name string.
 data "prefect_deployment" "existing_by_id_string" {
-  name = "my_existing_deployment"
+  name      = "my_existing_deployment"
+  flow_name = "example_flow"
 }
 ```
 
@@ -45,6 +47,7 @@ data "prefect_deployment" "existing_by_id_string" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
+- `flow_name` (String) Flow name associated with the deployment
 - `id` (String) Deployment ID (UUID)
 - `name` (String) Name of the deployment
 - `workspace_id` (String) Workspace ID (UUID) to associate deployment to

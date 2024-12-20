@@ -60,29 +60,30 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 	return &deployment, nil
 }
 
-// List returns a list of Deployments based on the provided list of names.
-func (c *DeploymentsClient) List(ctx context.Context, _ []string) ([]*api.Deployment, error) {
-	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          fmt.Sprintf("%s/filter", c.routePrefix),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		successCodes: successCodesStatusOK,
-	}
-
-	var deployments []*api.Deployment
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &deployments); err != nil {
-		return nil, fmt.Errorf("failed to list deployments: %w", err)
-	}
-
-	return deployments, nil
-}
-
 // Get returns details for a Deployment by ID.
 func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*api.Deployment, error) {
 	cfg := requestConfig{
 		method:       http.MethodGet,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
+	}
+
+	var deployment api.Deployment
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &deployment); err != nil {
+		return nil, fmt.Errorf("failed to get deployment: %w", err)
+	}
+
+	return &deployment, nil
+}
+
+// GetByName returns details for a Deployment by name.
+func (c *DeploymentsClient) GetByName(ctx context.Context, flowName, deploymentName string) (*api.Deployment, error) {
+	url := fmt.Sprintf("%s/name/%s/%s", c.routePrefix, flowName, deploymentName)
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          url,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusOK,
