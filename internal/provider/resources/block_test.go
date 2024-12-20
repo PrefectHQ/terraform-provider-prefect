@@ -27,6 +27,34 @@ resource "prefect_block" "%s" {
 }`, workspace, blockName, blockName, blockValue)
 }
 
+func fixtureAccBlockWithRef(workspace, blockName, blockValue string, refBlockValue string) string {
+	return fmt.Sprintf(`
+%s
+resource "prefect_block" "%s" {
+	name = "%s"
+	type_slug = "secret"
+	data = jsonencode({
+		"value" = "%s"
+	})
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
+}
+
+resource "prefect_block" "with_ref" {
+  name      = "block-with-ref"
+  type_slug = "s3-bucket"
+
+  data = jsonencode({
+    bucket_name = "my-bucket"
+    credentials = { "$ref" : %s }
+  })
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
+}
+
+`, workspace, blockName, blockName, blockValue, refBlockValue)
+}
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_block(t *testing.T) {
 	randomName := testutils.NewRandomPrefixedString()
@@ -75,12 +103,29 @@ func TestAccResource_block(t *testing.T) {
 					resource.TestCheckResourceAttr(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
 				),
 			},
+			// Next two tests using `fixtureAccBlockWithRef` will be used to test
+			// that using the $ref syntax won't result in an Update plan if no changes are made.
+			{
+				Config: fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckBlockExists("prefect_block.with_ref", &blockDocument),
+					resource.TestCheckResourceAttr("prefect_block.with_ref", "name", "block-with-ref"),
+					resource.TestCheckResourceAttr("prefect_block.with_ref", "type_slug", "s3-bucket"),
+				),
+			},
+			{
+				Config:             fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
 			// Import State checks - import by block_id,workspace_id (dynamic)
+			// NOTE: the ImportStateVerify is set to false, as we need to omit the .Data
+			// field when we hydrate the state from the API.
 			{
 				ImportState:       true,
 				ResourceName:      blockResourceName,
 				ImportStateIdFunc: getBlockImportStateID(blockResourceName),
-				ImportStateVerify: true,
+				ImportStateVerify: false,
 			},
 		},
 	})
