@@ -8,6 +8,7 @@ description: |-
   Note: you should be on version 3.0.0rc1 or later to use the following commands:
   Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
   Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
+  NOTE: if a Block is managed in Terraform, the .data attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
 ---
 
 # prefect_block (Resource)
@@ -17,6 +18,7 @@ The resource `block` allows creating and managing [Prefect Blocks](https://docs.
 *Note:* you should be on version `3.0.0rc1` or later to use the following commands:
 Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute.
 Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
+*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
 
 ## Example Usage
 
