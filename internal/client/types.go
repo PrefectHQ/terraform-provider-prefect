@@ -9,6 +9,7 @@ import (
 type Client struct {
 	hc                 *http.Client
 	endpoint           string
+	endpointHost       string
 	apiKey             string
 	defaultAccountID   uuid.UUID
 	defaultWorkspaceID uuid.UUID

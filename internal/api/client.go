@@ -6,6 +6,8 @@ import "github.com/google/uuid"
 //
 //nolint:interfacebloat // we'll accept a larger PrefectClient interface
 type PrefectClient interface {
+	GetEndpointHost() string
+
 	Accounts(accountID uuid.UUID) (AccountsClient, error)
 	Automations(accountID uuid.UUID, workspaceID uuid.UUID) (AutomationsClient, error)
 	AccountMemberships(accountID uuid.UUID) (AccountMembershipsClient, error)

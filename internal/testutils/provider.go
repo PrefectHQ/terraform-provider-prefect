@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -74,8 +75,11 @@ func NewTestClient() (api.PrefectClient, error) {
 		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
+	endpointURL, _ := url.Parse(endpoint)
+	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
+
 	prefectClient, _ := client.New(
-		client.WithEndpoint(endpoint),
+		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
 		client.WithDefaults(accountID, uuid.Nil),
 	)

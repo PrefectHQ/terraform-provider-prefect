@@ -134,7 +134,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 }
 
 // copyWebhookResponseToModel maps an API response to a model that is saved in Terraform state.
-func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceModel) {
+func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceModel, endpointHost string) {
 	tfModel.ID = types.StringValue(webhook.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(&webhook.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(&webhook.Updated)
@@ -144,6 +144,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Template = types.StringValue(webhook.Template)
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
+	tfModel.Endpoint = types.StringValue(fmt.Sprintf("%s/hooks/%s", endpointHost, webhook.Slug))
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -176,10 +177,7 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Extract the endpoint from the provider configuration.
-	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
-	copyWebhookResponseToModel(webhook, &plan)
-	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/hooks/%s", webhook.Slug))
+	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -230,10 +228,7 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	// Extract the endpoint from the provider configuration.
-	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
-	copyWebhookResponseToModel(webhook, &state)
-	state.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/hooks/%s", webhook.Slug))
+	copyWebhookResponseToModel(webhook, &state, r.client.GetEndpointHost())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -280,10 +275,7 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Extract the endpoint from the provider configuration.
-	// https://github.com/PrefectHQ/terraform-provider-prefect/issues/333
-	copyWebhookResponseToModel(webhook, &plan)
-	plan.Endpoint = types.StringValue(fmt.Sprintf("https://api.prefect.cloud/hooks/%s", webhook.Slug))
+	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {

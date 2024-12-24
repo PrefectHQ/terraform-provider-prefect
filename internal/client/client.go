@@ -63,7 +63,7 @@ func New(opts ...Option) (*Client, error) {
 
 // WithEndpoint configures the client to communicate with a self-hosted
 // Prefect server or Prefect Cloud.
-func WithEndpoint(endpoint string) Option {
+func WithEndpoint(endpoint string, host string) Option {
 	return func(client *Client) error {
 		_, err := url.Parse(endpoint)
 		if err != nil {
@@ -75,6 +75,7 @@ func WithEndpoint(endpoint string) Option {
 		}
 
 		client.endpoint = endpoint
+		client.endpointHost = host
 
 		return nil
 	}
