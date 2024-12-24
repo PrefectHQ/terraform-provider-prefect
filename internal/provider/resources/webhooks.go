@@ -29,16 +29,17 @@ type WebhookResource struct {
 }
 
 type WebhookResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	Name        types.String               `tfsdk:"name"`
-	Description types.String               `tfsdk:"description"`
-	Enabled     types.Bool                 `tfsdk:"enabled"`
-	Template    types.String               `tfsdk:"template"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	Endpoint    types.String               `tfsdk:"endpoint"`
+	ID               types.String               `tfsdk:"id"`
+	Created          customtypes.TimestampValue `tfsdk:"created"`
+	Updated          customtypes.TimestampValue `tfsdk:"updated"`
+	Name             types.String               `tfsdk:"name"`
+	Description      types.String               `tfsdk:"description"`
+	Enabled          types.Bool                 `tfsdk:"enabled"`
+	Template         types.String               `tfsdk:"template"`
+	AccountID        customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID      customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	Endpoint         types.String               `tfsdk:"endpoint"`
+	ServiceAccountID customtypes.UUIDValue      `tfsdk:"service_account_id"`
 }
 
 // NewWebhookResource returns a new WebhookResource.
@@ -128,6 +129,11 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"endpoint": schema.StringAttribute{
 				Computed:    true,
 				Description: "The fully-formed webhook endpoint, eg. `https://api.prefect.cloud/hooks/<slug>`",
+			},
+			"service_account_id": schema.StringAttribute{
+				Optional:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "ID of the Service Account to which this webhook belongs. If set, the webhook request will be authorized with the Service Account's API key.",
 			},
 		},
 	}
