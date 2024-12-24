@@ -127,7 +127,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"endpoint": schema.StringAttribute{
 				Computed:    true,
-				Description: "The fully-formed webhook endpoint, eg. https://api.prefect.cloud/SLUG",
+				Description: "The fully-formed webhook endpoint, eg. https://api.prefect.cloud/hooks/SLUG",
 			},
 		},
 	}
