@@ -59,7 +59,7 @@ output "endpoint" {
 ### Read-Only
 
 - `created` (String) Timestamp of when the resource was created (RFC3339)
-- `endpoint` (String) The fully-formed webhook endpoint, eg. https://api.prefect.cloud/SLUG
+- `endpoint` (String) The fully-formed webhook endpoint, eg. https://api.prefect.cloud/hooks/SLUG
 - `id` (String) Webhook ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
