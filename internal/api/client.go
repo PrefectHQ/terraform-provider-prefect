@@ -6,8 +6,10 @@ import "github.com/google/uuid"
 //
 //nolint:interfacebloat // we'll accept a larger PrefectClient interface
 type PrefectClient interface {
+	// Utility methods on the Client interface
 	GetEndpointHost() string
 
+	// API Client Factories - for instantiating a client for each API resource
 	Accounts(accountID uuid.UUID) (AccountsClient, error)
 	Automations(accountID uuid.UUID, workspaceID uuid.UUID) (AutomationsClient, error)
 	AccountMemberships(accountID uuid.UUID) (AccountMembershipsClient, error)
