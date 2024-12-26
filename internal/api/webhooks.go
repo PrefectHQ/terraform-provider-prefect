@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 )
@@ -15,32 +14,27 @@ type WebhooksClient interface {
 	Delete(ctx context.Context, webhookID string) error
 }
 
-/*** REQUEST DATA STRUCTS ***/
+type WebhookCore struct {
+	Name             string     `json:"name"`
+	Description      string     `json:"description,omitempty"`
+	Enabled          bool       `json:"enabled"`
+	Template         string     `json:"template"`
+	ServiceAccountID *uuid.UUID `json:"service_account_id"`
+}
 
+// Request Schemas.
 type WebhookCreateRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Template    string `json:"template"`
+	WebhookCore
 }
 
 type WebhookUpdateRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Template    string `json:"template"`
+	WebhookCore
 }
 
-/*** RESPONSE DATA STRUCTS ***/
-
+// Response Schemas.
 type Webhook struct {
-	ID          uuid.UUID `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	Enabled     bool      `json:"enabled"`
-	Template    string    `json:"template"`
-	Created     time.Time `json:"created"`
-	Updated     time.Time `json:"updated"`
+	BaseModel
+	WebhookCore
 	AccountID   uuid.UUID `json:"account"`
 	WorkspaceID uuid.UUID `json:"workspace"`
 	Slug        string    `json:"slug"`

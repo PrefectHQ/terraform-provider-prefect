@@ -18,7 +18,7 @@ main() {
 
   resource="prefect_${resource}"
 
-  dev_file_target="./dev/${name}"
+  dev_file_target="${PWD}/dev/${name}"
 
   mkdir -p $dev_file_target
 

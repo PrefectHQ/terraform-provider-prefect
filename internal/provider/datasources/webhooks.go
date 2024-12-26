@@ -22,16 +22,17 @@ type WebhookDataSource struct {
 
 // WebhookDataSourceModel defines the Terraform data source model.
 type WebhookDataSourceModel struct {
-	ID          customtypes.UUIDValue      `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	Name        types.String               `tfsdk:"name"`
-	Description types.String               `tfsdk:"description"`
-	Enabled     types.Bool                 `tfsdk:"enabled"`
-	Template    types.String               `tfsdk:"template"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	Slug        types.String               `tfsdk:"slug"`
+	ID               customtypes.UUIDValue      `tfsdk:"id"`
+	Created          customtypes.TimestampValue `tfsdk:"created"`
+	Updated          customtypes.TimestampValue `tfsdk:"updated"`
+	Name             types.String               `tfsdk:"name"`
+	Description      types.String               `tfsdk:"description"`
+	Enabled          types.Bool                 `tfsdk:"enabled"`
+	Template         types.String               `tfsdk:"template"`
+	AccountID        customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID      customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	Slug             types.String               `tfsdk:"slug"`
+	ServiceAccountID customtypes.UUIDValue      `tfsdk:"service_account_id"`
 }
 
 // NewWebhookDataSource returns a new WebhookDataSource.
@@ -109,6 +110,11 @@ var webhookAttributes = map[string]schema.Attribute{
 	"slug": schema.StringAttribute{
 		Computed:    true,
 		Description: "Slug of the webhook",
+	},
+	"service_account_id": schema.StringAttribute{
+		CustomType:  customtypes.UUIDType{},
+		Description: "ID of the Service Account to which this webhook belongs. `Pro` and `Enterprise` customers can assign a Service Account to a webhook to enhance security.",
+		Computed:    true,
 	},
 }
 
@@ -189,8 +195,8 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 
 	model.ID = customtypes.NewUUIDValue(webhook.ID)
-	model.Created = customtypes.NewTimestampPointerValue(&webhook.Created)
-	model.Updated = customtypes.NewTimestampPointerValue(&webhook.Updated)
+	model.Created = customtypes.NewTimestampPointerValue(webhook.Created)
+	model.Updated = customtypes.NewTimestampPointerValue(webhook.Updated)
 
 	model.Name = types.StringValue(webhook.Name)
 	model.Description = types.StringValue(webhook.Description)
@@ -199,6 +205,7 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	model.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	model.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	model.Slug = types.StringValue(webhook.Slug)
+	model.ServiceAccountID = customtypes.NewUUIDPointerValue(webhook.ServiceAccountID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {
