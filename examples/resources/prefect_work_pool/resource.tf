@@ -7,7 +7,7 @@ resource "prefect_work_pool" "example" {
 
 # Use a JSON file to load a custom base job template,
 # since it will likely be a large JSON object.
-resource "prefect_work_pool" "example" {
+resource "prefect_work_pool" "example_with_file" {
   name              = "test-k8s-pool"
   type              = "kubernetes"
   workspace_id      = data.prefect_workspace.prd.id
@@ -22,7 +22,7 @@ resource "prefect_work_pool" "example" {
 # Terraform's `file()` input does not perform any encoding
 # to normalize the input. If this is a problem for you, you
 # can wrap the file input in a jsonencode/jsondecode call:
-resource "prefect_work_pool" "example" {
+resource "prefect_work_pool" "example_with_file_encoded" {
   name              = "test-k8s-pool"
   type              = "kubernetes"
   workspace_id      = data.prefect_workspace.prd.id
@@ -34,7 +34,7 @@ resource "prefect_work_pool" "example" {
 # to load a default base job configuration dynamically.
 data "prefect_worker_metadata" "d" {}
 
-resource "prefect_work_pool" "example" {
+resource "prefect_work_pool" "example_with_datasource" {
   name              = "test-k8s-pool"
   type              = "kubernetes"
   workspace_id      = data.prefect_workspace.prd.id

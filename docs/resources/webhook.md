@@ -47,6 +47,18 @@ resource "prefect_webhook" "example_with_service_account" {
   enabled            = true
   template           = file("./webhook-template.json")
   service_account_id = prefect_service_account.authorized.id
+# When importing an existing Webhook resource
+# and using a `file()` input for `template`,
+# you may encounter inconsequential plan update diffs
+# due to minor whitespace changes. This is because
+# Terraform's `file()` input does not perform any encoding
+# to normalize the input. If this is a problem for you, you
+# can wrap the file input in a jsonencode/jsondecode call:
+resource "prefect_webhook" "example_with_file_encoded" {
+  name        = "my-webhook"
+  description = "This is a webhook"
+  enabled     = true
+  template    = jsonencode(jsondecode(file("./webhook-template.json")))
 }
 
 # Access the endpoint of the webhook.
