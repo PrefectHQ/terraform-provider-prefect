@@ -63,19 +63,21 @@ func TestAccResource_webhook(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// Check creation + existence of the work pool resource
+				// Check creation + existence of the webhook resource
 				Config: fixtureAccWebhook(workspace.Resource, randomName, webhookTemplateDynamic, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
 					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
 				),
 			},
 			{
-				// Check that changing the paused state will update the resource in place
+				// Check that changing the enabled state will update the resource in place
 				Config: fixtureAccWebhook(workspace.Resource, randomName, webhookTemplateDynamic, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
 					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "false"),
 				),
@@ -85,6 +87,7 @@ func TestAccResource_webhook(t *testing.T) {
 				Config: fixtureAccWebhook(workspace.Resource, randomName, webhookTemplateStatic, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
 					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
 				),
@@ -126,6 +129,23 @@ func testAccCheckWebhookExists(webhookResourceName string, webhook *api.Webhook)
 		}
 
 		*webhook = *fetchedWebhook
+
+		return nil
+	}
+}
+
+func testAccCheckWebhookEndpoint(webhookResourceName string, webhook *api.Webhook) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		webhookResource, exists := state.RootModule().Resources[webhookResourceName]
+		if !exists {
+			return fmt.Errorf("Resource not found in state: %s", webhookResourceName)
+		}
+
+		storedEndpoint := webhookResource.Primary.Attributes["endpoint"]
+		expectedEndpoint := fmt.Sprintf("https://api.stg.prefect.dev/hooks/%s", webhook.Slug)
+		if storedEndpoint != expectedEndpoint {
+			return fmt.Errorf("Endpoint does not match expected value: %s != %s", storedEndpoint, expectedEndpoint)
+		}
 
 		return nil
 	}
