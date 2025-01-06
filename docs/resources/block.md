@@ -47,7 +47,7 @@ resource "prefect_block" "aws_credentials_from_file" {
   type_slug = "aws-credentials"
 
   # prefect block type inspect aws-credentials
-  data = jsonencode(file("./aws-credentials.json"))
+  data = file("./aws-credentials.json")
 }
 
 # example:

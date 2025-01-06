@@ -2,6 +2,21 @@
 fail_fast: false
 
 repos:
+  - repo: local
+    hooks:
+      - id: make-docs
+        name: Terraform Provider Docs
+        # only run if these files are modified:
+        # - .go files
+        # - docs/
+        # - templates/
+        # - examples/
+        files: ^(.*\.go|docs/.*|templates/.*|examples/.*)$
+        entry: make
+        args: [docs]
+        language: system
+        pass_filenames: false
+
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.83.5
     hooks:
