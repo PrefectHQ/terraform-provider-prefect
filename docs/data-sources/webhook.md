@@ -43,6 +43,7 @@ data "prefect_webhook" "example_by_name" {
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `description` (String) Description of the webhook
 - `enabled` (Boolean) Whether the webhook is enabled
+- `service_account_id` (String) ID of the Service Account to which this webhook belongs. `Pro` and `Enterprise` customers can assign a Service Account to a webhook to enhance security.
 - `slug` (String) Slug of the webhook
 - `template` (String) Template used by the webhook
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
