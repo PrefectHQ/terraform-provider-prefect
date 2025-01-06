@@ -25,6 +25,25 @@ resource "prefect_webhook" "%s" {
 `, workspace, name, name, template, enabled)
 }
 
+func fixtureAccWebhookWithServiceAccount(workspace, name, template string, enabled bool) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_service_account" "service_account" {
+  name = "service-account"
+  account_role_name = "Member"
+}
+
+resource "prefect_webhook" "%s" {
+	name = "%s"
+	template = jsonencode(%s)
+	enabled = %t
+	workspace_id = prefect_workspace.test.id
+	service_account_id = prefect_service_account.service_account.id
+}
+`, workspace, name, name, template, enabled)
+}
+
 const webhookTemplateDynamic = `
 {
     "event": "model.refreshed",
@@ -90,6 +109,16 @@ func TestAccResource_webhook(t *testing.T) {
 					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
 					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
 					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
+				),
+			},
+			{
+				// Check that a service account can be set
+				Config: fixtureAccWebhookWithServiceAccount(workspace.Resource, randomName, webhookTemplateStatic, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
+					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
+					resource.TestCheckResourceAttrSet(webhookResourceName, "service_account_id"),
 				),
 			},
 			// Import State checks - import by name (dynamic)

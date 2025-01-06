@@ -29,16 +29,17 @@ type WebhookResource struct {
 }
 
 type WebhookResourceModel struct {
-	ID          types.String               `tfsdk:"id"`
-	Created     customtypes.TimestampValue `tfsdk:"created"`
-	Updated     customtypes.TimestampValue `tfsdk:"updated"`
-	Name        types.String               `tfsdk:"name"`
-	Description types.String               `tfsdk:"description"`
-	Enabled     types.Bool                 `tfsdk:"enabled"`
-	Template    types.String               `tfsdk:"template"`
-	AccountID   customtypes.UUIDValue      `tfsdk:"account_id"`
-	WorkspaceID customtypes.UUIDValue      `tfsdk:"workspace_id"`
-	Endpoint    types.String               `tfsdk:"endpoint"`
+	ID               types.String               `tfsdk:"id"`
+	Created          customtypes.TimestampValue `tfsdk:"created"`
+	Updated          customtypes.TimestampValue `tfsdk:"updated"`
+	Name             types.String               `tfsdk:"name"`
+	Description      types.String               `tfsdk:"description"`
+	Enabled          types.Bool                 `tfsdk:"enabled"`
+	Template         types.String               `tfsdk:"template"`
+	AccountID        customtypes.UUIDValue      `tfsdk:"account_id"`
+	WorkspaceID      customtypes.UUIDValue      `tfsdk:"workspace_id"`
+	Endpoint         types.String               `tfsdk:"endpoint"`
+	ServiceAccountID customtypes.UUIDValue      `tfsdk:"service_account_id"`
 }
 
 // NewWebhookResource returns a new WebhookResource.
@@ -114,20 +115,31 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
-				Computed:    true,
-				Optional:    true,
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"workspace_id": schema.StringAttribute{
-				Computed:    true,
-				Optional:    true,
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 			},
 			"endpoint": schema.StringAttribute{
 				Computed:    true,
 				Description: "The fully-formed webhook endpoint, eg. `https://api.prefect.cloud/hooks/<slug>`",
+			},
+			"service_account_id": schema.StringAttribute{
+				Optional:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "ID of the Service Account to which this webhook belongs. `Pro` and `Enterprise` customers can assign a Service Account to a webhook to enhance security. If set, the webhook request will be authorized with the Service Account's API key.",
 			},
 		},
 	}
@@ -136,8 +148,8 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 // copyWebhookResponseToModel maps an API response to a model that is saved in Terraform state.
 func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceModel, endpointHost string) {
 	tfModel.ID = types.StringValue(webhook.ID.String())
-	tfModel.Created = customtypes.NewTimestampPointerValue(&webhook.Created)
-	tfModel.Updated = customtypes.NewTimestampPointerValue(&webhook.Updated)
+	tfModel.Created = customtypes.NewTimestampPointerValue(webhook.Created)
+	tfModel.Updated = customtypes.NewTimestampPointerValue(webhook.Updated)
 	tfModel.Name = types.StringValue(webhook.Name)
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
@@ -145,6 +157,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	tfModel.Endpoint = types.StringValue(fmt.Sprintf("%s/hooks/%s", endpointHost, webhook.Slug))
+	tfModel.ServiceAccountID = customtypes.NewUUIDPointerValue(webhook.ServiceAccountID)
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -164,10 +177,13 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	createReq := api.WebhookCreateRequest{
-		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-		Enabled:     plan.Enabled.ValueBool(),
-		Template:    plan.Template.ValueString(),
+		WebhookCore: api.WebhookCore{
+			Name:             plan.Name.ValueString(),
+			Description:      plan.Description.ValueString(),
+			Enabled:          plan.Enabled.ValueBool(),
+			Template:         plan.Template.ValueString(),
+			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
+		},
 	}
 
 	webhook, err := webhookClient.Create(ctx, createReq)
@@ -255,10 +271,13 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	updateReq := api.WebhookUpdateRequest{
-		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-		Enabled:     plan.Enabled.ValueBool(),
-		Template:    plan.Template.ValueString(),
+		WebhookCore: api.WebhookCore{
+			Name:             plan.Name.ValueString(),
+			Description:      plan.Description.ValueString(),
+			Enabled:          plan.Enabled.ValueBool(),
+			Template:         plan.Template.ValueString(),
+			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
+		},
 	}
 
 	err = client.Update(ctx, state.ID.ValueString(), updateReq)
