@@ -9,14 +9,12 @@ import (
 )
 
 func fixtureAccSingleWorkQueue(
+	workspace string,
 	workPoolName string,
 	workQueueName string,
 ) string {
 	return fmt.Sprintf(`
-
-provider "prefect" {
-	workspace_id = "ac312065-d42f-4560-9b26-c457fd3f7c49"
-}
+%s
 
 resource "prefect_work_pool" "test" {
 	name = "%s"
@@ -36,19 +34,17 @@ data "prefect_work_queue" "test" {
 	work_pool_name = prefect_work_pool.test.name
 }
 
-`, workPoolName, workQueueName)
+`, workspace, workPoolName, workQueueName)
 }
 
 func fixtureAccMultipleWorkQueue(
+	workspace string,
 	workPoolName string,
 	workQueue1Name string,
 	workQueue2Name string,
 ) string {
 	return fmt.Sprintf(`
-
-provider "prefect" {
-	workspace_id = "ac312065-d42f-4560-9b26-c457fd3f7c49"
-}
+%s
 
 resource "prefect_work_pool" "test_multi" {
 	name = "%s"
@@ -74,23 +70,24 @@ data "prefect_work_queues" "test" {
     work_pool_name = "%s"
 }
 
-`, workPoolName, workQueue1Name, workQueue2Name, workPoolName, workPoolName)
+`, workspace, workPoolName, workQueue1Name, workQueue2Name, workPoolName, workPoolName)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_work_queue(t *testing.T) {
 	singleWorkQueueDatasourceName := "data.prefect_work_queue.test"
 	multipleWorkQueueDatasourceName := "data.prefect_work_queues.test"
+	workspace := testutils.NewEphemeralWorkspace()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
-		// PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work pool
-				Config: fixtureAccSingleWorkQueue("test-poolb", "test-queueb"),
+				Config: fixtureAccSingleWorkQueue(workspace.Resource, "test-pool", "test-queue"),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queueb"),
+					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queue"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "id"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "updated"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "is_paused"),
@@ -100,7 +97,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work pools
-				Config: fixtureAccMultipleWorkQueue("testpoolmulti", "test-queue", "test-queue-2"),
+				Config: fixtureAccMultipleWorkQueue(workspace.Resource, "test-pool-multi", "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.#", "3"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.name", "default1"),
