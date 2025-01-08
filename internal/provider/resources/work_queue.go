@@ -106,7 +106,7 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"work_pool_name": schema.StringAttribute{
 				Description: "The name of the work pool associated with this work queue",
-				Optional:    true,
+				Required:    true,
 			},
 			"name": schema.StringAttribute{
 				Required:    true,

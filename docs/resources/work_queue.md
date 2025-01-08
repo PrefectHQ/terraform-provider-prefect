@@ -21,6 +21,7 @@ Work Queues can be associated with a work pool and have configurations like conc
 ### Required
 
 - `name` (String) Name of the work queue
+- `work_pool_name` (String) The name of the work pool associated with this work queue
 
 ### Optional
 
@@ -29,7 +30,6 @@ Work Queues can be associated with a work pool and have configurations like conc
 - `description` (String) Description of the work queue
 - `is_paused` (Boolean) Whether this work queue is paused
 - `priority` (Number) The priority of this work queue
-- `work_pool_name` (String) The name of the work pool associated with this work queue
 - `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only
