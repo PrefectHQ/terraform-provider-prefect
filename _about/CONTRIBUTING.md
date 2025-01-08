@@ -94,15 +94,17 @@ make test
 
 ### Terraform acceptance tests
 
-The following command will run [TF acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests), by prefixing the test run with `TF_ACC=1`.
+The following command will run [Terraform acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests) by prefixing the test run with `TF_ACC=1`.
 
 ```shell
 make testacc
 ```
 
-**NOTE:** Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account when running locally
+Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account.
 
-**NOTE:** In most development/contribution cases, acceptance tests will be run in CI/CD via Github Actions, as test-specific credentials are stored in the environment there.  However, if there are instances where a developer wishes to run the tests locally - they can initialize their test provider through the normal environment variables, pointed to an account that they own:
+In most development and contribution cases, acceptance tests will be run in CI/CD via Github Actions, as test-specific credentials are stored in the environment there. These tests happen in Prefect's internal staging environment, and a Prefect team member must approve the CI action for it to run.
+
+The tests can optionally be triggered from a developer's machine by specifying the Prefect API url, API key, and account ID:
 
 ```shell
 export PREFECT_API_URL=https://api.prefect.cloud
@@ -112,7 +114,12 @@ export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 make testacc
 ```
 
-### Integration tests
+All acceptance tests run in an ephemeral Prefect workspace, except tests for Prefect workspaces and accounts.
+This means that the target Prefect environment needs to allow for multiple workspaces. If your account lacks this,
+contribute tests to your pull request and a Prefect team member will review and approve them to run in our internal
+infrastructure.
+
+### Manual testing
 
 You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
 
