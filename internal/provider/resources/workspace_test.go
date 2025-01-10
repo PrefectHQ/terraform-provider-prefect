@@ -65,6 +65,8 @@ func TestAccResource_workspace(t *testing.T) {
 			},
 		},
 	})
+
+	addWorkspaceSweeper("workspaces_create", []string{ephemeralWorkspaceCreate.Name, ephemeralWorkspaceUpdate.Name})
 }
 
 func testAccCheckWorkspaceExists(workspace *api.Workspace) resource.TestCheckFunc {

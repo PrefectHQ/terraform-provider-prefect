@@ -33,4 +33,5 @@ TF_ACC=1 \
   PREFECT_API_URL=$(op read "${vault_entry}/PREFECT_API_URL") \
   PREFECT_API_KEY=$(op read "${vault_entry}/PREFECT_API_KEY") \
   PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/PREFECT_CLOUD_ACCOUNT_ID") \
-  gotestsum --max-fails=50 ./... -count=1 -v ${run_arg}
+  go test ./... -v ${run_arg} -sweep=foo
+  # gotestsum --max-fails=50 ./... -count=1 -v ${run_arg} -sweep=all
