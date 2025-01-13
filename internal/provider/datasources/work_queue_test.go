@@ -17,21 +17,21 @@ func fixtureAccSingleWorkQueue(
 %s
 
 resource "prefect_work_pool" "test" {
-	name = "%s"
-	type = "kubernetes"
-	paused = "false"
+  name = "%s"
+  type = "kubernetes"
+  paused = "false"
 }
 
 resource "prefect_work_queue" "test" {
   name = "%s"
-	work_pool_name = prefect_work_pool.test.name
-	priority = 1
-	description = "my work queue"
+  work_pool_name = prefect_work_pool.test.name
+  priority = 1
+  description = "my work queue"
 }
 
 data "prefect_work_queue" "test" {
-	name = prefect_work_queue.test.name
-	work_pool_name = prefect_work_pool.test.name
+  name = prefect_work_queue.test.name
+  work_pool_name = prefect_work_pool.test.name
 }
 
 `, workspace, workPoolName, workQueueName)
