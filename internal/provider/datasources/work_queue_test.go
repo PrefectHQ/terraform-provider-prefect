@@ -47,30 +47,30 @@ func fixtureAccMultipleWorkQueue(
 %s
 
 resource "prefect_work_pool" "test_multi" {
-	name = "%s"
-	type = "kubernetes"
-	paused = "false"
+  name = "%s"
+  type = "kubernetes"
+  paused = "false"
 }
 
 resource "prefect_work_queue" "test_queue1" {
-	name = "%s"
-	work_pool_name = prefect_work_pool.test_multi.name
-	priority = 1
-	description = "my work queue"
+  name = "%s"
+  work_pool_name = prefect_work_pool.test_multi.name
+  priority = 1
+  description = "my work queue"
 }
 
 resource "prefect_work_queue" "test_queue2" {
-    name = "%s"
-	work_pool_name = prefect_work_pool.test_multi.name
+  name = "%s"
+  work_pool_name = prefect_work_pool.test_multi.name
 }
 
 data "prefect_work_queues" "test" {
-    work_pool_name = prefect_work_pool.test_multi.name
-	depends_on = [
-		prefect_work_pool.test_multi,
-		prefect_work_queue.test_queue1,
-		prefect_work_queue.test_queue2
-	]
+  work_pool_name = prefect_work_pool.test_multi.name
+  depends_on = [
+    prefect_work_pool.test_multi,
+	prefect_work_queue.test_queue1,
+	prefect_work_queue.test_queue2
+  ]
 }
 
 `, workspace, workPoolName, workQueue1Name, workQueue2Name)
