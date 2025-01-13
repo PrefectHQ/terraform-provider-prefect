@@ -18,7 +18,7 @@ help:
 	@echo "  lint        - run static code analysis"
 	@echo "  test        - run automated unit tests"
 	@echo "  testacc     - run automated acceptance tests"
-	@echo "  testacc-dev - run automated acceptance tests from a local machine (args TESTS=<tests> LOG_LEVEL=<level>)"
+	@echo "  testacc-dev - run automated acceptance tests from a local machine (args: TESTS=<tests or empty> LOG_LEVEL=<level> SWEEP=<yes or empty>)"
 	@echo "  docs        - builds Terraform documentation"
 	@echo "  dev-new     - creates a new dev testfile (args: resource=<resource> name=<name>)"
 	@echo "  dev-clean   - cleans up dev directory"
