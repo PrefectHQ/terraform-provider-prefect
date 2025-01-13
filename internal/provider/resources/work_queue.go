@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -117,7 +118,9 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Description of the work queue",
+				Default:     stringdefault.StaticString(""), // Because prefect returns this as the default for none provided
 			},
 			"is_paused": schema.BoolAttribute{
 				Computed:    true,
@@ -132,6 +135,7 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"priority": schema.Int64Attribute{
 				Description: "The priority of this work queue",
 				Optional:    true,
+				Computed:    true,
 			},
 		},
 	}
@@ -142,13 +146,16 @@ func copyWorkQueueToModel(queue *api.WorkQueue, tfModel *WorkQueueResourceModel)
 	tfModel.ID = types.StringValue(queue.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(queue.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(queue.Updated)
-
 	tfModel.ConcurrencyLimit = types.Int64PointerValue(queue.ConcurrencyLimit)
 	tfModel.Priority = types.Int64PointerValue(queue.Priority)
 	tfModel.Description = types.StringPointerValue(queue.Description)
 	tfModel.Name = types.StringValue(queue.Name)
 	tfModel.IsPaused = types.BoolValue(queue.IsPaused)
 	tfModel.WorkPoolName = types.StringValue(queue.WorkPoolName)
+}
+
+func StringPtr(s string) *string {
+	return &s
 }
 
 // Create creates the resource and sets the initial Terraform state.
@@ -172,14 +179,19 @@ func (r *WorkQueueResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	// Create the work queue using the WorkQueue client
-	queue, err := client.Create(ctx, api.WorkQueueCreate{
+	createRequest := api.WorkQueueCreate{
 		Name:             plan.Name.ValueString(),
-		Description:      plan.Description.ValueStringPointer(),
-		IsPaused:         plan.IsPaused.ValueBool(),
+		IsPaused:         plan.IsPaused.ValueBoolPointer(),
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
-		Priority:         plan.Priority.ValueInt64Pointer(),
-	})
+		Description:      plan.Description.ValueStringPointer(),
+	}
+
+	if *plan.Priority.ValueInt64Pointer() != 0 { // 0 is the value it provides when user does not specify it
+		createRequest.Priority = plan.Priority.ValueInt64Pointer()
+	}
+
+	// Create the work queue using the WorkQueue client
+	queue, err := client.Create(ctx, createRequest)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Queue", "create", err))
 
@@ -242,12 +254,22 @@ func (r *WorkQueueResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	err = client.Update(ctx, plan.Name.ValueString(), api.WorkQueueUpdate{
-		Description:      plan.Description.ValueStringPointer(),
+	updateRequest := api.WorkQueueUpdate{
 		IsPaused:         plan.IsPaused.ValueBoolPointer(),
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
-		Priority:         plan.Priority.ValueInt64Pointer(),
-	})
+	}
+
+	if plan.Description.IsNull() {
+		updateRequest.Description = StringPtr("")
+	} else {
+		updateRequest.Description = plan.Description.ValueStringPointer()
+	}
+
+	if !plan.Priority.IsNull() {
+		updateRequest.Priority = plan.Priority.ValueInt64Pointer()
+	}
+
+	err = client.Update(ctx, plan.Name.ValueString(), updateRequest)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Queue", "update", err))
 

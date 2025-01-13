@@ -31,7 +31,7 @@ type WorkQueue struct {
 type WorkQueueCreate struct {
 	Name             string  `json:"name"`
 	Description      *string `json:"description"`
-	IsPaused         bool    `json:"is_paused"`
+	IsPaused         *bool   `json:"is_paused"`
 	ConcurrencyLimit *int64  `json:"concurrency_limit"`
 	Priority         *int64  `json:"priority"`
 }

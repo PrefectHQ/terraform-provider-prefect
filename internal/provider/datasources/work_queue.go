@@ -60,8 +60,8 @@ func (d *WorkQueueDataSource) Configure(_ context.Context, req datasource.Config
 	d.client = client
 }
 
-// Shared set of schema attributes between work_pool (singular)
-// and work_pools (plural) datasources. Any work_pool (singular)
+// Shared set of schema attributes between work_queue (singular)
+// and work_queues (plural) datasources. Any work_queue (singular)
 // specific attributes will be added to a deep copy in the Schema method.
 var workQueueAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
@@ -73,11 +73,11 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 	"created": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time of the work pool creation in RFC 3339 format",
+		Description: "Date and time of the work queue creation in RFC 3339 format",
 	},
 	"priority": schema.Int64Attribute{
 		Computed:    true,
-		Description: "Priority of the work pool",
+		Description: "Priority of the work queue",
 	},
 	"work_pool_name": schema.StringAttribute{
 		Optional:    true,
@@ -90,21 +90,21 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,
-		Description: "Name of the work pool",
+		Description: "Name of the work queue",
 		Optional:    true,
 	},
 	"description": schema.StringAttribute{
 		Computed:    true,
-		Description: "Description of the work pool",
+		Description: "Description of the work queue",
 		Optional:    true,
 	},
 	"is_paused": schema.BoolAttribute{
 		Computed:    true,
-		Description: "Whether this work pool is paused",
+		Description: "Whether this work queue is paused",
 	},
 	"concurrency_limit": schema.Int64Attribute{
 		Computed:    true,
-		Description: "The concurrency limit applied to this work pool",
+		Description: "The concurrency limit applied to this work queue",
 		Optional:    true,
 	},
 }
@@ -113,7 +113,7 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 func (d *WorkQueueDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	// Create a copy of the base attributes
 	// and add the account/workspace ID overrides here
-	// as they are not needed in the work_pools (plural) list
+	// as they are not needed in the work_queues (plural) list
 
 	workQueueAttributes := make(map[string]schema.Attribute)
 	for k, v := range workQueueAttributesBase {
