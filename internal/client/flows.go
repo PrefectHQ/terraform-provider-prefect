@@ -63,7 +63,10 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 // List returns a list of Flows, based on the provided list of handle names.
 func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Flow, error) {
 	filterQuery := api.WorkspaceFilter{}
-	filterQuery.Workspaces.Handle.Any = handleNames
+
+	if len(handleNames) != 0 {
+		filterQuery.Workspaces.Handle.Any = handleNames
+	}
 
 	cfg := requestConfig{
 		method:       http.MethodPost,

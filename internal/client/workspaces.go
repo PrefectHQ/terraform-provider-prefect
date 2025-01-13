@@ -55,7 +55,10 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 // List returns a list of Workspaces, based on the provided list of handle names.
 func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*api.Workspace, error) {
 	filterQuery := api.WorkspaceFilter{}
-	filterQuery.Workspaces.Handle.Any = handleNames
+
+	if len(handleNames) != 0 {
+		filterQuery.Workspaces.Handle.Any = handleNames
+	}
 
 	cfg := requestConfig{
 		method:       http.MethodPost,
