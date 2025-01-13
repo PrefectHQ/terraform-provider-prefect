@@ -87,7 +87,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// Check that we can query a single work pool
+				// Check that we can query a single work queue
 				Config: fixtureAccSingleWorkQueue(workspace.Resource, "test-pool", "test-queue"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queue"),
