@@ -53,7 +53,7 @@ resource "prefect_work_pool" "test_multi" {
 }
 
 resource "prefect_work_queue" "test_queue1" {
-    name = "%s"
+	name = "%s"
 	work_pool_name = prefect_work_pool.test_multi.name
 	priority = 1
 	description = "my work queue"
@@ -90,9 +90,9 @@ func TestAccDatasource_work_queue(t *testing.T) {
 					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queue"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "id"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "updated"),
-					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "is_paused"),
-					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "priority"),
-					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "description"),
+					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "is_paused", "false"),
+					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "priority", "1"),
+					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "description", "my work queue"),
 				),
 			},
 			{
