@@ -99,7 +99,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 				),
 			},
 			{
-				// Check that we can query multiple work pools
+				// Check that we can query multiple work queues
 				Config: fixtureAccMultipleWorkQueue(workspace.Resource, "test-pool-multi", "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.#", "3"),
