@@ -174,7 +174,7 @@ func (r *WorkQueueResource) Create(ctx context.Context, req resource.CreateReque
 		plan.WorkPoolName.ValueString(),
 	)
 	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Queue", err))
 
 		return
 	}
