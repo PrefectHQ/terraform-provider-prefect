@@ -3,6 +3,7 @@ BINARY=terraform-provider-${NAME}
 
 TESTS?=""
 LOG_LEVEL?="INFO"
+SWEEP?=""
 
 default: build
 .PHONY: default
@@ -50,7 +51,7 @@ testacc:
 .PHONY: testacc
 
 testacc-dev:
-	./scripts/testacc-dev $(TESTS) $(LOG_LEVEL)
+	./scripts/testacc-dev $(TESTS) $(LOG_LEVEL) $(SWEEP)
 .PHONY: testacc-dev
 
 docs:
