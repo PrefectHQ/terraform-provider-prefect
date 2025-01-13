@@ -61,16 +61,19 @@ resource "prefect_work_queue" "test_queue1" {
 
 resource "prefect_work_queue" "test_queue2" {
     name = "%s"
-	work_pool_name ="%s"
-	priority = 2
-	description = "my work queue 2"
+	work_pool_name = prefect_work_pool.test_multi.name
 }
 
 data "prefect_work_queues" "test" {
-    work_pool_name = "%s"
+    work_pool_name = prefect_work_pool.test_multi.name
+	depends_on = [
+		prefect_work_pool.test_multi,
+		prefect_work_queue.test_queue1,
+		prefect_work_queue.test_queue2
+	]
 }
 
-`, workspace, workPoolName, workQueue1Name, workQueue2Name, workPoolName, workPoolName)
+`, workspace, workPoolName, workQueue1Name, workQueue2Name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -100,21 +103,24 @@ func TestAccDatasource_work_queue(t *testing.T) {
 				Config: fixtureAccMultipleWorkQueue(workspace.Resource, "test-pool-multi", "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.#", "3"),
-					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.name", "default1"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.name", "test-queue"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.id"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.updated"),
-					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.is_paused"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.is_paused", "false"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.priority"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.description"),
-					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues", "test-queue"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.1.name", "default"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.1.priority", "2"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.id"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.updated"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.is_paused"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.priority"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.description"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.2.name", "test-queue-2"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.2.priority", "3"),
 				),
 			},
 		},
