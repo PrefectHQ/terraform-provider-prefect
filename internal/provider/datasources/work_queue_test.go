@@ -23,7 +23,7 @@ resource "prefect_work_pool" "test" {
 }
 
 resource "prefect_work_queue" "test" {
-    name = "%s"
+  name = "%s"
 	work_pool_name = prefect_work_pool.test.name
 	priority = 1
 	description = "my work queue"
