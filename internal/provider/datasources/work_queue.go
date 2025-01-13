@@ -67,7 +67,7 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.UUIDType{},
-		Description: "Work pool ID (UUID)",
+		Description: "Work queue ID (UUID)",
 		Optional:    true,
 	},
 	"created": schema.StringAttribute{
@@ -86,7 +86,7 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 	"updated": schema.StringAttribute{
 		Computed:    true,
 		CustomType:  customtypes.TimestampType{},
-		Description: "Date and time that the work pool was last updated in RFC 3339 format",
+		Description: "Date and time that the work queue was last updated in RFC 3339 format",
 	},
 	"name": schema.StringAttribute{
 		Computed:    true,

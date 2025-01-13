@@ -40,7 +40,7 @@ Optional:
 
 - `concurrency_limit` (Number) The concurrency limit applied to this work queue
 - `description` (String) Description of the work queue
-- `id` (String) Work pool ID (UUID)
+- `id` (String) Work queue ID (UUID)
 - `name` (String) Name of the work queue
 - `work_pool_name` (String) Name of the associated work pool
 
@@ -49,4 +49,4 @@ Read-Only:
 - `created` (String) Date and time of the work queue creation in RFC 3339 format
 - `is_paused` (Boolean) Whether this work queue is paused
 - `priority` (Number) Priority of the work queue
-- `updated` (String) Date and time that the work pool was last updated in RFC 3339 format
+- `updated` (String) Date and time that the work queue was last updated in RFC 3339 format
