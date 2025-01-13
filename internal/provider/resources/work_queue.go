@@ -322,28 +322,28 @@ func (r *WorkQueueResource) Delete(ctx context.Context, req resource.DeleteReque
 
 // ImportState imports the resource into Terraform state.
 func (r *WorkQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Same logic for handling imports as in WorkPoolResource.
-	// we'll allow input values in the form of:
-	// - "workspace_id,name"
-	// - "name"
-	maxInputCount := 2
+	// Allow input values in the form of:
+	// - "workspace_id,work_pool_name,work_queue_name"
+	// - "work_pool_name,work_queue_name"
+	minInputCount := 2
+	maxInputCount := 3
 	inputParts := strings.Split(req.ID, ",")
 
-	// eg. "foo,bar,baz"
+	// eg. "foo,bar,baz,qux"
 	if len(inputParts) > maxInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+			fmt.Sprintf("Expected a maximum of 3 import identifiers, in the form of `workspace_id,work_pool_name,work_queue_name`. Got %q", req.ID),
 		)
 
 		return
 	}
 
-	// eg. ",foo" or "foo,"
-	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
+	// eg. "foo" or ""
+	if len(inputParts) < minInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
+			"Expected at least 2 import identifiers, in the form of `work_pool_name,work_queue_name`.",
 		)
 
 		return
@@ -351,11 +351,17 @@ func (r *WorkQueueResource) ImportState(ctx context.Context, req resource.Import
 
 	if len(inputParts) == maxInputCount {
 		workspaceID := inputParts[0]
-		name := inputParts[1]
+		workPoolName := inputParts[1]
+		workQueueName := inputParts[2]
 
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), workPoolName)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), workQueueName)...)
 	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root("name"), req, resp)
+		workPoolName := inputParts[0]
+		workQueueName := inputParts[1]
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), workPoolName)...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), workQueueName)...)
 	}
 }
