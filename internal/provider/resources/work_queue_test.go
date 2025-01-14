@@ -26,19 +26,19 @@ func fixtureAccWorkQueueCreate(
 %s
 
 resource "prefect_work_pool" "%s" {
-	name = "%s"
-	type = "%s"
-	paused = %t
-	base_job_template = jsonencode(%s)
-	workspace_id = prefect_workspace.test.id
-	depends_on = [prefect_workspace.test]
+  name = "%s"
+  type = "%s"
+  paused = %t
+  base_job_template = jsonencode(%s)
+  workspace_id = prefect_workspace.test.id
+  depends_on = [prefect_workspace.test]
 }
 
 resource "prefect_work_queue" "%s" {
-	name = "%s"
-	work_pool_name = prefect_work_pool.%s.name
-	priority = %d
-	description = "%s"
+  name = "%s"
+  work_pool_name = prefect_work_pool.%s.name
+  priority = %d
+  description = "%s"
 }
 
 `, workspace, workPoolName, workPoolName, poolType, paused, baseJobTemplate, workQueueName, workQueueName, workPoolName, priority, description)
