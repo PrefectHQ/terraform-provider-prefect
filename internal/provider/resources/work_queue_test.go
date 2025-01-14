@@ -30,6 +30,8 @@ resource "prefect_work_pool" "%s" {
 	type = "%s"
 	paused = %t
 	base_job_template = jsonencode(%s)
+	workspace_id = prefect_workspace.test.id
+	depends_on = [prefect_workspace.test]
 }
 
 resource "prefect_work_queue" "%s" {
