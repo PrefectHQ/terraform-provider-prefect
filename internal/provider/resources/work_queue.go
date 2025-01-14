@@ -17,6 +17,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+	"k8s.io/utils/ptr"
 )
 
 var (
@@ -154,10 +155,6 @@ func copyWorkQueueToModel(queue *api.WorkQueue, tfModel *WorkQueueResourceModel)
 	tfModel.WorkPoolName = types.StringValue(queue.WorkPoolName)
 }
 
-func StringPtr(s string) *string {
-	return &s
-}
-
 // Create creates the resource and sets the initial Terraform state.
 func (r *WorkQueueResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan WorkQueueResourceModel
@@ -260,7 +257,7 @@ func (r *WorkQueueResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	if plan.Description.IsNull() {
-		updateRequest.Description = StringPtr("")
+		updateRequest.Description = ptr.To("")
 	} else {
 		updateRequest.Description = plan.Description.ValueStringPointer()
 	}
