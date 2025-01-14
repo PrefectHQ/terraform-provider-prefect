@@ -20,6 +20,8 @@ resource "prefect_work_pool" "test" {
   name = "%s"
   type = "kubernetes"
   paused = "false"
+  workspace_id = prefect_workspace.test.id
+  depends_on = [prefect_workspace.test]
 }
 
 resource "prefect_work_queue" "test" {
@@ -50,6 +52,8 @@ resource "prefect_work_pool" "test_multi" {
   name = "%s"
   type = "kubernetes"
   paused = "false"
+  workspace_id = prefect_workspace.test.id
+  depends_on = [prefect_workspace.test]
 }
 
 resource "prefect_work_queue" "test_queue1" {
