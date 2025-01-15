@@ -22,25 +22,25 @@ type Deployment struct {
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
 	ConcurrencyLimit       *int64                  `json:"concurrency_limit"`
-	ConcurrencyOptions     *ConcurrencyOptions     `json:"concurrency_options,omitempty"`
-	Description            string                  `json:"description,omitempty"`
+	ConcurrencyOptions     *ConcurrencyOptions     `json:"concurrency_options"`
+	Description            string                  `json:"description"`
 	EnforceParameterSchema bool                    `json:"enforce_parameter_schema"`
 	Entrypoint             string                  `json:"entrypoint"`
 	FlowID                 uuid.UUID               `json:"flow_id"`
 	GlobalConcurrencyLimit *GlobalConcurrencyLimit `json:"global_concurrency_limit"`
-	JobVariables           map[string]interface{}  `json:"job_variables,omitempty"`
-	ManifestPath           string                  `json:"manifest_path,omitempty"`
+	JobVariables           map[string]interface{}  `json:"job_variables"`
+	ManifestPath           string                  `json:"manifest_path"`
 	Name                   string                  `json:"name"`
-	ParameterOpenAPISchema map[string]interface{}  `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{}  `json:"parameters,omitempty"`
+	ParameterOpenAPISchema map[string]interface{}  `json:"parameter_openapi_schema"`
+	Parameters             map[string]interface{}  `json:"parameters"`
 	Path                   string                  `json:"path"`
 	Paused                 bool                    `json:"paused"`
-	PullSteps              []PullStep              `json:"pull_steps,omitempty"`
-	StorageDocumentID      uuid.UUID               `json:"storage_document_id,omitempty"`
+	PullSteps              []PullStep              `json:"pull_steps"`
+	StorageDocumentID      uuid.UUID               `json:"storage_document_id"`
 	Tags                   []string                `json:"tags"`
-	Version                string                  `json:"version,omitempty"`
-	WorkPoolName           string                  `json:"work_pool_name,omitempty"`
-	WorkQueueName          string                  `json:"work_queue_name,omitempty"`
+	Version                string                  `json:"version"`
+	WorkPoolName           string                  `json:"work_pool_name"`
+	WorkQueueName          string                  `json:"work_queue_name"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
@@ -50,10 +50,10 @@ type DeploymentCreate struct {
 	Description            string                 `json:"description,omitempty"`
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
-	FlowID                 uuid.UUID              `json:"flow_id"`
+	FlowID                 uuid.UUID              `json:"flow_id"` // required
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
-	Name                   string                 `json:"name"`
+	Name                   string                 `json:"name"` // required
 	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
@@ -74,7 +74,7 @@ type DeploymentUpdate struct {
 	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath           string                 `json:"manifest_path"`
+	ManifestPath           string                 `json:"manifest_path,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
