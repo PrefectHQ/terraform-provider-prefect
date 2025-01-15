@@ -302,7 +302,7 @@ func getWorkQueueImportStateID(workQueueResourceName string, workPoolName string
 		}
 		workQueueName := workQueueResource.Primary.Attributes["name"]
 
-		return fmt.Sprintf("%s, %s,%s", workspaceID, workPoolName, workQueueName), nil
+		return fmt.Sprintf("%s,%s,%s", workspaceID, workPoolName, workQueueName), nil
 	}
 }
 
