@@ -39,6 +39,7 @@ resource "prefect_work_queue" "%s" {
   work_pool_name = prefect_work_pool.%s.name
   priority = %d
   description = "%s"
+  workspace_id = prefect_workspace.test.id
 }
 
 `, workspace, workPoolName, workPoolName, poolType, paused, baseJobTemplate, workQueueName, workQueueName, workPoolName, priority, description)

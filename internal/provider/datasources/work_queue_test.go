@@ -29,11 +29,13 @@ resource "prefect_work_queue" "test" {
   work_pool_name = prefect_work_pool.test.name
   priority = 1
   description = "my work queue"
+  workspace_id = prefect_workspace.test.id
 }
 
 data "prefect_work_queue" "test" {
   name = prefect_work_queue.test.name
   work_pool_name = prefect_work_pool.test.name
+  workspace_id = prefect_workspace.test.id
 }
 
 `, workspace, workPoolName, workQueueName)
@@ -61,15 +63,18 @@ resource "prefect_work_queue" "test_queue1" {
   work_pool_name = prefect_work_pool.test_multi.name
   priority = 1
   description = "my work queue"
+  workspace_id = prefect_workspace.test.id
 }
 
 resource "prefect_work_queue" "test_queue2" {
   name = "%s"
   work_pool_name = prefect_work_pool.test_multi.name
+  workspace_id = prefect_workspace.test.id
 }
 
 data "prefect_work_queues" "test" {
   work_pool_name = prefect_work_pool.test_multi.name
+  workspace_id = prefect_workspace.test.id 
   depends_on = [
     prefect_work_pool.test_multi,
 	prefect_work_queue.test_queue1,
