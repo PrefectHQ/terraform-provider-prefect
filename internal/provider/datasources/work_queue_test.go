@@ -90,7 +90,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 	singleWorkQueueDatasourceName := "data.prefect_work_queue.test"
 	multipleWorkQueueDatasourceName := "data.prefect_work_queues.test"
 	workspace := testutils.NewEphemeralWorkspace()
-
+	
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
@@ -112,13 +112,13 @@ func TestAccDatasource_work_queue(t *testing.T) {
 				Config: fixtureAccMultipleWorkQueue(workspace.Resource, "test-pool-multi", "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.#", "3"),
-					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.name", "test-queue"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.name", "test-queue"), // We added this as priority 1, so it will have the highest
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.id"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.updated"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.is_paused", "false"),
-					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.priority"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.0.priority", "1"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.0.description"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.1.name", "default"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.1.priority", "2"),
@@ -126,7 +126,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.created"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.updated"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.is_paused"),
-					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.priority"),
+					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.1.priority", "2"),
 					resource.TestCheckResourceAttrSet(multipleWorkQueueDatasourceName, "work_queues.1.description"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.2.name", "test-queue-2"),
 					resource.TestCheckResourceAttr(multipleWorkQueueDatasourceName, "work_queues.2.priority", "3"),
