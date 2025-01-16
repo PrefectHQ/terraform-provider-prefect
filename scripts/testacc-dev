@@ -19,13 +19,23 @@ vault_entry='op://Platform/Terraform provider acceptance test secrets'
 
 tests=${1:-""}
 log_level=${2:-"INFO"}
+sweep=${3:-""}
 
 run_arg=""
-if [ "${tests}" == "" ]; then
-  echo "no specific test configured, running all"
-else
+if [ "${sweep}" != "" ]; then
+  # If sweep is set to anything, only run the sweepers and skip the acceptance tests.
+  # This only runs on the 'resources' and 'datasources' packages, as those contain
+  # acceptance tests where sweepers apply.
+  #
+  # The '-v' flag ensures that 'fmt.Printf' statements are visible.
+  echo "sweeping..."
+  run_arg="go test ./internal/sweep -v -sweep=all"
+elif [ "${tests}" != "" ]; then
   echo "specific test(s) configured: ${tests}"
-  run_arg="-run ${tests}"
+  run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ^${tests}$"
+else
+  echo "no specific test configured, running all"
+  run_arg="gotestsum --max-fails=50 ./... -count=1 -v"
 fi
 
 TF_ACC=1 \
@@ -33,4 +43,4 @@ TF_ACC=1 \
   PREFECT_API_URL=$(op read "${vault_entry}/PREFECT_API_URL") \
   PREFECT_API_KEY=$(op read "${vault_entry}/PREFECT_API_KEY") \
   PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/PREFECT_CLOUD_ACCOUNT_ID") \
-  gotestsum --max-fails=50 ./... -count=1 -v ${run_arg}
+  ${run_arg}

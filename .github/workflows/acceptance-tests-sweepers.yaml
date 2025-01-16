@@ -1,0 +1,29 @@
+# This workflow runs the Terraform acceptance tests sweepers every day.
+name: Acceptance Tests - Sweepers
+
+"on":
+  # Run at 7 AM UTC every day (2 AM EST)
+  schedule:
+    - cron: '0 7 * * *' 
+  # Run manually
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  sweepers:
+    permissions:
+      contents: read
+    name: Run Sweepers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Run sweeper tests
+        run: make testacc-sweepers
+        env:
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
+          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
