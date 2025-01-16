@@ -248,6 +248,8 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewWorkerMetadataDataSource,
 		datasources.NewWorkPoolDataSource,
 		datasources.NewWorkPoolsDataSource,
+		datasources.NewWorkQueueDataSource,
+		datasources.NewWorkQueuesDataSource,
 		datasources.NewWorkspaceDataSource,
 		datasources.NewWorkspaceRoleDataSource,
 	}
@@ -271,5 +273,6 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
 		resources.NewWorkspaceRoleResource,
+		resources.NewWorkQueueResource,
 	}
 }
