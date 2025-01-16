@@ -29,7 +29,7 @@ if [ "${sweep}" != "" ]; then
   #
   # The '-v' flag ensures that 'fmt.Printf' statements are visible.
   echo "sweeping..."
-  run_arg="go test ./internal/provider/resources -v -sweep=all"
+  run_arg="go test ./internal/sweep -v -sweep=all"
 elif [ "${tests}" != "" ]; then
   echo "specific test(s) configured: ${tests}"
   run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ^${tests}$"
