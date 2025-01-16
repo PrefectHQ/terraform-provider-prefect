@@ -2,7 +2,8 @@ package datasources
 
 import (
 	"context"
-
+	"sort"
+	
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -123,6 +124,20 @@ func (d *WorkQueuesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 		return
 	}
+
+	// Sort the queues by priority
+	sort.SliceStable(queues, func(i, j int) bool {
+		if queues[i].Priority == nil && queues[j].Priority == nil {
+			return false
+		}
+		if queues[i].Priority == nil {
+			return false
+		}
+		if queues[j].Priority == nil {
+			return true
+		}
+		return *queues[i].Priority < *queues[j].Priority
+	})
 
 	attributeTypes := map[string]attr.Type{
 		"id":                customtypes.UUIDType{},
