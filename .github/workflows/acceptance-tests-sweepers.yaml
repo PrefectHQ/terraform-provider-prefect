@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
     name: Run Sweepers
+    environment: 'Acceptance Tests (main)'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
