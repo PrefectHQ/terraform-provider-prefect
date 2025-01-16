@@ -1,4 +1,4 @@
-package resources_test
+package sweep
 
 import (
 	"context"
