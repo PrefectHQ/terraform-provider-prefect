@@ -15,7 +15,7 @@ type ConcurrencyLimitsClient interface {
 	DeleteByTag(ctx context.Context, tag string) error
 }
 
-// ConcurrencyLimit is a representation of a variable.
+// ConcurrencyLimit is a representation of a concurrency limit.
 type ConcurrencyLimit struct {
 	BaseModel
 	Tag              string `json:"tag"`
