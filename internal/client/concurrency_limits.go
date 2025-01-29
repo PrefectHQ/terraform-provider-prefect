@@ -45,7 +45,7 @@ func (c *Client) ConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.UUID) (
 func (c *ConcurrencyLimitsClient) Create(ctx context.Context, data api.ConcurrencyLimitCreate) (*api.ConcurrencyLimit, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
-		url:          c.routePrefix,
+		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusOK,
