@@ -71,7 +71,7 @@ func (r *ConcurrencyLimitResource) Configure(_ context.Context, req resource.Con
 // Schema defines the schema for the resource.
 func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `concurrency_limit` represents a concurrency limit for a tag.",
+		Description: "The resource `concurrency_limit` represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.",
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
