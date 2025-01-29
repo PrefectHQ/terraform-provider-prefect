@@ -115,7 +115,7 @@ func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRe
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Required:    true,
-				Description: "Concurrency limit",
+				Description: "The concurrency limit.",
 				PlanModifiers: []planmodifier.Int64{
 					// Concurrency limit updates are not supported so any changes to the concurrency limit will
 					// require a replacement of the resource.
