@@ -48,7 +48,7 @@ func (c *ConcurrencyLimitsClient) Create(ctx context.Context, data api.Concurren
 		url:          c.routePrefix,
 		body:         &data,
 		apiKey:       c.apiKey,
-		successCodes: successCodesStatusCreated,
+		successCodes: successCodesStatusOK,
 	}
 
 	var concurrencyLimit api.ConcurrencyLimit
@@ -60,10 +60,10 @@ func (c *ConcurrencyLimitsClient) Create(ctx context.Context, data api.Concurren
 }
 
 // Get returns a concurrency limit.
-func (c *ConcurrencyLimitsClient) Get(ctx context.Context, concurrencyLimitID uuid.UUID) (*api.ConcurrencyLimit, error) {
+func (c *ConcurrencyLimitsClient) Get(ctx context.Context, concurrencyLimitID string) (*api.ConcurrencyLimit, error) {
 	cfg := requestConfig{
 		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, concurrencyLimitID.String()),
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, concurrencyLimitID),
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusOK,
 	}
@@ -76,53 +76,18 @@ func (c *ConcurrencyLimitsClient) Get(ctx context.Context, concurrencyLimitID uu
 	return &concurrencyLimit, nil
 }
 
-// GetByTag returns a concurrency limit by tag.
-func (c *ConcurrencyLimitsClient) GetByTag(ctx context.Context, tag string) (*api.ConcurrencyLimit, error) {
-	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/tag/%s", c.routePrefix, tag),
-		apiKey:       c.apiKey,
-		successCodes: successCodesStatusOK,
-	}
-
-	var concurrencyLimit api.ConcurrencyLimit
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &concurrencyLimit); err != nil {
-		return nil, fmt.Errorf("failed to get concurrency limit by tag: %w", err)
-	}
-
-	return &concurrencyLimit, nil
-}
-
 // Delete deletes a concurrency limit.
-func (c *ConcurrencyLimitsClient) Delete(ctx context.Context, concurrencyLimitID uuid.UUID) error {
+func (c *ConcurrencyLimitsClient) Delete(ctx context.Context, concurrencyLimitID string) error {
 	cfg := requestConfig{
 		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, concurrencyLimitID.String()),
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, concurrencyLimitID),
 		apiKey:       c.apiKey,
-		successCodes: successCodesStatusNoContent,
+		successCodes: successCodesStatusOK,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to delete concurrency limit: %w", err)
-	}
-	defer resp.Body.Close()
-
-	return nil
-}
-
-// DeleteByTag deletes a concurrency limit by tag.
-func (c *ConcurrencyLimitsClient) DeleteByTag(ctx context.Context, tag string) error {
-	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/tag/%s", c.routePrefix, tag),
-		apiKey:       c.apiKey,
-		successCodes: successCodesStatusNoContent,
-	}
-
-	resp, err := request(ctx, c.hc, cfg)
-	if err != nil {
-		return fmt.Errorf("failed to delete concurrency limit by tag: %w", err)
 	}
 	defer resp.Body.Close()
 
