@@ -2,10 +2,15 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,7 +42,7 @@ type ConcurrencyLimitResourceModel struct {
 
 // NewConcurrencyLimitResource returns a new ConcurrencyLimitResource.
 //
-//nolint:revive // we use the resource.ResourceWithConfigure helper instead
+//nolint:ireturn // required by Terraform API
 func NewConcurrencyLimitResource() resource.Resource {
 	return &ConcurrencyLimitResource{}
 }
@@ -90,20 +95,32 @@ func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRe
 				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"account_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Account ID (UUID)",
+				CustomType:  customtypes.UUIDType{},
 			},
 			"workspace_id": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Description: "Workspace ID (UUID)",
+				CustomType:  customtypes.UUIDType{},
 			},
 			"tag": schema.StringAttribute{
 				Required:    true,
 				Description: "Tag",
+				PlanModifiers: []planmodifier.String{
+					// Concurrency limit updates are not supported so any changes to the tag will
+					// require a replacement of the resource.
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Required:    true,
 				Description: "Concurrency limit",
+				PlanModifiers: []planmodifier.Int64{
+					// Concurrency limit updates are not supported so any changes to the concurrency limit will
+					// require a replacement of the resource.
+					int64planmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
@@ -175,5 +192,72 @@ func (r *ConcurrencyLimitResource) Delete(ctx context.Context, req resource.Dele
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Concurrency Limit", "delete", err))
 
 		return
+	}
+}
+
+// Read reads the resource state from the API.
+func (r *ConcurrencyLimitResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state ConcurrencyLimitResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.ConcurrencyLimits(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Concurrency Limit", err))
+
+		return
+	}
+
+	concurrencyLimit, err := client.Read(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Concurrency Limit", "get", err))
+
+		return
+	}
+
+	copyConcurrencyLimitToModel(concurrencyLimit, &state)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update updates the resource state.
+// This resource does not support updates.
+func (r *ConcurrencyLimitResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
+}
+
+// ImportState imports the resource into Terraform state.
+func (r *ConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// we'll allow input values in the form of:
+	// - "id,workspace_id"
+	// - "id"
+	maxInputCount := 2
+	inputParts := strings.Split(req.ID, ",")
+
+	if len(inputParts) > maxInputCount {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
+		)
+
+		return
+	}
+
+	identifier := inputParts[0]
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), identifier)...)
+
+	if len(inputParts) == 2 && inputParts[1] != "" {
+		workspaceID, err := uuid.Parse(inputParts[1])
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Concurrency Limit", err))
+
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }

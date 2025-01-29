@@ -7,7 +7,7 @@ import (
 // ConcurrencyLimitsClient is a client for working with concurrency limits.
 type ConcurrencyLimitsClient interface {
 	Create(ctx context.Context, concurrencyLimit ConcurrencyLimitCreate) (*ConcurrencyLimit, error)
-	Get(ctx context.Context, concurrencyLimitID string) (*ConcurrencyLimit, error)
+	Read(ctx context.Context, concurrencyLimitID string) (*ConcurrencyLimit, error)
 	Delete(ctx context.Context, concurrencyLimitID string) error
 }
 

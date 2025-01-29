@@ -59,8 +59,8 @@ func (c *ConcurrencyLimitsClient) Create(ctx context.Context, data api.Concurren
 	return &concurrencyLimit, nil
 }
 
-// Get returns a concurrency limit.
-func (c *ConcurrencyLimitsClient) Get(ctx context.Context, concurrencyLimitID string) (*api.ConcurrencyLimit, error) {
+// Read returns a concurrency limit.
+func (c *ConcurrencyLimitsClient) Read(ctx context.Context, concurrencyLimitID string) (*api.ConcurrencyLimit, error) {
 	cfg := requestConfig{
 		method:       http.MethodGet,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, concurrencyLimitID),
