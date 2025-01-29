@@ -30,7 +30,7 @@ func TestAccResource_concurrency_limit(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				// Check creation + existence of the flow resource
+				// Check creation + existence of the resource
 				Config: fixtureAccConcurrencyLimitCreate(workspace.Resource, "test1", 10),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "tag", "test1"),
