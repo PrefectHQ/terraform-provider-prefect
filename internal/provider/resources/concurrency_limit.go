@@ -239,6 +239,15 @@ func (r *ConcurrencyLimitResource) ImportState(ctx context.Context, req resource
 	maxInputCount := 2
 	inputParts := strings.Split(req.ID, ",")
 
+	// eg. ",foo" or "foo,"
+	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected non-empty import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
+		)
+
+		return
+	}
 	if len(inputParts) > maxInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
