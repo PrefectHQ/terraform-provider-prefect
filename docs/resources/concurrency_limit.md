@@ -3,12 +3,12 @@
 page_title: "prefect_concurrency_limit Resource - prefect"
 subcategory: ""
 description: |-
-  The resource concurrency_limit represents a concurrency limit for a tag.
+  The resource concurrency_limit represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.
 ---
 
 # prefect_concurrency_limit (Resource)
 
-The resource `concurrency_limit` represents a concurrency limit for a tag.
+The resource `concurrency_limit` represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.
 
 
 
@@ -17,8 +17,8 @@ The resource `concurrency_limit` represents a concurrency limit for a tag.
 
 ### Required
 
-- `concurrency_limit` (Number) Concurrency limit
-- `tag` (String) Tag
+- `concurrency_limit` (Number) The concurrency limit.
+- `tag` (String) A tag the concurrency limit is applied to.
 
 ### Optional
 
