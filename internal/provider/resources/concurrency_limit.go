@@ -106,7 +106,7 @@ func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRe
 			},
 			"tag": schema.StringAttribute{
 				Required:    true,
-				Description: "Tag",
+				Description: "A tag the concurrency limit is applied to.",
 				PlanModifiers: []planmodifier.String{
 					// Concurrency limit updates are not supported so any changes to the tag will
 					// require a replacement of the resource.
