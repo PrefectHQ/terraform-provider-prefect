@@ -46,7 +46,7 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreate) (*api.Deployment, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
-		url:          c.routePrefix,
+		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusCreated,
