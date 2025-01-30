@@ -18,6 +18,7 @@ type PrefectClient interface {
 	BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (BlockSchemaClient, error)
 	BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (BlockTypeClient, error)
 	Collections(accountID uuid.UUID, workspaceID uuid.UUID) (CollectionsClient, error)
+	ConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.UUID) (ConcurrencyLimitsClient, error)
 	Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentsClient, error)
 	DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentAccessClient, error)
 	DeploymentSchedule(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentScheduleClient, error)
