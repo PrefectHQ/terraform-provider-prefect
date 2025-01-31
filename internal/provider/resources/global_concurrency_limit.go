@@ -224,6 +224,10 @@ func (r *GlobalConcurrencyLimitResource) Delete(ctx context.Context, req resourc
 
 		return
 	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Read reads a global concurrency limit.
