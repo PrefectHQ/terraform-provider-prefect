@@ -20,17 +20,17 @@ import (
 )
 
 var (
-	_ = resource.ResourceWithConfigure(&ConcurrencyLimitResource{})
-	_ = resource.ResourceWithImportState(&ConcurrencyLimitResource{})
+	_ = resource.ResourceWithConfigure(&TaskRunConcurrencyLimitResource{})
+	_ = resource.ResourceWithImportState(&TaskRunConcurrencyLimitResource{})
 )
 
-// ConcurrencyLimitResource contains state for the resource.
-type ConcurrencyLimitResource struct {
+// TaskRunConcurrencyLimitResource contains state for the resource.
+type TaskRunConcurrencyLimitResource struct {
 	client api.PrefectClient
 }
 
-// ConcurrencyLimitResourceModel defines the Terraform resource model.
-type ConcurrencyLimitResourceModel struct {
+// TaskRunConcurrencyLimitResourceModel defines the Terraform resource model.
+type TaskRunConcurrencyLimitResourceModel struct {
 	BaseModel
 
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
@@ -40,20 +40,20 @@ type ConcurrencyLimitResourceModel struct {
 	ConcurrencyLimit types.Int64  `tfsdk:"concurrency_limit"`
 }
 
-// NewConcurrencyLimitResource returns a new ConcurrencyLimitResource.
+// NewTaskRunConcurrencyLimitResource returns a new TaskRunConcurrencyLimitResource.
 //
 //nolint:ireturn // required by Terraform API
-func NewConcurrencyLimitResource() resource.Resource {
-	return &ConcurrencyLimitResource{}
+func NewTaskRunConcurrencyLimitResource() resource.Resource {
+	return &TaskRunConcurrencyLimitResource{}
 }
 
 // Metadata returns the resource type name.
-func (r *ConcurrencyLimitResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_concurrency_limit"
+func (r *TaskRunConcurrencyLimitResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
+	resp.TypeName = req.ProviderTypeName + "_task_run_concurrency_limit"
 }
 
 // Configure initializes runtime state for the resource.
-func (r *ConcurrencyLimitResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *TaskRunConcurrencyLimitResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
@@ -69,14 +69,14 @@ func (r *ConcurrencyLimitResource) Configure(_ context.Context, req resource.Con
 }
 
 // Schema defines the schema for the resource.
-func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *TaskRunConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `concurrency_limit` represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.",
+		Description: "The resource `task_run_concurrency_limit` represents a task run concurrency limit. Task run concurrency limits allow you to control how many tasks with specific tags can run simultaneously. For more information, see https://docs.prefect.io/v3/develop/task-run-limits.",
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Concurrency limit ID (UUID)",
+				Description: "Task run concurrency limit ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -106,18 +106,18 @@ func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRe
 			},
 			"tag": schema.StringAttribute{
 				Required:    true,
-				Description: "A tag the concurrency limit is applied to.",
+				Description: "A tag the task run concurrency limit is applied to.",
 				PlanModifiers: []planmodifier.String{
-					// Concurrency limit updates are not supported so any changes to the tag will
+					// Task Run Concurrency limit updates are not supported so any changes to the tag will
 					// require a replacement of the resource.
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Required:    true,
-				Description: "The concurrency limit.",
+				Description: "The task run concurrency limit.",
 				PlanModifiers: []planmodifier.Int64{
-					// Concurrency limit updates are not supported so any changes to the concurrency limit will
+					// Task Run Concurrency limit updates are not supported so any changes to the concurrency limit will
 					// require a replacement of the resource.
 					int64planmodifier.RequiresReplace(),
 				},
@@ -127,8 +127,8 @@ func (r *ConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRe
 }
 
 // Create creates the resource and sets the initial Terraform state.
-func (r *ConcurrencyLimitResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	var plan ConcurrencyLimitResourceModel
+func (r *TaskRunConcurrencyLimitResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	var plan TaskRunConcurrencyLimitResourceModel
 
 	// Populate the model from resource configuration and emit diagnostics on error
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -136,24 +136,24 @@ func (r *ConcurrencyLimitResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	client, err := r.client.ConcurrencyLimits(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	client, err := r.client.TaskRunConcurrencyLimits(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Concurrency Limit", err))
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Task Run Concurrency Limit", err))
 
 		return
 	}
 
-	concurrencyLimit, err := client.Create(ctx, api.ConcurrencyLimitCreate{
+	taskRunConcurrencyLimit, err := client.Create(ctx, api.TaskRunConcurrencyLimitCreate{
 		Tag:              plan.Tag.ValueString(),
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64(),
 	})
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Concurrency Limit", "create", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Task Run Concurrency Limit", "create", err))
 
 		return
 	}
 
-	copyConcurrencyLimitToModel(concurrencyLimit, &plan)
+	copyTaskRunConcurrencyLimitToModel(taskRunConcurrencyLimit, &plan)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -161,7 +161,7 @@ func (r *ConcurrencyLimitResource) Create(ctx context.Context, req resource.Crea
 	}
 }
 
-func copyConcurrencyLimitToModel(concurrencyLimit *api.ConcurrencyLimit, model *ConcurrencyLimitResourceModel) diag.Diagnostics {
+func copyTaskRunConcurrencyLimitToModel(concurrencyLimit *api.TaskRunConcurrencyLimit, model *TaskRunConcurrencyLimitResourceModel) diag.Diagnostics {
 	model.ID = types.StringValue(concurrencyLimit.ID.String())
 	model.Created = customtypes.NewTimestampValue(*concurrencyLimit.Created)
 	model.Updated = customtypes.NewTimestampValue(*concurrencyLimit.Updated)
@@ -172,53 +172,53 @@ func copyConcurrencyLimitToModel(concurrencyLimit *api.ConcurrencyLimit, model *
 }
 
 // Delete deletes the resource.
-func (r *ConcurrencyLimitResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state ConcurrencyLimitResourceModel
+func (r *TaskRunConcurrencyLimitResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state TaskRunConcurrencyLimitResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.ConcurrencyLimits(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	client, err := r.client.TaskRunConcurrencyLimits(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Concurrency Limit", err))
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Task Run Concurrency Limit", err))
 
 		return
 	}
 
 	err = client.Delete(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Concurrency Limit", "delete", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Task Run Concurrency Limit", "delete", err))
 
 		return
 	}
 }
 
 // Read reads the resource state from the API.
-func (r *ConcurrencyLimitResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state ConcurrencyLimitResourceModel
+func (r *TaskRunConcurrencyLimitResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state TaskRunConcurrencyLimitResourceModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.ConcurrencyLimits(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
+	client, err := r.client.TaskRunConcurrencyLimits(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Concurrency Limit", err))
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Task Run Concurrency Limit", err))
 
 		return
 	}
 
-	concurrencyLimit, err := client.Read(ctx, state.ID.ValueString())
+	taskRunConcurrencyLimit, err := client.Read(ctx, state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Concurrency Limit", "get", err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Task Run Concurrency Limit", "get", err))
 
 		return
 	}
 
-	copyConcurrencyLimitToModel(concurrencyLimit, &state)
+	copyTaskRunConcurrencyLimitToModel(taskRunConcurrencyLimit, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -228,11 +228,11 @@ func (r *ConcurrencyLimitResource) Read(ctx context.Context, req resource.ReadRe
 
 // Update updates the resource state.
 // This resource does not support updates.
-func (r *ConcurrencyLimitResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
+func (r *TaskRunConcurrencyLimitResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
 }
 
 // ImportState imports the resource into Terraform state.
-func (r *ConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *TaskRunConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// we'll allow input values in the form of:
 	// - "id,workspace_id"
 	// - "id"
