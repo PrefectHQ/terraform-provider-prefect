@@ -49,7 +49,7 @@ func NewTaskRunConcurrencyLimitResource() resource.Resource {
 
 // Metadata returns the resource type name.
 func (r *TaskRunConcurrencyLimitResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_concurrency_limit"
+	resp.TypeName = req.ProviderTypeName + "_task_run_concurrency_limit"
 }
 
 // Configure initializes runtime state for the resource.
