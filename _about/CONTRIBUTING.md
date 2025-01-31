@@ -189,3 +189,14 @@ A helper function named `validateCloudEndpoint` in the `internal/client` package
 to validate that a `workspace_id` is configured, and provide an informative error if not.
 
 If the API endpoint does not require a `workspace_id`, such as `accounts`, you can omit this helper function.
+
+### API route considerations
+
+Certain API routes require a traling slash (`/`). These are most often for `POST` methods used
+for creating resources.
+
+If the trailing slash is not provided, it can lead to errors such as 404, 405, 307, etc.
+
+A helper script is available in `../scripts/trailing-slash-routes`. Running this will produce JSON output that
+lists which routes end with a slash, along with the method and description to more easily identify which functions
+to check under `../internal/client/*.go`.

@@ -46,7 +46,7 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flow, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
-		url:          c.routePrefix,
+		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusCreated,

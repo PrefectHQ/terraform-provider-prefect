@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+# This script checks for all endpoints that require a trailing slash.
+# Files in internal/client/*.go should be checked to confirm that any
+# `url` fields in the request configuration include the trailing slash
+# when needed.
+#
+# This helps avoid errors like https://github.com/PrefectHQ/terraform-provider-prefect/issues/359.
+#
+# It can be helpful to redirect the output to a file for further analysis:
+#
+#   ./scripts/trailing-slash-routes > trailing-slash-routes.json
+#
+# You can then use tools like `jq` to parse the results.
+#
+# Example output:
+#
+# [
+#   {
+#     "path": "/api/accounts/{account_id}/teams/",
+#     "method": "post",
+#     "desc": "Create or update a team's metadata.\n\nRequired account permissions: `create:team`"
+#   },
+#   {
+#     "path": "/api/accounts/{account_id}/bots/",
+#     "method": "post",
+#     "desc": "Create a Bot\n\nRequired account permissions: `create:bot`"
+#   },
+#   ...
+# }
+
+curl -s https://api.prefect.cloud/api/openapi.json |
+  jq '.paths
+    | to_entries
+    | map({path: .key, method: (.value | to_entries[0].key), desc: (.value | to_entries[0].value.description)})
+    | map(select(.path | test("/$")))'

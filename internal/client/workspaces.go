@@ -38,7 +38,7 @@ func (c *Client) Workspaces(accountID uuid.UUID) (api.WorkspacesClient, error) {
 func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate) (*api.Workspace, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
-		url:          c.routePrefix,
+		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusCreated,

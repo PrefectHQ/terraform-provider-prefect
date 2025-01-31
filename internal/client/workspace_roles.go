@@ -37,7 +37,7 @@ func (c *Client) WorkspaceRoles(accountID uuid.UUID) (api.WorkspaceRolesClient, 
 func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRoleUpsert) (*api.WorkspaceRole, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
-		url:          c.routePrefix,
+		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
 		successCodes: successCodesStatusCreated,
