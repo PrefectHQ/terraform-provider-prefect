@@ -21,6 +21,7 @@ type GlobalConcurrencyLimit struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
+	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 
@@ -30,6 +31,7 @@ type GlobalConcurrencyLimitCreate struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
+	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 
@@ -39,6 +41,7 @@ type GlobalConcurrencyLimitUpdate struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
+	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 

@@ -3,12 +3,12 @@
 page_title: "prefect_global_concurrency_limit Resource - prefect"
 subcategory: ""
 description: |-
-  The resource global_concurrency_limit represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces.
+  The resource global_concurrency_limit represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see https://docs.prefect.io/v3/develop/global-concurrency-limits.
 ---
 
 # prefect_global_concurrency_limit (Resource)
 
-The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces.
+The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see https://docs.prefect.io/v3/develop/global-concurrency-limits.
 
 ## Example Usage
 
@@ -42,6 +42,7 @@ resource "prefect_global_concurrency_limit" "test" {
 - `account_id` (String) Account ID (UUID)
 - `active` (Boolean) Whether the global concurrency limit is active.
 - `active_slots` (Number) The number of active slots.
+- `denied_slots` (Number) The number of denied slots.
 - `slot_decay_per_second` (Number) Slot Decay Per Second (number) or Slot Decay Per Second (null) (Slot Decay Per Second)
 - `workspace_id` (String) Workspace ID (UUID)
 
