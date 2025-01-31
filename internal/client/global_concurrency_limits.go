@@ -48,7 +48,7 @@ func (c *GlobalConcurrencyLimitsClient) Create(ctx context.Context, data api.Glo
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
-		successCodes: successCodesStatusOK,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var globalConcurrencyLimit api.GlobalConcurrencyLimit
@@ -79,11 +79,11 @@ func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurre
 // Update updates a global concurrency limit.
 func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcurrencyLimitID string, data api.GlobalConcurrencyLimitUpdate) (*api.GlobalConcurrencyLimit, error) {
 	cfg := requestConfig{
-		method:       http.MethodPut,
+		method:       http.MethodPatch,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
 		body:         &data,
 		apiKey:       c.apiKey,
-		successCodes: successCodesStatusOK,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	var globalConcurrencyLimit api.GlobalConcurrencyLimit
@@ -100,7 +100,7 @@ func (c *GlobalConcurrencyLimitsClient) Delete(ctx context.Context, globalConcur
 		method:       http.MethodDelete,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
 		apiKey:       c.apiKey,
-		successCodes: successCodesStatusOK,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

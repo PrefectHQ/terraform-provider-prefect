@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/float64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -42,9 +44,9 @@ type GlobalConcurrencyLimitResourceModel struct {
 	Limit  types.Int64  `tfsdk:"limit"`
 	Active types.Bool   `tfsdk:"active"`
 
-	ActiveSlots        types.Int64 `tfsdk:"active_slots"`
-	DeniedSlots        types.Int64 `tfsdk:"denied_slots"`
-	SlotDecayPerSecond types.Int64 `tfsdk:"slot_decay_per_second"`
+	ActiveSlots        types.Int64   `tfsdk:"active_slots"`
+	DeniedSlots        types.Int64   `tfsdk:"denied_slots"`
+	SlotDecayPerSecond types.Float64 `tfsdk:"slot_decay_per_second"`
 }
 
 // NewGlobalConcurrencyLimitResource returns a new GlobalConcurrencyLimitResource.
@@ -123,12 +125,14 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 				},
 			},
 			"active": schema.BoolAttribute{
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 				Description: "Whether the global concurrency limit is active.",
 				Default:     booldefault.StaticBool(true),
 			},
 			"active_slots": schema.Int64Attribute{
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 				Description: "The number of active slots.",
 				Default:     int64default.StaticInt64(0),
 				Validators: []validator.Int64{
@@ -136,19 +140,21 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 				},
 			},
 			"denied_slots": schema.Int64Attribute{
-				Required:    false,
+				Optional:    true,
+				Computed:    true,
 				Description: "The number of denied slots.",
 				Default:     int64default.StaticInt64(0),
 				Validators: []validator.Int64{
 					int64validator.AtLeast(0),
 				},
 			},
-			"slot_decay_per_second": schema.Int64Attribute{
-				Required:    false,
-				Description: "The number of slots to decay per second.",
-				Default:     int64default.StaticInt64(0),
-				Validators: []validator.Int64{
-					int64validator.AtLeast(0),
+			"slot_decay_per_second": schema.Float64Attribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "Slot Decay Per Second (number) or Slot Decay Per Second (null) (Slot Decay Per Second)",
+				Default:     float64default.StaticFloat64(0),
+				Validators: []validator.Float64{
+					float64validator.AtLeast(0),
 				},
 			},
 		},
@@ -177,7 +183,7 @@ func (r *GlobalConcurrencyLimitResource) Create(ctx context.Context, req resourc
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
 		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
-		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueInt64(),
+		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "create", err))
@@ -202,7 +208,7 @@ func copyGlobalConcurrencyLimitToModel(globalConcurrencyLimit *api.GlobalConcurr
 	model.Active = types.BoolValue(globalConcurrencyLimit.Active)
 	model.ActiveSlots = types.Int64Value(globalConcurrencyLimit.ActiveSlots)
 	model.DeniedSlots = types.Int64Value(globalConcurrencyLimit.DeniedSlots)
-	model.SlotDecayPerSecond = types.Int64Value(globalConcurrencyLimit.SlotDecayPerSecond)
+	model.SlotDecayPerSecond = types.Float64Value(globalConcurrencyLimit.SlotDecayPerSecond)
 
 	return nil
 }
@@ -284,7 +290,7 @@ func (r *GlobalConcurrencyLimitResource) Update(ctx context.Context, req resourc
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
 		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
-		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueInt64(),
+		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "update", err))
