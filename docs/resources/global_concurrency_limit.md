@@ -22,7 +22,7 @@ data "prefect_workspace" "test" {
 resource "prefect_global_concurrency_limit" "test" {
   workspace_id          = data.prefect_workspace.test.id
   name                  = "test-global-concurrency-limit"
-  concurrency_limit     = 1
+  limit                 = 1
   active                = true
   active_slots          = 0
   slot_decay_per_second = 1.5
