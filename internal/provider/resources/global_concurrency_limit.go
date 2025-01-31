@@ -46,7 +46,6 @@ type GlobalConcurrencyLimitResourceModel struct {
 	Active types.Bool   `tfsdk:"active"`
 
 	ActiveSlots        types.Int64   `tfsdk:"active_slots"`
-	DeniedSlots        types.Int64   `tfsdk:"denied_slots"`
 	SlotDecayPerSecond types.Float64 `tfsdk:"slot_decay_per_second"`
 }
 
@@ -140,15 +139,6 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 					int64validator.AtLeast(0),
 				},
 			},
-			"denied_slots": schema.Int64Attribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "The number of denied slots.",
-				Default:     int64default.StaticInt64(0),
-				Validators: []validator.Int64{
-					int64validator.AtLeast(0),
-				},
-			},
 			"slot_decay_per_second": schema.Float64Attribute{
 				Optional:    true,
 				Computed:    true,
@@ -183,7 +173,6 @@ func (r *GlobalConcurrencyLimitResource) Create(ctx context.Context, req resourc
 		Limit:              plan.Limit.ValueInt64(),
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
-		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
 		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {
@@ -208,7 +197,6 @@ func copyGlobalConcurrencyLimitToModel(globalConcurrencyLimit *api.GlobalConcurr
 	model.Limit = types.Int64Value(globalConcurrencyLimit.Limit)
 	model.Active = types.BoolValue(globalConcurrencyLimit.Active)
 	model.ActiveSlots = types.Int64Value(globalConcurrencyLimit.ActiveSlots)
-	model.DeniedSlots = types.Int64Value(globalConcurrencyLimit.DeniedSlots)
 	model.SlotDecayPerSecond = types.Float64Value(globalConcurrencyLimit.SlotDecayPerSecond)
 
 	return nil
@@ -290,7 +278,6 @@ func (r *GlobalConcurrencyLimitResource) Update(ctx context.Context, req resourc
 		Limit:              plan.Limit.ValueInt64(),
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
-		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
 		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {

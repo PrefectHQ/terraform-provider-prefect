@@ -42,7 +42,6 @@ resource "prefect_global_concurrency_limit" "test" {
 - `account_id` (String) Account ID (UUID)
 - `active` (Boolean) Whether the global concurrency limit is active.
 - `active_slots` (Number) The number of active slots.
-- `denied_slots` (Number) The number of denied slots.
 - `slot_decay_per_second` (Number) Slot Decay Per Second (number) or Slot Decay Per Second (null) (Slot Decay Per Second)
 - `workspace_id` (String) Workspace ID (UUID)
 
