@@ -77,7 +77,7 @@ func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurre
 }
 
 // Update updates a global concurrency limit.
-func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcurrencyLimitID string, data api.GlobalConcurrencyLimitUpdate) (*api.GlobalConcurrencyLimit, error) {
+func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcurrencyLimitID string, data api.GlobalConcurrencyLimitUpdate) error {
 	cfg := requestConfig{
 		method:       http.MethodPatch,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
@@ -86,12 +86,13 @@ func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcur
 		successCodes: successCodesStatusNoContent,
 	}
 
-	var globalConcurrencyLimit api.GlobalConcurrencyLimit
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &globalConcurrencyLimit); err != nil {
-		return nil, fmt.Errorf("failed to update global concurrency limit: %w", err)
+	resp, err := request(ctx, c.hc, cfg)
+	if err != nil {
+		return fmt.Errorf("failed to update global concurrency limit: %w", err)
 	}
+	defer resp.Body.Close()
 
-	return &globalConcurrencyLimit, nil
+	return nil
 }
 
 // Delete deletes a global concurrency limit.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/float64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -45,7 +46,6 @@ type GlobalConcurrencyLimitResourceModel struct {
 	Active types.Bool   `tfsdk:"active"`
 
 	ActiveSlots        types.Int64   `tfsdk:"active_slots"`
-	DeniedSlots        types.Int64   `tfsdk:"denied_slots"`
 	SlotDecayPerSecond types.Float64 `tfsdk:"slot_decay_per_second"`
 }
 
@@ -139,15 +139,6 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 					int64validator.AtLeast(0),
 				},
 			},
-			"denied_slots": schema.Int64Attribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "The number of denied slots.",
-				Default:     int64default.StaticInt64(0),
-				Validators: []validator.Int64{
-					int64validator.AtLeast(0),
-				},
-			},
 			"slot_decay_per_second": schema.Float64Attribute{
 				Optional:    true,
 				Computed:    true,
@@ -182,7 +173,6 @@ func (r *GlobalConcurrencyLimitResource) Create(ctx context.Context, req resourc
 		Limit:              plan.Limit.ValueInt64(),
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
-		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
 		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {
@@ -207,7 +197,6 @@ func copyGlobalConcurrencyLimitToModel(globalConcurrencyLimit *api.GlobalConcurr
 	model.Limit = types.Int64Value(globalConcurrencyLimit.Limit)
 	model.Active = types.BoolValue(globalConcurrencyLimit.Active)
 	model.ActiveSlots = types.Int64Value(globalConcurrencyLimit.ActiveSlots)
-	model.DeniedSlots = types.Int64Value(globalConcurrencyLimit.DeniedSlots)
 	model.SlotDecayPerSecond = types.Float64Value(globalConcurrencyLimit.SlotDecayPerSecond)
 
 	return nil
@@ -284,16 +273,22 @@ func (r *GlobalConcurrencyLimitResource) Update(ctx context.Context, req resourc
 		return
 	}
 
-	globalConcurrencyLimit, err := client.Update(ctx, plan.ID.ValueString(), api.GlobalConcurrencyLimitUpdate{
+	err = client.Update(ctx, plan.ID.ValueString(), api.GlobalConcurrencyLimitUpdate{
 		Name:               plan.Name.ValueString(),
 		Limit:              plan.Limit.ValueInt64(),
 		Active:             plan.Active.ValueBool(),
 		ActiveSlots:        plan.ActiveSlots.ValueInt64(),
-		DeniedSlots:        plan.DeniedSlots.ValueInt64(),
 		SlotDecayPerSecond: plan.SlotDecayPerSecond.ValueFloat64(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "update", err))
+
+		return
+	}
+
+	globalConcurrencyLimit, err := client.Read(ctx, plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "read", err))
 
 		return
 	}
@@ -314,6 +309,16 @@ func (r *GlobalConcurrencyLimitResource) ImportState(ctx context.Context, req re
 	maxInputCount := 2
 	inputParts := strings.Split(req.ID, ",")
 
+	// eg. "foo,bar,baz"
+	if len(inputParts) > maxInputCount {
+		resp.Diagnostics.AddError(
+			"Unexpected Import Identifier",
+			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
+		)
+
+		return
+	}
+
 	// eg. ",foo" or "foo,"
 	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
 		resp.Diagnostics.AddError(
@@ -323,20 +328,17 @@ func (r *GlobalConcurrencyLimitResource) ImportState(ctx context.Context, req re
 
 		return
 	}
-	if len(inputParts) > maxInputCount {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
-		)
-	}
 
-	if len(inputParts) == maxInputCount {
-		workspaceID := inputParts[0]
-		id := inputParts[1]
+	identifier := inputParts[0]
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), identifier)...)
 
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
-	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	if len(inputParts) == 2 && inputParts[1] != "" {
+		workspaceID, err := uuid.Parse(inputParts[1])
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Global Concurrency Limit", err))
+
+			return
+		}
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	}
 }

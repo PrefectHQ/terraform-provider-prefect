@@ -10,7 +10,7 @@ import (
 type GlobalConcurrencyLimitsClient interface {
 	Create(ctx context.Context, globalConcurrencyLimit GlobalConcurrencyLimitCreate) (*GlobalConcurrencyLimit, error)
 	Read(ctx context.Context, globalConcurrencyLimitID string) (*GlobalConcurrencyLimit, error)
-	Update(ctx context.Context, globalConcurrencyLimitID string, globalConcurrencyLimit GlobalConcurrencyLimitUpdate) (*GlobalConcurrencyLimit, error)
+	Update(ctx context.Context, globalConcurrencyLimitID string, globalConcurrencyLimit GlobalConcurrencyLimitUpdate) error
 	Delete(ctx context.Context, globalConcurrencyLimitID string) error
 }
 
@@ -21,7 +21,6 @@ type GlobalConcurrencyLimit struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
-	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 
@@ -31,7 +30,6 @@ type GlobalConcurrencyLimitCreate struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
-	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 
@@ -41,7 +39,6 @@ type GlobalConcurrencyLimitUpdate struct {
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
 	ActiveSlots        int64   `json:"active_slots"`
-	DeniedSlots        int64   `json:"denied_slots"`
 	SlotDecayPerSecond float64 `json:"slot_decay_per_second"`
 }
 

@@ -8,20 +8,18 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccGlobalConcurrencyLimitCreate(workspace, name string, limit int64, active bool, activeSlots int64, deniedSlots int64, slotDecayPerSecond float64) string {
+func fixtureAccGlobalConcurrencyLimitCreate(workspace, name string, limit int64, active bool, activeSlots int64, slotDecayPerSecond float64) string {
 	return fmt.Sprintf(`
 %s
-
 resource "prefect_global_concurrency_limit" "global_concurrency_limit" {
 	workspace_id = prefect_workspace.test.id
 	name = "%s"
 	limit = %d
 	active = %t
 	active_slots = %d
-	denied_slots = %d
 	slot_decay_per_second = %f
 }
-`, workspace, name, limit, active, activeSlots, deniedSlots, slotDecayPerSecond)
+`, workspace, name, limit, active, activeSlots, slotDecayPerSecond)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -35,28 +33,26 @@ func TestAccResource_global_concurrency_limit(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the resource
-				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, "test1", 10, true, 0, 0, 1.5),
+				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, "test1", 10, true, 0, 1.5),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "name", "test1"),
 					resource.TestCheckResourceAttr(resourceName, "limit", "10"),
 					resource.TestCheckResourceAttr(resourceName, "active", "true"),
 					resource.TestCheckResourceAttr(resourceName, "active_slots", "0"),
-					resource.TestCheckResourceAttr(resourceName, "denied_slots", "0"),
 					resource.TestCheckResourceAttr(resourceName, "slot_decay_per_second", "1.5"),
 				),
 			},
 			// Check updating the resource
-			// {
-			// 	Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, "test2", 20, false, 1, 1, 1.0),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		resource.TestCheckResourceAttr(resourceName, "name", "test2"),
-			// 		resource.TestCheckResourceAttr(resourceName, "limit", "20"),
-			// 		resource.TestCheckResourceAttr(resourceName, "active", "false"),
-			// 		resource.TestCheckResourceAttr(resourceName, "active_slots", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "denied_slots", "1"),
-			// 		resource.TestCheckResourceAttr(resourceName, "slot_decay_per_second", "1.0"),
-			// 	),
-			// },
+			{
+				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, "test2", 20, false, 1, 2),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "test2"),
+					resource.TestCheckResourceAttr(resourceName, "limit", "20"),
+					resource.TestCheckResourceAttr(resourceName, "active", "false"),
+					resource.TestCheckResourceAttr(resourceName, "active_slots", "1"),
+					resource.TestCheckResourceAttr(resourceName, "slot_decay_per_second", "2"),
+				),
+			},
 			// Import State checks - import by ID (default)
 			{
 				ImportState:       true,
