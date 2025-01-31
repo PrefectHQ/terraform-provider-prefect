@@ -71,7 +71,7 @@ func (r *TaskRunConcurrencyLimitResource) Configure(_ context.Context, req resou
 // Schema defines the schema for the resource.
 func (r *TaskRunConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `task_run_concurrency_limit` represents a task run concurrency limit. Task Run concurrency limits  allow you to control how many tasks with specific tags can run simultaneously.",
+		Description: "The resource `task_run_concurrency_limit` represents a task run concurrency limit. Task run concurrency limits allow you to control how many tasks with specific tags can run simultaneously. For more information, see https://docs.prefect.io/v3/develop/task-run-limits.",
 		Version:     0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
