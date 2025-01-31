@@ -142,7 +142,7 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 			"slot_decay_per_second": schema.Float64Attribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Slot Decay Per Second (number) or Slot Decay Per Second (null) (Slot Decay Per Second)",
+				Description: "Slot Decay Per Second (number or null)",
 				Default:     float64default.StaticFloat64(0),
 				Validators: []validator.Float64{
 					float64validator.AtLeast(0),
@@ -222,6 +222,10 @@ func (r *GlobalConcurrencyLimitResource) Delete(ctx context.Context, req resourc
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "delete", err))
 
+		return
+	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 }
