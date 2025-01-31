@@ -21,26 +21,26 @@ type Deployment struct {
 	AccountID   uuid.UUID `json:"account_id"`
 	WorkspaceID uuid.UUID `json:"workspace_id"`
 
-	ConcurrencyLimit       *int64                  `json:"concurrency_limit"`
-	ConcurrencyOptions     *ConcurrencyOptions     `json:"concurrency_options"`
-	Description            string                  `json:"description"`
-	EnforceParameterSchema bool                    `json:"enforce_parameter_schema"`
-	Entrypoint             string                  `json:"entrypoint"`
-	FlowID                 uuid.UUID               `json:"flow_id"`
-	GlobalConcurrencyLimit *GlobalConcurrencyLimit `json:"global_concurrency_limit"`
-	JobVariables           map[string]interface{}  `json:"job_variables"`
-	ManifestPath           string                  `json:"manifest_path"`
-	Name                   string                  `json:"name"`
-	ParameterOpenAPISchema map[string]interface{}  `json:"parameter_openapi_schema"`
-	Parameters             map[string]interface{}  `json:"parameters"`
-	Path                   string                  `json:"path"`
-	Paused                 bool                    `json:"paused"`
-	PullSteps              []PullStep              `json:"pull_steps"`
-	StorageDocumentID      uuid.UUID               `json:"storage_document_id"`
-	Tags                   []string                `json:"tags"`
-	Version                string                  `json:"version"`
-	WorkPoolName           string                  `json:"work_pool_name"`
-	WorkQueueName          string                  `json:"work_queue_name"`
+	ConcurrencyLimit       *int64                         `json:"concurrency_limit"`
+	ConcurrencyOptions     *ConcurrencyOptions            `json:"concurrency_options"`
+	Description            string                         `json:"description"`
+	EnforceParameterSchema bool                           `json:"enforce_parameter_schema"`
+	Entrypoint             string                         `json:"entrypoint"`
+	FlowID                 uuid.UUID                      `json:"flow_id"`
+	GlobalConcurrencyLimit *CurrentGlobalConcurrencyLimit `json:"global_concurrency_limit"`
+	JobVariables           map[string]interface{}         `json:"job_variables"`
+	ManifestPath           string                         `json:"manifest_path"`
+	Name                   string                         `json:"name"`
+	ParameterOpenAPISchema map[string]interface{}         `json:"parameter_openapi_schema"`
+	Parameters             map[string]interface{}         `json:"parameters"`
+	Path                   string                         `json:"path"`
+	Paused                 bool                           `json:"paused"`
+	PullSteps              []PullStep                     `json:"pull_steps"`
+	StorageDocumentID      uuid.UUID                      `json:"storage_document_id"`
+	Tags                   []string                       `json:"tags"`
+	Version                string                         `json:"version"`
+	WorkPoolName           string                         `json:"work_pool_name"`
+	WorkQueueName          string                         `json:"work_queue_name"`
 }
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
@@ -91,8 +91,8 @@ type ConcurrencyOptions struct {
 	CollisionStrategy string `json:"collision_strategy"`
 }
 
-// GlobalConcurrencyLimit is a representation of the deployment global concurrency limit.
-type GlobalConcurrencyLimit struct {
+// CurrentGlobalConcurrencyLimit is a representation of the deployment global concurrency limit.
+type CurrentGlobalConcurrencyLimit struct {
 	Limit int64 `json:"limit"`
 
 	// These other fields exist in the response payload, but we don't make use of them at the

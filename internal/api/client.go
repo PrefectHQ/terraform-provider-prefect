@@ -21,6 +21,7 @@ type PrefectClient interface {
 	Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentsClient, error)
 	DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentAccessClient, error)
 	DeploymentSchedule(accountID uuid.UUID, workspaceID uuid.UUID) (DeploymentScheduleClient, error)
+	GlobalConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.UUID) (GlobalConcurrencyLimitsClient, error)
 	Teams(accountID uuid.UUID) (TeamsClient, error)
 	Flows(accountID uuid.UUID, workspaceID uuid.UUID) (FlowsClient, error)
 	TaskRunConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.UUID) (TaskRunConcurrencyLimitsClient, error)
