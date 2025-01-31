@@ -3,12 +3,12 @@
 page_title: "prefect_concurrency_limit Resource - prefect"
 subcategory: ""
 description: |-
-  The resource concurrency_limit represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.
+  The resource task_run_concurrency_limit represents a task run concurrency limit. Task Run concurrency limits  allow you to control how many tasks with specific tags can run simultaneously.
 ---
 
 # prefect_concurrency_limit (Resource)
 
-The resource `concurrency_limit` represents a concurrency limit. Concurrency limits allow you to manage execution efficiently, controlling how many tasks, flows, or other operations can run simultaneously. They are ideal for optimizing resource usage, preventing bottlenecks, and customizing task execution.
+The resource `task_run_concurrency_limit` represents a task run concurrency limit. Task Run concurrency limits  allow you to control how many tasks with specific tags can run simultaneously.
 
 
 
@@ -17,8 +17,8 @@ The resource `concurrency_limit` represents a concurrency limit. Concurrency lim
 
 ### Required
 
-- `concurrency_limit` (Number) The concurrency limit.
-- `tag` (String) A tag the concurrency limit is applied to.
+- `concurrency_limit` (Number) The task run concurrency limit.
+- `tag` (String) A tag the task run concurrency limit is applied to.
 
 ### Optional
 
@@ -28,5 +28,5 @@ The resource `concurrency_limit` represents a concurrency limit. Concurrency lim
 ### Read-Only
 
 - `created` (String) Timestamp of when the resource was created (RFC3339)
-- `id` (String) Concurrency limit ID (UUID)
+- `id` (String) Task run concurrency limit ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
