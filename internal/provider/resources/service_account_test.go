@@ -104,7 +104,7 @@ func TestAccResource_service_account(t *testing.T) {
 				},
 			},
 			{
-				// Ensure non-expiration time change DOESN't trigger a key rotation
+				// Ensure non-expiration time change DOESN'T trigger a key rotation
 				Config: fixtureAccServiceAccountResource(botRandomName2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
