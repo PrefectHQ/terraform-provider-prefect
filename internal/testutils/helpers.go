@@ -81,6 +81,8 @@ func expectKnownValue(resourceName, path string, check knownvalue.Check) statech
 // ExpectKnownValue returns a statecheck.StateCheck that can be used to
 // check the known value of a resource attribute.
 //
+// This is used for strings, as it is the most common type.
+//
 //nolint:ireturn // required for testing
 func ExpectKnownValue(resourceName, path, value string) statecheck.StateCheck {
 	return expectKnownValue(resourceName, path, knownvalue.StringExact(value))
@@ -145,7 +147,7 @@ func ExpectKnownValueMap(resourceName, path string, value map[string]string) sta
 }
 
 // CompareValuePairs is a helper function that creates a statecheck.StateCheck
-// that can be used to check the known value of a resource attribute.
+// that can be used to confirm whether two attributes across two resources are the same.
 //
 //nolint:ireturn // required for testing
 func CompareValuePairs(resourceName1, path1, resourceName2, path2 string) statecheck.StateCheck {
