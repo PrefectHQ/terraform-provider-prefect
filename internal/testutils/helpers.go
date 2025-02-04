@@ -76,3 +76,39 @@ func ExpectKnownValueList(resourceName, path string, values []string) statecheck
 		knownvalue.ListExact(knownValueChecks),
 	)
 }
+
+// ExpectKnownValueBool returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is a boolean.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueBool(resourceName, path string, value bool) statecheck.StateCheck {
+	return statecheck.ExpectKnownValue(
+		resourceName,
+		tfjsonpath.New(path),
+		knownvalue.Bool(value),
+	)
+}
+
+// ExpectKnownValueNotNull returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is not null.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueNotNull(resourceName, path string) statecheck.StateCheck {
+	return statecheck.ExpectKnownValue(
+		resourceName,
+		tfjsonpath.New(path),
+		knownvalue.NotNull(),
+	)
+}
+
+// ExpectKnownValueNumber returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is a number.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueNumber(resourceName, path string, value int64) statecheck.StateCheck {
+	return statecheck.ExpectKnownValue(
+		resourceName,
+		tfjsonpath.New(path),
+		knownvalue.Int64Exact(value),
+	)
+}
