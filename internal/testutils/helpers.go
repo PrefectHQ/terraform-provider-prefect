@@ -3,6 +3,8 @@ package testutils
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -53,9 +55,24 @@ func NormalizedValueForJSON(t *testing.T, jsonValue string) string {
 //
 //nolint:ireturn // required for testing
 func expectKnownValue(resourceName, path string, check knownvalue.Check) statecheck.StateCheck {
+	pathValue := tfjsonpath.New(path)
+
+	if strings.Contains(path, ".") {
+		keys := strings.Split(path, ".")
+
+		pathValue = tfjsonpath.New(keys[0])
+		for _, key := range keys[1:] {
+			if keyInt, err := strconv.Atoi(key); err == nil {
+				pathValue = pathValue.AtSliceIndex(keyInt)
+			} else {
+				pathValue = pathValue.AtMapKey(key)
+			}
+		}
+	}
+
 	return statecheck.ExpectKnownValue(
 		resourceName,
-		tfjsonpath.New(path),
+		pathValue,
 		check,
 	)
 }
