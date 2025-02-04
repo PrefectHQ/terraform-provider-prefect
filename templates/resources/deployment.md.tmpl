@@ -21,3 +21,33 @@ description: |-
 Import is supported using the following syntax:
 
 {{codefile "shell" .ImportFile}}
+
+## Deployment actions
+
+The deployment resource does not provide any direct equivalent to the
+[`build`](https://docs.prefect.io/v3/deploy/infrastructure-concepts/prefect-yaml#the-build-action)
+and [`push`](https://docs.prefect.io/v3/deploy/infrastructure-concepts/prefect-yaml#the-push-action)
+actions available in the `prefect.yaml`
+approach used with the Prefect CLI.
+
+However, you can specify an image in the `job_variables` field:
+
+```terraform
+resource "prefect_deployment" "deployment" {
+  name                     = "my-deployment"
+  description              = "my description"
+  flow_id                  = prefect_flow.flow.id
+
+  job_variables = jsonencode({
+    "image" : "example.registry.com/example-repo/example-image:v1" }
+  })
+}
+```
+
+This setting controls the image used in the Kubernetes Job that executes the flow.
+
+Additionally, a provider such as [kreuzwerker/docker](https://registry.terraform.io/providers/kreuzwerker/docker/latest/docs)
+may be useful if you still need to build and push images from Terraform. Otherwise,
+we recommend using another mechanism to build and push images and then refer to
+them by name as shown in the example above. Notably, Hashicorp also makes
+Packer, which can [build Docker images](https://developer.hashicorp.com/packer/tutorials/docker-get-started/docker-get-started-build-image).
