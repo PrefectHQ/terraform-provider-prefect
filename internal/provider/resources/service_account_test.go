@@ -98,11 +98,13 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
 					textAccCheckServiceAccountAPIKeyStored(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+				},
 			},
 			{
-				// Ensure non-expiration time change DOESN'T trigger a key rotation
+				// Ensure non-expiration time change DOESN't trigger a key rotation
 				Config: fixtureAccServiceAccountResource(botRandomName2),
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
