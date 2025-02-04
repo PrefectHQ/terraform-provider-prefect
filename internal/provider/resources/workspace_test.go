@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -33,10 +34,12 @@ func TestAccResource_workspace(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkspaceExists(&workspace),
 					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: ephemeralWorkspaceCreate.Name, Handle: ephemeralWorkspaceCreate.Name, Description: &ephemeralWorkspaceCreate.Description}),
-					resource.TestCheckResourceAttr(resourceName, "name", ephemeralWorkspaceCreate.Name),
-					resource.TestCheckResourceAttr(resourceName, "handle", ephemeralWorkspaceCreate.Name),
-					resource.TestCheckResourceAttr(resourceName, "description", ephemeralWorkspaceCreate.Description),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", ephemeralWorkspaceCreate.Name),
+					testutils.ExpectKnownValue(resourceName, "handle", ephemeralWorkspaceCreate.Name),
+					testutils.ExpectKnownValue(resourceName, "description", ephemeralWorkspaceCreate.Description),
+				},
 			},
 			{
 				// Check update of existing workspace resource
@@ -44,10 +47,12 @@ func TestAccResource_workspace(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkspaceExists(&workspace),
 					testAccCheckWorkspaceValues(&workspace, &api.Workspace{Name: ephemeralWorkspaceUpdate.Name, Handle: ephemeralWorkspaceUpdate.Name, Description: &ephemeralWorkspaceUpdate.Description}),
-					resource.TestCheckResourceAttr(resourceName, "name", ephemeralWorkspaceUpdate.Name),
-					resource.TestCheckResourceAttr(resourceName, "handle", ephemeralWorkspaceUpdate.Name),
-					resource.TestCheckResourceAttr(resourceName, "description", ephemeralWorkspaceUpdate.Description),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", ephemeralWorkspaceUpdate.Name),
+					testutils.ExpectKnownValue(resourceName, "handle", ephemeralWorkspaceUpdate.Name),
+					testutils.ExpectKnownValue(resourceName, "description", ephemeralWorkspaceUpdate.Description),
+				},
 			},
 			// Import State checks - import by handle
 			{
