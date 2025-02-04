@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -87,9 +88,11 @@ func TestAccResource_webhook(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
 					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
-					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
+				},
 			},
 			{
 				// Check that changing the enabled state will update the resource in place
@@ -97,9 +100,11 @@ func TestAccResource_webhook(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
 					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
-					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "false"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", false),
+				},
 			},
 			{
 				// Check that changing the template will update the resource in place
@@ -107,19 +112,23 @@ func TestAccResource_webhook(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
 					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
-					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
+				},
 			},
 			{
 				// Check that a service account can be set
 				Config: fixtureAccWebhookWithServiceAccount(workspace.Resource, randomName, webhookTemplateStatic, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
-					resource.TestCheckResourceAttr(webhookResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(webhookResourceName, "enabled", "true"),
-					resource.TestCheckResourceAttrSet(webhookResourceName, "service_account_id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
+					testutils.ExpectKnownValueNotNull(webhookResourceName, "service_account_id"),
+				},
 			},
 			// Import State checks - import by name (dynamic)
 			{

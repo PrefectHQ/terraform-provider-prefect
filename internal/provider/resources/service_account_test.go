@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
@@ -107,8 +108,10 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName2, AccountRoleName: "Member"}),
 					testAccCheckServiceAccountAPIKeyUnchanged(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName2),
+				},
 			},
 			{
 				// Ensure that expiration time change DOES trigger a key rotation
@@ -117,8 +120,10 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
 					testAccCheckServiceAccountAPIKeyRotated(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+				},
 			},
 			{
 				// Ensure that switching to key keepers DOES trigger a key rotation
@@ -127,8 +132,10 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
 					testAccCheckServiceAccountAPIKeyRotated(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+				},
 			},
 			{
 				// Ensure that key keepers change DOES trigger a key rotation
@@ -137,8 +144,10 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
 					testAccCheckServiceAccountAPIKeyRotated(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+				},
 			},
 			{
 				// Ensure that a non-key keeper change DOES NOT trigger a key rotation
@@ -147,8 +156,10 @@ func TestAccResource_service_account(t *testing.T) {
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName2, AccountRoleName: "Member"}),
 					testAccCheckServiceAccountAPIKeyUnchanged(botResourceName, &apiKey),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName2),
+				},
 			},
 			{
 				// Ensure updates of the account role
@@ -156,8 +167,10 @@ func TestAccResource_service_account(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Admin"}),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+				},
 			},
 			{
 				// Ensure updates of the service account name
@@ -165,8 +178,10 @@ func TestAccResource_service_account(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
 					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName2, AccountRoleName: "Admin"}),
-					resource.TestCheckResourceAttr(botResourceName, "name", botRandomName2),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName2),
+				},
 			},
 			// Import State checks - import by name
 			{
