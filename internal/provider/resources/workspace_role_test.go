@@ -53,11 +53,6 @@ func TestAccResource_workspace_role(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkspaceRoleExists(resourceName, &workspaceRole),
 					testAccCheckWorkspaceRoleValues(&workspaceRole, &api.WorkspaceRole{Name: randomName, Scopes: []string{"see_artifacts", "see_blocks"}}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("%s description", randomName)),
-					resource.TestCheckResourceAttr(resourceName, "scopes.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.0", "see_blocks"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.1", "see_artifacts"),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
