@@ -8,10 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
@@ -118,16 +116,8 @@ func TestAccResource_block(t *testing.T) {
 					testAccCheckBlockExists("prefect_block.with_ref", &blockDocument),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					statecheck.ExpectKnownValue(
-						"prefect_block.with_ref",
-						tfjsonpath.New("name"),
-						knownvalue.StringExact("block-with-ref"),
-					),
-					statecheck.ExpectKnownValue(
-						"prefect_block.with_ref",
-						tfjsonpath.New("type_slug"),
-						knownvalue.StringExact("s3-bucket"),
-					),
+					testutils.ExpectKnownValue("prefect_block.with_ref", "name", "block-with-ref"),
+					testutils.ExpectKnownValue("prefect_block.with_ref", "type_slug", "s3-bucket"),
 				},
 			},
 			{
