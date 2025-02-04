@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
@@ -22,7 +22,7 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
-	ConcurrencyLimit       int
+	ConcurrencyLimit       int64
 	CollisionStrategy      string
 	Description            string
 	EnforceParameterSchema bool
@@ -314,24 +314,26 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgCreate.Description,
 						pullSteps:   cfgCreate.PullSteps,
 					}),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgCreate.ConcurrencyLimit)),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgCreate.CollisionStrategy),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgCreate.EnforceParameterSchema)),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "paused", strconv.FormatBool(cfgCreate.Paused)),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.#", "2"),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.0", cfgCreate.Tags[0]),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "tags.1", cfgCreate.Tags[1]),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
-					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", cfgCreate.ConcurrencyLimit),
+					testutils.ExpectKnownValueMap(cfgCreate.DeploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": cfgCreate.CollisionStrategy,
+					}),
+					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", cfgCreate.EnforceParameterSchema),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
+					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "paused", cfgCreate.Paused),
+					testutils.ExpectKnownValueList(cfgCreate.DeploymentResourceName, "tags", cfgCreate.Tags),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
+					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "storage_document_id"),
+				},
 			},
 			{
 				// Check update of existing deployment resource
@@ -343,24 +345,26 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgUpdate.Description,
 						pullSteps:   cfgUpdate.PullSteps,
 					}),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_limit", strconv.Itoa(cfgUpdate.ConcurrencyLimit)),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "concurrency_options.collision_strategy", cfgUpdate.CollisionStrategy),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", strconv.FormatBool(cfgUpdate.EnforceParameterSchema)),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "paused", strconv.FormatBool(cfgUpdate.Paused)),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.#", "2"),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.0", cfgUpdate.Tags[0]),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "tags.1", cfgUpdate.Tags[1]),
-					resource.TestCheckResourceAttr(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
-					resource.TestCheckResourceAttr(cfgCreate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
-					resource.TestCheckResourceAttrSet(cfgCreate.DeploymentResourceName, "storage_document_id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", cfgUpdate.ConcurrencyLimit),
+					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": cfgUpdate.CollisionStrategy,
+					}),
+					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", cfgUpdate.EnforceParameterSchema),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
+					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "paused", cfgUpdate.Paused),
+					testutils.ExpectKnownValueList(cfgUpdate.DeploymentResourceName, "tags", cfgUpdate.Tags),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					testutils.ExpectKnownValueNotNull(cfgUpdate.DeploymentResourceName, "storage_document_id"),
+				},
 			},
 			// Import State checks - import by ID (default)
 			{

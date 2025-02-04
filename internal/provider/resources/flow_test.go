@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -33,20 +34,18 @@ func TestAccResource_flow(t *testing.T) {
 			{
 				// Check creation + existence of the flow resource
 				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test1"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", "test1"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test1"}),
+				},
 			},
 			{
 				// Check updating the resource
 				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test2"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "tags.#", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", "test2"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test2"}),
+				},
 			},
 			// Import State checks - import by ID (default)
 			{
