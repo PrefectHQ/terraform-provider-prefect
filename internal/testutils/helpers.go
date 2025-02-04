@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-testing/compare"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
@@ -141,4 +142,18 @@ func ExpectKnownValueMap(resourceName, path string, value map[string]string) sta
 	}
 
 	return expectKnownValue(resourceName, path, knownvalue.MapExact(knownValueChecks))
+}
+
+// CompareValuePairs is a helper function that creates a statecheck.StateCheck
+// that can be used to check the known value of a resource attribute.
+//
+//nolint:ireturn // required for testing
+func CompareValuePairs(resourceName1, path1, resourceName2, path2 string) statecheck.StateCheck {
+	return statecheck.CompareValuePairs(
+		resourceName1,
+		tfjsonpath.New(path1),
+		resourceName2,
+		tfjsonpath.New(path2),
+		compare.ValuesSame(),
+	)
 }
