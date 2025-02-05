@@ -101,6 +101,14 @@ func ExpectKnownValueList(resourceName, path string, values []string) statecheck
 	return expectKnownValue(resourceName, path, knownvalue.ListExact(knownValueChecks))
 }
 
+// ExpectKnownValueListSize returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is a list of strings.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueListSize(resourceName, path string, size int) statecheck.StateCheck {
+	return expectKnownValue(resourceName, path, knownvalue.ListSizeExact(size))
+}
+
 // ExpectKnownValueBool returns a statecheck.StateCheck that can be used to
 // check the known value of a resource attribute that is a boolean.
 //

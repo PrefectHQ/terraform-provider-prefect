@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -38,9 +36,9 @@ func TestAccDatasource_account_role_defaults(t *testing.T) {
 			Config: fixtureAccAccountRoleDataSource(role.name),
 			ConfigStateChecks: []statecheck.StateCheck{
 				testutils.ExpectKnownValue(dataSourceName, "name", role.name),
-				statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("permissions"), knownvalue.ListSizeExact(role.permissionCount)),
+				testutils.ExpectKnownValueListSize(dataSourceName, "permissions", role.permissionCount),
 				// Default roles should not be associated with an account
-				statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("account_id"), knownvalue.Null()),
+				testutils.ExpectKnownValueNull(dataSourceName, "account_id"),
 			},
 		})
 	}

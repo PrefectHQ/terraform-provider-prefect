@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -36,11 +34,7 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 				testutils.ExpectKnownValueNotNull(dataSourceName, "created"),
 				testutils.ExpectKnownValueNotNull(dataSourceName, "updated"),
 				// Default roles should not be associated with an account
-				statecheck.ExpectKnownValue(
-					dataSourceName,
-					tfjsonpath.New("account_id"),
-					knownvalue.Null(),
-				),
+				testutils.ExpectKnownValueNull(dataSourceName, "account_id"),
 			},
 		})
 	}

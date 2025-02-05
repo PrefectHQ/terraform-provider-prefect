@@ -5,9 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
@@ -313,11 +311,7 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
 					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
 					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					statecheck.ExpectKnownValue(
-						eventTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("actions"),
-						knownvalue.ListSizeExact(1),
-					),
+					testutils.ExpectKnownValueListSize(eventTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(eventTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
 				},
 			},
@@ -336,11 +330,7 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
 					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.event"),
 					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					statecheck.ExpectKnownValue(
-						metricTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("actions"),
-						knownvalue.ListSizeExact(1),
-					),
+					testutils.ExpectKnownValueListSize(metricTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
 				},
 			},
@@ -355,19 +345,11 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "name", compoundTriggerAutomationResourceNameAndPath, "name"),
 					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "description", compoundTriggerAutomationResourceNameAndPath, "description"),
 					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "enabled", compoundTriggerAutomationResourceNameAndPath, "enabled"),
-					statecheck.ExpectKnownValue(
-						compoundTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("trigger").AtMapKey("compound").AtMapKey("triggers"),
-						knownvalue.ListSizeExact(2),
-					),
+					testutils.ExpectKnownValueListSize(compoundTriggerAutomationDataSourceNameAndPath, "trigger.compound.triggers", 2),
 					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.event"),
 					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
 					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					statecheck.ExpectKnownValue(
-						compoundTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("actions"),
-						knownvalue.ListSizeExact(1),
-					),
+					testutils.ExpectKnownValueListSize(compoundTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(compoundTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
 				},
 			},
@@ -382,19 +364,11 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "name", sequenceTriggerAutomationResourceNameAndPath, "name"),
 					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "description", sequenceTriggerAutomationResourceNameAndPath, "description"),
 					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "enabled", sequenceTriggerAutomationResourceNameAndPath, "enabled"),
-					statecheck.ExpectKnownValue(
-						sequenceTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("trigger").AtMapKey("sequence").AtMapKey("triggers"),
-						knownvalue.ListSizeExact(3),
-					),
+					testutils.ExpectKnownValueListSize(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.sequence.triggers", 3),
 					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
 					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.event"),
 					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
-					statecheck.ExpectKnownValue(
-						sequenceTriggerAutomationDataSourceNameAndPath,
-						tfjsonpath.New("actions"),
-						knownvalue.ListSizeExact(1),
-					),
+					testutils.ExpectKnownValueListSize(sequenceTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(sequenceTriggerAutomationDataSourceNameAndPath, "actions.0.type", "send-notification"),
 				},
 			},
