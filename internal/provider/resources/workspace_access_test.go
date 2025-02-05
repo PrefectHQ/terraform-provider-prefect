@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -69,10 +70,12 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 					// Check creation + existence of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, developerRoleDatsourceName),
-					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.CompareValuePairs(accessResourceName, "accessor_id", botResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", developerRoleDatsourceName, "id"),
+				},
 			},
 			{
 				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(workspace.Resource),
@@ -80,10 +83,12 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 					// Check updating the role of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.ServiceAccount, &workspaceAccess, botResourceName, runnerRoleDatsourceName),
-					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", botResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.CompareValuePairs(accessResourceName, "accessor_id", botResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
+				},
 			},
 		},
 	})
@@ -145,10 +150,12 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 					// Check creation + existence of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, viewerRoleDatsourceName),
-					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", viewerRoleDatsourceName, "id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.CompareValuePairs(accessResourceName, "accessor_id", teamResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", viewerRoleDatsourceName, "id"),
+				},
 			},
 			{
 				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace.Resource),
@@ -156,10 +163,12 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 					// Check updating the role of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, runnerRoleDatsourceName),
-					resource.TestCheckResourceAttrPair(accessResourceName, "accessor_id", teamResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-					resource.TestCheckResourceAttrPair(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.CompareValuePairs(accessResourceName, "accessor_id", teamResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
+					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
+				},
 			},
 		},
 	})

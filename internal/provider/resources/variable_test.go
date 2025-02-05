@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -72,8 +73,10 @@ func TestAccResource_variable(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName, Value: valueString}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+				},
 			},
 			{
 				// Check updating name of the variable resource
@@ -121,11 +124,11 @@ func TestAccResource_variable(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName2),
-					resource.TestCheckResourceAttr(resourceName, "tags.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "tags.0", "foo"),
-					resource.TestCheckResourceAttr(resourceName, "tags.1", "bar"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName2),
+					testutils.ExpectKnownValueList(resourceName, "tags", []string{"foo", "bar"}),
+				},
 			},
 		},
 	})

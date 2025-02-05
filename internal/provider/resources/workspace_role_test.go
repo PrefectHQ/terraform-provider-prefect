@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -52,12 +53,12 @@ func TestAccResource_workspace_role(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkspaceRoleExists(resourceName, &workspaceRole),
 					testAccCheckWorkspaceRoleValues(&workspaceRole, &api.WorkspaceRole{Name: randomName, Scopes: []string{"see_artifacts", "see_blocks"}}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("%s description", randomName)),
-					resource.TestCheckResourceAttr(resourceName, "scopes.#", "2"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.0", "see_blocks"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.1", "see_artifacts"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+					testutils.ExpectKnownValue(resourceName, "description", fmt.Sprintf("%s description", randomName)),
+					testutils.ExpectKnownValueList(resourceName, "scopes", []string{"see_blocks", "see_artifacts"}),
+				},
 			},
 			{
 				// Check updates for the workspace role resource
@@ -65,13 +66,12 @@ func TestAccResource_workspace_role(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkspaceRoleExists(resourceName, &workspaceRole),
 					testAccCheckWorkspaceRoleValues(&workspaceRole, &api.WorkspaceRole{Name: randomName, Scopes: []string{"see_workers", "see_work_queues", "see_variables"}}),
-					resource.TestCheckResourceAttr(resourceName, "name", randomName),
-					resource.TestCheckResourceAttr(resourceName, "description", fmt.Sprintf("description for %s", randomName)),
-					resource.TestCheckResourceAttr(resourceName, "scopes.#", "3"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.0", "see_workers"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.1", "see_variables"),
-					resource.TestCheckResourceAttr(resourceName, "scopes.2", "see_work_queues"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+					testutils.ExpectKnownValue(resourceName, "description", fmt.Sprintf("description for %s", randomName)),
+					testutils.ExpectKnownValueList(resourceName, "scopes", []string{"see_workers", "see_variables", "see_work_queues"}),
+				},
 			},
 			// Import State checks - import by ID (default)
 			{
