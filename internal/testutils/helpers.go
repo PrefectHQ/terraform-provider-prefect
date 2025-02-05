@@ -117,6 +117,14 @@ func ExpectKnownValueNotNull(resourceName, path string) statecheck.StateCheck {
 	return expectKnownValue(resourceName, path, knownvalue.NotNull())
 }
 
+// ExpectKnownValueNull returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is null.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueNull(resourceName, path string) statecheck.StateCheck {
+	return expectKnownValue(resourceName, path, knownvalue.Null())
+}
+
 // ExpectKnownValueNumber returns a statecheck.StateCheck that can be used to
 // check the known value of a resource attribute that is a number.
 //
