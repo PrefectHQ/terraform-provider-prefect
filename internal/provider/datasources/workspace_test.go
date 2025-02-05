@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -40,21 +41,21 @@ func TestAccDatasource_workspace(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccWorkspaceByHandle(ephemeralWorkspace.Resource, ephemeralWorkspace.Name),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "handle", ephemeralWorkspace.Name),
-					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "name"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(dataSourceName, "handle", ephemeralWorkspace.Name),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "created"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "updated"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "name"),
+				},
 			},
 			{
 				Config: fixtureAccWorkspaceByID(ephemeralWorkspace.Resource),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "handle", ephemeralWorkspace.Name),
-					resource.TestCheckResourceAttrSet(dataSourceName, "created"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "name"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(dataSourceName, "handle", ephemeralWorkspace.Name),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "created"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "updated"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "name"),
+				},
 			},
 		},
 	})

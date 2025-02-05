@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -22,23 +25,23 @@ func TestAccDatasource_account_role_defaults(t *testing.T) {
 
 	type defaultAccountRole struct {
 		name            string
-		permissionCount string
+		permissionCount int
 	}
 
 	// Default account role names - these exist in every account
-	defaultAccountRoles := []defaultAccountRole{{"Admin", "42"}, {"Member", "12"}, {"Owner", "44"}}
+	defaultAccountRoles := []defaultAccountRole{{"Admin", 42}, {"Member", 12}, {"Owner", 44}}
 
 	testSteps := []resource.TestStep{}
 
 	for _, role := range defaultAccountRoles {
 		testSteps = append(testSteps, resource.TestStep{
 			Config: fixtureAccAccountRoleDataSource(role.name),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(dataSourceName, "name", role.name),
-				resource.TestCheckResourceAttr(dataSourceName, "permissions.#", role.permissionCount),
+			ConfigStateChecks: []statecheck.StateCheck{
+				testutils.ExpectKnownValue(dataSourceName, "name", role.name),
+				statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("permissions"), knownvalue.ListSizeExact(role.permissionCount)),
 				// Default roles should not be associated with an account
-				resource.TestCheckNoResourceAttr(dataSourceName, "account_id"),
-			),
+				statecheck.ExpectKnownValue(dataSourceName, tfjsonpath.New("account_id"), knownvalue.Null()),
+			},
 		})
 	}
 

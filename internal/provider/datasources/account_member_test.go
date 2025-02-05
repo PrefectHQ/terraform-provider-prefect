@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -26,17 +27,17 @@ func TestAccDatasource_account_member(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccAccountMember("marvin@prefect.io"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "email", "marvin@prefect.io"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "account_role_id"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "account_role_name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "actor_id"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "first_name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "last_name"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "handle"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "user_id"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(dataSourceName, "email", "marvin@prefect.io"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "id"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "account_role_id"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "account_role_name"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "actor_id"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "first_name"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "last_name"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "handle"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "user_id"),
+				},
 			},
 		},
 	})

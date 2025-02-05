@@ -5,6 +5,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
@@ -301,18 +304,22 @@ func TestAccDatasource_automation(t *testing.T) {
 					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
 					AutomationResourceName:         eventTriggerAutomationResourceName,
 				}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(eventTriggerAutomationDataSourceNameAndPath, "id"),
-					resource.TestCheckResourceAttrPair(eventTriggerAutomationDataSourceNameAndPath, "name", eventTriggerAutomationResourceNameAndPath, "name"),
-					resource.TestCheckResourceAttrPair(eventTriggerAutomationDataSourceNameAndPath, "description", eventTriggerAutomationResourceNameAndPath, "description"),
-					resource.TestCheckResourceAttrPair(eventTriggerAutomationDataSourceNameAndPath, "enabled", eventTriggerAutomationResourceNameAndPath, "enabled"),
-					resource.TestCheckResourceAttrSet(eventTriggerAutomationDataSourceNameAndPath, "trigger.event.posture"),
-					resource.TestCheckNoResourceAttr(eventTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
-					resource.TestCheckNoResourceAttr(eventTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
-					resource.TestCheckNoResourceAttr(eventTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationDataSourceNameAndPath, "actions.#", "1"),
-					resource.TestCheckResourceAttr(eventTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationDataSourceNameAndPath, "id"),
+					testutils.CompareValuePairs(eventTriggerAutomationDataSourceNameAndPath, "name", eventTriggerAutomationResourceNameAndPath, "name"),
+					testutils.CompareValuePairs(eventTriggerAutomationDataSourceNameAndPath, "description", eventTriggerAutomationResourceNameAndPath, "description"),
+					testutils.CompareValuePairs(eventTriggerAutomationDataSourceNameAndPath, "enabled", eventTriggerAutomationResourceNameAndPath, "enabled"),
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.event.posture"),
+					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
+					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
+					testutils.ExpectKnownValueNull(eventTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
+					statecheck.ExpectKnownValue(
+						eventTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("actions"),
+						knownvalue.ListSizeExact(1),
+					),
+					testutils.ExpectKnownValue(eventTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
+				},
 			},
 			{
 				Config: fixtureAccAutomationResourceMetricTrigger(automationFixtureConfig{
@@ -320,18 +327,22 @@ func TestAccDatasource_automation(t *testing.T) {
 					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
 					AutomationResourceName:         metricTriggerAutomationResourceName,
 				}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(metricTriggerAutomationDataSourceNameAndPath, "id"),
-					resource.TestCheckResourceAttrPair(metricTriggerAutomationDataSourceNameAndPath, "name", metricTriggerAutomationResourceNameAndPath, "name"),
-					resource.TestCheckResourceAttrPair(metricTriggerAutomationDataSourceNameAndPath, "description", metricTriggerAutomationResourceNameAndPath, "description"),
-					resource.TestCheckResourceAttrPair(metricTriggerAutomationDataSourceNameAndPath, "enabled", metricTriggerAutomationResourceNameAndPath, "enabled"),
-					resource.TestCheckResourceAttrSet(metricTriggerAutomationDataSourceNameAndPath, "trigger.metric.metric.name"),
-					resource.TestCheckNoResourceAttr(metricTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
-					resource.TestCheckNoResourceAttr(metricTriggerAutomationDataSourceNameAndPath, "trigger.event"),
-					resource.TestCheckNoResourceAttr(metricTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					resource.TestCheckResourceAttr(metricTriggerAutomationDataSourceNameAndPath, "actions.#", "1"),
-					resource.TestCheckResourceAttr(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(metricTriggerAutomationDataSourceNameAndPath, "id"),
+					testutils.CompareValuePairs(metricTriggerAutomationDataSourceNameAndPath, "name", metricTriggerAutomationResourceNameAndPath, "name"),
+					testutils.CompareValuePairs(metricTriggerAutomationDataSourceNameAndPath, "description", metricTriggerAutomationResourceNameAndPath, "description"),
+					testutils.CompareValuePairs(metricTriggerAutomationDataSourceNameAndPath, "enabled", metricTriggerAutomationResourceNameAndPath, "enabled"),
+					testutils.ExpectKnownValueNotNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.metric.metric.name"),
+					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
+					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.event"),
+					testutils.ExpectKnownValueNull(metricTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
+					statecheck.ExpectKnownValue(
+						metricTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("actions"),
+						knownvalue.ListSizeExact(1),
+					),
+					testutils.ExpectKnownValue(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
+				},
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
@@ -339,18 +350,26 @@ func TestAccDatasource_automation(t *testing.T) {
 					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
 					AutomationResourceName:         compoundTriggerAutomationResourceName,
 				}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(compoundTriggerAutomationDataSourceNameAndPath, "id"),
-					resource.TestCheckResourceAttrPair(compoundTriggerAutomationDataSourceNameAndPath, "name", compoundTriggerAutomationResourceNameAndPath, "name"),
-					resource.TestCheckResourceAttrPair(compoundTriggerAutomationDataSourceNameAndPath, "description", compoundTriggerAutomationResourceNameAndPath, "description"),
-					resource.TestCheckResourceAttrPair(compoundTriggerAutomationDataSourceNameAndPath, "enabled", compoundTriggerAutomationResourceNameAndPath, "enabled"),
-					resource.TestCheckResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "trigger.compound.triggers.#", "2"),
-					resource.TestCheckNoResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "trigger.event"),
-					resource.TestCheckNoResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
-					resource.TestCheckNoResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
-					resource.TestCheckResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "actions.#", "1"),
-					resource.TestCheckResourceAttr(compoundTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(compoundTriggerAutomationDataSourceNameAndPath, "id"),
+					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "name", compoundTriggerAutomationResourceNameAndPath, "name"),
+					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "description", compoundTriggerAutomationResourceNameAndPath, "description"),
+					testutils.CompareValuePairs(compoundTriggerAutomationDataSourceNameAndPath, "enabled", compoundTriggerAutomationResourceNameAndPath, "enabled"),
+					statecheck.ExpectKnownValue(
+						compoundTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("trigger").AtMapKey("compound").AtMapKey("triggers"),
+						knownvalue.ListSizeExact(2),
+					),
+					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.event"),
+					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
+					testutils.ExpectKnownValueNull(compoundTriggerAutomationDataSourceNameAndPath, "trigger.sequence"),
+					statecheck.ExpectKnownValue(
+						compoundTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("actions"),
+						knownvalue.ListSizeExact(1),
+					),
+					testutils.ExpectKnownValue(compoundTriggerAutomationDataSourceNameAndPath, "actions.0.type", "run-deployment"),
+				},
 			},
 			{
 				Config: fixtureAccAutomationResourceSequenceTrigger(automationFixtureConfig{
@@ -358,18 +377,26 @@ func TestAccDatasource_automation(t *testing.T) {
 					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
 					AutomationResourceName:         sequenceTriggerAutomationResourceName,
 				}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(sequenceTriggerAutomationDataSourceNameAndPath, "id"),
-					resource.TestCheckResourceAttrPair(sequenceTriggerAutomationDataSourceNameAndPath, "name", sequenceTriggerAutomationResourceNameAndPath, "name"),
-					resource.TestCheckResourceAttrPair(sequenceTriggerAutomationDataSourceNameAndPath, "description", sequenceTriggerAutomationResourceNameAndPath, "description"),
-					resource.TestCheckResourceAttrPair(sequenceTriggerAutomationDataSourceNameAndPath, "enabled", sequenceTriggerAutomationResourceNameAndPath, "enabled"),
-					resource.TestCheckResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.sequence.triggers.#", "3"),
-					resource.TestCheckNoResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
-					resource.TestCheckNoResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.event"),
-					resource.TestCheckNoResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
-					resource.TestCheckResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "actions.#", "1"),
-					resource.TestCheckResourceAttr(sequenceTriggerAutomationDataSourceNameAndPath, "actions.0.type", "send-notification"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(sequenceTriggerAutomationDataSourceNameAndPath, "id"),
+					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "name", sequenceTriggerAutomationResourceNameAndPath, "name"),
+					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "description", sequenceTriggerAutomationResourceNameAndPath, "description"),
+					testutils.CompareValuePairs(sequenceTriggerAutomationDataSourceNameAndPath, "enabled", sequenceTriggerAutomationResourceNameAndPath, "enabled"),
+					statecheck.ExpectKnownValue(
+						sequenceTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("trigger").AtMapKey("sequence").AtMapKey("triggers"),
+						knownvalue.ListSizeExact(3),
+					),
+					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.compound"),
+					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.event"),
+					testutils.ExpectKnownValueNull(sequenceTriggerAutomationDataSourceNameAndPath, "trigger.metric"),
+					statecheck.ExpectKnownValue(
+						sequenceTriggerAutomationDataSourceNameAndPath,
+						tfjsonpath.New("actions"),
+						knownvalue.ListSizeExact(1),
+					),
+					testutils.ExpectKnownValue(sequenceTriggerAutomationDataSourceNameAndPath, "actions.0.type", "send-notification"),
+				},
 			},
 		},
 	})

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -39,11 +40,11 @@ func TestAccDatasource_variable(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccVariableByName(workspace.Resource, variableName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceName, "id"),
-					resource.TestCheckResourceAttr(datasourceName, "name", variableName),
-					resource.TestCheckResourceAttr(datasourceName, "value", variableValue),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(datasourceName, "id"),
+					testutils.ExpectKnownValue(datasourceName, "name", variableName),
+					testutils.ExpectKnownValue(datasourceName, "value", variableValue),
+				},
 			},
 		},
 	})

@@ -7,6 +7,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -23,18 +26,18 @@ func TestAccDatasource_service_account(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccServiceAccountDataSource(randomName),
-				Check: resource.ComposeAggregateTestCheckFunc(
+				ConfigStateChecks: []statecheck.StateCheck{
 					// Check the prefect_service_account datasource that queries by ID
-					resource.TestCheckResourceAttr(dataSourceNameByID, "name", randomName),
-					resource.TestMatchResourceAttr(dataSourceNameByID, "api_key_name", regexp.MustCompile((fmt.Sprintf(`^%s`, randomName)))),
-					resource.TestCheckResourceAttrSet(dataSourceNameByID, "created"),
-					resource.TestCheckResourceAttrSet(dataSourceNameByID, "updated"),
+					testutils.ExpectKnownValue(dataSourceNameByID, "name", randomName),
+					statecheck.ExpectKnownValue(dataSourceNameByID, tfjsonpath.New("api_key_name"), knownvalue.StringRegexp(regexp.MustCompile(fmt.Sprintf(`^%s`, randomName)))),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "created"),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "updated"),
 					// Check the prefect_service_account datasource that queries by name
-					resource.TestCheckResourceAttr(dataSourceNameByName, "name", randomName),
-					resource.TestMatchResourceAttr(dataSourceNameByName, "api_key_name", regexp.MustCompile((fmt.Sprintf(`^%s`, randomName)))),
-					resource.TestCheckResourceAttrSet(dataSourceNameByName, "created"),
-					resource.TestCheckResourceAttrSet(dataSourceNameByName, "updated"),
-				),
+					testutils.ExpectKnownValue(dataSourceNameByName, "name", randomName),
+					statecheck.ExpectKnownValue(dataSourceNameByName, tfjsonpath.New("api_key_name"), knownvalue.StringRegexp(regexp.MustCompile(fmt.Sprintf(`^%s`, randomName)))),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByName, "created"),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByName, "updated"),
+				},
 			},
 		},
 	})

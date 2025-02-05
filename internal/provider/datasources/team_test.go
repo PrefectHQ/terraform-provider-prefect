@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -27,10 +28,10 @@ func TestAccDatasource_team(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccTeam("my-team"),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceName, "name", "my-team"),
-					resource.TestCheckResourceAttrSet(dataSourceName, "id"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(dataSourceName, "name", "my-team"),
+					testutils.ExpectKnownValueNotNull(dataSourceName, "id"),
+				},
 			},
 		},
 	})
