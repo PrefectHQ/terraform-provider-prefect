@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -83,10 +84,12 @@ func TestAccResource_block(t *testing.T) {
 						TypeSlug: "secret",
 						Data:     fmt.Sprintf(`{"value":%q}`, randomValue),
 					}),
-					resource.TestCheckResourceAttr(blockResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(blockResourceName, "type_slug", "secret"),
-					resource.TestCheckResourceAttr(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue)),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(blockResourceName, "name", randomName),
+					testutils.ExpectKnownValue(blockResourceName, "type_slug", "secret"),
+					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue)),
+				},
 			},
 			// Check updating the value of the block resource
 			{
@@ -98,10 +101,12 @@ func TestAccResource_block(t *testing.T) {
 						TypeSlug: "secret",
 						Data:     fmt.Sprintf(`{"value":%q}`, randomValue2),
 					}),
-					resource.TestCheckResourceAttr(blockResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(blockResourceName, "type_slug", "secret"),
-					resource.TestCheckResourceAttr(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(blockResourceName, "name", randomName),
+					testutils.ExpectKnownValue(blockResourceName, "type_slug", "secret"),
+					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
+				},
 			},
 			// Next two tests using `fixtureAccBlockWithRef` will be used to test
 			// that using the $ref syntax won't result in an Update plan if no changes are made.
@@ -109,9 +114,11 @@ func TestAccResource_block(t *testing.T) {
 				Config: fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists("prefect_block.with_ref", &blockDocument),
-					resource.TestCheckResourceAttr("prefect_block.with_ref", "name", "block-with-ref"),
-					resource.TestCheckResourceAttr("prefect_block.with_ref", "type_slug", "s3-bucket"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue("prefect_block.with_ref", "name", "block-with-ref"),
+					testutils.ExpectKnownValue("prefect_block.with_ref", "type_slug", "s3-bucket"),
+				},
 			},
 			{
 				Config:             fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
