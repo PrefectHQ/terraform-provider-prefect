@@ -6,6 +6,9 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -33,23 +36,27 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccWorkerMetadtata(workspace.Resource),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(datasourceName, "base_job_configs.%", "14"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.kubernetes"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.ecs"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.azure_container_instances"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.docker"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run_v2"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.vertex_ai"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.prefect_agent"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.process"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.azure_container_instances_push"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run_push"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.cloud_run_v2_push"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.modal_push"),
-					resource.TestCheckResourceAttrSet(datasourceName, "base_job_configs.ecs_push"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						datasourceName,
+						tfjsonpath.New("base_job_configs"),
+						knownvalue.MapSizeExact(14),
+					),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.kubernetes"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.ecs"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.azure_container_instances"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.docker"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.cloud_run"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.cloud_run_v2"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.vertex_ai"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.prefect_agent"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.process"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.azure_container_instances_push"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.cloud_run_push"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.cloud_run_v2_push"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.modal_push"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.ecs_push"),
+				},
 			},
 		}})
 }

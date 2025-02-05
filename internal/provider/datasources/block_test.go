@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -65,20 +66,20 @@ func TestAccDatasource_block(t *testing.T) {
 			{
 				// Test block datasource by ID.
 				Config: fixtureAccBlockByName(workspace.Resource, blockName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceNameByID, "id"),
-					resource.TestCheckResourceAttr(datasourceNameByID, "name", blockName),
-					resource.TestCheckResourceAttr(datasourceNameByID, "data", blockValue),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(datasourceNameByID, "id"),
+					testutils.ExpectKnownValue(datasourceNameByID, "name", blockName),
+					testutils.ExpectKnownValue(datasourceNameByID, "data", blockValue),
+				},
 			},
 			{
 				// Test block datasource by name.
 				Config: fixtureAccBlockByName(workspace.Resource, blockName),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceNameByName, "id"),
-					resource.TestCheckResourceAttr(datasourceNameByName, "name", blockName),
-					resource.TestCheckResourceAttr(datasourceNameByName, "data", blockValue),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(datasourceNameByName, "id"),
+					testutils.ExpectKnownValue(datasourceNameByName, "name", blockName),
+					testutils.ExpectKnownValue(datasourceNameByName, "data", blockValue),
+				},
 			},
 		},
 	})

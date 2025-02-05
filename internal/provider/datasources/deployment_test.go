@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -67,21 +68,21 @@ func TestAccDatasource_deployment(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccDeploymentByName(workspace.Resource),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceNameByID, "id"),
-					resource.TestCheckResourceAttr(datasourceNameByID, "name", "test"),
-					resource.TestCheckResourceAttr(datasourceNameByID, "description", "test description"),
-					resource.TestCheckResourceAttr(datasourceNameByID, "version", "1.2.3"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(datasourceNameByID, "id"),
+					testutils.ExpectKnownValue(datasourceNameByID, "name", "test"),
+					testutils.ExpectKnownValue(datasourceNameByID, "description", "test description"),
+					testutils.ExpectKnownValue(datasourceNameByID, "version", "1.2.3"),
+				},
 			},
 			{
 				Config: fixtureAccDeploymentByName(workspace.Resource),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet(datasourceNameByName, "name"),
-					resource.TestCheckResourceAttr(datasourceNameByName, "name", "test"),
-					resource.TestCheckResourceAttr(datasourceNameByName, "description", "test description"),
-					resource.TestCheckResourceAttr(datasourceNameByName, "version", "1.2.3"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(datasourceNameByName, "id"),
+					testutils.ExpectKnownValue(datasourceNameByName, "name", "test"),
+					testutils.ExpectKnownValue(datasourceNameByName, "description", "test description"),
+					testutils.ExpectKnownValue(datasourceNameByName, "version", "1.2.3"),
+				},
 			},
 		},
 	})

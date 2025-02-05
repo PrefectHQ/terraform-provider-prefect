@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -28,13 +29,13 @@ func TestAccDatasource_workspace_role_defaults(t *testing.T) {
 	for _, role := range defaultWorkspaceRoles {
 		testSteps = append(testSteps, resource.TestStep{
 			Config: fixtureAccWorkspaceRoleDataSource(role),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(dataSourceName, "name", role),
-				resource.TestCheckResourceAttrSet(dataSourceName, "created"),
-				resource.TestCheckResourceAttrSet(dataSourceName, "updated"),
+			ConfigStateChecks: []statecheck.StateCheck{
+				testutils.ExpectKnownValue(dataSourceName, "name", role),
+				testutils.ExpectKnownValueNotNull(dataSourceName, "created"),
+				testutils.ExpectKnownValueNotNull(dataSourceName, "updated"),
 				// Default roles should not be associated with an account
-				resource.TestCheckNoResourceAttr(dataSourceName, "account_id"),
-			),
+				testutils.ExpectKnownValueNull(dataSourceName, "account_id"),
+			},
 		})
 	}
 

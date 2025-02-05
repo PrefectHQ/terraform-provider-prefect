@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -26,11 +27,11 @@ func TestAccDatasource_account(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccAccount(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(datasourceName, "id", os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")),
-					resource.TestCheckResourceAttrSet(datasourceName, "name"),
-					resource.TestCheckResourceAttrSet(datasourceName, "handle"),
-				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(datasourceName, "id", os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")),
+					testutils.ExpectKnownValueNotNull(datasourceName, "name"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "handle"),
+				},
 			},
 		},
 	})
