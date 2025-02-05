@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -73,11 +74,13 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: true}),
-					resource.TestCheckResourceAttr(workPoolResourceName, "base_job_template", baseJobTemplateExpected),
-					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
-					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "true"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(workPoolResourceName, "base_job_template", baseJobTemplateExpected),
+					testutils.ExpectKnownValue(workPoolResourceName, "name", randomName),
+					testutils.ExpectKnownValue(workPoolResourceName, "type", poolType),
+					testutils.ExpectKnownValueBool(workPoolResourceName, "paused", true),
+				},
 			},
 			{
 				// Check that changing the paused state will update the resource in place
@@ -86,10 +89,12 @@ func TestAccResource_work_pool(t *testing.T) {
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: false}),
-					resource.TestCheckResourceAttr(workPoolResourceName, "name", randomName),
-					resource.TestCheckResourceAttr(workPoolResourceName, "type", poolType),
-					resource.TestCheckResourceAttr(workPoolResourceName, "paused", "false"),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(workPoolResourceName, "name", randomName),
+					testutils.ExpectKnownValue(workPoolResourceName, "type", poolType),
+					testutils.ExpectKnownValueBool(workPoolResourceName, "paused", false),
+				},
 			},
 			{
 				// Check that changing the baseJobTemplate will update the resource in place
@@ -97,8 +102,10 @@ func TestAccResource_work_pool(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
-					resource.TestCheckResourceAttr(workPoolResourceName, "base_job_template", baseJobTemplateExpected2),
 				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(workPoolResourceName, "base_job_template", baseJobTemplateExpected2),
+				},
 			},
 			{
 				// Check that changing the name will re-create the resource
