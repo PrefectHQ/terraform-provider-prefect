@@ -50,3 +50,12 @@ resource "prefect_global_concurrency_limit" "test" {
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Global concurrency limit ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Prefect global concurrency limits can be imported via id,workspace_id
+terraform import prefect_global_concurrency_limit.example 00000000-0000-0000-0000-000000000000,00000000-0000-0000-0000-000000000000
+```

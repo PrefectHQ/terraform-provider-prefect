@@ -63,3 +63,12 @@ if __name__ == "__main__":
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Task run concurrency limit ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
+
+## Import
+
+Import is supported using the following syntax:
+
+```shell
+# Prefect task run concurrency limits can be imported via id,workspace_id
+terraform import prefect_task_run_concurrency_limit.example 00000000-0000-0000-0000-000000000000,00000000-0000-0000-0000-000000000000
+```

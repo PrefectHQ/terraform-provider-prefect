@@ -3,13 +3,11 @@ package resources
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -451,31 +449,6 @@ func (r *BlockResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 }
 
 // ImportState imports the resource into Terraform state.
-// Valid import IDs:
-// <block_id>
-// <block_id>,<workspace_id>.
 func (r *BlockResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.Split(req.ID, ",")
-
-	if len(parts) > 2 || len(parts) == 0 {
-		resp.Diagnostics.AddError(
-			"Error importing Block",
-			"Import ID must be in the format of <block identifier> OR <block identifier>,<workspace_id>",
-		)
-
-		return
-	}
-
-	blockIdentifier := parts[0]
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), blockIdentifier)...)
-
-	if len(parts) == 2 && parts[1] != "" {
-		workspaceID, err := uuid.Parse(parts[1])
-		if err != nil {
-			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
-
-			return
-		}
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
-	}
+	helpers.ImportState(ctx, req, resp)
 }
