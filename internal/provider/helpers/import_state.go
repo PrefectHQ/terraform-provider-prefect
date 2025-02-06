@@ -34,6 +34,10 @@ func importState(ctx context.Context, req resource.ImportStateRequest, resp *res
 		return
 	}
 
+	// Set the attribute for the given identifier.
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(identifier), inputParts[0])...)
+
+	// Set the attribute for the workspace_id, if provided.
 	if len(inputParts) == maxInputCount {
 		workspaceID, err := uuid.Parse(inputParts[1])
 		if err != nil {
@@ -42,10 +46,7 @@ func importState(ctx context.Context, req resource.ImportStateRequest, resp *res
 			return
 		}
 
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(identifier), inputParts[0])...)
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
-	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root(identifier), req, resp)
 	}
 }
 
