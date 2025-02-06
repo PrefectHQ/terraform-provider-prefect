@@ -50,14 +50,14 @@ func importState(ctx context.Context, req resource.ImportStateRequest, resp *res
 	}
 }
 
-// ImportState imports the resource into Terraform state.
+// ImportStateByID imports the resource into Terraform state.
 //
 // Allows input values in the form of:
 // - "id,workspace_id"
 // - "id"
 //
 // To import by name instead of ID, see ImportStateByName.
-func ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func ImportStateByID(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importState(ctx, req, resp, "id")
 }
 
@@ -67,7 +67,7 @@ func ImportState(ctx context.Context, req resource.ImportStateRequest, resp *res
 // - "name,workspace_id"
 // - "name"
 //
-// To import by ID instead of name, see ImportState.
+// To import by ID instead of name, see ImportStateByID.
 func ImportStateByName(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	importState(ctx, req, resp, "name")
 }

@@ -248,7 +248,7 @@ func (r *AutomationResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 // ImportState imports the resource into Terraform state.
 func (r *AutomationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	helpers.ImportState(ctx, req, resp)
+	helpers.ImportStateByID(ctx, req, resp)
 
 	// We need to set the trigger to an empty TriggerModel during import
 	// to avoid null value errors (Value Conversion Errors) from the provider framework.

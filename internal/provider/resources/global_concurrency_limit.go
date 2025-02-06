@@ -303,5 +303,5 @@ func (r *GlobalConcurrencyLimitResource) Update(ctx context.Context, req resourc
 
 // ImportState imports a global concurrency limit.
 func (r *GlobalConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	helpers.ImportState(ctx, req, resp)
+	helpers.ImportStateByID(ctx, req, resp)
 }

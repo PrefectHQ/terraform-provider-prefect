@@ -924,7 +924,7 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 // ImportState imports the resource into Terraform state.
 func (r *DeploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	helpers.ImportState(ctx, req, resp)
+	helpers.ImportStateByID(ctx, req, resp)
 }
 
 // pathExpressionsForAttributes provides a list of path expressions

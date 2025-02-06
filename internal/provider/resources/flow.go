@@ -306,5 +306,5 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 // ImportState imports the resource into Terraform state.
 func (r *FlowResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	helpers.ImportState(ctx, req, resp)
+	helpers.ImportStateByID(ctx, req, resp)
 }

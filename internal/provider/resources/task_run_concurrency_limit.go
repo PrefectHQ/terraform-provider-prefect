@@ -229,5 +229,5 @@ func (r *TaskRunConcurrencyLimitResource) Update(_ context.Context, _ resource.U
 
 // ImportState imports the resource into Terraform state.
 func (r *TaskRunConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	helpers.ImportState(ctx, req, resp)
+	helpers.ImportStateByID(ctx, req, resp)
 }
