@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
+// GetResourceWorkspaceImportStateID is a helper function that returns a resource.ImportStateIdFunc
+// that can be used to import a resource by its ID and workspace ID.
 func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
 		workspace, exists := state.RootModule().Resources[WorkspaceResourceName]
