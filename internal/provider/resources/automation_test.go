@@ -332,7 +332,7 @@ func TestAccResource_automation(t *testing.T) {
 			{
 				ImportState:       true,
 				ResourceName:      eventTriggerAutomationResourceNameAndPath,
-				ImportStateIdFunc: getAutomationImportStateID(eventTriggerAutomationResourceNameAndPath),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(eventTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
 			},
 			{
@@ -365,7 +365,7 @@ func TestAccResource_automation(t *testing.T) {
 			{
 				ImportState:       true,
 				ResourceName:      metricTriggerAutomationResourceNameAndPath,
-				ImportStateIdFunc: getAutomationImportStateID(metricTriggerAutomationResourceNameAndPath),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(metricTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
 			},
 			{
@@ -508,23 +508,5 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 		*automation = *fetchedAutomation
 
 		return nil
-	}
-}
-
-func getAutomationImportStateID(automationResourceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
-		automationResource, exists := state.RootModule().Resources[automationResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", automationResourceName)
-		}
-		automationID := automationResource.Primary.ID
-
-		return fmt.Sprintf("%s,%s", automationID, workspaceID), nil
 	}
 }

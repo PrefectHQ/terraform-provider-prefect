@@ -134,7 +134,7 @@ func TestAccResource_webhook(t *testing.T) {
 			{
 				ImportState:       true,
 				ResourceName:      webhookResourceName,
-				ImportStateIdFunc: getWebhookImportStateID(webhookResourceName),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(webhookResourceName),
 				ImportStateVerify: true,
 			},
 		},
@@ -186,23 +186,5 @@ func testAccCheckWebhookEndpoint(webhookResourceName string, webhook *api.Webhoo
 		}
 
 		return nil
-	}
-}
-
-func getWebhookImportStateID(webhookResourceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
-		webhookResource, exists := state.RootModule().Resources[webhookResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", webhookResourceName)
-		}
-		webhookID := webhookResource.Primary.ID
-
-		return fmt.Sprintf("%s,%s", workspaceID, webhookID), nil
 	}
 }

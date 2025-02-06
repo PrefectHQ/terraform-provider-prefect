@@ -129,7 +129,7 @@ func TestAccResource_work_pool(t *testing.T) {
 			{
 				ImportState:             true,
 				ResourceName:            workPoolResourceName2,
-				ImportStateIdFunc:       getWorkPoolImportStateID(workPoolResourceName2),
+				ImportStateIdFunc:       testutils.GetResourceWorkspaceImportStateID(workPoolResourceName2),
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"base_job_template"}, // we've already tested this, and we can't provide our unique equality check here
 			},
@@ -219,24 +219,6 @@ func testAccCheckIDsNotEqual(resourceName string, fetchedWorkPool *api.WorkPool)
 		}
 
 		return nil
-	}
-}
-
-func getWorkPoolImportStateID(workPoolResourceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
-		workPoolResource, exists := state.RootModule().Resources[workPoolResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", workPoolResourceName)
-		}
-		workPoolName := workPoolResource.Primary.Attributes["name"]
-
-		return fmt.Sprintf("%s,%s", workspaceID, workPoolName), nil
 	}
 }
 
