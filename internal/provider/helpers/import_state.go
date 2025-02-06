@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -34,11 +35,15 @@ func importState(ctx context.Context, req resource.ImportStateRequest, resp *res
 	}
 
 	if len(inputParts) == maxInputCount {
-		id := inputParts[0]
-		workspaceID := inputParts[1]
+		workspaceID, err := uuid.Parse(inputParts[1])
+		if err != nil {
+			resp.Diagnostics.Append(ParseUUIDErrorDiagnostic("Import", err))
 
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(identifier), id)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
+			return
+		}
+
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(identifier), inputParts[0])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
 	} else {
 		resource.ImportStatePassthroughID(ctx, path.Root(identifier), req, resp)
 	}
