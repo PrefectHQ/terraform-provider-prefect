@@ -131,7 +131,7 @@ func TestAccResource_block(t *testing.T) {
 			{
 				ImportState:       true,
 				ResourceName:      blockResourceName,
-				ImportStateIdFunc: getBlockImportStateID(blockResourceName),
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(blockResourceName),
 				ImportStateVerify: false,
 			},
 		},
@@ -197,25 +197,5 @@ func testAccCheckBlockValues(fetchedBlockDocument *api.BlockDocument, expectedVa
 		}
 
 		return nil
-	}
-}
-
-// getBlockImportStateID generates the Import ID used in the test assertion,
-// since we need to construct one that includes the Block ID and the Workspace ID.
-func getBlockImportStateID(blockResourceName string) resource.ImportStateIdFunc {
-	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
-		blockResource, exists := state.RootModule().Resources[blockResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", blockResourceName)
-		}
-		blockID, _ := uuid.Parse(blockResource.Primary.ID)
-
-		return fmt.Sprintf("%s,%s", blockID, workspaceID), nil
 	}
 }

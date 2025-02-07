@@ -2,12 +2,8 @@ package resources
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -233,40 +229,5 @@ func (r *TaskRunConcurrencyLimitResource) Update(_ context.Context, _ resource.U
 
 // ImportState imports the resource into Terraform state.
 func (r *TaskRunConcurrencyLimitResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// we'll allow input values in the form of:
-	// - "id,workspace_id"
-	// - "id"
-	maxInputCount := 2
-	inputParts := strings.Split(req.ID, ",")
-
-	// eg. ",foo" or "foo,"
-	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected non-empty import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
-		)
-
-		return
-	}
-	if len(inputParts) > maxInputCount {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `id,workspace_id`. Got %q", req.ID),
-		)
-
-		return
-	}
-
-	identifier := inputParts[0]
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), identifier)...)
-
-	if len(inputParts) == 2 && inputParts[1] != "" {
-		workspaceID, err := uuid.Parse(inputParts[1])
-		if err != nil {
-			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Concurrency Limit", err))
-
-			return
-		}
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
-	}
+	helpers.ImportStateByID(ctx, req, resp)
 }

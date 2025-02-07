@@ -3,10 +3,8 @@ package resources
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -335,39 +333,5 @@ func (r *WebhookResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 // ImportState imports the resource into Terraform state.
 func (r *WebhookResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// we'll allow input values in the form of:
-	// - "workspace_id,id"
-	// - "id"
-	maxInputCount := 2
-	inputParts := strings.Split(req.ID, ",")
-
-	// eg. "foo,bar,baz"
-	if len(inputParts) > maxInputCount {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 2 import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
-		)
-
-		return
-	}
-
-	// eg. ",foo" or "foo,"
-	if len(inputParts) == maxInputCount && (inputParts[0] == "" || inputParts[1] == "") {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected non-empty import identifiers, in the form of `workspace_id,name`. Got %q", req.ID),
-		)
-
-		return
-	}
-
-	if len(inputParts) == maxInputCount {
-		workspaceID := inputParts[0]
-		id := inputParts[1]
-
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), id)...)
-	} else {
-		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	}
+	helpers.ImportStateByID(ctx, req, resp)
 }

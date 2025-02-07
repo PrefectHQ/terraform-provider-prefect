@@ -8,7 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
+// getResourceWorkspaceImportStateID is a helper function that standardizes the format used
+// for importing a resource in the format "<identifier>,<workspace_id>".
+func getResourceWorkspaceImportStateID(resourceName, identifier string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
 		workspace, exists := state.RootModule().Resources[WorkspaceResourceName]
 		if !exists {
@@ -21,6 +23,18 @@ func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportState
 			return "", fmt.Errorf("resource not found in state: %s", resourceName)
 		}
 
-		return fmt.Sprintf("%s,%s", fetchedResource.Primary.Attributes["id"], workspaceID), nil
+		return fmt.Sprintf("%s,%s", fetchedResource.Primary.Attributes[identifier], workspaceID), nil
 	}
+}
+
+// GetResourceWorkspaceImportStateID is a helper function that returns a resource.ImportStateIdFunc
+// that can be used to import a resource by its ID and workspace ID.
+func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
+	return getResourceWorkspaceImportStateID(resourceName, "id")
+}
+
+// GetResourceWorkspaceImportStateIDByName is a helper function that returns a resource.ImportStateIdFunc
+// that can be used to import a resource by its name and workspace ID.
+func GetResourceWorkspaceImportStateIDByName(resourceName string) resource.ImportStateIdFunc {
+	return getResourceWorkspaceImportStateID(resourceName, "name")
 }

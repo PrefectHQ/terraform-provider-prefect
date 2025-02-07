@@ -133,14 +133,9 @@ For more information on the `$ref` syntax definition, see the
 Import is supported using the following syntax:
 
 ```shell
-# prefect_block resources can be imported by the Block ID
+# prefect_block resources can be imported by the block_id
 terraform import prefect_block.my_block 00000000-0000-0000-0000-000000000000
-
-# Pass an optional, comma-separated value following the identifier
-# if you need to import a resource in a different workspace
-# from the one that your provider is configured with
-# NOTE: you must specify the workspace_id attribute in the addressed resource
 #
-# <block_id>,<workspace_id>
+# or from a different workspace via block_id,workspace_id
 terraform import prefect_block.my_block 00000000-0000-0000-0000-000000000000,11111111-1111-1111-1111-111111111111
 ```

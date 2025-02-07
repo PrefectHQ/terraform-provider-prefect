@@ -130,6 +130,13 @@ func TestAccResource_variable(t *testing.T) {
 					testutils.ExpectKnownValueList(resourceName, "tags", []string{"foo", "bar"}),
 				},
 			},
+			{
+				ImportState:             true,
+				ResourceName:            resourceName,
+				ImportStateIdFunc:       testutils.GetResourceWorkspaceImportStateID(resourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"value"},
+			},
 		},
 	})
 }
