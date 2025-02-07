@@ -43,9 +43,9 @@ resource "prefect_workspace" "example" {
 Import is supported using the following syntax:
 
 ```shell
-# Prefect Workspaces can be imported via handle in the form `handle/workspace-handle`
+# Prefect Workspaces can be imported via `handle/workspace-handle`
 terraform import prefect_workspace.example handle/workspace-handle
 
-# Prefect Workspaces can also be imported via UUID
+# or via workspace_id
 terraform import prefect_workspace.example 00000000-0000-0000-0000-000000000000
 ```

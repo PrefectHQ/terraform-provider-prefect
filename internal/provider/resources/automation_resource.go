@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -248,33 +247,8 @@ func (r *AutomationResource) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 // ImportState imports the resource into Terraform state.
-// Valid import IDs:
-// <automation_id>
-// <automation_id>,<workspace_id>.
 func (r *AutomationResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	parts := strings.Split(req.ID, ",")
-
-	if len(parts) > 2 || len(parts) == 0 {
-		resp.Diagnostics.AddError(
-			"Error importing Automation",
-			"Import ID must be in the format of <automation_id> OR <automation_id>,<workspace_id>",
-		)
-
-		return
-	}
-
-	automationID := parts[0]
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), automationID)...)
-
-	if len(parts) == 2 && parts[1] != "" {
-		workspaceID, err := uuid.Parse(parts[1])
-		if err != nil {
-			resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Workspace", err))
-
-			return
-		}
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID.String())...)
-	}
+	helpers.ImportStateByID(ctx, req, resp)
 
 	// We need to set the trigger to an empty TriggerModel during import
 	// to avoid null value errors (Value Conversion Errors) from the provider framework.

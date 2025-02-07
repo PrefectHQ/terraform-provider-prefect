@@ -83,3 +83,19 @@ func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportState
 		return fmt.Sprintf("%s,%s", fetchedResourceID, workspaceID), nil
 	}
 }
+
+func GetResourceWorkspaceImportStateIDByName(resourceName string) resource.ImportStateIdFunc {
+	return func(state *terraform.State) (string, error) {
+		workspaceID, err := GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return "", fmt.Errorf("unable to get workspaceID from state: %w", err)
+		}
+
+		fetchedResourceID, err := GetResourceAttributeFromStateByAttribute(state, resourceName, "name")
+		if err != nil {
+			return "", fmt.Errorf("unable to get resource from state: %w", err)
+		}
+
+		return fmt.Sprintf("%s,%s", fetchedResourceID, workspaceID), nil
+	}
+}

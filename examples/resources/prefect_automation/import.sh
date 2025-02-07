@@ -1,11 +1,6 @@
-# prefect_automation resources can be imported by the Automation ID
+# prefect_automation resources can be imported by the automation_id
 terraform import prefect_automation.my_automation 00000000-0000-0000-0000-000000000000
-
-# Pass an optional, comma-separated value following the identifier
-# if you need to import a resource in a different workspace
-# from the one that your provider is configured with
-# NOTE: you must specify the workspace_id attribute in the addressed resource
 #
-# <automation_id>,<workspace_id>
+# or from a different workspace via automation_id,workspace_id
 terraform import prefect_automation.my_automation 00000000-0000-0000-0000-000000000000,11111111-1111-1111-1111-111111111111
 
