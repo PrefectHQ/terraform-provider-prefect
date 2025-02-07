@@ -63,7 +63,10 @@ func GetResourceWorkspaceIDFromState(state *terraform.State) (uuid.UUID, error) 
 		return uuid.Nil, fmt.Errorf("workspace resource not found in state: %s", WorkspaceResourceName)
 	}
 
-	workspaceID, _ := uuid.Parse(workspace.Primary.ID)
+	workspaceID, err := uuid.Parse(workspace.Primary.ID)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("error parsing workspace ID: %w", err)
+	}
 
 	return workspaceID, nil
 }
