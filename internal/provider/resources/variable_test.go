@@ -136,30 +136,26 @@ func TestAccResource_variable(t *testing.T) {
 
 func testAccCheckVariableExists(variableResourceName string, variable *api.Variable) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		variableResource, exists := state.RootModule().Resources[variableResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", variableResourceName)
+		variableResourceID, err := testutils.GetResourceIDFromState(state, variableResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching variable ID: %w", err)
 		}
-		variableResourceID, _ := uuid.Parse(variableResource.Primary.ID)
 
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
 		variablesClient, _ := c.Variables(uuid.Nil, workspaceID)
-
-		variableName := variableResource.Primary.Attributes["name"]
 
 		fetchedVariable, err := variablesClient.Get(context.Background(), variableResourceID)
 		if err != nil {
 			return fmt.Errorf("Error fetching variable: %w", err)
 		}
 		if fetchedVariable == nil {
-			return fmt.Errorf("Variable not found for name: %s", variableName)
+			return fmt.Errorf("Variable not found for id: %s", variableResourceID)
 		}
 
 		*variable = *fetchedVariable

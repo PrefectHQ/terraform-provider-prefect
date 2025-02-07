@@ -478,20 +478,15 @@ func TestAccResource_automation(t *testing.T) {
 
 func testAccCheckAutomationResourceExists(automationResourceName string, automation *api.Automation) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		// find the corresponding state object
-		automationResource, ok := s.RootModule().Resources[automationResourceName]
-		if !ok {
-			return fmt.Errorf("Resource not found in state: %s", automationResourceName)
+		automationID, err := testutils.GetResourceIDFromState(s, automationResourceName)
+		if err != nil {
+			return fmt.Errorf("unable to get resource ID from state: %w", err)
 		}
 
-		automationID, _ := uuid.Parse(automationResource.Primary.ID)
-
-		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(s)
+		if err != nil {
+			return fmt.Errorf("unable to get workspaceID from state: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment
@@ -502,7 +497,7 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 			return fmt.Errorf("Error fetching Automation: %w", err)
 		}
 		if fetchedAutomation == nil {
-			return fmt.Errorf("Automation not found for ID: %s", automationResource.Primary.ID)
+			return fmt.Errorf("Automation not found for ID: %s", automationID)
 		}
 
 		*automation = *fetchedAutomation

@@ -143,27 +143,26 @@ func TestAccResource_webhook(t *testing.T) {
 
 func testAccCheckWebhookExists(webhookResourceName string, webhook *api.Webhook) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		webhookResource, exists := state.RootModule().Resources[webhookResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", webhookResourceName)
+		webhookResourceID, err := testutils.GetResourceIDFromState(state, webhookResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching webhook ID: %w", err)
 		}
 
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
 		webhooksClient, _ := c.Webhooks(uuid.Nil, workspaceID)
 
-		fetchedWebhook, err := webhooksClient.Get(context.Background(), webhookResource.Primary.ID)
+		fetchedWebhook, err := webhooksClient.Get(context.Background(), webhookResourceID.String())
 		if err != nil {
 			return fmt.Errorf("Error fetching webhook: %w", err)
 		}
 		if fetchedWebhook == nil {
-			return fmt.Errorf("Webhook not found for ID: %s", webhookResource.Primary.ID)
+			return fmt.Errorf("Webhook not found for ID: %s", webhookResourceID)
 		}
 
 		*webhook = *fetchedWebhook

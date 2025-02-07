@@ -139,22 +139,19 @@ func TestAccResource_work_pool(t *testing.T) {
 
 func testAccCheckWorkPoolExists(workPoolResourceName string, workPool *api.WorkPool) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		workPoolResource, exists := state.RootModule().Resources[workPoolResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", workPoolResourceName)
+		workPoolName, err := testutils.GetResourceAttributeFromStateByAttribute(state, workPoolResourceName, "name")
+		if err != nil {
+			return fmt.Errorf("error fetching work pool name: %w", err)
 		}
 
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
 		workPoolsClient, _ := c.WorkPools(uuid.Nil, workspaceID)
-
-		workPoolName := workPoolResource.Primary.Attributes["name"]
 
 		fetchedWorkPool, err := workPoolsClient.Get(context.Background(), workPoolName)
 		if err != nil {

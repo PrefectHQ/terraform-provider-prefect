@@ -143,18 +143,16 @@ func TestAccResource_block(t *testing.T) {
 func testAccCheckBlockExists(blockResourceName string, blockDocument *api.BlockDocument) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the block resource we just created from the state
-		blockResource, exists := s.RootModule().Resources[blockResourceName]
-		if !exists {
-			return fmt.Errorf("block resource not found: %s", blockResourceName)
+		blockID, err := testutils.GetResourceIDFromState(s, blockResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching block ID: %w", err)
 		}
-		blockID, _ := uuid.Parse(blockResource.Primary.ID)
 
 		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(s)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment

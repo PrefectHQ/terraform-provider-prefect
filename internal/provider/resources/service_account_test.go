@@ -209,20 +209,20 @@ func TestAccResource_service_account(t *testing.T) {
 func testAccCheckServiceAccountResourceExists(serviceAccountResourceName string, bot *api.ServiceAccount) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		// find the corresponding state object
-		serviceAccountResource, ok := state.RootModule().Resources[serviceAccountResourceName]
-		if !ok {
-			return fmt.Errorf("Resource not found in state: %s", serviceAccountResourceName)
+		serviceAccountResourceID, err := testutils.GetResourceIDFromState(state, serviceAccountResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching service account ID: %w", err)
 		}
 
 		// Create a new client, and use the default accountID from environment
 		c, _ := testutils.NewTestClient()
 		serviceAccountClient, _ := c.ServiceAccounts(uuid.Nil)
-		fetchedServiceAccount, err := serviceAccountClient.Get(context.Background(), serviceAccountResource.Primary.ID)
+		fetchedServiceAccount, err := serviceAccountClient.Get(context.Background(), serviceAccountResourceID.String())
 		if err != nil {
 			return fmt.Errorf("Error fetching Service Account: %w", err)
 		}
 		if fetchedServiceAccount == nil {
-			return fmt.Errorf("Service Account not found for ID: %s", serviceAccountResource.Primary.ID)
+			return fmt.Errorf("Service Account not found for ID: %s", serviceAccountResourceID)
 		}
 
 		*bot = *fetchedServiceAccount
