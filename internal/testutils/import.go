@@ -45,18 +45,22 @@ func getResourceAttributeFromState(state *terraform.State, resourceName, attribu
 	return fetchedResourceAttribute, nil
 }
 
+// GetResourceIDFromState returns the ID of a resource from the state as a UUID.
 func GetResourceIDFromState(state *terraform.State, resourceName string) (uuid.UUID, error) {
 	return getResourceIDFromState(state, resourceName, "id")
 }
 
+// GetResourceAttributeFromState returns the attribute of a resource from the state as a UUID.
 func GetResourceIDFromStateByAttribute(state *terraform.State, resourceName, attribute string) (uuid.UUID, error) {
 	return getResourceIDFromState(state, resourceName, attribute)
 }
 
+// GetResourceAttributeFromStateByAttribute returns the attribute of a resource from the state as a string.
 func GetResourceAttributeFromStateByAttribute(state *terraform.State, resourceName, attribute string) (string, error) {
 	return getResourceAttributeFromState(state, resourceName, attribute)
 }
 
+// GetResourceWorkspaceIDFromState returns the workspace ID from the state as a UUID.
 func GetResourceWorkspaceIDFromState(state *terraform.State) (uuid.UUID, error) {
 	workspace, exists := state.RootModule().Resources[WorkspaceResourceName]
 	if !exists {
@@ -71,6 +75,8 @@ func GetResourceWorkspaceIDFromState(state *terraform.State) (uuid.UUID, error) 
 	return workspaceID, nil
 }
 
+// GetResourceWorkspaceImportStateID returns the import state ID for a resource
+// for use in import tests.
 func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
 		workspaceID, err := GetResourceWorkspaceIDFromState(state)
@@ -87,6 +93,8 @@ func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportState
 	}
 }
 
+// GetResourceWorkspaceImportStateIDByName returns the import state ID for a resource from the
+// "name" attribute for use in import tests.
 func GetResourceWorkspaceImportStateIDByName(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
 		workspaceID, err := GetResourceWorkspaceIDFromState(state)
