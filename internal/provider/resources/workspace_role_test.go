@@ -74,12 +74,12 @@ func TestAccResource_workspace_role(t *testing.T) {
 				},
 			},
 			// Import State checks - import by ID (default)
-			// {
-			// 	ImportState:             true,
-			// 	ResourceName:            resourceName,
-			// 	ImportStateVerify:       true,
-			// 	ImportStateVerifyIgnore: []string{"scopes"},
-			// },
+			{
+				ImportState:             true,
+				ResourceName:            resourceName,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"scopes"},
+			},
 		},
 	})
 }
