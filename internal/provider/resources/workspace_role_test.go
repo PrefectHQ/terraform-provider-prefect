@@ -86,22 +86,21 @@ func TestAccResource_workspace_role(t *testing.T) {
 
 func testAccCheckWorkspaceRoleExists(roleResourceName string, role *api.WorkspaceRole) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		workspaceRoleResource, ok := state.RootModule().Resources[roleResourceName]
-		if !ok {
-			return fmt.Errorf("Resource not found in state: %s", roleResourceName)
+		workspaceRoleID, err := testutils.GetResourceIDFromState(state, roleResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace role ID: %w", err)
 		}
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
 		workspaceRolesClient, _ := c.WorkspaceRoles(uuid.Nil)
-		resourceID, _ := uuid.Parse(workspaceRoleResource.Primary.ID)
 
-		fetchedWorkspaceRole, err := workspaceRolesClient.Get(context.Background(), resourceID)
+		fetchedWorkspaceRole, err := workspaceRolesClient.Get(context.Background(), workspaceRoleID)
 		if err != nil {
 			return fmt.Errorf("Error fetching Workspace Role: %w", err)
 		}
 		if fetchedWorkspaceRole == nil {
-			return fmt.Errorf("Workspace Role not found for ID: %s", workspaceRoleResource.Primary.ID)
+			return fmt.Errorf("Workspace Role not found for ID: %s", workspaceRoleID)
 		}
 
 		*role = *fetchedWorkspaceRole

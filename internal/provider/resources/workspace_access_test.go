@@ -176,18 +176,15 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 
 func testAccCheckWorkspaceAccessExists(accessorType string, accessResourceName string, access *api.WorkspaceAccess) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		workspaceAccessResource, exists := state.RootModule().Resources[accessResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", accessResourceName)
+		workspaceAccessID, err := testutils.GetResourceIDFromState(state, accessResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace access ID: %w", err)
 		}
 
-		workspaceDatsource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-
-		workspaceID, _ := uuid.Parse(workspaceDatsource.Primary.ID)
-		workspaceAccessID, _ := uuid.Parse(workspaceAccessResource.Primary.ID)
 
 		// Create a new client, and use the default accountID from environment
 		c, _ := testutils.NewTestClient()

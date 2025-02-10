@@ -74,22 +74,21 @@ func TestAccResource_workspace(t *testing.T) {
 
 func testAccCheckWorkspaceExists(workspace *api.Workspace) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
-		workspaceResource, found := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !found {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceIDFromState(state, testutils.WorkspaceResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
 		workspacesClient, _ := c.Workspaces(uuid.Nil)
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		fetchedWorkspace, err := workspacesClient.Get(context.Background(), workspaceID)
 		if err != nil {
 			return fmt.Errorf("Error fetching workspace: %w", err)
 		}
 		if fetchedWorkspace == nil {
-			return fmt.Errorf("Workspace not found for ID: %s", workspaceResource.Primary.ID)
+			return fmt.Errorf("Workspace not found for ID: %s", workspaceID)
 		}
 
 		*workspace = *fetchedWorkspace

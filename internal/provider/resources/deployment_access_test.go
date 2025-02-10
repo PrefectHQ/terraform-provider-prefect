@@ -125,18 +125,16 @@ func TestAccResource_deployment_access(t *testing.T) {
 func testAccCheckDeploymentAccessExists(deploymentAccessResourceName string, deploymentAccess *api.DeploymentAccessControl) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		// Get the deployment access resource we just created from the state
-		deploymentAccessResource, exists := s.RootModule().Resources[deploymentAccessResourceName]
-		if !exists {
-			return fmt.Errorf("deployment access resource not found: %s", deploymentAccessResourceName)
+		deploymentAccessID, err := testutils.GetResourceIDFromStateByAttribute(s, deploymentAccessResourceName, "deployment_id")
+		if err != nil {
+			return fmt.Errorf("error fetching deployment access ID: %w", err)
 		}
-		deploymentAccessID, _ := uuid.Parse(deploymentAccessResource.Primary.Attributes["deployment_id"])
 
 		// Get the workspace resource we just created from the state
-		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("workspace resource not found: %s", testutils.WorkspaceResourceName)
+		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment
