@@ -156,14 +156,14 @@ func TestAccResource_block(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
-			// Import State checks - import by block_id,workspace_id (dynamic)
-			// NOTE: the ImportStateVerify is set to false, as we need to omit the .Data
-			// field when we hydrate the state from the API.
 			{
+				// Import State checks - import by block_id,workspace_id (dynamic)
 				ImportState:       true,
 				ResourceName:      blockResourceName,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(blockResourceName),
-				ImportStateVerify: false,
+				ImportStateVerify: true,
+				// We ignore the .Data field because when we hydrate the state from the API.
+				ImportStateVerifyIgnore: []string{"data"},
 			},
 		},
 	})
