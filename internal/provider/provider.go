@@ -19,7 +19,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/ephemeral_resources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/ephemeralresources"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
@@ -283,6 +283,6 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 // EphemeralResources defines the ephemeral resources implemented in the provider.
 func (p *PrefectProvider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
 	return []func() ephemeral.EphemeralResource{
-		ephemeral_resources.NewServiceAccountEphemeralResource,
+		ephemeralresources.NewServiceAccountEphemeralResource,
 	}
 }

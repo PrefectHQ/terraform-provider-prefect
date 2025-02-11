@@ -1,4 +1,4 @@
-package ephemeral_resources_test
+package ephemeralresources_test
 
 import (
 	"fmt"
