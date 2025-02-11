@@ -200,3 +200,18 @@ If the trailing slash is not provided, it can lead to errors such as 404, 405, 3
 A helper script is available in `../scripts/trailing-slash-routes`. Running this will produce JSON output that
 lists which routes end with a slash, along with the method and description to more easily identify which functions
 to check under `../internal/client/*.go`.
+
+### Test fixture helpers
+
+Test fixtures are used to create resources in the test environment. They are typically used to create resources
+that are used in the test, such as a workspace, account, or deployment.
+
+The `internal/provider/helpers` package contains a helper function named `RenderTemplate` that can be used to
+create test fixtures that contain multiple resources. This function is especially useful for creating test fixtures that
+contain multiple resources, making it easier to visually understand where each variable is inserted when compared to
+using `fmt.Sprintf`.
+
+- If the fixture is fairly short and has fewer than 3-5 variables, `fmt.Sprintf` is usually sufficient.
+- If the fixture is longer, or has more than 3-5 variables, `RenderTemplate` is a better choice.
+
+For examples for both approaches, see `internal/provider/{resources,datasources}/*_test.go` files.
