@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 	"k8s.io/utils/ptr"
 )
@@ -183,7 +182,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

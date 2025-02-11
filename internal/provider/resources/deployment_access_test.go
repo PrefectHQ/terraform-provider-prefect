@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -74,7 +73,7 @@ resource "prefect_deployment_access" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -36,7 +35,7 @@ resource "prefect_block" "{{ .BlockName }}" {
 	depends_on = [prefect_workspace.test]
 }`
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccBlockWithRef(cfg blockFixtureConfig) string {
@@ -67,7 +66,7 @@ resource "prefect_block" "with_ref" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

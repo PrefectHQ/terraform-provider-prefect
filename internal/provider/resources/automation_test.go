@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -80,7 +79,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccAutomationResourceMetricTrigger(cfg automationFixtureConfig) string {
@@ -124,7 +123,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccAutomationResourceCompoundTrigger(cfg automationFixtureConfig) string {
@@ -204,7 +203,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccAutomationResourceSequenceTrigger(cfg automationFixtureConfig) string {
@@ -278,7 +277,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

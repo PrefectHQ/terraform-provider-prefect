@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -45,7 +44,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleIntervalUpdate(cfg fixtureConfig) string {
@@ -79,7 +78,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleCron(cfg fixtureConfig) string {
@@ -107,7 +106,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleRRule(cfg fixtureConfig) string {
@@ -134,7 +133,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleMultiple(cfg fixtureConfig) string {
@@ -169,7 +168,7 @@ resource "prefect_deployment_schedule" "test_rrule" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
