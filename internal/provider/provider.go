@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -18,11 +19,13 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/client"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/datasources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/ephemeral_resources"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
 )
 
 var _ = provider.Provider(&PrefectProvider{})
+var _ = provider.ProviderWithEphemeralResources(&PrefectProvider{})
 
 // New returns a new Prefect Provider instance.
 //
@@ -273,5 +276,12 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
 		resources.NewWorkspaceRoleResource,
+	}
+}
+
+// EphemeralResources defines the ephemeral resources implemented in the provider.
+func (p *PrefectProvider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
+	return []func() ephemeral.EphemeralResource{
+		ephemeral_resources.NewServiceAccountEphemeralResource,
 	}
 }
