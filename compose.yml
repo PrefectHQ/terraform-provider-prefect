@@ -4,7 +4,7 @@
 # See ./_about/CONTRIBUTING.md.
 services:
   prefect:
-    image: prefecthq/prefect:2-latest
+    image: prefecthq/prefect:3-latest
     ports:
       - "4200:4200"
     environment:
