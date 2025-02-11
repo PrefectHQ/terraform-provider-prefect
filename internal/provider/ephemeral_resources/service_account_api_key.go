@@ -15,6 +15,9 @@ var (
 	_ ephemeral.EphemeralResource = (*serviceAccountAPIKey)(nil)
 )
 
+// NewServiceAccountEphemeralResource returns a new ephemeral resource for a service account API key.
+//
+//nolint:ireturn // required by Terraform API
 func NewServiceAccountEphemeralResource() ephemeral.EphemeralResource {
 	return &serviceAccountAPIKey{}
 }
@@ -29,11 +32,11 @@ type serviceAccountAPIKeyModel struct {
 	Value            types.String          `tfsdk:"value"`
 }
 
-func (k *serviceAccountAPIKey) Metadata(ctx context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
+func (k *serviceAccountAPIKey) Metadata(_ context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_service_account_api_key"
 }
 
-func (k *serviceAccountAPIKey) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
+func (k *serviceAccountAPIKey) Schema(_ context.Context, _ ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Service account API key",
 		Attributes: map[string]schema.Attribute{
@@ -56,7 +59,7 @@ func (k *serviceAccountAPIKey) Schema(ctx context.Context, req ephemeral.SchemaR
 	}
 }
 
-func (k *serviceAccountAPIKey) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+func (k *serviceAccountAPIKey) Configure(_ context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
