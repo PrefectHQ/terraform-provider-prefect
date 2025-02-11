@@ -17,8 +17,11 @@ Service account API key
 
 ### Required
 
-- `account_id` (String) The ID of the account to create an API key for.
 - `service_account_id` (String) The ID of the service account to create an API key for.
+
+### Optional
+
+- `account_id` (String) The ID of the account to create an API key for.
 
 ### Read-Only
 

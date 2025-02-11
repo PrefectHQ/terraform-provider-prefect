@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-testing/echoprovider"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
@@ -13,20 +14,23 @@ import (
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccEphemeral_service_account_api_key(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
-	ephemeralResourceName := "ephemeral.prefect_service_account_api_key.test"
+	echoResourceName := "echo.test"
+
+	providerFactories := testutils.TestAccProtoV6ProviderFactories
+	providerFactories["echo"] = echoprovider.NewProviderServer()
 
 	resource.ParallelTest(t, resource.TestCase{
 		// Ephemeral resources are only available in 1.10 and later
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
 			tfversion.SkipBelow(tfversion.Version1_10_0),
 		},
-		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		ProtoV6ProviderFactories: providerFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccServiceAccountDataSource(workspace.Resource),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(ephemeralResourceName, "value", "foo"),
+					testutils.ExpectKnownValue(echoResourceName, "data", "foo"),
 				},
 			},
 		},
@@ -44,8 +48,13 @@ resource "prefect_service_account" "test" {
 ephemeral "prefect_service_account_api_key" "test" {
 	depends_on = [prefect_service_account.test]
 
-	account_id = "9a67b081-4f14-4035-b000-1f715f46231b"
 	service_account_id = prefect_service_account.test.id
 }
+
+provider "echo" {
+	data = ephemeral.prefect_service_account_api_key.test.value
+}
+
+resource "echo" "test" {}
 	`, workspace)
 }

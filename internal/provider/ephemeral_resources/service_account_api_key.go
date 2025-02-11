@@ -2,12 +2,13 @@ package ephemeral_resources
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var (
@@ -25,7 +26,7 @@ type serviceAccountAPIKey struct {
 type serviceAccountAPIKeyModel struct {
 	AccountID        customtypes.UUIDValue `tfsdk:"account_id"`
 	ServiceAccountID customtypes.UUIDValue `tfsdk:"service_account_id"`
-	Value            string                `tfsdk:"value"`
+	Value            types.String          `tfsdk:"value"`
 }
 
 func (k *serviceAccountAPIKey) Metadata(ctx context.Context, req ephemeral.MetadataRequest, resp *ephemeral.MetadataResponse) {
@@ -38,7 +39,8 @@ func (k *serviceAccountAPIKey) Schema(ctx context.Context, req ephemeral.SchemaR
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				Description: "The ID of the account to create an API key for.",
-				Required:    true,
+				Optional:    true,
+				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 			},
 			"service_account_id": schema.StringAttribute{
@@ -54,6 +56,21 @@ func (k *serviceAccountAPIKey) Schema(ctx context.Context, req ephemeral.SchemaR
 	}
 }
 
+func (k *serviceAccountAPIKey) Configure(ctx context.Context, req ephemeral.ConfigureRequest, resp *ephemeral.ConfigureResponse) {
+	if req.ProviderData == nil {
+		return
+	}
+
+	client, ok := req.ProviderData.(api.PrefectClient)
+	if !ok {
+		resp.Diagnostics.Append(helpers.ConfigureTypeErrorDiagnostic("ephemeral resource", req.ProviderData))
+
+		return
+	}
+
+	k.client = client
+}
+
 func (k *serviceAccountAPIKey) Open(ctx context.Context, req ephemeral.OpenRequest, resp *ephemeral.OpenResponse) {
 	var data serviceAccountAPIKeyModel
 
@@ -64,29 +81,21 @@ func (k *serviceAccountAPIKey) Open(ctx context.Context, req ephemeral.OpenReque
 
 	client, err := k.client.ServiceAccounts(data.AccountID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create service account API key", err.Error())
+		resp.Diagnostics.AddError("Failed to create service account client", err.Error())
+
 		return
 	}
 
 	serviceAccount, err := client.Get(ctx, data.ServiceAccountID.ValueString())
 	if err != nil {
-		resp.Diagnostics.AddError("Failed to create service account API key", err.Error())
-		return
-	}
-
-	if serviceAccount == nil {
-		resp.Diagnostics.AddError("Failed to create service account API key", "service account not found")
+		resp.Diagnostics.AddError("Failed to get service account", err.Error())
 
 		return
 	}
 
-	fmt.Printf("\n\n\nserviceAccount: %+v\n\n\n", serviceAccount)
-
-	data.Value = ""
-
-	if serviceAccount.APIKey.Key != "" {
-		data.Value = serviceAccount.APIKey.Key
-	}
+	// The key is only returned on create/update, so this will always be empty,
+	// meaning this won't work.
+	data.Value = types.StringValue(serviceAccount.APIKey.Key)
 
 	resp.Diagnostics.Append(resp.Result.Set(ctx, &data)...)
 }

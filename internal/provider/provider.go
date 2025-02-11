@@ -229,6 +229,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// Pass client to DataSource and Resource type Configure methods
 	resp.DataSourceData = prefectClient
 	resp.ResourceData = prefectClient
+	resp.EphemeralResourceData = prefectClient
 
 	tflog.Info(ctx, "Configured Prefect client", map[string]any{"success": true})
 }
