@@ -43,8 +43,8 @@ func TestAccResource_global_concurrency_limit(t *testing.T) {
 					testutils.ExpectKnownValueFloat(resourceName, "slot_decay_per_second", 1.5),
 				},
 			},
-			// Check updating the resource
 			{
+				// Check updating the resource
 				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, "test2", 20, false, 1, 2),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", "test2"),
@@ -54,8 +54,8 @@ func TestAccResource_global_concurrency_limit(t *testing.T) {
 					testutils.ExpectKnownValueFloat(resourceName, "slot_decay_per_second", 2),
 				},
 			},
-			// Import State checks - import by ID (default)
 			{
+				// Import State checks - import by ID (default)
 				ImportState:       true,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(resourceName),
 				ResourceName:      resourceName,

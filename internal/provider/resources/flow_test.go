@@ -47,8 +47,8 @@ func TestAccResource_flow(t *testing.T) {
 					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test2"}),
 				},
 			},
-			// Import State checks - import by ID (default)
 			{
+				// Import State checks - import by ID (default)
 				ImportState:       true,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(resourceName),
 				ResourceName:      resourceName,

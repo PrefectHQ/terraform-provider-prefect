@@ -185,8 +185,8 @@ func TestAccResource_service_account(t *testing.T) {
 					testutils.ExpectKnownValue(botResourceName, "name", botRandomName2),
 				},
 			},
-			// Import State checks - import by name
 			{
+				// Import State checks - import by name
 				ImportState:                          true,
 				ImportStateId:                        botRandomName2,
 				ImportStateIdPrefix:                  "name/",
@@ -195,8 +195,8 @@ func TestAccResource_service_account(t *testing.T) {
 				ImportStateVerifyIdentifierAttribute: "name",
 				ImportStateVerifyIgnore:              []string{"api_key", "old_key_expires_in_seconds"},
 			},
-			// Import State checks - import by ID (default)
 			{
+				// Import State checks - import by ID (default)
 				ImportState:             true,
 				ResourceName:            botResourceName,
 				ImportStateVerify:       true,

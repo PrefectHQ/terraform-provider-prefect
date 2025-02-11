@@ -365,8 +365,8 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueNotNull(cfgUpdate.DeploymentResourceName, "storage_document_id"),
 				},
 			},
-			// Import State checks - import by ID (default)
 			{
+				// Import State checks - import by ID (default)
 				ImportState:       true,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
 				ResourceName:      cfgCreate.DeploymentResourceName,

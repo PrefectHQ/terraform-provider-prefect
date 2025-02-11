@@ -327,8 +327,8 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.job_variables", testutils.NormalizedValueForJSON(t, `{"string_var":"value1","int_var":2,"bool_var":true}`)),
 				},
 			},
-			// Import State checks - import by automation_id
 			{
+				// Import State checks - import by automation_id
 				ImportState:       true,
 				ResourceName:      eventTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(eventTriggerAutomationResourceNameAndPath),
@@ -360,8 +360,8 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.message", "Flow run failed"),
 				},
 			},
-			// Import State checks - import by automation_id
 			{
+				// Import State checks - import by automation_id
 				ImportState:       true,
 				ResourceName:      metricTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(metricTriggerAutomationResourceNameAndPath),

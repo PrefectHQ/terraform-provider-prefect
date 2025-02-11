@@ -87,8 +87,8 @@ func TestAccResource_block(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
-			// Check creation + existence of the block resource
 			{
+				// Check creation + existence of the block resource
 				Config: fixtureAccBlock(blockFixtureConfig{
 					Workspace:  workspace.Resource,
 					BlockName:  randomName,
@@ -108,8 +108,8 @@ func TestAccResource_block(t *testing.T) {
 					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue)),
 				},
 			},
-			// Check updating the value of the block resource
 			{
+				// Check updating the value of the block resource
 				Config: fixtureAccBlock(blockFixtureConfig{
 					Workspace:  workspace.Resource,
 					BlockName:  randomName,

@@ -186,8 +186,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
-			// Test interval schedule
 			{
+				// Test interval schedule
 				Config: fixtureAccDeploymentScheduleInterval(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -199,8 +199,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
 				},
 			},
-			// Test interval schedule update
 			{
+				// Test interval schedule update
 				Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -212,8 +212,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
 				},
 			},
-			// Test cron schedule
 			{
+				// Test cron schedule
 				Config: fixtureAccDeploymentScheduleCron(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -223,8 +223,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValueBool(resourceName, "day_or", true),
 				},
 			},
-			// Test rrule schedule
 			{
+				// Test rrule schedule
 				Config: fixtureAccDeploymentScheduleRRule(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -233,8 +233,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "rrule", "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"),
 				},
 			},
-			// Test multiple schedules for one deployment
 			{
+				// Test multiple schedules for one deployment
 				Config: fixtureAccDeploymentScheduleMultiple(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
