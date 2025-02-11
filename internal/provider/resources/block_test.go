@@ -84,25 +84,17 @@ func TestAccResource_block(t *testing.T) {
 	// and it will be shared between the TestSteps via pointer.
 	var blockDocument api.BlockDocument
 
-	cfg := blockFixtureConfig{
-		Workspace:  workspace.Resource,
-		BlockName:  randomName,
-		BlockValue: randomValue,
-	}
-
-	cfgUpdate := cfg
-	cfgUpdate.BlockValue = randomValue2
-
-	cfgRef := cfgUpdate
-	cfgRef.RefBlockValue = fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)
-
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			// Check creation + existence of the block resource
 			{
-				Config: fixtureAccBlock(cfg),
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:  workspace.Resource,
+					BlockName:  randomName,
+					BlockValue: randomValue,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -119,7 +111,11 @@ func TestAccResource_block(t *testing.T) {
 			},
 			// Check updating the value of the block resource
 			{
-				Config: fixtureAccBlock(cfgUpdate),
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:  workspace.Resource,
+					BlockName:  randomName,
+					BlockValue: randomValue2,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -137,7 +133,12 @@ func TestAccResource_block(t *testing.T) {
 			// Next two tests using `fixtureAccBlockWithRef` will be used to test
 			// that using the $ref syntax won't result in an Update plan if no changes are made.
 			{
-				Config: fixtureAccBlockWithRef(cfgRef),
+				Config: fixtureAccBlockWithRef(blockFixtureConfig{
+					Workspace:     workspace.Resource,
+					BlockName:     randomName,
+					BlockValue:    randomValue2,
+					RefBlockValue: fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists("prefect_block.with_ref", &blockDocument),
 				),
@@ -147,7 +148,12 @@ func TestAccResource_block(t *testing.T) {
 				},
 			},
 			{
-				Config:             fixtureAccBlockWithRef(cfgRef),
+				Config: fixtureAccBlockWithRef(blockFixtureConfig{
+					Workspace:     workspace.Resource,
+					BlockName:     randomName,
+					BlockValue:    randomValue2,
+					RefBlockValue: fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName),
+				}),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
