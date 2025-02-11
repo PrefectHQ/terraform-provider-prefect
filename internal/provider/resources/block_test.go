@@ -11,31 +11,43 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccBlock(workspace, blockName, blockValue string) string {
-	return fmt.Sprintf(`
-%s
-resource "prefect_block" "%s" {
-	name = "%s"
+type blockFixtureConfig struct {
+	Workspace     string
+	BlockName     string
+	BlockValue    string
+	RefBlockValue string
+}
+
+func fixtureAccBlock(cfg blockFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+resource "prefect_block" "{{ .BlockName }}" {
+	name = "{{ .BlockName }}"
 	type_slug = "secret"
 	data = jsonencode({
-		"value" = "%s"
+		"value" = "{{ .BlockValue }}"
 	})
 	workspace_id = prefect_workspace.test.id
 	depends_on = [prefect_workspace.test]
-}`, workspace, blockName, blockName, blockValue)
+}`
+
+	return helpers.RenderTemplate(tmpl, cfg)
 }
 
-func fixtureAccBlockWithRef(workspace, blockName, blockValue string, refBlockValue string) string {
-	return fmt.Sprintf(`
-%s
-resource "prefect_block" "%s" {
-	name = "%s"
+func fixtureAccBlockWithRef(cfg blockFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+resource "prefect_block" "{{ .BlockName }}" {
+	name = "{{ .BlockName }}"
 	type_slug = "secret"
 	data = jsonencode({
-		"value" = "%s"
+		"value" = "{{ .BlockValue }}"
 	})
 	workspace_id = prefect_workspace.test.id
 	depends_on = [prefect_workspace.test]
@@ -47,13 +59,15 @@ resource "prefect_block" "with_ref" {
 
   data = jsonencode({
     bucket_name = "my-bucket"
-    credentials = { "$ref" : %s }
+    credentials = { "$ref" : {{ .RefBlockValue }} }
   })
-	workspace_id = prefect_workspace.test.id
-	depends_on = [prefect_workspace.test]
-}
 
-`, workspace, blockName, blockName, blockValue, refBlockValue)
+  workspace_id = prefect_workspace.test.id
+  depends_on = [prefect_workspace.test]
+}
+`
+
+	return helpers.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -76,7 +90,11 @@ func TestAccResource_block(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Check creation + existence of the block resource
 			{
-				Config: fixtureAccBlock(workspace.Resource, randomName, randomValue),
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:  workspace.Resource,
+					BlockName:  randomName,
+					BlockValue: randomValue,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -93,7 +111,11 @@ func TestAccResource_block(t *testing.T) {
 			},
 			// Check updating the value of the block resource
 			{
-				Config: fixtureAccBlock(workspace.Resource, randomName, randomValue2),
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:  workspace.Resource,
+					BlockName:  randomName,
+					BlockValue: randomValue2,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, &blockDocument),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
@@ -111,7 +133,12 @@ func TestAccResource_block(t *testing.T) {
 			// Next two tests using `fixtureAccBlockWithRef` will be used to test
 			// that using the $ref syntax won't result in an Update plan if no changes are made.
 			{
-				Config: fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
+				Config: fixtureAccBlockWithRef(blockFixtureConfig{
+					Workspace:     workspace.Resource,
+					BlockName:     randomName,
+					BlockValue:    randomValue2,
+					RefBlockValue: fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName),
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists("prefect_block.with_ref", &blockDocument),
 				),
@@ -121,7 +148,12 @@ func TestAccResource_block(t *testing.T) {
 				},
 			},
 			{
-				Config:             fixtureAccBlockWithRef(workspace.Resource, randomName, randomValue2, fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName)),
+				Config: fixtureAccBlockWithRef(blockFixtureConfig{
+					Workspace:     workspace.Resource,
+					BlockName:     randomName,
+					BlockValue:    randomValue2,
+					RefBlockValue: fmt.Sprintf(`{"block_document_id":prefect_block.%s.id}`, randomName),
+				}),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
