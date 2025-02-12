@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -36,7 +35,7 @@ resource "prefect_block" "{{ .BlockName }}" {
 	depends_on = [prefect_workspace.test]
 }`
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccBlockWithRef(cfg blockFixtureConfig) string {
@@ -67,7 +66,7 @@ resource "prefect_block" "with_ref" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -88,8 +87,8 @@ func TestAccResource_block(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
-			// Check creation + existence of the block resource
 			{
+				// Check creation + existence of the block resource
 				Config: fixtureAccBlock(blockFixtureConfig{
 					Workspace:  workspace.Resource,
 					BlockName:  randomName,
@@ -109,8 +108,8 @@ func TestAccResource_block(t *testing.T) {
 					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue)),
 				},
 			},
-			// Check updating the value of the block resource
 			{
+				// Check updating the value of the block resource
 				Config: fixtureAccBlock(blockFixtureConfig{
 					Workspace:  workspace.Resource,
 					BlockName:  randomName,
@@ -157,14 +156,14 @@ func TestAccResource_block(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 			},
-			// Import State checks - import by block_id,workspace_id (dynamic)
-			// NOTE: the ImportStateVerify is set to false, as we need to omit the .Data
-			// field when we hydrate the state from the API.
 			{
+				// Import State checks - import by block_id,workspace_id (dynamic)
 				ImportState:       true,
 				ResourceName:      blockResourceName,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(blockResourceName),
-				ImportStateVerify: false,
+				ImportStateVerify: true,
+				// We ignore the .Data field because when we hydrate the state from the API.
+				ImportStateVerifyIgnore: []string{"data"},
 			},
 		},
 	})

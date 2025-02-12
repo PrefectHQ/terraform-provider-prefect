@@ -119,6 +119,27 @@ This means that the target Prefect environment needs to allow for multiple works
 contribute tests to your pull request and a Prefect team member will review and approve them to run in our internal
 infrastructure.
 
+Here are some general guidelines for writing **datasource** acceptance tests
+
+- Test that the datasource works with each supported identifier, usually `name` and `id`
+
+Here are some general guidelines for writing **resource** acceptance tests
+
+- Test that the resource can be created
+- Test that the resource can be updated (either by modifying the inputs to a test fixture, or defining a second test fixture with different values)
+- Test that the resource can be imported (with a test for each supported identifier, often `id` and `name`)
+- (Optional, preferred) Test that a resource _cannot_ be created without all required fields
+- (Optional, preferred) Test that a resource _cannot_ be created with invalid values for a field
+
+Finally, here are some general guidelines for both datasources and resources:
+
+- Use the `testutils.Expect*` helper functions to verify values in the Terraform state for state config checks
+- Use the `testutils.GetResourceWorkspaceImportStateID` helper function to get the import ID for a resource for import tests
+
+Reference existing tests in `internal/provider/{datasources,resources}/*_test.go` for examples.
+
+For more information, see the [Terraform testing patterns documentation](https://developer.hashicorp.com/terraform/plugin/testing/testing-patterns).
+
 ### Manual testing
 
 You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
@@ -206,7 +227,7 @@ to check under `../internal/client/*.go`.
 Test fixtures are used to create resources in the test environment. They are typically used to create resources
 that are used in the test, such as a workspace, account, or deployment.
 
-The `internal/provider/helpers` package contains a helper function named `RenderTemplate` that can be used to
+The `internal/provider/testutils` package contains a helper function named `RenderTemplate` that can be used to
 create test fixtures that contain multiple resources. This function is especially useful for creating test fixtures that
 contain multiple resources, making it easier to visually understand where each variable is inserted when compared to
 using `fmt.Sprintf`.

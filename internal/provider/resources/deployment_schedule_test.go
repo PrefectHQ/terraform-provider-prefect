@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -45,7 +44,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleIntervalUpdate(cfg fixtureConfig) string {
@@ -79,7 +78,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleCron(cfg fixtureConfig) string {
@@ -107,7 +106,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleRRule(cfg fixtureConfig) string {
@@ -134,7 +133,7 @@ resource "prefect_deployment_schedule" "test" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 func fixtureAccDeploymentScheduleMultiple(cfg fixtureConfig) string {
@@ -169,7 +168,7 @@ resource "prefect_deployment_schedule" "test_rrule" {
 }
 `
 
-	return helpers.RenderTemplate(tmpl, cfg)
+	return testutils.RenderTemplate(tmpl, cfg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -187,8 +186,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
-			// Test interval schedule
 			{
+				// Test interval schedule
 				Config: fixtureAccDeploymentScheduleInterval(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -200,8 +199,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
 				},
 			},
-			// Test interval schedule update
 			{
+				// Test interval schedule update
 				Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -213,8 +212,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
 				},
 			},
-			// Test cron schedule
 			{
+				// Test cron schedule
 				Config: fixtureAccDeploymentScheduleCron(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -224,8 +223,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValueBool(resourceName, "day_or", true),
 				},
 			},
-			// Test rrule schedule
 			{
+				// Test rrule schedule
 				Config: fixtureAccDeploymentScheduleRRule(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
@@ -234,8 +233,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "rrule", "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"),
 				},
 			},
-			// Test multiple schedules for one deployment
 			{
+				// Test multiple schedules for one deployment
 				Config: fixtureAccDeploymentScheduleMultiple(fixtureCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
