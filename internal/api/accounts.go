@@ -7,8 +7,10 @@ import (
 // AccountsClient is a client for working with accounts.
 type AccountsClient interface {
 	Get(ctx context.Context) (*Account, error)
+	GetDomains(ctx context.Context) (*AccountDomainsUpdate, error)
 	Update(ctx context.Context, data AccountUpdate) error
 	UpdateSettings(ctx context.Context, data AccountSettingsUpdate) error
+	UpdateDomains(ctx context.Context, data AccountDomainsUpdate) error
 	Delete(ctx context.Context) error
 }
 
@@ -25,6 +27,7 @@ type Account struct {
 	AccountUpdate
 
 	Settings AccountSettings `json:"settings"`
+	Domains  []string        `json:"domain_names"`
 
 	// Read-only fields
 	ImageLocation         *string  `json:"image_location"`
@@ -49,4 +52,9 @@ type AccountUpdate struct {
 // AccountSettingsUpdate is the data sent when updating an account's settings.
 type AccountSettingsUpdate struct {
 	AccountSettings `json:"settings"`
+}
+
+// AccountDomainsUpdate is the data sent when updating an account's domain names.
+type AccountDomainsUpdate struct {
+	DomainNames []string `json:"domain_names,omitempty"`
 }
