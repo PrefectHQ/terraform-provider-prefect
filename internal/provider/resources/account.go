@@ -34,12 +34,13 @@ type AccountResource struct {
 type AccountResourceModel struct {
 	BaseModel
 
-	Name         types.String `tfsdk:"name"`
-	Handle       types.String `tfsdk:"handle"`
-	Location     types.String `tfsdk:"location"`
-	Link         types.String `tfsdk:"link"`
-	Settings     types.Object `tfsdk:"settings"`
-	BillingEmail types.String `tfsdk:"billing_email"`
+	Name                  types.String `tfsdk:"name"`
+	Handle                types.String `tfsdk:"handle"`
+	Location              types.String `tfsdk:"location"`
+	Link                  types.String `tfsdk:"link"`
+	Settings              types.Object `tfsdk:"settings"`
+	BillingEmail          types.String `tfsdk:"billing_email"`
+	AuthExpirationSeconds types.Int64  `tfsdk:"auth_expiration_seconds"`
 }
 
 // NewAccountResource returns a new AccountResource.
@@ -120,6 +121,10 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "An optional for an external url associated with the account, e.g. https://prefect.io/",
 				Optional:    true,
 			},
+			"auth_expiration_seconds": schema.Int64Attribute{
+				Description: "The number of seconds a user should be considered to be authenticated against this Account.",
+				Optional:    true,
+			},
 			"settings": schema.SingleNestedAttribute{
 				Description: "Group of settings related to accounts",
 				Optional:    true,
@@ -162,6 +167,7 @@ func copyAccountToModel(_ context.Context, account *api.Account, tfModel *Accoun
 	tfModel.Link = types.StringPointerValue(account.Link)
 	tfModel.Location = types.StringPointerValue(account.Location)
 	tfModel.Name = types.StringValue(account.Name)
+	tfModel.AuthExpirationSeconds = types.Int64PointerValue(account.AuthExpirationSeconds)
 
 	settingsObject, diags := types.ObjectValue(
 		map[string]attr.Type{
@@ -247,11 +253,12 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:         plan.Name.ValueString(),
-		Handle:       plan.Handle.ValueString(),
-		Location:     plan.Location.ValueStringPointer(),
-		Link:         plan.Link.ValueStringPointer(),
-		BillingEmail: plan.BillingEmail.ValueStringPointer(),
+		Name:                  plan.Name.ValueString(),
+		Handle:                plan.Handle.ValueString(),
+		Location:              plan.Location.ValueStringPointer(),
+		Link:                  plan.Link.ValueStringPointer(),
+		BillingEmail:          plan.BillingEmail.ValueStringPointer(),
+		AuthExpirationSeconds: plan.AuthExpirationSeconds.ValueInt64Pointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
