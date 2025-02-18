@@ -26,16 +26,18 @@ type Account struct {
 	Handle                string          `json:"handle"`
 	Location              *string         `json:"location"`
 	Link                  *string         `json:"link"`
-	ImageLocation         *string         `json:"image_location"`
 	AuthExpirationSeconds *int64          `json:"auth_expiration_seconds"`
-	BillingEmail          *string         `json:"billing_email"`
 	Settings              AccountSettings `json:"settings"`
-	SSOState              string          `json:"sso_state"`
-	Features              []string        `json:"features"`
-	PlanType              string          `json:"plan_type"`
-	RunRetentionDays      int64           `json:"run_retention_days"`
-	AuditLogRetentionDays int64           `json:"audit_log_retention_days"`
-	AutomationsLimit      int64           `json:"automations_limit"`
+	BillingEmail          *string         `json:"billing_email"`
+
+	// Read-only fields
+	ImageLocation         *string  `json:"image_location"`
+	SSOState              string   `json:"sso_state"`
+	Features              []string `json:"features"`
+	PlanType              string   `json:"plan_type"`
+	RunRetentionDays      int64    `json:"run_retention_days"`
+	AuditLogRetentionDays int64    `json:"audit_log_retention_days"`
+	AutomationsLimit      int64    `json:"automations_limit"`
 }
 
 // AccountUpdate is the data sent when updating an account.
