@@ -38,7 +38,7 @@ func (c *Client) Accounts(accountID uuid.UUID) (api.AccountsClient, error) {
 }
 
 // Get returns details for an account by ID.
-func (c *AccountsClient) Get(ctx context.Context) (*api.AccountResponse, error) {
+func (c *AccountsClient) Get(ctx context.Context) (*api.Account, error) {
 	cfg := requestConfig{
 		method:       http.MethodGet,
 		url:          c.routePrefix,
@@ -47,7 +47,7 @@ func (c *AccountsClient) Get(ctx context.Context) (*api.AccountResponse, error) 
 		successCodes: successCodesStatusOK,
 	}
 
-	var account api.AccountResponse
+	var account api.Account
 	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &account); err != nil {
 		return nil, fmt.Errorf("failed to get account: %w", err)
 	}

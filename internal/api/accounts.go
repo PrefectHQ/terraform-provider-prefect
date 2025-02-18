@@ -6,7 +6,7 @@ import (
 
 // AccountsClient is a client for working with accounts.
 type AccountsClient interface {
-	Get(ctx context.Context) (*AccountResponse, error)
+	Get(ctx context.Context) (*Account, error)
 	Update(ctx context.Context, data AccountUpdate) error
 	UpdateSettings(ctx context.Context, data AccountSettingsUpdate) error
 	Delete(ctx context.Context) error
@@ -33,20 +33,15 @@ type Account struct {
 	WorkOSConnectionIDs   []string        `json:"workos_connection_ids"`
 	AuthExpirationSeconds *int64          `json:"auth_expiration_seconds"`
 	Settings              AccountSettings `json:"settings"`
-}
-
-// AccountResponse is the data about an account returned by the Accounts API.
-type AccountResponse struct {
-	Account
-	PlanType              string   `json:"plan_type"`
-	SelfServe             bool     `json:"self_serve"`
-	RunRetentionDays      int64    `json:"run_retention_days"`
-	AuditLogRetentionDays int64    `json:"audit_log_retention_days"`
-	AutomationsLimit      int64    `json:"automations_limit"`
-	SCIMState             string   `json:"scim_state"`
-	SSOState              string   `json:"sso_state"`
-	BillingEmail          *string  `json:"billing_email"`
-	Features              []string `json:"features"`
+	SSOState              string          `json:"sso_state"`
+	Features              []string        `json:"features"`
+	BillingEmail          *string         `json:"billing_email"`
+	PlanType              string          `json:"plan_type"`
+	SelfServe             bool            `json:"self_serve"`
+	RunRetentionDays      int64           `json:"run_retention_days"`
+	AuditLogRetentionDays int64           `json:"audit_log_retention_days"`
+	AutomationsLimit      int64           `json:"automations_limit"`
+	SCIMState             string          `json:"scim_state"`
 }
 
 // AccountUpdate is the data sent when updating an account.

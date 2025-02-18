@@ -152,7 +152,7 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 
 // copyAccountToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel *AccountResourceModel) diag.Diagnostics {
+func copyAccountToModel(_ context.Context, account *api.Account, tfModel *AccountResourceModel) diag.Diagnostics {
 	tfModel.ID = types.StringValue(account.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
