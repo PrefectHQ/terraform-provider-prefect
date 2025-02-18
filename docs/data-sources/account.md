@@ -38,6 +38,7 @@ data "prefect_account" "my_organization" {}
 
 - `billing_email` (String) Billing email to apply to the account's Stripe customer
 - `created` (String) Timestamp of when the resource was created (RFC3339)
+- `domain_names` (List of String) The list of domain names for enabling SSO in Prefect Cloud.
 - `handle` (String) Unique handle of the account
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
