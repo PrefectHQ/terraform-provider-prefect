@@ -27,21 +27,15 @@ type Account struct {
 	Location              *string         `json:"location"`
 	Link                  *string         `json:"link"`
 	ImageLocation         *string         `json:"image_location"`
-	StripeCustomerID      *string         `json:"stripe_customer_id"`
-	WorkOSDirectoryIDs    []string        `json:"workos_directory_ids"`
-	WorkOSOrganizationID  *string         `json:"workos_organization_id"`
-	WorkOSConnectionIDs   []string        `json:"workos_connection_ids"`
 	AuthExpirationSeconds *int64          `json:"auth_expiration_seconds"`
+	BillingEmail          *string         `json:"billing_email"`
 	Settings              AccountSettings `json:"settings"`
 	SSOState              string          `json:"sso_state"`
 	Features              []string        `json:"features"`
-	BillingEmail          *string         `json:"billing_email"`
 	PlanType              string          `json:"plan_type"`
-	SelfServe             bool            `json:"self_serve"`
 	RunRetentionDays      int64           `json:"run_retention_days"`
 	AuditLogRetentionDays int64           `json:"audit_log_retention_days"`
 	AutomationsLimit      int64           `json:"automations_limit"`
-	SCIMState             string          `json:"scim_state"`
 }
 
 // AccountUpdate is the data sent when updating an account.
