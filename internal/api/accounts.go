@@ -22,13 +22,9 @@ type AccountSettings struct {
 // Account is a representation of an account.
 type Account struct {
 	BaseModel
-	Name                  string          `json:"name"`
-	Handle                string          `json:"handle"`
-	Location              *string         `json:"location"`
-	Link                  *string         `json:"link"`
-	AuthExpirationSeconds *int64          `json:"auth_expiration_seconds"`
-	Settings              AccountSettings `json:"settings"`
-	BillingEmail          *string         `json:"billing_email"`
+	AccountUpdate
+
+	Settings AccountSettings `json:"settings"`
 
 	// Read-only fields
 	ImageLocation         *string  `json:"image_location"`
@@ -42,8 +38,8 @@ type Account struct {
 
 // AccountUpdate is the data sent when updating an account.
 type AccountUpdate struct {
-	Name                  *string `json:"name"`
-	Handle                *string `json:"handle"`
+	Name                  string  `json:"name"`
+	Handle                string  `json:"handle"`
 	Location              *string `json:"location"`
 	Link                  *string `json:"link"`
 	AuthExpirationSeconds *int64  `json:"auth_expiration_seconds"`

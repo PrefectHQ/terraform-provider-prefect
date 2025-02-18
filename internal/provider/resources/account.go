@@ -247,8 +247,8 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:         plan.Name.ValueStringPointer(),
-		Handle:       plan.Handle.ValueStringPointer(),
+		Name:         plan.Name.ValueString(),
+		Handle:       plan.Handle.ValueString(),
 		Location:     plan.Location.ValueStringPointer(),
 		Link:         plan.Link.ValueStringPointer(),
 		BillingEmail: plan.BillingEmail.ValueStringPointer(),
