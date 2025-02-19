@@ -12,9 +12,10 @@ import (
 var _ = api.DeploymentScheduleClient(&DeploymentScheduleClient{})
 
 type DeploymentScheduleClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // DeploymentSchedule returns a DeploymentScheduleClient.
@@ -34,9 +35,10 @@ func (c *Client) DeploymentSchedule(accountID, workspaceID uuid.UUID) (api.Deplo
 	}
 
 	return &DeploymentScheduleClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -46,6 +48,7 @@ func (c *DeploymentScheduleClient) Create(ctx context.Context, deploymentID uuid
 		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
 		body:         &payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -63,6 +66,7 @@ func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.U
 		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -80,6 +84,7 @@ func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid
 		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
 		body:         &payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
@@ -98,6 +103,7 @@ func (c *DeploymentScheduleClient) Delete(ctx context.Context, deploymentID uuid
 		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 

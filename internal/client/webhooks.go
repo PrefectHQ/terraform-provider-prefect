@@ -13,9 +13,10 @@ var _ = api.WebhooksClient(&WebhooksClient{})
 
 // WebhooksClient is a client for working with webhooks.
 type WebhooksClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Webhooks returns a WebhooksClient.
@@ -35,9 +36,10 @@ func (c *Client) Webhooks(accountID, workspaceID uuid.UUID) (api.WebhooksClient,
 	}
 
 	return &WebhooksClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func (c *WebhooksClient) Create(ctx context.Context, createPayload api.WebhookCr
 		body:         &createPayload,
 		successCodes: successCodesStatusCreated,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var webhook api.Webhook
@@ -67,6 +70,7 @@ func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhoo
 		successCodes: successCodesStatusOK,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var webhook api.Webhook
@@ -85,6 +89,7 @@ func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePay
 		body:         &updatePayload,
 		successCodes: successCodesStatusOKOrNoContent,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -104,6 +109,7 @@ func (c *WebhooksClient) Delete(ctx context.Context, webhookID string) error {
 		successCodes: successCodesStatusOKOrNoContent,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -126,6 +132,7 @@ func (c *WebhooksClient) List(ctx context.Context, names []string) ([]*api.Webho
 		body:         http.NoBody,
 		successCodes: successCodesStatusOK,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var webhooks []*api.Webhook

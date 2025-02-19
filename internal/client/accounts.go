@@ -13,9 +13,10 @@ var _ = api.AccountsClient(&AccountsClient{})
 
 // AccountsClient is a client for working with accounts.
 type AccountsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Accounts returns an AccountsClient.
@@ -31,9 +32,10 @@ func (c *Client) Accounts(accountID uuid.UUID) (api.AccountsClient, error) {
 	}
 
 	return &AccountsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, ""),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, ""),
 	}, nil
 }
 
@@ -44,6 +46,7 @@ func (c *AccountsClient) Get(ctx context.Context) (*api.Account, error) {
 		url:          c.routePrefix,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -80,6 +83,7 @@ func (c *AccountsClient) Update(ctx context.Context, data api.AccountUpdate) err
 		url:          c.routePrefix,
 		body:         data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: []int{http.StatusOK, http.StatusNoContent},
 	}
 
@@ -99,6 +103,7 @@ func (c *AccountsClient) UpdateSettings(ctx context.Context, data api.AccountSet
 		url:          c.routePrefix + "settings",
 		body:         data.AccountSettings,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -137,6 +142,7 @@ func (c *AccountsClient) Delete(ctx context.Context) error {
 		url:          c.routePrefix,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 

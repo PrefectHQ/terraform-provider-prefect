@@ -90,6 +90,15 @@ func WithAPIKey(apiKey string) Option {
 	}
 }
 
+// WithBasicAuthKey configures the basic auth key to use to authenticate to Prefect.
+func WithBasicAuthKey(basicAuthKey string) Option {
+	return func(client *Client) error {
+		client.basicAuthKey = basicAuthKey
+
+		return nil
+	}
+}
+
 // WithDefaults configures the default account and workspace ID.
 func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 	return func(client *Client) error {

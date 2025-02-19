@@ -14,9 +14,10 @@ var _ = api.FlowsClient(&FlowsClient{})
 
 // FlowsClient is a client for working with Flows.
 type FlowsClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // Flows returns a FlowsClient.
@@ -36,9 +37,10 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 	}
 
 	return &FlowsClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -73,6 +76,7 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 		url:          fmt.Sprintf("%s/filter", c.routePrefix),
 		body:         &filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -91,6 +95,7 @@ func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, err
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -109,6 +114,7 @@ func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.Flo
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -128,6 +134,7 @@ func (c *FlowsClient) Delete(ctx context.Context, flowID uuid.UUID) error {
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
