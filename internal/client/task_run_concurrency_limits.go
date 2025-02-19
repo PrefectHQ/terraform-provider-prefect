@@ -13,9 +13,10 @@ var _ = api.TaskRunConcurrencyLimitsClient(&TaskRunConcurrencyLimitsClient{})
 
 // TaskRunConcurrencyLimitsClient is a client for working with task run concurrency limits.
 type TaskRunConcurrencyLimitsClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // TaskRunConcurrencyLimits returns a TaskRunConcurrencyLimitsClient.
@@ -35,9 +36,10 @@ func (c *Client) TaskRunConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.
 	}
 
 	return &TaskRunConcurrencyLimitsClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "concurrency_limits"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "concurrency_limits"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -48,6 +50,7 @@ func (c *TaskRunConcurrencyLimitsClient) Create(ctx context.Context, data api.Ta
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -65,6 +68,7 @@ func (c *TaskRunConcurrencyLimitsClient) Read(ctx context.Context, taskRunConcur
 		method:       http.MethodGet,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -82,6 +86,7 @@ func (c *TaskRunConcurrencyLimitsClient) Delete(ctx context.Context, taskRunConc
 		method:       http.MethodDelete,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

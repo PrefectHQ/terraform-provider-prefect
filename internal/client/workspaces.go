@@ -14,9 +14,10 @@ var _ = api.WorkspacesClient(&WorkspacesClient{})
 
 // WorkspacesClient is a client for working with Workspaces.
 type WorkspacesClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // Workspaces returns a WorkspacesClient.
@@ -28,9 +29,10 @@ func (c *Client) Workspaces(accountID uuid.UUID) (api.WorkspacesClient, error) {
 	}
 
 	return &WorkspacesClient{
-		hc:          c.hc,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "workspaces"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "workspaces"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -41,6 +43,7 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -65,6 +68,7 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 		url:          fmt.Sprintf("%s/filter", c.routePrefix),
 		body:         &filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -83,6 +87,7 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 		url:          c.routePrefix + "/" + workspaceID.String(),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -101,6 +106,7 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 		url:          c.routePrefix + "/" + workspaceID.String(),
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -120,6 +126,7 @@ func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) er
 		url:          c.routePrefix + "/" + workspaceID.String(),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 

@@ -10,9 +10,10 @@ import (
 )
 
 type ServiceAccountsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	routePrefix  string
+	basicAuthKey string
 }
 
 //nolint:ireturn // required to support PrefectClient mocking
@@ -34,9 +35,10 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 	routePrefix := getAccountScopedURL(c.endpoint, accountID, "bots")
 
 	return &ServiceAccountsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: routePrefix,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  routePrefix,
 	}, nil
 }
 
@@ -46,6 +48,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 		url:          sa.routePrefix + "/",
 		body:         &request,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -66,6 +69,7 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 		url:          sa.routePrefix + "/filter",
 		body:         &filter,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -83,6 +87,7 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.Se
 		url:          sa.routePrefix + "/" + botID,
 		body:         http.NoBody,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -100,6 +105,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 		url:          sa.routePrefix + "/" + botID,
 		body:         &requestPayload,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -119,6 +125,7 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 		url:          sa.routePrefix + "/" + botID,
 		body:         http.NoBody,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -138,6 +145,7 @@ func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID
 		url:          fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID),
 		body:         &data,
 		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 

@@ -12,9 +12,10 @@ import (
 var _ = api.TeamsClient(&TeamsClient{})
 
 type TeamsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Teams is a factory that initializes and returns a TeamsClient.
@@ -26,9 +27,10 @@ func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 	}
 
 	return &TeamsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "teams"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "teams"),
 	}, nil
 }
 
@@ -42,6 +44,7 @@ func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, er
 		url:          fmt.Sprintf("%s/filter", c.routePrefix),
 		body:         &filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

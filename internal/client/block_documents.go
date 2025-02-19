@@ -13,9 +13,10 @@ import (
 var _ = api.BlockDocumentClient(&BlockDocumentClient{})
 
 type BlockDocumentClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // BlockDocuments is a factory that initializes and returns a BlockDocumentClient.
@@ -35,9 +36,10 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	}
 
 	return &BlockDocumentClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
 	}, nil
 }
 
@@ -50,6 +52,7 @@ func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.Block
 		url:          reqURL,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -72,6 +75,7 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 		url:          reqURL,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -89,6 +93,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		url:          c.routePrefix + "/",
 		body:         payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -106,6 +111,7 @@ func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload 
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
 		body:         payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
@@ -124,6 +130,7 @@ func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
@@ -144,6 +151,7 @@ func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api
 		url:          reqURL,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -161,6 +169,7 @@ func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, pa
 		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()),
 		body:         payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 

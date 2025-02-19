@@ -14,9 +14,10 @@ var _ = api.DeploymentsClient(&DeploymentsClient{})
 
 // DeploymentsClient is a client for working with Deployments.
 type DeploymentsClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // Deployments returns a DeploymentsClient.
@@ -36,9 +37,10 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 	}
 
 	return &DeploymentsClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -67,6 +70,7 @@ func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*a
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -86,6 +90,7 @@ func (c *DeploymentsClient) GetByName(ctx context.Context, flowName, deploymentN
 		url:          url,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -104,6 +109,7 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -123,6 +129,7 @@ func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) 
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
