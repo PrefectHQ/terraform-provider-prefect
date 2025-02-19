@@ -38,7 +38,6 @@ resource "prefect_account" "example" {
 
 ### Optional
 
-- `auth_expiration_seconds` (Number) The number of seconds a user should be considered to be authenticated against this Account.
 - `billing_email` (String) Billing email to apply to the account's Stripe customer
 - `domain_names` (List of String) The list of domain names for enabling SSO in Prefect Cloud.
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
