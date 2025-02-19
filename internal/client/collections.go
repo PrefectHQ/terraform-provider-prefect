@@ -13,9 +13,10 @@ import (
 var _ = api.CollectionsClient(&CollectionsClient{})
 
 type CollectionsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Collections returns an CollectionsClient.
@@ -35,9 +36,10 @@ func (c *Client) Collections(accountID, workspaceID uuid.UUID) (api.CollectionsC
 	}
 
 	return &CollectionsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "collections"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "collections"),
 	}, nil
 }
 
@@ -56,6 +58,7 @@ func (c *CollectionsClient) GetWorkerMetadataViews(ctx context.Context) (api.Wor
 		url:          url,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

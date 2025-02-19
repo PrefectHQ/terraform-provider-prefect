@@ -12,9 +12,10 @@ import (
 var _ = api.AccountMembershipsClient(&AccountMembershipsClient{})
 
 type AccountMembershipsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // AccountMemberships is a factory that initializes and returns a AccountMembershipsClient.
@@ -26,9 +27,10 @@ func (c *Client) AccountMemberships(accountID uuid.UUID) (api.AccountMemberships
 	}
 
 	return &AccountMembershipsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "account_memberships"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "account_memberships"),
 	}, nil
 }
 
@@ -42,6 +44,7 @@ func (c *AccountMembershipsClient) List(ctx context.Context, emails []string) ([
 		method:       http.MethodPost,
 		body:         filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

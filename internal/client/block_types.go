@@ -13,9 +13,10 @@ var _ = api.BlockTypeClient(&BlockTypeClient{})
 
 // BlockTypeClient is a client for working with block types.
 type BlockTypeClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // BlockTypes returns a BlockTypeClient.
@@ -34,9 +35,10 @@ func (c *Client) BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (api.Blo
 	}
 
 	return &BlockTypeClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_types"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_types"),
 	}, nil
 }
 
@@ -47,6 +49,7 @@ func (c *BlockTypeClient) GetBySlug(ctx context.Context, slug string) (*api.Bloc
 		url:          c.routePrefix + "/slug/" + slug,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

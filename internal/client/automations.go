@@ -12,9 +12,10 @@ import (
 var _ = api.AutomationsClient(&AutomationsClient{})
 
 type AutomationsClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Automations is a factory that initializes and returns a AutomationsClient.
@@ -34,9 +35,10 @@ func (c *Client) Automations(accountID uuid.UUID, workspaceID uuid.UUID) (api.Au
 	}
 
 	return &AutomationsClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "automations"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "automations"),
 	}, nil
 }
 
@@ -46,6 +48,7 @@ func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automat
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -63,6 +66,7 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 		url:          c.routePrefix + "/",
 		body:         payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -80,6 +84,7 @@ func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload ap
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
 		body:         payload,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
@@ -98,6 +103,7 @@ func (c *AutomationsClient) Delete(ctx context.Context, id uuid.UUID) error {
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 

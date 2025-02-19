@@ -13,9 +13,10 @@ var _ = api.GlobalConcurrencyLimitsClient(&GlobalConcurrencyLimitsClient{})
 
 // GlobalConcurrencyLimitsClient is a client for working with global concurrency limits.
 type GlobalConcurrencyLimitsClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // GlobalConcurrencyLimits returns a GlobalConcurrencyLimitsClient.
@@ -35,9 +36,10 @@ func (c *Client) GlobalConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.U
 	}
 
 	return &GlobalConcurrencyLimitsClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "v2/concurrency_limits"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "v2/concurrency_limits"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -48,6 +50,7 @@ func (c *GlobalConcurrencyLimitsClient) Create(ctx context.Context, data api.Glo
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -65,6 +68,7 @@ func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurre
 		method:       http.MethodGet,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -83,6 +87,7 @@ func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcur
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
@@ -101,6 +106,7 @@ func (c *GlobalConcurrencyLimitsClient) Delete(ctx context.Context, globalConcur
 		method:       http.MethodDelete,
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 

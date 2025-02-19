@@ -14,9 +14,10 @@ var _ = api.VariablesClient(&VariablesClient{})
 
 // VariablesClient is a client for working with variables.
 type VariablesClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // Variables returns a VariablesClient.
@@ -36,9 +37,10 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 	}
 
 	return &VariablesClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 		url:          c.routePrefix + "/",
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusCreated,
 	}
 
@@ -75,6 +78,7 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 		url:          c.routePrefix + "/" + variableID.String(),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -93,6 +97,7 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 		url:          c.routePrefix + "/name/" + name,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -111,6 +116,7 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 		url:          c.routePrefix + "/" + variableID.String(),
 		body:         &data,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
@@ -131,6 +137,7 @@ func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) erro
 		url:          c.routePrefix + "/" + variableID.String(),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOKOrNoContent,
 	}
 
