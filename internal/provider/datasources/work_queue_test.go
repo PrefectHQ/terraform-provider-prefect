@@ -79,11 +79,11 @@ resource "prefect_work_queue" "test_queue2" {
 
 data "prefect_work_queues" "test" {
   work_pool_name = prefect_work_pool.test_multi.name
-  workspace_id = prefect_workspace.test.id 
+  workspace_id = prefect_workspace.test.id
   depends_on = [
     prefect_work_pool.test_multi,
-	prefect_work_queue.test_queue1,
-	prefect_work_queue.test_queue2
+    prefect_work_queue.test_queue1,
+    prefect_work_queue.test_queue2
   ]
 }
 
