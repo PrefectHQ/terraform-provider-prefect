@@ -140,9 +140,30 @@ func (d *globalConcurrencyLimitDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
-	limit, err := client.Read(ctx, model.Name.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("global concurrency limit", "get", err))
+	// A global concurrency limit can be read by either ID or Name
+	// If both are set, we prefer the ID
+	var limit *api.GlobalConcurrencyLimit
+	var operation string
+	var getErr error
+
+	switch {
+	case !model.ID.IsNull():
+		operation = "get by ID"
+		limit, getErr = client.Read(ctx, model.ID.ValueString())
+	case !model.Name.IsNull() && model.ID.IsNull():
+		operation = "get by Name"
+		limit, getErr = client.Read(ctx, model.Name.ValueString())
+	default:
+		resp.Diagnostics.AddError(
+			"Either id, or name are unset",
+			"Please configure either id, or name.",
+		)
+
+		return
+	}
+
+	if getErr != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("global concurrency limit", operation, getErr))
 
 		return
 	}
