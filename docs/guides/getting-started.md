@@ -75,7 +75,7 @@ Most production use-cases will call for using a dedicated Service Account's API 
 <br>
 
 After creating the Service Account, the API Key will be generated and displayed for you in the UI.
-m
+
 ### User Keys
 
 API Keys can also be generated to represent a User - look to this option if you want to use the provider to manage a Personal Account, where the Service Account feature is not available.
@@ -88,6 +88,19 @@ Note that any User API Keys will inherit the Account/Organization Role of the Us
 
 <img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/user-api-key-example.png" alt="User API Key Example" align="center" width="400">
 
+### Using basic authorization
+
+Self-hosted Prefect servers can use [basic authorization](https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings).
+To allow the provider to connect in this situation, configure `endpoint` and `basic_auth_key`:
+
+```terraform
+provider "prefect" {
+  endpoint       = "http://localhost:4200"
+  basic_auth_key = "admin:password"
+}
+```
+
+The provider will automatically base64 encode the value you provide for `basic_auth_key`.
 
 ## RBAC + Permissions
 
