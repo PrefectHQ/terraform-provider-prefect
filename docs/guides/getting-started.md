@@ -88,9 +88,9 @@ Note that any User API Keys will inherit the Account/Organization Role of the Us
 
 <img src="https://raw.githubusercontent.com/PrefectHQ/terraform-provider-prefect/main/docs/images/user-api-key-example.png" alt="User API Key Example" align="center" width="400">
 
-### Using basic authorization
+### Using basic authentication
 
-Self-hosted Prefect servers can use [basic authorization](https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings).
+Self-hosted Prefect servers can use [basic authentication](https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings).
 To allow the provider to connect in this situation, configure `endpoint` and `basic_auth_key`:
 
 ```terraform
