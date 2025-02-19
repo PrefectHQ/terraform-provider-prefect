@@ -13,9 +13,10 @@ var _ = api.WorkQueuesClient(&WorkQueuesClient{})
 
 // WorkQueuesClient is a client for working with work queues.
 type WorkQueuesClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // WorkQueues returns a WorkQueuesClient.
@@ -37,9 +38,10 @@ func (c *Client) WorkQueues(accountID uuid.UUID, workspaceID uuid.UUID, workPool
 	route := fmt.Sprintf("work_pools/%s/queues", workPoolName)
 
 	return &WorkQueuesClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, route),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, route),
 	}, nil
 }
 
@@ -51,6 +53,7 @@ func (c *WorkQueuesClient) Create(ctx context.Context, data api.WorkQueueCreate)
 		body:         &data,
 		successCodes: successCodesStatusCreated,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var queue api.WorkQueue
@@ -69,6 +72,7 @@ func (c *WorkQueuesClient) List(ctx context.Context, filter api.WorkQueueFilter)
 		body:         &filter,
 		successCodes: successCodesStatusOK,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var queues []*api.WorkQueue
@@ -87,6 +91,7 @@ func (c *WorkQueuesClient) Get(ctx context.Context, name string) (*api.WorkQueue
 		successCodes: successCodesStatusOK,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var queue api.WorkQueue
@@ -105,6 +110,7 @@ func (c *WorkQueuesClient) Update(ctx context.Context, name string, data api.Wor
 		body:         &data,
 		successCodes: successCodesStatusOKOrNoContent,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -124,6 +130,7 @@ func (c *WorkQueuesClient) Delete(ctx context.Context, name string) error {
 		successCodes: successCodesStatusOKOrNoContent,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
