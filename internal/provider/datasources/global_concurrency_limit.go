@@ -125,6 +125,7 @@ func (d *globalConcurrencyLimitDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
+	// If both ID and Name are unset, we cannot read the global concurrency limit
 	if model.ID.IsNull() && model.Name.IsNull() {
 		resp.Diagnostics.AddError(
 			"Both ID and Name are unset",
@@ -133,6 +134,8 @@ func (d *globalConcurrencyLimitDataSource) Read(ctx context.Context, req datasou
 
 		return
 	}
+
+	// Get the global concurrency limit
 	client, err := d.client.GlobalConcurrencyLimits(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("global concurrency limit", err))
