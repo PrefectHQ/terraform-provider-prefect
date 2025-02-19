@@ -36,13 +36,16 @@ Use this data source to search for multiple Work Queues. Defaults to fetching al
 <a id="nestedatt--work_queues"></a>
 ### Nested Schema for `work_queues`
 
+Required:
+
+- `work_pool_name` (String) Name of the associated work pool
+
 Optional:
 
 - `concurrency_limit` (Number) The concurrency limit applied to this work queue
 - `description` (String) Description of the work queue
 - `id` (String) Work queue ID (UUID)
 - `name` (String) Name of the work queue
-- `work_pool_name` (String) Name of the associated work pool
 
 Read-Only:
 

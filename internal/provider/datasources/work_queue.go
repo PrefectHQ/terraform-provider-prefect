@@ -80,7 +80,7 @@ var workQueueAttributesBase = map[string]schema.Attribute{
 		Description: "Priority of the work queue",
 	},
 	"work_pool_name": schema.StringAttribute{
-		Optional:    true,
+		Required:    true,
 		Description: "Name of the associated work pool",
 	},
 	"updated": schema.StringAttribute{
