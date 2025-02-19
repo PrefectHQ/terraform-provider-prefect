@@ -65,6 +65,7 @@ func (c *AccountsClient) GetDomains(ctx context.Context) (*api.AccountDomainsUpd
 		url:          c.routePrefix + "domains",
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -123,6 +124,7 @@ func (c *AccountsClient) UpdateDomains(ctx context.Context, data api.AccountDoma
 		url:          c.routePrefix + "domains",
 		body:         data.DomainNames,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
