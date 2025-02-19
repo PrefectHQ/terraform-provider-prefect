@@ -49,6 +49,11 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"basic_auth_key": schema.StringAttribute{
+				Description: "Prefect basic auth key. Can also be set via the `PREFECT_BASIC_AUTH_KEY` environment variable.",
+				Optional:    true,
+				Sensitive:   true,
+			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.",
@@ -156,6 +161,14 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiKey = apiKeyEnvVar
 	}
 
+	// Extract with basic auth key from configuration or environment variable.
+	var basicAuthKey string
+	if !config.BasicAuthKey.IsNull() {
+		basicAuthKey = config.BasicAuthKey.ValueString()
+	} else if basicAuthKeyEnvVar, ok := os.LookupEnv("PREFECT_BASIC_AUTH_KEY"); ok {
+		basicAuthKey = basicAuthKeyEnvVar
+	}
+
 	// Extract the Account ID from configuration or environment variable.
 	// If the ID is set to an invalid UUID, emit an error.
 	var accountID uuid.UUID
@@ -202,7 +215,9 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
+	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_basic_auth_key")
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
 	ctx = tflog.SetField(ctx, "prefect_workspace_id", config.WorkspaceID.ValueString())
 	tflog.Debug(ctx, "Creating Prefect client")
@@ -210,6 +225,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
+		client.WithBasicAuthKey(basicAuthKey),
 		client.WithDefaults(accountID, config.WorkspaceID.ValueUUID()),
 	)
 	if err != nil {
