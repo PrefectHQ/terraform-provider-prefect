@@ -2,8 +2,7 @@ package datasources
 
 import (
 	"context"
-	"sort"
-	
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -28,7 +27,7 @@ type WorkQueuesSourceModel struct {
 	WorkPoolName types.String          `tfsdk:"work_pool_name"`
 
 	FilterAny  types.List `tfsdk:"filter_any"`
-	WorkQueues types.List `tfsdk:"work_queues"`
+	WorkQueues types.Set  `tfsdk:"work_queues"`
 }
 
 // NewWorkQueuesDataSource returns a new WorkQueuesDataSource.
@@ -83,7 +82,7 @@ Use this data source to search for multiple Work Queues. Defaults to fetching al
 				Optional:    true,
 				Description: "Work queue IDs (UUID) to search for (work queues with any matching UUID are returned)",
 			},
-			"work_queues": schema.ListNestedAttribute{
+			"work_queues": schema.SetNestedAttribute{
 				Computed:    true,
 				Description: "Work queues returned by the server",
 				NestedObject: schema.NestedAttributeObject{
@@ -125,20 +124,6 @@ func (d *WorkQueuesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		return
 	}
 
-	// Sort the queues by priority
-	sort.SliceStable(queues, func(i, j int) bool {
-		if queues[i].Priority == nil && queues[j].Priority == nil {
-			return false
-		}
-		if queues[i].Priority == nil {
-			return false
-		}
-		if queues[j].Priority == nil {
-			return true
-		}
-		return *queues[i].Priority < *queues[j].Priority
-	})
-
 	attributeTypes := map[string]attr.Type{
 		"id":                customtypes.UUIDType{},
 		"created":           customtypes.TimestampType{},
@@ -177,13 +162,13 @@ func (d *WorkQueuesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 
 	// Set the final list value to be returned
-	list, diag := types.ListValue(types.ObjectType{AttrTypes: attributeTypes}, queueObjects)
+	set, diag := types.SetValueFrom(ctx, types.ObjectType{AttrTypes: attributeTypes}, queueObjects)
 	resp.Diagnostics.Append(diag...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	model.WorkQueues = list
+	model.WorkQueues = set
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

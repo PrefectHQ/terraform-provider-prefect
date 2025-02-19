@@ -31,7 +31,7 @@ Use this data source to search for multiple Work Queues. Defaults to fetching al
 
 ### Read-Only
 
-- `work_queues` (Attributes List) Work queues returned by the server (see [below for nested schema](#nestedatt--work_queues))
+- `work_queues` (Attributes Set) Work queues returned by the server (see [below for nested schema](#nestedatt--work_queues))
 
 <a id="nestedatt--work_queues"></a>
 ### Nested Schema for `work_queues`
