@@ -240,6 +240,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 		datasources.NewAutomationDataSource,
 		datasources.NewBlockDataSource,
 		datasources.NewDeploymentDataSource,
+		datasources.NewGlobalConcurrencyLimitDataSource,
 		datasources.NewServiceAccountDataSource,
 		datasources.NewTeamDataSource,
 		datasources.NewTeamsDataSource,

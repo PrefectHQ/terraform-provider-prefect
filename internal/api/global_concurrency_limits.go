@@ -17,6 +17,9 @@ type GlobalConcurrencyLimitsClient interface {
 // GlobalConcurrencyLimit is a representation of a global concurrency limit.
 type GlobalConcurrencyLimit struct {
 	BaseModel
+	AccountID   uuid.UUID `json:"account_id"`
+	WorkspaceID uuid.UUID `json:"workspace_id"`
+
 	Active             bool    `json:"active"`
 	Name               string  `json:"name"`
 	Limit              int64   `json:"limit"`
