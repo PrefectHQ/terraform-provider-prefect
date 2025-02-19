@@ -11,6 +11,7 @@ type Client struct {
 	endpoint           string
 	endpointHost       string
 	apiKey             string
+	basicAuthKey       string
 	defaultAccountID   uuid.UUID
 	defaultWorkspaceID uuid.UUID
 }

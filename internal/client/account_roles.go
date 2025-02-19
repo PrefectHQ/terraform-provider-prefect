@@ -13,9 +13,10 @@ import (
 var _ = api.AccountRolesClient(&AccountRolesClient{})
 
 type AccountRolesClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // AccountRoles is a factory that initializes and returns a AccountRolesClient.
@@ -27,9 +28,10 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 	}
 
 	return &AccountRolesClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getAccountScopedURL(c.endpoint, accountID, "account_roles"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "account_roles"),
 	}, nil
 }
 
@@ -43,6 +45,7 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 		method:       http.MethodPost,
 		body:         filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -62,6 +65,7 @@ func (c *AccountRolesClient) Get(ctx context.Context, roleID uuid.UUID) (*api.Ac
 		body:         http.NoBody,
 		successCodes: successCodesStatusOK,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var accountRole api.AccountRole

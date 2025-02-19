@@ -11,9 +11,10 @@ import (
 
 // BlockSchemaClient is a client for working with block schemas.
 type BlockSchemaClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // BlockSchemas returns a BlockSchemaClient.
@@ -32,9 +33,10 @@ func (c *Client) BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (api.B
 	}
 
 	return &BlockSchemaClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_schemas"),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_schemas"),
 	}, nil
 }
 
@@ -48,6 +50,7 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 		url:          c.routePrefix + "/filter",
 		body:         filterQuery,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 

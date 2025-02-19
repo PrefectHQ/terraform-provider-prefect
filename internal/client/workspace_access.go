@@ -14,9 +14,10 @@ import (
 var _ = api.WorkspaceAccessClient(&WorkspaceAccessClient{})
 
 type WorkspaceAccessClient struct {
-	hc          *http.Client
-	apiKey      string
-	routePrefix string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // WorkspaceAccess is a factory that initializes and returns a WorkspaceAccessClient.
@@ -36,9 +37,10 @@ func (c *Client) WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (ap
 	}
 
 	return &WorkspaceAccessClient{
-		hc:          c.hc,
-		apiKey:      c.apiKey,
-		routePrefix: fmt.Sprintf("%s/accounts/%s/workspaces/%s", c.endpoint, accountID.String(), workspaceID.String()),
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  fmt.Sprintf("%s/accounts/%s/workspaces/%s", c.endpoint, accountID.String(), workspaceID.String()),
 	}, nil
 }
 
@@ -82,6 +84,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		url:          requestPath,
 		body:         &payloads,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -127,6 +130,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 		url:          requestPath,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -198,6 +202,7 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 		url:          requestPath,
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 

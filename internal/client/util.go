@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,16 +51,21 @@ func getWorkspaceScopedURL(endpoint string, accountID uuid.UUID, workspaceID uui
 
 // setAuthorizationHeader will set the Authorization header to the
 // provided apiKey, if set.
-func setAuthorizationHeader(request *http.Request, apiKey string) {
+func setAuthorizationHeader(request *http.Request, apiKey, basicAuthKey string) {
 	if apiKey != "" {
 		request.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	if basicAuthKey != "" {
+		encoded := base64.StdEncoding.EncodeToString([]byte(basicAuthKey))
+		request.Header.Set("Authorization", "Basic "+encoded)
 	}
 }
 
 // setDefaultHeaders will set Authorization, Content-Type, and Accept
 // headers that are common to most requests.
-func setDefaultHeaders(request *http.Request, apiKey string) {
-	setAuthorizationHeader(request, apiKey)
+func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey string) {
+	setAuthorizationHeader(request, apiKey, basicAuthKey)
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
@@ -83,7 +89,8 @@ type requestConfig struct {
 
 	successCodes []int
 
-	apiKey string
+	apiKey       string
+	basicAuthKey string
 }
 
 var (
@@ -126,7 +133,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, cfg.apiKey)
+	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey)
 
 	// Body will be closed by the caller.
 	resp, err := client.Do(req)

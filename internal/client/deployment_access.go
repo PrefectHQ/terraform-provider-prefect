@@ -12,9 +12,10 @@ import (
 var _ = api.DeploymentAccessClient(&DeploymentAccessClient{})
 
 type DeploymentAccessClient struct {
-	hc          *http.Client
-	routePrefix string
-	apiKey      string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // DeploymentAccess returns a DeploymentAccessClient.
@@ -34,9 +35,10 @@ func (c *Client) DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (a
 	}
 
 	return &DeploymentAccessClient{
-		hc:          c.hc,
-		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:      c.apiKey,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
@@ -46,6 +48,7 @@ func (c *DeploymentAccessClient) Read(ctx context.Context, deploymentID uuid.UUI
 		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
 		body:         http.NoBody,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusOK,
 	}
 
@@ -63,6 +66,7 @@ func (c *DeploymentAccessClient) Set(ctx context.Context, deploymentID uuid.UUID
 		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
 		body:         &accessControl,
 		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
 	}
 
