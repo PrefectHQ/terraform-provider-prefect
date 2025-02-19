@@ -320,45 +320,20 @@ func (r *WorkQueueResource) Delete(ctx context.Context, req resource.DeleteReque
 // ImportState imports the resource into Terraform state.
 func (r *WorkQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Allow input values in the form of:
-	// - "workspace_id,work_pool_name,work_queue_name"
-	// - "work_pool_name,work_queue_name"
-	minInputCount := 2
-	maxInputCount := 3
+	// - "work_pool_name,work_queue_name,workspace_id"
+	reqInputCount := 3
 	inputParts := strings.Split(req.ID, ",")
 
-	// eg. "foo,bar,baz,qux"
-	if len(inputParts) > maxInputCount {
+	if len(inputParts) != reqInputCount {
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected a maximum of 3 import identifiers, in the form of `workspace_id,work_pool_name,work_queue_name`. Got %q", req.ID),
+			fmt.Sprintf("Expected 3 import identifiers, in the form of `work_pool_name,work_queue_name,workspace_id`. Got %q", req.ID),
 		)
 
 		return
 	}
 
-	// eg. "foo" or ""
-	if len(inputParts) < minInputCount {
-		resp.Diagnostics.AddError(
-			"Unexpected Import Identifier",
-			"Expected at least 2 import identifiers, in the form of `work_pool_name,work_queue_name`.",
-		)
-
-		return
-	}
-
-	if len(inputParts) == maxInputCount {
-		workspaceID := inputParts[0]
-		workPoolName := inputParts[1]
-		workQueueName := inputParts[2]
-
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), workspaceID)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), workPoolName)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), workQueueName)...)
-	} else {
-		workPoolName := inputParts[0]
-		workQueueName := inputParts[1]
-
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), workPoolName)...)
-		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), workQueueName)...)
-	}
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), inputParts[2])...)
 }

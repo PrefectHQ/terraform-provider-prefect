@@ -188,8 +188,8 @@ func TestAccResource_work_queue(t *testing.T) {
 					),
 				),
 			},
-			// Import State checks - import by workspace_id,name, work_pool_name (dynamic)
 			{
+				// Import by work_pool_name,name,workspace_id
 				ImportState:       true,
 				ResourceName:      workQueueResourceName2,
 				ImportStateIdFunc: getWorkQueueImportStateID(workQueueResourceName2, workPoolName),
@@ -302,7 +302,7 @@ func getWorkQueueImportStateID(workQueueResourceName string, workPoolName string
 		}
 		workQueueName := workQueueResource.Primary.Attributes["name"]
 
-		return fmt.Sprintf("%s,%s,%s", workspaceID, workPoolName, workQueueName), nil
+		return fmt.Sprintf("%s,%s,%s", workPoolName, workQueueName, workspaceID), nil
 	}
 }
 
