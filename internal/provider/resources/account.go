@@ -40,6 +40,7 @@ type AccountResourceModel struct {
 	Link         types.String `tfsdk:"link"`
 	Settings     types.Object `tfsdk:"settings"`
 	BillingEmail types.String `tfsdk:"billing_email"`
+	DomainNames  types.List   `tfsdk:"domain_names"`
 }
 
 // NewAccountResource returns a new AccountResource.
@@ -146,13 +147,18 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Description: "Billing email to apply to the account's Stripe customer",
 				Optional:    true,
 			},
+			"domain_names": schema.ListAttribute{
+				Description: "The list of domain names for enabling SSO in Prefect Cloud.",
+				ElementType: types.StringType,
+				Optional:    true,
+			},
 		},
 	}
 }
 
 // copyAccountToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel *AccountResourceModel) diag.Diagnostics {
+func copyAccountToModel(_ context.Context, account *api.Account, tfModel *AccountResourceModel) diag.Diagnostics {
 	tfModel.ID = types.StringValue(account.ID.String())
 	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
@@ -179,6 +185,18 @@ func copyAccountToModel(_ context.Context, account *api.AccountResponse, tfModel
 	tfModel.Settings = settingsObject
 
 	return diags
+}
+
+// copyAccountDomainsToModel maps an API response to a model that is saved in Terraform state.
+// A model can be a Terraform Plan, State, or Config object.
+func copyAccountDomainsToModel(ctx context.Context, accountDomains *api.AccountDomainsUpdate, tfModel *AccountResourceModel) diag.Diagnostics {
+	domainNames, diags := types.ListValueFrom(ctx, types.StringType, accountDomains.DomainNames)
+	if diags.HasError() {
+		return diags
+	}
+	tfModel.DomainNames = domainNames
+
+	return nil
 }
 
 func (r *AccountResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
@@ -219,6 +237,18 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	accountDomains, err := client.GetDomains(ctx)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account domains", "get", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyAccountDomainsToModel(ctx, accountDomains, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -247,8 +277,8 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:         plan.Name.ValueStringPointer(),
-		Handle:       plan.Handle.ValueStringPointer(),
+		Name:         plan.Name.ValueString(),
+		Handle:       plan.Handle.ValueString(),
 		Location:     plan.Location.ValueStringPointer(),
 		Link:         plan.Link.ValueStringPointer(),
 		BillingEmail: plan.BillingEmail.ValueStringPointer(),
@@ -273,6 +303,21 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 		})
 		if err != nil {
 			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account settings", "update", err))
+
+			return
+		}
+	}
+
+	// If domains have changed, we need to create a separate request to update them.
+	if !plan.DomainNames.Equal(state.DomainNames) {
+		var domainNames []string
+		resp.Diagnostics.Append(plan.DomainNames.ElementsAs(ctx, &domainNames, false)...)
+
+		err = client.UpdateDomains(ctx, api.AccountDomainsUpdate{
+			DomainNames: domainNames,
+		})
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account domains", "update", err))
 
 			return
 		}

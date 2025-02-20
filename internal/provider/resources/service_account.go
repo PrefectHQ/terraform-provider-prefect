@@ -184,9 +184,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 	}
 }
 
-// copyServiceAccountResponseToModel maps an API response to a model that is saved in Terraform state.
+// copyServiceAccountToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyServiceAccountResponseToModel(serviceAccount *api.ServiceAccount, tfModel *ServiceAccountResourceModel) {
+func copyServiceAccountToModel(serviceAccount *api.ServiceAccount, tfModel *ServiceAccountResourceModel) {
 	// NOTE: the API Key is attached to the resource model outside of this helper,
 	// as it is only returned on Create/Update operations.
 	tfModel.ID = types.StringValue(serviceAccount.ID.String())
@@ -267,7 +267,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	copyServiceAccountResponseToModel(serviceAccount, &plan)
+	copyServiceAccountToModel(serviceAccount, &plan)
 
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
@@ -344,7 +344,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	copyServiceAccountResponseToModel(serviceAccount, &state)
+	copyServiceAccountToModel(serviceAccount, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -461,7 +461,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 	}
 
 	// Update the model with latest service account details (from the Get call above)
-	copyServiceAccountResponseToModel(serviceAccount, &plan)
+	copyServiceAccountToModel(serviceAccount, &plan)
 
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
