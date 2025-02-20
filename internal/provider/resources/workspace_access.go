@@ -67,7 +67,9 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 			"(User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level " +
 			"to a specific Workspace in the Account.\n" +
 			"\n" +
-			"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.",
+			"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.\n" +
+			"\n" +
+			"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

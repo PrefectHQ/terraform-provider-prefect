@@ -3,12 +3,12 @@
 page_title: "prefect_variable Resource - prefect"
 subcategory: ""
 description: |-
-  The resource variable represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows.
+  The resource variable represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows. For more information, see set and get variables https://docs.prefect.io/v3/develop/variables#set-and-get-variables.
 ---
 
 # prefect_variable (Resource)
 
-The resource `variable` represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows.
+The resource `variable` represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows. For more information, see [set and get variables](https://docs.prefect.io/v3/develop/variables#set-and-get-variables).
 
 ## Example Usage
 

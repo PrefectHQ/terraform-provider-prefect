@@ -45,6 +45,8 @@ func (d *AccountMembersDataSource) Schema(_ context.Context, _ datasource.Schema
 Get information about all members of account.
 <br>
 Use this data source to obtain user or actor IDs to manage Workspace Access.
+<br>
+For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 `,
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{

@@ -65,6 +65,8 @@ func (d *WorkQueuesDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 Get information about multiple Work Queues.
 <br>
 Use this data source to search for multiple Work Queues. Defaults to fetching all Work Queues in the Workspace.
+<br>
+For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 `,
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{

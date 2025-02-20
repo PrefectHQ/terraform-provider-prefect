@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Variable by name or ID.
   
   Use this data source to obtain Variable-specific attributes, such as the value.
+  
+  For more information, see get and set variables https://docs.prefect.io/v3/develop/variables.
 ---
 
 # prefect_variable (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about an existing Variable by name or ID.
 <br>
 Use this data source to obtain Variable-specific attributes, such as the value.
+<br>
+For more information, see [get and set variables](https://docs.prefect.io/v3/develop/variables).
 
 ## Example Usage
 

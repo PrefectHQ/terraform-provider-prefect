@@ -80,7 +80,9 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 			"Work Pools represent infrastructure configurations for jobs across several common environments.\n" +
 			"\n" +
 			"Work Pools can be set up with default base job configurations, based on which type. " +
-			"Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.",
+			"Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.\n" +
+			"\n" +
+			"For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

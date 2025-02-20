@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Deployment by either:
   deployment ID, ordeployment name
   The Deployment ID takes precedence over deployment name.
+  
+  For more information, see deploy overview https://docs.prefect.io/v3/deploy/index.
 ---
 
 # prefect_deployment (Data Source)
@@ -14,6 +16,8 @@ Get information about an existing Deployment by either:
 - deployment ID, or
 - deployment name
 The Deployment ID takes precedence over deployment name.
+<br>
+For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).
 
 ## Example Usage
 

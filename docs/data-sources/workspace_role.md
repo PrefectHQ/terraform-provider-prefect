@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Workspace Role.
   
   Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+  
+  For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces.
 ---
 
 # prefect_workspace_role (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about an existing Workspace Role.
 <br>
 Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+<br>
+For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 
 ## Example Usage
 

@@ -3,12 +3,12 @@
 page_title: "prefect_global_concurrency_limit Resource - prefect"
 subcategory: ""
 description: |-
-  The resource global_concurrency_limit represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see https://docs.prefect.io/v3/develop/global-concurrency-limits.
+  The resource global_concurrency_limit represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see apply global concurrency and rate limits https://docs.prefect.io/v3/develop/global-concurrency-limits.
 ---
 
 # prefect_global_concurrency_limit (Resource)
 
-The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see https://docs.prefect.io/v3/develop/global-concurrency-limits.
+The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).
 
 ## Example Usage
 

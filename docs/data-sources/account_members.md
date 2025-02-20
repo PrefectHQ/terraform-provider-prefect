@@ -6,6 +6,8 @@ description: |-
   Get information about all members of account.
   
   Use this data source to obtain user or actor IDs to manage Workspace Access.
+  
+  For more information, see manage account roles https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
 ---
 
 # prefect_account_members (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about all members of account.
 <br>
 Use this data source to obtain user or actor IDs to manage Workspace Access.
+<br>
+For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 
 ## Example Usage
 

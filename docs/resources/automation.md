@@ -3,12 +3,16 @@
 page_title: "prefect_automation Resource - prefect"
 subcategory: ""
 description: |-
-  The resource automations represents a Prefect Automation.
+  The resource 'automations' represents a Prefect Automation.
+  
+  For more information, see automate overview https://docs.prefect.io/v3/automate/index.
 ---
 
 # prefect_automation (Resource)
 
-The resource `automations` represents a Prefect Automation.
+The resource 'automations' represents a Prefect Automation.
+<br>
+For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
 
 ## Example Usage
 

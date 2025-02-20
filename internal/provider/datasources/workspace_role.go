@@ -92,6 +92,8 @@ func (d *WorkspaceRoleDataSource) Schema(_ context.Context, _ datasource.SchemaR
 Get information about an existing Workspace Role.
 <br>
 Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+<br>
+For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 `,
 		Attributes: workspaceRoleAttributes,
 	}

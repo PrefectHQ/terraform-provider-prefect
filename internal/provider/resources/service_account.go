@@ -95,7 +95,8 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"Service Accounts are used to configure API access for workers or programs. Use this resource to provision " +
 			"and rotate Keys as well as assign Account and Workspace Access through Roles.\n" +
 			"\n" +
-			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.",
+			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n" +
+			"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
 		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
