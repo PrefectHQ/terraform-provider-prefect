@@ -59,6 +59,8 @@ func (d *globalConcurrencyLimitDataSource) Schema(_ context.Context, _ datasourc
 Get information about an existing Global Concurrency Limit
 <br>
 Use this data source to read down the pre-defined Global Concurrency Limits, to manage concurrency limits.
+<br>
+For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).
 `,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

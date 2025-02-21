@@ -70,7 +70,8 @@ func (r *WebhookResource) Configure(_ context.Context, req resource.ConfigureReq
 func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "The resource `webhook` represents a Prefect Cloud Webhook. " +
-			"Webhooks allow external services to trigger events in Prefect.",
+			"Webhooks allow external services to trigger events in Prefect. " +
+			"For more information, see [receive events with webhooks](https://docs.prefect.io/v3/automate/events/webhook-triggers).",
 		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

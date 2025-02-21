@@ -4,11 +4,15 @@ page_title: "prefect_automation Data Source - prefect"
 subcategory: ""
 description: |-
   Get information about an existing Automation by its ID
+  
+  For more information, see automate overview https://docs.prefect.io/v3/automate/index.
 ---
 
 # prefect_automation (Data Source)
 
 Get information about an existing Automation by its ID
+<br>
+For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
 
 ## Example Usage
 

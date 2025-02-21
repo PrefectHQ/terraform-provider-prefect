@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Work Queue by name.
   
   Use this data source to obtain Work Queue-specific attributes.
+  
+  For more information, see work queues https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues.
 ---
 
 # prefect_work_queue (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about an existing Work Queue by name.
 <br>
 Use this data source to obtain Work Queue-specific attributes.
+<br>
+For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 
 ## Example Usage
 

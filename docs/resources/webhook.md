@@ -3,12 +3,12 @@
 page_title: "prefect_webhook Resource - prefect"
 subcategory: ""
 description: |-
-  The resource webhook represents a Prefect Cloud Webhook. Webhooks allow external services to trigger events in Prefect.
+  The resource webhook represents a Prefect Cloud Webhook. Webhooks allow external services to trigger events in Prefect. For more information, see receive events with webhooks https://docs.prefect.io/v3/automate/events/webhook-triggers.
 ---
 
 # prefect_webhook (Resource)
 
-The resource `webhook` represents a Prefect Cloud Webhook. Webhooks allow external services to trigger events in Prefect.
+The resource `webhook` represents a Prefect Cloud Webhook. Webhooks allow external services to trigger events in Prefect. For more information, see [receive events with webhooks](https://docs.prefect.io/v3/automate/events/webhook-triggers).
 
 ## Example Usage
 

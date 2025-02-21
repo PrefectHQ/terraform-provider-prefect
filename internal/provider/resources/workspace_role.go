@@ -74,7 +74,9 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 			"an accessor (User or Service Account) to grant access to the Workspace.\n" +
 			"\n" +
 			"To obtain a list of available scopes, please refer to the `GET /api/workspace_scopes` " +
-			"[API](https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get)",
+			"[API](https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get).\n" +
+			"\n" +
+			"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -3,12 +3,12 @@
 page_title: "prefect_deployment Resource - prefect"
 subcategory: ""
 description: |-
-  Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely.
+  Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see deploy overview https://docs.prefect.io/v3/deploy/index.
 ---
 
 # prefect_deployment (Resource)
 
-Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely.
+Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).
 
 ## Example Usage
 

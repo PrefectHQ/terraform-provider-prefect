@@ -68,7 +68,8 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 	resp.Schema = schema.Schema{
 		Description: "The resource `deployment_access` represents a connection between an accessor " +
 			"(User, Service Account or Team) with a Deployment. This resource specifies an actor's access level " +
-			"to a specific Deployment in the Account.",
+			"to a specific Deployment in the Account. " +
+			"For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"deployment_id": schema.StringAttribute{

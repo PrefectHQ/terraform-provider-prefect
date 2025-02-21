@@ -74,7 +74,8 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 		// Description: "Resource representing a Prefect Workspace",
 		Description: "The resource `workspace` represents a Prefect Cloud Workspace. " +
 			"Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. " +
-			"Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources.",
+			"Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources. " +
+			"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

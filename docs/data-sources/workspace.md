@@ -6,6 +6,8 @@ description: |-
   Get information about an existing Workspace by handle.
   
   Use this data source to obtain Workspace IDs
+  
+  For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces.
 ---
 
 # prefect_workspace (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about an existing Workspace by handle.
 <br>
 Use this data source to obtain Workspace IDs
+<br>
+For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 
 ## Example Usage
 

@@ -82,7 +82,8 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 		Description: "The resource `flow` represents a Prefect Flow. " +
 			"Flows are the most central Prefect object. " +
 			"A flow is a container for workflow logic as-code and allows users to configure how their workflows behave. " +
-			"Flows are defined as Python functions, and any Python function is eligible to be a flow.",
+			"Flows are defined as Python functions, and any Python function is eligible to be a flow. " +
+			"For more information, see [write and run flows](https://docs.prefect.io/v3/develop/write-flows).",
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

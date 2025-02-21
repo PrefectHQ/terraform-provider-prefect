@@ -4,14 +4,17 @@ page_title: "prefect_work_queue Resource - prefect"
 subcategory: ""
 description: |-
   The resource work_queue represents a Prefect Work Queue. Work Queues are used to configure and manage job execution queues in Prefect.
-  Work Queues can be associated with a work pool and have configurations like concurrency limits
+  Work Queues can be associated with a work pool and have configurations like concurrency limits.
+  For more information, see work queues https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues.
 ---
 
 # prefect_work_queue (Resource)
 
 The resource `work_queue` represents a Prefect Work Queue. Work Queues are used to configure and manage job execution queues in Prefect.
 
-Work Queues can be associated with a work pool and have configurations like concurrency limits
+Work Queues can be associated with a work pool and have configurations like concurrency limits.
+
+For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 
 ## Example Usage
 

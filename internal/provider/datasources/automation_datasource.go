@@ -42,8 +42,12 @@ func (d *AutomationDataSource) Metadata(_ context.Context, req datasource.Metada
 // Schema defines the schema for the data source.
 func (d *AutomationDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Get information about an existing Automation by its ID",
-		Attributes:  AutomationSchema(),
+		Description: `
+Get information about an existing Automation by its ID
+<br>
+For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
+`,
+		Attributes: AutomationSchema(),
 	}
 }
 

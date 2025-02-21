@@ -52,6 +52,8 @@ func (d *AccountRoleDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 Get information about an existing Workspace Role.
 <br>
 Use this data source read down the pre-defined Roles, to manage User and Service Account access.
+<br>
+For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-roles#manage-account-roles).
 `,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

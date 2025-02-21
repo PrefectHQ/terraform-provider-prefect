@@ -132,6 +132,8 @@ func (d *ServiceAccountDataSource) Schema(_ context.Context, _ datasource.Schema
 Get information about an existing Service Account, by name or ID.
 <br>
 Use this data source to obtain service account-level attributes, such as ID.
+<br>
+For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).
 `,
 		Attributes: serviceAccountAttributes,
 	}

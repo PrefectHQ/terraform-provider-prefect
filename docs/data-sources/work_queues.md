@@ -6,6 +6,8 @@ description: |-
   Get information about multiple Work Queues.
   
   Use this data source to search for multiple Work Queues. Defaults to fetching all Work Queues in the Workspace.
+  
+  For more information, see work queues https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues.
 ---
 
 # prefect_work_queues (Data Source)
@@ -13,6 +15,8 @@ description: |-
 Get information about multiple Work Queues.
 <br>
 Use this data source to search for multiple Work Queues. Defaults to fetching all Work Queues in the Workspace.
+<br>
+For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 
 ## Example Usage
 
