@@ -10,6 +10,7 @@
 - [ ] Title follows the [conventional commits](https://www.conventionalcommits.org) format
 - [ ] Body includes `Closes <issue>`, if available
 - [ ] Relevant labels have been added
+- [ ] `Draft` status is used until ready for review
 
 #### Code-level changes
 
