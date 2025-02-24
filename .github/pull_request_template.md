@@ -6,9 +6,10 @@
 
 #### General
 
+- [ ] The [contributing guide](https://github.com/PrefectHQ/terraform-provider-prefect/blob/main/_about/CONTRIBUTING.md) has been read
 - [ ] Title follows the format: `feat(<resource name>): support <resource name>`
 - [ ] Body includes `Closes <issue>`, if available
-- [ ] The [contributing guide](https://github.com/PrefectHQ/terraform-provider-prefect/blob/main/_about/CONTRIBUTING.md) has been read
+- [ ] Relevant labels have been added
 
 #### Code-level changes
 
