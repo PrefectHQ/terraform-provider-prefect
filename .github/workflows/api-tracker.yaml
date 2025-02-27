@@ -33,8 +33,7 @@ jobs:
       - name: Get previous API schema
         uses: actions/download-artifact@v4
         with:
-          name: schema
-          path: openapi.json
+          name: openapi.json
 
       - name: Compare with latest schema
         run: |
@@ -65,7 +64,7 @@ jobs:
         if: steps.diff.outputs.files_exists == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: schema
+          name: openapi.json
           path: openapi.json
           overwrite: true
           # The flow will run every 7 days, so no need to
