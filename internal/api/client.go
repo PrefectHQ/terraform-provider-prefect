@@ -29,6 +29,7 @@ type PrefectClient interface {
 	WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (WorkspaceAccessClient, error)
 	WorkspaceRoles(accountID uuid.UUID) (WorkspaceRolesClient, error)
 	WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (WorkPoolsClient, error)
+	WorkPoolAccess(accountID uuid.UUID, workspaceID uuid.UUID) (WorkPoolAccessClient, error)
 	WorkQueues(accountID uuid.UUID, workspaceID uuid.UUID, workPoolName string) (WorkQueuesClient, error)
 	Variables(accountID uuid.UUID, workspaceID uuid.UUID) (VariablesClient, error)
 	ServiceAccounts(accountID uuid.UUID) (ServiceAccountsClient, error)

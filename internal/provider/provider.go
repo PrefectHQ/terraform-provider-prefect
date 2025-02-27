@@ -289,6 +289,7 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewVariableResource,
 		resources.NewWebhookResource,
 		resources.NewWorkPoolResource,
+		resources.NewWorkPoolAccessResource,
 		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
 		resources.NewWorkspaceRoleResource,
