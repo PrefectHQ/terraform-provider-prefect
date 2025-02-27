@@ -30,42 +30,38 @@ jobs:
         with:
           fetch-depth: 0  # We need history to compare with previous schemas
 
-      # - name: Get previous API schema
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     path: openapi.json
-      #
-      # - name: Compare with latest schema
-      #   run: |
-      #     /bin/bash ./scripts/compare.sh
-      #
-      # - name: Check if diff found
-      #   id: diff
-      #   uses: andstor/file-existence-action@v3
-      #   with:
-      #     files: 'diff.md'
-      #
-      # - name: Create GitHub issue for changes
-      #   if: steps.diff.outputs.files_exists == 'true'
-      #   run: |
-      #     gh issue create \
-      #       --title='Prefect API change detected' \
-      #       --body-file='diff.md' \
-      #       --label='maintenance'
-      #
-      # - name: Prepare current schema for upload
-      #   run: |
-      #     # Remove the previous schema file
-      #     rm openapi.json
-      #     # Rename the current schema file
-      #     mv openapi-current.json openapi.json
+      - name: Get previous API schema
+        uses: actions/download-artifact@v4
+        with:
+          path: openapi.json
 
-      - name: (temp) get first artifact
+      - name: Compare with latest schema
         run: |
-          wget https://api.prefect.cloud/api/openapi.json
+          /bin/bash ./scripts/compare.sh
+
+      - name: Check if diff found
+        id: diff
+        uses: andstor/file-existence-action@v3
+        with:
+          files: 'diff.md'
+
+      - name: Create GitHub issue for changes
+        if: steps.diff.outputs.files_exists == 'true'
+        run: |
+          gh issue create \
+            --title='Prefect API change detected' \
+            --body-file='diff.md' \
+            --label='maintenance'
+
+      - name: Prepare current schema for upload
+        run: |
+          # Remove the previous schema file
+          rm openapi.json
+          # Rename the current schema file
+          mv openapi-current.json openapi.json
 
       - name: Upload current schema for future comparison
-        # if: steps.diff.outputs.files_exists == 'true'
+        if: steps.diff.outputs.files_exists == 'true'
         uses: actions/upload-artifact@v4
         with:
           path: openapi.json
