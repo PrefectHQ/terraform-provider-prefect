@@ -59,7 +59,7 @@ func (c *AccountsClient) Get(ctx context.Context) (*api.Account, error) {
 }
 
 // GetDomains returns domain names for an account by ID.
-func (c *AccountsClient) GetDomains(ctx context.Context) (*api.AccountDomainsUpdate, error) {
+func (c *AccountsClient) GetDomains(ctx context.Context) ([]*api.AccountDomain, error) {
 	cfg := requestConfig{
 		method:       http.MethodGet,
 		url:          c.routePrefix + "domains",
@@ -69,12 +69,12 @@ func (c *AccountsClient) GetDomains(ctx context.Context) (*api.AccountDomainsUpd
 		successCodes: successCodesStatusOK,
 	}
 
-	var accountDomains api.AccountDomainsUpdate
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &accountDomains.DomainNames); err != nil {
-		return nil, fmt.Errorf("failed to get account domains: %w", err)
+	var accountDomains []*api.AccountDomain
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &accountDomains); err != nil {
+		return nil, fmt.Errorf("hey failed to get account domains: %w", err)
 	}
 
-	return &accountDomains, nil
+	return accountDomains, nil
 }
 
 // Update modifies an existing account by ID.
@@ -122,7 +122,7 @@ func (c *AccountsClient) UpdateDomains(ctx context.Context, data api.AccountDoma
 	cfg := requestConfig{
 		method:       http.MethodPatch,
 		url:          c.routePrefix + "domains",
-		body:         data.DomainNames,
+		body:         data,
 		apiKey:       c.apiKey,
 		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
