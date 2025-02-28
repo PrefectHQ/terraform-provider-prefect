@@ -86,10 +86,10 @@ resource "prefect_work_pool_access" "test" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID)
-- `manage_actor_ids` (List of String) List of actor IDs with manage access to the Deployment
-- `manage_team_ids` (List of String) List of team IDs with manage access to the Deployment
-- `run_actor_ids` (List of String) List of actor IDs with run access to the Deployment
-- `run_team_ids` (List of String) List of team IDs with run access to the Deployment
-- `view_actor_ids` (List of String) List of actor IDs with view access to the Deployment
-- `view_team_ids` (List of String) List of team IDs with view access to the Deployment
+- `manage_actor_ids` (List of String) List of actor IDs with manage access to the Work Pool
+- `manage_team_ids` (List of String) List of team IDs with manage access to the Work Pool
+- `run_actor_ids` (List of String) List of actor IDs with run access to the Work Pool
+- `run_team_ids` (List of String) List of team IDs with run access to the Work Pool
+- `view_actor_ids` (List of String) List of actor IDs with view access to the Work Pool
+- `view_team_ids` (List of String) List of team IDs with view access to the Work Pool
 - `workspace_id` (String) Workspace ID (UUID)
