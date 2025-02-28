@@ -122,7 +122,7 @@ func (c *AccountsClient) UpdateDomains(ctx context.Context, data api.AccountDoma
 	cfg := requestConfig{
 		method:       http.MethodPatch,
 		url:          c.routePrefix + "domains",
-		body:         data.DomainNames,
+		body:         data,
 		apiKey:       c.apiKey,
 		basicAuthKey: c.basicAuthKey,
 		successCodes: successCodesStatusNoContent,
