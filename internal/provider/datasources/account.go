@@ -165,12 +165,6 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	accountDomains, err := client.GetDomains(ctx)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account domains", "get", err))
-
-		return
-	}
 	model.ID = customtypes.NewUUIDValue(account.ID)
 	model.Created = customtypes.NewTimestampPointerValue(account.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(account.Updated)
@@ -194,7 +188,20 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 
 	model.Settings = settingsObject
 
-	domainNames, diags := types.ListValueFrom(ctx, types.StringType, accountDomains.DomainNames)
+	domains, err := client.GetDomains(ctx)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account domains", "get", err))
+
+		return
+	}
+
+	// Convert the list of AccountDomain to a list of names as strings.
+	names := make([]string, 0, len(domains))
+	for _, name := range domains {
+		names = append(names, name.Name)
+	}
+
+	domainNames, diags := types.ListValueFrom(ctx, types.StringType, names)
 	resp.Diagnostics.Append(diags...)
 	if diags.HasError() {
 		return

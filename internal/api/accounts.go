@@ -7,7 +7,7 @@ import (
 // AccountsClient is a client for working with accounts.
 type AccountsClient interface {
 	Get(ctx context.Context) (*Account, error)
-	GetDomains(ctx context.Context) (*AccountDomainsUpdate, error)
+	GetDomains(ctx context.Context) ([]*AccountDomain, error)
 	Update(ctx context.Context, data AccountUpdate) error
 	UpdateSettings(ctx context.Context, data AccountSettingsUpdate) error
 	UpdateDomains(ctx context.Context, data AccountDomainsUpdate) error
@@ -52,6 +52,14 @@ type AccountUpdate struct {
 // AccountSettingsUpdate is the data sent when updating an account's settings.
 type AccountSettingsUpdate struct {
 	AccountSettings `json:"settings"`
+}
+
+// AccountDomain is the data retrieved when getting an account's domain names.
+type AccountDomain struct {
+	Name string `json:"name"`
+
+	// The fields below are present in the response but are currently ignored.
+	// id, created, updated, account_id
 }
 
 // AccountDomainsUpdate is the data sent when updating an account's domain names.

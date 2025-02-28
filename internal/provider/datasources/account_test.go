@@ -31,6 +31,10 @@ func TestAccDatasource_account(t *testing.T) {
 					testutils.ExpectKnownValue(datasourceName, "id", os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")),
 					testutils.ExpectKnownValueNotNull(datasourceName, "name"),
 					testutils.ExpectKnownValueNotNull(datasourceName, "handle"),
+
+					// These domain names were manually added to the account, because we're using a pre-existing account
+					// due to the fact that accounts cannot be created with the API/Terraform.
+					testutils.ExpectKnownValueList(datasourceName, "domain_names", []string{"example.com", "foobar.com"}),
 				},
 			},
 		},

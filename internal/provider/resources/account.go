@@ -189,8 +189,14 @@ func copyAccountToModel(_ context.Context, account *api.Account, tfModel *Accoun
 
 // copyAccountDomainsToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyAccountDomainsToModel(ctx context.Context, accountDomains *api.AccountDomainsUpdate, tfModel *AccountResourceModel) diag.Diagnostics {
-	domainNames, diags := types.ListValueFrom(ctx, types.StringType, accountDomains.DomainNames)
+func copyAccountDomainsToModel(ctx context.Context, accountDomains []*api.AccountDomain, tfModel *AccountResourceModel) diag.Diagnostics {
+	// Convert the list of AccountDomain to a list of names as strings.
+	names := make([]string, 0, len(accountDomains))
+	for _, name := range accountDomains {
+		names = append(names, name.Name)
+	}
+
+	domainNames, diags := types.ListValueFrom(ctx, types.StringType, names)
 	if diags.HasError() {
 		return diags
 	}
