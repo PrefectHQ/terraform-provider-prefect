@@ -3,12 +3,12 @@
 page_title: "prefect_team Resource - prefect"
 subcategory: ""
 description: |-
-  The resource team represents a Prefect Team. Teams are used to organize users and their permissions. For more information, see teams https://docs.prefect.io/v3/develop/concepts/teams.
+  The resource team represents a Prefect Team. Teams are used to organize users and their permissions. For more information, see manage teams https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
 ---
 
 # prefect_team (Resource)
 
-The resource `team` represents a Prefect Team. Teams are used to organize users and their permissions. For more information, see [teams](https://docs.prefect.io/v3/develop/concepts/teams).
+The resource `team` represents a Prefect Team. Teams are used to organize users and their permissions. For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 
 ## Example Usage
 

@@ -71,7 +71,7 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: "The resource `team` represents a Prefect Team. " +
 			"Teams are used to organize users and their permissions. " +
-			"For more information, see [teams](https://docs.prefect.io/v3/develop/concepts/teams).",
+			"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
