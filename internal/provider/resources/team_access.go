@@ -3,8 +3,10 @@ package resources
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -88,6 +90,9 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"member_type": schema.StringAttribute{
 				Required:    true,
 				Description: "Member Type (user | service_account)",
+				Validators: []validator.String{
+					stringvalidator.OneOf("user", "service_account"),
+				},
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
