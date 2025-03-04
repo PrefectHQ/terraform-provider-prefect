@@ -9,6 +9,8 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+// Test service accounts.
+
 func fixtureAccTeamAccessResourceForServiceAccount(name string) string {
 	return fmt.Sprintf(`
 resource "prefect_service_account" "test" {
@@ -30,7 +32,7 @@ resource "prefect_team_access" "test" {
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
-func TestAccResource_team_access(t *testing.T) {
+func TestAccResource_team_access_service_account(t *testing.T) {
 	accessResourceName := "prefect_team_access.test"
 	randomName := testutils.NewRandomPrefixedString()
 
@@ -44,6 +46,7 @@ func TestAccResource_team_access(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(accessResourceName, "member_type", "service_account"),
 					testutils.ExpectKnownValueNotNull(accessResourceName, "member_id"),
+					testutils.ExpectKnownValueNotNull(accessResourceName, "member_actor_id"),
 					testutils.ExpectKnownValueNotNull(accessResourceName, "team_id"),
 				},
 			},
@@ -51,74 +54,47 @@ func TestAccResource_team_access(t *testing.T) {
 	})
 }
 
-// func fixtureAccWorkspaceAccessResourceForTeam(workspace string) string {
-// 	return fmt.Sprintf(`
-// %s
-// data "prefect_workspace_role" "viewer" {
-// 	name = "Viewer"
-// }
-// data "prefect_team" "my_team" {
-// 	name = "my-team"
-// }
-// resource "prefect_workspace_access" "team_access" {
-// 	accessor_type = "TEAM"
-// 	accessor_id = data.prefect_team.my_team.id
-// 	workspace_id = prefect_workspace.test.id
-// 	workspace_role_id = data.prefect_workspace_role.viewer.id
-// }`, workspace)
-// }
+// Test user accounts.
 
-// func fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace string) string {
-// 	return fmt.Sprintf(`
-// %s
-// data "prefect_workspace_role" "runner" {
-// 	name = "Runner"
-// }
-// data "prefect_team" "my_team" {
-// 	name = "my-team"
-// }
-// resource "prefect_workspace_access" "team_access" {
-// 	accessor_type = "TEAM"
-// 	accessor_id = data.prefect_team.my_team.id
-// 	workspace_id = prefect_workspace.test.id
-// 	workspace_role_id = data.prefect_workspace_role.runner.id
-// }`, workspace)
-// }
+func fixtureAccTeamAccessResourceForUser(name string) string {
+	return fmt.Sprintf(`
+data "prefect_account_member" "test" {
+	email = "marvin@prefect.io"
+}
 
-// //nolint:paralleltest // we use the resource.ParallelTest helper instead
-// func TestAccResource_team_workspace_access(t *testing.T) {
-// 	accessResourceName := "prefect_workspace_access.team_access"
-// 	teamResourceName := "data.prefect_team.my_team"
-// 	viewerRoleDatsourceName := "data.prefect_workspace_role.viewer"
-// 	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
-// 	workspace := testutils.NewEphemeralWorkspace()
+resource "prefect_team" "test" {
+	name = "%s"
+	description = "test-team-description"
+}
 
-// 	// We use this variable to store the fetched resource from the API
-// 	// and it will be shared between TestSteps via a pointer.
-// 	var workspaceAccess api.WorkspaceAccess
+resource "prefect_team_access" "test" {
+	team_id = prefect_team.test.id
+	member_type = "user"
+	member_id = data.prefect_account_member.test.user_id
+	member_actor_id = data.prefect_account_member.test.actor_id
+}
+`, name)
+}
 
-// 	resource.ParallelTest(t, resource.TestCase{
-// 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
-// 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
-// 		Steps: []resource.TestStep{
-// 			{
-// 				Config: fixtureAccWorkspaceAccessResourceForTeam(workspace.Resource),
-// 				Check:  resource.ComposeAggregateTestCheckFunc(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					testutils.CompareValuePairs(accessResourceName, "accessor_id", teamResourceName, "id"),
-// 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-// 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", viewerRoleDatsourceName, "id"),
-// 				},
-// 			},
-// 			{
-// 				Config: fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace.Resource),
-// 				Check:  resource.ComposeAggregateTestCheckFunc(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					testutils.CompareValuePairs(accessResourceName, "accessor_id", teamResourceName, "id"),
-// 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
-// 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
-// 				},
-// 			},
-// 		},
-// 	})
-// }
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_team_access_user(t *testing.T) {
+	accessResourceName := "prefect_team_access.test"
+	randomName := testutils.NewRandomPrefixedString()
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: fixtureAccTeamAccessResourceForUser(randomName),
+				Check:  resource.ComposeAggregateTestCheckFunc(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(accessResourceName, "member_type", "user"),
+					testutils.ExpectKnownValueNotNull(accessResourceName, "member_id"),
+					testutils.ExpectKnownValueNotNull(accessResourceName, "member_actor_id"),
+					testutils.ExpectKnownValueNotNull(accessResourceName, "team_id"),
+				},
+			},
+		},
+	})
+}
