@@ -55,3 +55,43 @@ func (c *AccountMembershipsClient) List(ctx context.Context, emails []string) ([
 
 	return accountMemberships, nil
 }
+
+// Update updates the account membership for the given account membership ID and account role ID.
+func (c *AccountMembershipsClient) Update(ctx context.Context, accountMembershipID uuid.UUID, payload *api.AccountMembershipUpdate) error {
+	cfg := requestConfig{
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, accountMembershipID),
+		method:       http.MethodPatch,
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
+	}
+
+	resp, err := request(ctx, c.hc, cfg)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
+}
+
+// Delete deletes the account membership for the given account membership ID.
+func (c *AccountMembershipsClient) Delete(ctx context.Context, accountMembershipID uuid.UUID) error {
+	cfg := requestConfig{
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, accountMembershipID),
+		method:       http.MethodDelete,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
+	}
+
+	resp, err := request(ctx, c.hc, cfg)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	return nil
+}
