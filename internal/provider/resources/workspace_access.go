@@ -61,6 +61,7 @@ func (r *WorkspaceAccessResource) Configure(_ context.Context, req resource.Conf
 	r.client = client
 }
 
+// Schema returns the schema for the WorkspaceAccessResource.
 func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "The resource `workspace_access` represents a connection between an accessor " +

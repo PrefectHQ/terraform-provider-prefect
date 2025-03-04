@@ -286,6 +286,7 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewGlobalConcurrencyLimitResource,
 		resources.NewServiceAccountResource,
 		resources.NewTaskRunConcurrencyLimitResource,
+		resources.NewTeamAccessResource,
 		resources.NewTeamResource,
 		resources.NewVariableResource,
 		resources.NewWebhookResource,
