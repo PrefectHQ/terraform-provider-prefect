@@ -63,8 +63,7 @@ func (r *TeamAccessResource) Configure(_ context.Context, req resource.Configure
 // Schema returns the schema for the TeamAccessResource.
 func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `team_access` represents a Prefect Team Access. " +
-			"Teams are used to organize users and their permissions. " +
+		Description: "The resource `team_access` grants access to a team for a user or service account. " +
 			"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

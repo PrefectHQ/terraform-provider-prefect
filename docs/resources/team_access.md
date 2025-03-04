@@ -3,12 +3,12 @@
 page_title: "prefect_team_access Resource - prefect"
 subcategory: ""
 description: |-
-  The resource team_access represents a Prefect Team Access. Teams are used to organize users and their permissions. For more information, see manage teams https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
+  The resource team_access grants access to a team for a user or service account. For more information, see manage teams https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
 ---
 
 # prefect_team_access (Resource)
 
-The resource `team_access` represents a Prefect Team Access. Teams are used to organize users and their permissions. For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
+The resource `team_access` grants access to a team for a user or service account. For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 
 ## Example Usage
 
