@@ -619,7 +619,14 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	if err != nil {
 		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err)}
 	}
-	model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+
+	// OSS returns "null" for this field if it's empty, rather than an empty map of "{}".
+	// To avoid an "inconsistent result after apply" error, we will only attempt to parse the
+	// response if it is not "null". In this case, the value will fall back to the default
+	// set in the schema.
+	if string(parameterOpenAPISchemaByteSlice) != "null" {
+		model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+	}
 
 	return nil
 }
