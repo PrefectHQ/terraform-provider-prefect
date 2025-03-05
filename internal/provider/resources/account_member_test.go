@@ -1,14 +1,11 @@
 package resources_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
@@ -20,15 +17,35 @@ resource "prefect_account" "test" {
 }
 
 resource "prefect_account_member" "test" {
-	email = "marvin@prefect.io"
-	account_id = "bb19c492-73c2-4ecd-9cd7-d82c4aac08e6"
+  email = "marvin@prefect.io"
+  account_id = "bb19c492-73c2-4ecd-9cd7-d82c4aac08e6"
+
+  # This is here as a safeguard to prevent the account member from being
+  # destroyed when the test is finished. This is primarily handled by the
+  # 'fixtureAccAccountMemberUnmanage' variable.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 `
 }
 
+// This is a helper variable to unmanage the account member resource.
+// Setting `Destroy: false` in the test steps apparently is not enough
+// to prevent the resource from being destroyed.
+var fixtureAccAccountMemberUnmanage = `
+removed {
+  from = prefect_account_member.test
+  lifecycle {
+    destroy = false
+  }
+}
+`
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account_member(t *testing.T) {
 	resourceName := "prefect_account_member.test"
+	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -37,57 +54,39 @@ func TestAccResource_account_member(t *testing.T) {
 			{
 				// Start by importing the account resource, since one cannot
 				// be created via Terraform.
-				Config:            `resource "prefect_account" "test" {}`,
+				Config:            fixtureAccAccountMember(),
 				ResourceName:      "prefect_account.test",
 				ImportState:       true,
-				ImportStateId:     os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"),
+				ImportStateId:     accountID,
 				ImportStateVerify: false,
 			},
 			{
 				// Next, import the account member resource, which also cannot
 				// be created via Terraform.
-				Config:                  fixtureAccAccountMember(),
-				ResourceName:            resourceName,
-				ImportState:             true,
-				ImportStateId:           "bb19c492-73c2-4ecd-9cd7-d82c4aac08e6,email/marvin@prefect.io",
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"id"},
+				Config:             fixtureAccAccountMember(),
+				ResourceName:       resourceName,
+				ImportState:        true,
+				ImportStateId:      getAccountMemberImportStateID(accountID),
+				ImportStatePersist: true, // persist the state for subsequent test steps
 			},
-			// {
-			// 	// Next, confirm the values are properly set.
-			// 	Config: fixtureAccAccountMember(),
-			// 	Check: resource.ComposeAggregateTestCheckFunc(
-			// 		testAccCheckAccountMemberExists(resourceName, &accountMember),
-			// 	),
-			// },
+			{
+				// Next, verify that importing doesn't change the values.
+				Config:                               fixtureAccAccountMember(),
+				ResourceName:                         resourceName,
+				ImportState:                          true,
+				ImportStateId:                        getAccountMemberImportStateID(accountID),
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "email",
+			},
+			{
+				// Finally, unmanage the account member resource, so that
+				// it is not destroyed when the test is finished.
+				Config: fixtureAccAccountMemberUnmanage,
+			},
 		},
 	})
 }
 
-// testAccCheckAccountMemberExists is a Custom Check Function that
-// verifies that the API object was created correctly.
-func testAccCheckAccountMemberExists(accountMemberResourceName string, accountMember *api.AccountMembership) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		// Get the account resource we just created from the state
-		accountID, err := testutils.GetResourceIDFromState(s, "prefect_account.test")
-		if err != nil {
-			return fmt.Errorf("error fetching account ID: %w", err)
-		}
-
-		// Initialize the client with the associated accountID
-		// NOTE: the accountID is inherited by the one set in the test environment
-		c, _ := testutils.NewTestClient()
-		accountMembershipsClient, _ := c.AccountMemberships(accountID)
-
-		fetchedAccountMember, err := accountMembershipsClient.List(context.Background(), []string{"marvin@prefect.io"})
-		if err != nil {
-			return fmt.Errorf("error fetching account member: %w", err)
-		}
-
-		// Assign the fetched account member to the passed pointer
-		// so we can use it in the next test assertion
-		*accountMember = *fetchedAccountMember[0]
-
-		return nil
-	}
+func getAccountMemberImportStateID(accountID string) string {
+	return fmt.Sprintf("%s,email/marvin@prefect.io", accountID)
 }
