@@ -267,11 +267,12 @@ func (r *AccountMemberResource) Delete(ctx context.Context, req resource.DeleteR
 }
 
 // ImportState imports the resource into Terraform state.
-// Import syntax: <account_id>,email/<account_email>
+// Import syntax: <account_id>,email/<account_email>.
 func (r *AccountMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	requiredParts := 2
 	parts := strings.Split(req.ID, ",")
 
-	if len(parts) != 2 {
+	if len(parts) != requiredParts {
 		resp.Diagnostics.AddError(
 			"Invalid import ID",
 			"Import ID must be in the format of <account_id>,email/<account_email>",
