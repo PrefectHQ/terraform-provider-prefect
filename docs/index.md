@@ -10,6 +10,8 @@ description: |-
 
 Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.
 
+See [getting started](./guides/getting-started.md) for more information.
+
 ## Example Usage
 
 ```terraform
