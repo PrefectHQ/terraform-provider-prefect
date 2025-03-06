@@ -6,7 +6,7 @@ description: |-
   Use the Prefect https://prefect.io provider to configure your Prefect infrastructure.
 ---
 
-# prefect Provider
+# Prefect Provider
 
 Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.
 
