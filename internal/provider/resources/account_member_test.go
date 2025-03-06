@@ -16,9 +16,6 @@ resource "prefect_account" "test" {
 }
 
 resource "prefect_account_member" "test" {
-  email = "marvin@prefect.io"
-  account_id = "bb19c492-73c2-4ecd-9cd7-d82c4aac08e6"
-
   # This is here as a safeguard to prevent the account member from being
   # destroyed when the test is finished. This is primarily handled by the
   # 'fixtureAccAccountMemberUnmanage' variable.
@@ -83,6 +80,20 @@ func TestAccResource_account_member(t *testing.T) {
 				// it is not destroyed when the test is finished.
 				Config: fixtureAccAccountMemberUnmanage,
 			},
+			// We don't test a resource update here because the account member
+			// resource is currently hard-coded to refer to a specific account
+			// member.
+			//
+			// This is because we cannot currently create an account member via
+			// the API (and therefore via Terraform).
+			//
+			// Because of this, two tests running simultaneously would try to
+			// modify the same account member resource, which could lead to
+			// flaky tests.
+			//
+			// In the meantime, the resource update has been tested manually
+			// by modifying the account role ID in a local Terraform configuration
+			// and confirming that the role was updated in the UI as expected.
 		},
 	})
 }
