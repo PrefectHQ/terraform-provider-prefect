@@ -133,7 +133,7 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 	}
 }
 
-func copyAccountMemberToModel(_ context.Context, member *api.AccountMembership, tfModel *AccountMemberResourceModel) diag.Diagnostics {
+func copyAccountMemberToModel(member *api.AccountMembership, tfModel *AccountMemberResourceModel) diag.Diagnostics {
 	tfModel.ID = types.StringValue(member.ID)
 	tfModel.ActorID = customtypes.NewUUIDValue(member.ActorID)
 	tfModel.UserID = customtypes.NewUUIDValue(member.UserID)
@@ -184,7 +184,7 @@ func (r *AccountMemberResource) Read(ctx context.Context, req resource.ReadReque
 
 	fetchedAccountMember := accountMembers[0]
 
-	resp.Diagnostics.Append(copyAccountMemberToModel(ctx, fetchedAccountMember, &state)...)
+	resp.Diagnostics.Append(copyAccountMemberToModel(fetchedAccountMember, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -243,7 +243,7 @@ func (r *AccountMemberResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	resp.Diagnostics.Append(copyAccountMemberToModel(ctx, accountMembers[0], &plan)...)
+	resp.Diagnostics.Append(copyAccountMemberToModel(accountMembers[0], &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
