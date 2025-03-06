@@ -1,7 +1,6 @@
 package resources_test
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -45,6 +44,7 @@ removed {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account_member(t *testing.T) {
 	resourceName := "prefect_account_member.test"
+	resourceEmail := "marvin@prefect.io"
 	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -66,7 +66,7 @@ func TestAccResource_account_member(t *testing.T) {
 				Config:             fixtureAccAccountMember(),
 				ResourceName:       resourceName,
 				ImportState:        true,
-				ImportStateId:      getAccountMemberImportStateID(accountID),
+				ImportStateId:      resourceEmail,
 				ImportStatePersist: true, // persist the state for subsequent test steps
 			},
 			{
@@ -74,7 +74,7 @@ func TestAccResource_account_member(t *testing.T) {
 				Config:                               fixtureAccAccountMember(),
 				ResourceName:                         resourceName,
 				ImportState:                          true,
-				ImportStateId:                        getAccountMemberImportStateID(accountID),
+				ImportStateId:                        resourceEmail,
 				ImportStateVerify:                    true,
 				ImportStateVerifyIdentifierAttribute: "email",
 			},
@@ -85,8 +85,4 @@ func TestAccResource_account_member(t *testing.T) {
 			},
 		},
 	})
-}
-
-func getAccountMemberImportStateID(accountID string) string {
-	return fmt.Sprintf("%s,email/marvin@prefect.io", accountID)
 }

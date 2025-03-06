@@ -3,9 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -155,14 +153,7 @@ func (r *AccountMemberResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	accountID, err := uuid.Parse(state.AccountID.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
-
-		return
-	}
-
-	client, err := r.client.AccountMemberships(accountID)
+	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
@@ -205,14 +196,7 @@ func (r *AccountMemberResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	accountID, err := uuid.Parse(state.AccountID.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
-
-		return
-	}
-
-	client, err := r.client.AccountMemberships(accountID)
+	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
@@ -243,14 +227,7 @@ func (r *AccountMemberResource) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	accountID, err := uuid.Parse(state.AccountID.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account", err))
-
-		return
-	}
-
-	client, err := r.client.AccountMemberships(accountID)
+	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
@@ -267,22 +244,7 @@ func (r *AccountMemberResource) Delete(ctx context.Context, req resource.DeleteR
 }
 
 // ImportState imports the resource into Terraform state.
-// Import syntax: <account_id>,email/<account_email>.
+// Import syntax: <account_email>.
 func (r *AccountMemberResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	requiredParts := 2
-	parts := strings.Split(req.ID, ",")
-
-	if len(parts) != requiredParts {
-		resp.Diagnostics.AddError(
-			"Invalid import ID",
-			"Import ID must be in the format of <account_id>,email/<account_email>",
-		)
-
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("account_id"), parts[0])...)
-
-	email := strings.TrimPrefix(parts[1], "email/")
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("email"), email)...)
+	resource.ImportStatePassthroughID(ctx, path.Root("email"), req, resp)
 }
