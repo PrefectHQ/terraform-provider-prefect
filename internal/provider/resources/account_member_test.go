@@ -8,10 +8,9 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccAccountMember() string {
-	return `
+var fixtureAccAccountMember = `
 resource "prefect_account" "test" {
-  name = "github-ci-tests"
+  name =   "github-ci-tests"
   handle = "github-ci-tests"
 }
 
@@ -24,7 +23,6 @@ resource "prefect_account_member" "test" {
   }
 }
 `
-}
 
 // This is a helper variable to unmanage the account member resource.
 // Setting `Destroy: false` in the test steps apparently is not enough
@@ -51,7 +49,7 @@ func TestAccResource_account_member(t *testing.T) {
 			{
 				// Start by importing the account resource, since one cannot
 				// be created via Terraform.
-				Config:            fixtureAccAccountMember(),
+				Config:            fixtureAccAccountMember,
 				ResourceName:      "prefect_account.test",
 				ImportState:       true,
 				ImportStateId:     accountID,
@@ -60,7 +58,7 @@ func TestAccResource_account_member(t *testing.T) {
 			{
 				// Next, import the account member resource, which also cannot
 				// be created via Terraform.
-				Config:             fixtureAccAccountMember(),
+				Config:             fixtureAccAccountMember,
 				ResourceName:       resourceName,
 				ImportState:        true,
 				ImportStateId:      resourceEmail,
@@ -68,7 +66,7 @@ func TestAccResource_account_member(t *testing.T) {
 			},
 			{
 				// Next, verify that importing doesn't change the values.
-				Config:                               fixtureAccAccountMember(),
+				Config:                               fixtureAccAccountMember,
 				ResourceName:                         resourceName,
 				ImportState:                          true,
 				ImportStateId:                        resourceEmail,
