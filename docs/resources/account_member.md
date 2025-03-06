@@ -18,13 +18,13 @@ The resource `account_member` represents a member of an account. It is used to m
 ### Optional
 
 - `account_id` (String) Account ID (UUID)
-- `email` (String) Member email
+- `account_role_id` (String) Acount Role ID (UUID)
 
 ### Read-Only
 
-- `account_role_id` (String) Acount Role ID (UUID)
 - `account_role_name` (String) Name of Account Role assigned to member
 - `actor_id` (String) Actor ID (UUID)
+- `email` (String) Member email
 - `first_name` (String) Member's first name
 - `handle` (String) Member handle, or a human-readable identifier
 - `id` (String) Account Member ID (UUID)

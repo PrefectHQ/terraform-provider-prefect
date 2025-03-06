@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -27,7 +30,7 @@ type AccountMemberResource struct {
 // AccountMemberResourceModel defines the Terraform resource model.
 type AccountMemberResourceModel struct {
 	// This has the same fields as the AccountMemberDataSourceModel.
-	ID              customtypes.UUIDValue `tfsdk:"id"`
+	ID              types.String          `tfsdk:"id"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	UserID          customtypes.UUIDValue `tfsdk:"user_id"`
 	FirstName       types.String          `tfsdk:"first_name"`
@@ -77,8 +80,10 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
 				Description: "Account Member ID (UUID)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"actor_id": schema.StringAttribute{
 				Computed:    true,
@@ -104,11 +109,14 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 			},
 			"email": schema.StringAttribute{
 				Computed:    true,
-				Optional:    true,
 				Description: "Member email",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"account_role_id": schema.StringAttribute{
 				Computed:    true,
+				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Acount Role ID (UUID)",
 			},
@@ -126,7 +134,7 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 }
 
 func copyAccountMemberToModel(_ context.Context, member *api.AccountMembership, tfModel *AccountMemberResourceModel) diag.Diagnostics {
-	tfModel.ID = customtypes.NewUUIDValue(member.ID)
+	tfModel.ID = types.StringValue(member.ID)
 	tfModel.ActorID = customtypes.NewUUIDValue(member.ActorID)
 	tfModel.UserID = customtypes.NewUUIDValue(member.UserID)
 	tfModel.FirstName = types.StringValue(member.FirstName)
@@ -189,30 +197,58 @@ func (r *AccountMemberResource) Read(ctx context.Context, req resource.ReadReque
 
 // Update updates the resource.
 func (r *AccountMemberResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var state AccountMemberResourceModel
+	var plan AccountMemberResourceModel
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
+	client, err := r.client.AccountMemberships(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
 
 	payload := api.AccountMembershipUpdate{
-		AccountRoleID: state.AccountRoleID.ValueUUID(),
+		AccountRoleID: plan.AccountRoleID.ValueUUID(),
 	}
 
-	err = client.Update(ctx, state.ID.ValueUUID(), &payload)
+	id, err := uuid.Parse(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account Member ID", err))
+
+		return
+	}
+
+	err = client.Update(ctx, id, &payload)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))
 
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	accountMembers, err := client.List(ctx, []string{plan.Email.ValueString()})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "get", err))
+
+		return
+	}
+
+	if len(accountMembers) != 1 {
+		resp.Diagnostics.AddError(
+			"Could not find Account Member",
+			fmt.Sprintf("Could not find Account Member with email %s", plan.Email.ValueString()),
+		)
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyAccountMemberToModel(ctx, accountMembers[0], &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -232,7 +268,14 @@ func (r *AccountMemberResource) Delete(ctx context.Context, req resource.DeleteR
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
 	}
 
-	err = client.Delete(ctx, state.ID.ValueUUID())
+	id, err := uuid.Parse(state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Account Member ID", err))
+
+		return
+	}
+
+	err = client.Delete(ctx, id)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "delete", err))
 	}
