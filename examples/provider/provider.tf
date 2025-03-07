@@ -31,7 +31,7 @@ provider "prefect" {
 # in the `endpoint` attribute. This is the same format used for
 # the `PREFECT_API_KEY` value used in the Prefect CLI configuration file.
 provider "prefect" {
-  endpoint = "https://api.prefect.cloud/api/accounts/11111111-1111-1111-1111-111111111111/workspaces/22222222-2222-2222-2222-222222222222"
+  endpoint = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
 }
 
 # Finally, in rare occasions, you also have the option
