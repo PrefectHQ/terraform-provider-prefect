@@ -26,7 +26,7 @@ var _ = provider.Provider(&PrefectProvider{})
 
 const (
 	envAccountID    = "PREFECT_CLOUD_ACCOUNT_ID"
-	envAPIURL       = "PREFECT_APUI_URL"
+	envAPIURL       = "PREFECT_API_URL"
 	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
 	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
 
