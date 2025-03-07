@@ -40,7 +40,7 @@ export PREFECT_CLOUD_ACCOUNT_ID="your Account/Organization ID"
 provider "prefect" {}
 ```
 
-The optional `account_id` and `workspace_id` attributes set default values, so that any subsequent resources will inherit those values. Set a `workspace_id` if your use case calls for managing only a single Workspace
+The optional `account_id` and `workspace_id` attributes set default values, so that any subsequent resources will inherit those values. Set a `workspace_id` if your use case calls for managing only a single Workspace:
 
 ```terraform
 provider "prefect" {
@@ -49,6 +49,21 @@ provider "prefect" {
   api_key    = "your API Key"
 }
 ```
+
+You can also provide the `account_id` and `workspace_id` values in the `endpoint` attribute using the `PREFECT_API_URL`
+format used by the Prefect CLI configuration file:
+
+```terraform
+provider "prefect" {
+  endpoint = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
+}
+```
+
+The values are evaluated in the following order, from highest to lowest priority:
+
+1. Configuration from attributes in the `provider` block.
+2. Configuration from environment variables.
+3. Configuration from the optional, longer format of the `endpoint` attribute.
 
 ## Finding your Account ID
 
