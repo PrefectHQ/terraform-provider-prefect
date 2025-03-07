@@ -13,26 +13,31 @@ const (
 
 	accountIDPathIndex  = 3
 	workspacesPathIndex = 5
+	expectedPathLength  = 6
 )
 
-func urlContainsIDs(url string) bool {
+func URLContainsIDs(url string) bool {
 	return regexp.MustCompile(apiURLWithIDs).MatchString(url)
 }
 
-func getUUIDFromPath(path string, pathIndex int) (uuid.UUID, error) {
+func GetUUIDFromPath(path string, pathIndex int) (uuid.UUID, error) {
 	parts := strings.Split(path, "/")
+	if len(parts) != expectedPathLength {
+		return uuid.Nil, fmt.Errorf("URL path does not contain expected number of parts: %d", expectedPathLength)
+	}
+
 	u, err := uuid.Parse(parts[pathIndex])
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("unable to parse workspace ID from path: %w", err)
+		return uuid.Nil, fmt.Errorf("unable to parse UUID from path: %w", err)
 	}
 
 	return u, nil
 }
 
-func getAccountIDFromPath(path string) (uuid.UUID, error) {
-	return getUUIDFromPath(path, accountIDPathIndex)
+func GetAccountIDFromPath(path string) (uuid.UUID, error) {
+	return GetUUIDFromPath(path, accountIDPathIndex)
 }
 
-func getWorkspaceIDFromPath(path string) (uuid.UUID, error) {
-	return getUUIDFromPath(path, workspacesPathIndex)
+func GetWorkspaceIDFromPath(path string) (uuid.UUID, error) {
+	return GetUUIDFromPath(path, workspacesPathIndex)
 }

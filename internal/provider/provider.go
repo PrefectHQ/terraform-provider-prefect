@@ -189,8 +189,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 			return
 		}
-	} else if urlContainsIDs(endpoint) {
-		aID, err := getAccountIDFromPath(endpointURL.Path)
+	} else if URLContainsIDs(endpoint) {
+		aID, err := GetAccountIDFromPath(endpointURL.Path)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("account_id"),
@@ -209,8 +209,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var workspaceID uuid.UUID
 	if !config.WorkspaceID.IsNull() {
 		workspaceID = config.WorkspaceID.ValueUUID()
-	} else if urlContainsIDs(endpoint) {
-		wID, err := getWorkspaceIDFromPath(endpointURL.Path)
+	} else if URLContainsIDs(endpoint) {
+		wID, err := GetWorkspaceIDFromPath(endpointURL.Path)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("workspace_id"),
@@ -255,7 +255,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	//
 	// Or, if the endpoint did not contain the account and workspace IDs,
 	// just ensure it has the '/api' suffix.
-	if urlContainsIDs(endpoint) {
+	if URLContainsIDs(endpoint) {
 		endpoint = fmt.Sprintf("%s://%s/api", endpointURL.Scheme, endpointURL.Host)
 	} else if !strings.HasSuffix(endpoint, "/api") {
 		endpoint = fmt.Sprintf("%s/api", endpoint)
