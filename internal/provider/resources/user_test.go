@@ -39,6 +39,7 @@ removed {
 }
 `
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_user(t *testing.T) {
 	resourceName := "prefect_user.marvin"
 

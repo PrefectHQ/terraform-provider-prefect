@@ -159,7 +159,7 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 }
 
 // Create creates a new user.
-func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *UserResource) Create(_ context.Context, _ resource.CreateRequest, resp *resource.CreateResponse) {
 	resp.Diagnostics.AddError("Not implemented", "Creating a user is not yet implemented")
 }
 
