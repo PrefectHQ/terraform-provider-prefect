@@ -217,7 +217,7 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	user, err := client.Update(ctx, plan.ID.ValueString(), api.UserUpdate{
+	err = client.Update(ctx, plan.ID.ValueString(), api.UserUpdate{
 		Handle:    plan.Handle.ValueString(),
 		FirstName: plan.FirstName.ValueString(),
 		LastName:  plan.LastName.ValueString(),
@@ -225,6 +225,13 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("User", "update", err))
+
+		return
+	}
+
+	user, err := client.Read(ctx, plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("User", "read", err))
 
 		return
 	}

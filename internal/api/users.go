@@ -8,7 +8,7 @@ import (
 // UsersClient is a client for working with users.
 type UsersClient interface {
 	Read(ctx context.Context, userID string) (*User, error)
-	Update(ctx context.Context, userID string, payload UserUpdate) (*User, error)
+	Update(ctx context.Context, userID string, payload UserUpdate) error
 	Delete(ctx context.Context, userID string) error
 }
 

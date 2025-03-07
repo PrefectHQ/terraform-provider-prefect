@@ -49,7 +49,7 @@ func (c *UsersClient) Read(ctx context.Context, userID string) (*api.User, error
 }
 
 // Update updates a user.
-func (c *UsersClient) Update(ctx context.Context, userID string, payload api.UserUpdate) (*api.User, error) {
+func (c *UsersClient) Update(ctx context.Context, userID string, payload api.UserUpdate) error {
 	cfg := requestConfig{
 		url:          fmt.Sprintf("%s/%s", c.routePrefix, userID),
 		method:       http.MethodPatch,
@@ -61,11 +61,11 @@ func (c *UsersClient) Update(ctx context.Context, userID string, payload api.Use
 
 	resp, err := request(ctx, c.hc, cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer resp.Body.Close()
 
-	return nil, nil
+	return nil
 }
 
 // Delete deletes a user.
