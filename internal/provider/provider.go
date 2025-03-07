@@ -48,6 +48,7 @@ func (p *PrefectProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 // Schema defines the provider-level schema for configuration data.
 func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Description: "The Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable." +
