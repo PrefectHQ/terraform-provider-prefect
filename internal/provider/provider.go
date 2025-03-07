@@ -55,7 +55,8 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					" Can optionally include the default account ID and workspace ID in the following format:" +
 					" `https://api.prefect.cloud/api/accounts/<accountID>/workspaces/<workspaceID>`." +
 					" This is the same format used for the `PREFECT_API_URL` value in the Prefect CLI configuration file." +
-					" The `account_id` and `workspace_id` attributes will take priority over any values provided in the `endpoint` attribute.",
+					" The `account_id` and `workspace_id` attributes and their matching environment variables will take" +
+					" priority over any account and workspace ID values provided in the `endpoint` attribute.",
 				Optional: true,
 			},
 			"api_key": schema.StringAttribute{
