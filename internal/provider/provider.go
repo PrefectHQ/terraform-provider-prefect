@@ -50,7 +50,7 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional: true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.",
+				Description: "Prefect Cloud API key. Can also be set via the `PREFECT_API_KEY` environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -169,8 +169,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		basicAuthKey = basicAuthKeyEnvVar
 	}
 
-	// Extract the Account ID from configuration or environment variable.
-	// If the ID is set to an invalid UUID, emit an error.
+	// Extract the Account ID from configuration, the PREFECT_CLOUD_ACCOUNT_ID
+	// environment variable, or the PREFECT_API_URL environment variable.
 	var accountID uuid.UUID
 	if !config.AccountID.IsNull() {
 		accountID = config.AccountID.ValueUUID()
@@ -191,7 +191,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			resp.Diagnostics.AddAttributeError(
 				path.Root("account_id"),
 				"Invalid Prefect Account ID defined in PREFECT_API_URL ",
-				fmt.Sprintf("The PREFECT_API_URL contains a workspace value is not a valid UUID: %s", err),
+				fmt.Sprintf("The PREFECT_API_URL contains an account value is not a valid UUID: %s", err),
 			)
 
 			return
@@ -200,8 +200,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		accountID = aID
 	}
 
-	// Extract the Workspace ID from configuration or environment variable.
-	// If the ID is set to an invalid UUID, emit an error.
+	// Extract the Workspace ID from configuration or the PREFECT_API_URL
+	// environment variable.
 	var workspaceID uuid.UUID
 	if !config.WorkspaceID.IsNull() {
 		workspaceID = config.WorkspaceID.ValueUUID()
@@ -248,6 +248,9 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// Finally, if the endpoint contained the account and workspace IDs,
 	// truncate it to the base URL now that those IDs have been captured.
+	//
+	// Or, if the endpoint did not contain the account and workspace IDs,
+	// just ensure it has the '/api' suffix.
 	if urlContainsIDs(endpoint) {
 		endpoint = fmt.Sprintf("%s://%s/api", endpointURL.Scheme, endpointURL.Host)
 	} else if !strings.HasSuffix(endpoint, "/api") {
