@@ -172,11 +172,13 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	} else if accountIDEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
 		accountID, err = uuid.Parse(accountIDEnvVar)
 		if err != nil {
-			resp.Diagnostics.AddAttributeWarning(
+			resp.Diagnostics.AddAttributeError(
 				path.Root("account_id"),
 				"Invalid Prefect Account ID defined in PREFECT_CLOUD_ACCOUNT_ID ",
 				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", accountIDEnvVar, err),
 			)
+
+			return
 		}
 	} else if urlContainsIDs(endpoint) {
 		aID, err := getAccountIDFromPath(endpointURL.Path)
@@ -225,6 +227,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect API Key is empty. "+
 					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_API_KEY environment variable, or configure the api_key attribute.",
 			)
+
+			return
 		}
 
 		if accountID == uuid.Nil {
@@ -235,10 +239,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 					"Potential resolutions: set the PREFECT_CLOUD_ACCOUNT_ID environment variable, or configure the account_id attribute.",
 			)
 		}
-	}
-
-	if resp.Diagnostics.HasError() {
-		return
 	}
 
 	// Finally, if the endpoint contained the account and workspace IDs,
