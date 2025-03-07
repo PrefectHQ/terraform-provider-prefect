@@ -156,13 +156,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		)
 	}
 
-	// Extracts the host (without the /api suffix),
-	// so we can store it on the Client object in addition to the endpoint.
-	// For non-Cloud endpoints, it will likely be the same as .endpoint.
-	// This is useful for certain resources where we need access to the
-	// endpoint host to construct custom URLs as a resource attribute.
-	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
-
 	// Extract the API Key from configuration or environment variable.
 	var apiKey string
 	if !config.APIKey.IsNull() {
@@ -256,7 +249,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
-	// Finally, if the endpoint contained the account and workspace IDs,
+	// If the endpoint contained the account and workspace IDs,
 	// truncate it to the base URL now that those IDs have been captured.
 	//
 	// Or, if the endpoint did not contain the account and workspace IDs,
@@ -275,6 +268,13 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
 	ctx = tflog.SetField(ctx, "prefect_workspace_id", workspaceID)
 	tflog.Debug(ctx, "Creating Prefect client")
+
+	// Extracts the host (without the /api suffix),
+	// so we can store it on the Client object in addition to the endpoint.
+	// For non-Cloud endpoints, it will likely be the same as .endpoint.
+	// This is useful for certain resources where we need access to the
+	// endpoint host to construct custom URLs as a resource attribute.
+	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
