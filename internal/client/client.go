@@ -114,6 +114,12 @@ func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 }
 
 func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// If the response is empty, there was a problem with the request,
+	// so try again.
+	if resp == nil {
+		return true, err
+	}
+
 	// If the response is a 409 (StatusConflict), that means the request
 	// eventually succeeded and we don't need to make the request again.
 	if resp.StatusCode == http.StatusConflict {
