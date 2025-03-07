@@ -21,7 +21,7 @@ type AccountMemberDataSource struct {
 }
 
 type AccountMemberDataSourceModel struct {
-	ID              customtypes.UUIDValue `tfsdk:"id"`
+	ID              types.String          `tfsdk:"id"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	UserID          customtypes.UUIDValue `tfsdk:"user_id"`
 	FirstName       types.String          `tfsdk:"first_name"`
@@ -52,7 +52,6 @@ func (d *AccountMemberDataSource) Metadata(_ context.Context, req datasource.Met
 var accountMemberAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
-		CustomType:  customtypes.UUIDType{},
 		Description: "Account Member ID (UUID)",
 	},
 	"actor_id": schema.StringAttribute{
@@ -173,7 +172,7 @@ func (d *AccountMemberDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	fetchedAccountMember := accountMembers[0]
 
-	config.ID = customtypes.NewUUIDValue(fetchedAccountMember.ID)
+	config.ID = types.StringValue(fetchedAccountMember.ID)
 	config.ActorID = customtypes.NewUUIDValue(fetchedAccountMember.ActorID)
 	config.UserID = customtypes.NewUUIDValue(fetchedAccountMember.UserID)
 	config.FirstName = types.StringValue(fetchedAccountMember.FirstName)
