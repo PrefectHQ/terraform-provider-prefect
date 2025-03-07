@@ -121,19 +121,15 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// Extract endpoint from configuration or environment variable.
-	// If the endpoint is not set, or the value is not a valid URL, emit an error.
 	var endpoint string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
 	} else if apiURLEnvVar, ok := os.LookupEnv("PREFECT_API_URL"); ok {
 		endpoint = apiURLEnvVar
 	}
+
 	if endpoint == "" {
 		endpoint = "https://api.prefect.cloud"
-	}
-	// Here, we'll ensure that the /api suffix is present on the endpoint
-	if !strings.HasSuffix(endpoint, "/api") {
-		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
 	endpointURL, err := url.Parse(endpoint)
@@ -144,7 +140,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
 	}
-	isPrefectCloudEndpoint := helpers.IsCloudEndpoint(endpointURL.Host)
 
 	// Extracts the host (without the /api suffix),
 	// so we can store it on the Client object in addition to the endpoint.
@@ -183,13 +178,46 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", accountIDEnvVar, err),
 			)
 		}
+	} else if urlContainsIDs(endpoint) {
+		aID, err := getAccountIDFromPath(endpointURL.Path)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Invalid Prefect Account ID defined in PREFECT_API_URL ",
+				fmt.Sprintf("The PREFECT_API_URL contains a workspace value is not a valid UUID: %s", err),
+			)
+
+			return
+		}
+
+		accountID = aID
+	}
+
+	// Extract the Workspace ID from configuration or environment variable.
+	// If the ID is set to an invalid UUID, emit an error.
+	var workspaceID uuid.UUID
+	if !config.WorkspaceID.IsNull() {
+		workspaceID = config.WorkspaceID.ValueUUID()
+	} else if urlContainsIDs(endpoint) {
+		wID, err := getWorkspaceIDFromPath(endpointURL.Path)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Invalid Prefect Workspace ID defined in PREFECT_API_URL ",
+				fmt.Sprintf("The PREFECT_API_URL contains a workspace value is not a valid UUID: %s", err),
+			)
+
+			return
+		}
+
+		workspaceID = wID
 	}
 
 	// If the endpoint is pointed to Prefect Cloud, we will ensure
 	// that a valid API Key is passed.
 	// Additionally, we will warn if an Account ID is missing,
 	// as it's likely that this is a user misconfiguration.
-	if isPrefectCloudEndpoint {
+	if helpers.IsCloudEndpoint(endpointURL.Host) {
 		if apiKey == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("api_key"),
@@ -213,20 +241,28 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	// Finally, if the endpoint contained the account and workspace IDs,
+	// truncate it to the base URL now that those IDs have been captured.
+	if urlContainsIDs(endpoint) {
+		endpoint = fmt.Sprintf("%s://%s/api", endpointURL.Scheme, endpointURL.Host)
+	} else if !strings.HasSuffix(endpoint, "/api") {
+		endpoint = fmt.Sprintf("%s/api", endpoint)
+	}
+
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
 	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_basic_auth_key")
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
-	ctx = tflog.SetField(ctx, "prefect_workspace_id", config.WorkspaceID.ValueString())
+	ctx = tflog.SetField(ctx, "prefect_workspace_id", workspaceID)
 	tflog.Debug(ctx, "Creating Prefect client")
 
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
 		client.WithBasicAuthKey(basicAuthKey),
-		client.WithDefaults(accountID, config.WorkspaceID.ValueUUID()),
+		client.WithDefaults(accountID, workspaceID),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
