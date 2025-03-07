@@ -24,6 +24,15 @@ import (
 
 var _ = provider.Provider(&PrefectProvider{})
 
+const (
+	envAccountID    = "PREFECT_CLOUD_ACCOUNT_ID"
+	envAPIURL       = "PREFECT_APUI_URL"
+	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
+	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
+
+	defaultAPIURL = "https://api.prefect.cloud"
+)
+
 // New returns a new Prefect Provider instance.
 //
 //nolint:ireturn // required by Terraform API
@@ -129,12 +138,12 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var endpoint string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
-	} else if apiURLEnvVar, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
 	}
 
 	if endpoint == "" {
-		endpoint = "https://api.prefect.cloud"
+		endpoint = defaultAPIURL
 	}
 
 	endpointURL, err := url.Parse(endpoint)
@@ -157,7 +166,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var apiKey string
 	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
-	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+	} else if apiKeyEnvVar, ok := os.LookupEnv(envAPIKey); ok {
 		apiKey = apiKeyEnvVar
 	}
 
@@ -165,7 +174,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var basicAuthKey string
 	if !config.BasicAuthKey.IsNull() {
 		basicAuthKey = config.BasicAuthKey.ValueString()
-	} else if basicAuthKeyEnvVar, ok := os.LookupEnv("PREFECT_BASIC_AUTH_KEY"); ok {
+	} else if basicAuthKeyEnvVar, ok := os.LookupEnv(envBasicAuthKey); ok {
 		basicAuthKey = basicAuthKeyEnvVar
 	}
 
@@ -174,7 +183,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var accountID uuid.UUID
 	if !config.AccountID.IsNull() {
 		accountID = config.AccountID.ValueUUID()
-	} else if accountIDEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
+	} else if accountIDEnvVar, ok := os.LookupEnv(envAccountID); ok {
 		accountID, err = uuid.Parse(accountIDEnvVar)
 		if err != nil {
 			resp.Diagnostics.AddAttributeError(
