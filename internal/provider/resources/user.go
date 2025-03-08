@@ -29,8 +29,6 @@ type UserResource struct {
 type UserResourceModel struct {
 	BaseModel
 
-	AccountID customtypes.UUIDValue `tfsdk:"account_id"`
-
 	// Read-only fields
 	ActorID customtypes.UUIDValue `tfsdk:"actor_id"`
 
@@ -75,15 +73,16 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 		Description: "The resource `user` represents a Prefect Cloud User. " +
 			"A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information.\n" +
 			"\n" +
-			"You can also use this resource to assign Account and Workspace Access through Roles.\n" +
+			"You can also use this resource to assign membership to resources like Teams and Workspaces.\n" +
 			"\n" +
 			"Note that users cannot be created, and therefore must first be imported into the state before they can be managed." +
+			" The user ID can be found in the UI by clicking the dropdown menu in the top left corner and then clicking 'My Profile'.\n" +
 			"\n" +
 			"For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud/manage-users/users).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Service account ID (UUID)",
+				Description: "User ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -100,12 +99,6 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Timestamp of when the resource was updated (RFC3339)",
-			},
-			"account_id": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				CustomType:  customtypes.UUIDType{},
-				Description: "Account ID (UUID), defaults to the account set in the provider",
 			},
 			"actor_id": schema.StringAttribute{
 				Computed:    true,
@@ -143,7 +136,6 @@ func (r *UserResource) Create(_ context.Context, _ resource.CreateRequest, resp 
 func (r *UserResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var state UserResourceModel
 
-	// Populate the model from state and emit diagnostics on error
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
