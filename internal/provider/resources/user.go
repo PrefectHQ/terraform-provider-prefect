@@ -96,19 +96,19 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				},
 			},
 			"updated": schema.StringAttribute{
+				Description: "Timestamp of when the resource was updated (RFC3339)",
 				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
-				Description: "Timestamp of when the resource was updated (RFC3339)",
 			},
 			"actor_id": schema.StringAttribute{
+				Description: "Actor ID (UUID), used for granting access to resources like Teams",
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
-				Description: "Actor ID (UUID), used for granting access to resources like Teams",
 			},
 			"handle": schema.StringAttribute{
+				Description: "A unique handle for the user, containing only lowercase letters, numbers, and dashes.",
 				Computed:    true,
 				Optional:    true,
-				Description: "A unique handle for the user, containing only lowercase letters, numbers, and dashes.",
 			},
 			"first_name": schema.StringAttribute{
 				Description: "First name of the user",
@@ -118,9 +118,11 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"last_name": schema.StringAttribute{
 				Description: "Last name of the user",
 				Computed:    true,
+				Optional:    true,
 			},
 			"email": schema.StringAttribute{
 				Description: "Email of the user",
+				Computed:    true,
 				Optional:    true,
 			},
 		},

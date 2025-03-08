@@ -10,6 +10,7 @@ import (
 
 var _ = api.UsersClient(&UsersClient{})
 
+// UsersClient is a client for Prefect Users.
 type UsersClient struct {
 	hc           *http.Client
 	apiKey       string

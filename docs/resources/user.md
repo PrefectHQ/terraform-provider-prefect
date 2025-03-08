@@ -39,13 +39,13 @@ resource "prefect_user" "marvin" {
 - `email` (String) Email of the user
 - `first_name` (String) First name of the user
 - `handle` (String) A unique handle for the user, containing only lowercase letters, numbers, and dashes.
+- `last_name` (String) Last name of the user
 
 ### Read-Only
 
 - `actor_id` (String) Actor ID (UUID), used for granting access to resources like Teams
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) User ID (UUID)
-- `last_name` (String) Last name of the user
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 ## Import
