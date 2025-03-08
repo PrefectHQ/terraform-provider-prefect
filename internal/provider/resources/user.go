@@ -39,12 +39,6 @@ type UserResourceModel struct {
 	FirstName types.String `tfsdk:"first_name"`
 	LastName  types.String `tfsdk:"last_name"`
 	Email     types.String `tfsdk:"email"`
-
-	// API Key fields
-	APIKeyID         types.String               `tfsdk:"api_key_id"`
-	APIKeyCreated    customtypes.TimestampValue `tfsdk:"api_key_created"`
-	APIKeyName       types.String               `tfsdk:"api_key_name"`
-	APIKeyExpiration customtypes.TimestampValue `tfsdk:"api_key_expiration"`
 }
 
 // NewUserResource returns a new UserResource.
@@ -79,7 +73,7 @@ func (r *UserResource) Configure(_ context.Context, req resource.ConfigureReques
 func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "The resource `user` represents a Prefect Cloud User. " +
-			"A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information and API keys.\n" +
+			"A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information.\n" +
 			"\n" +
 			"You can also use this resource to assign Account and Workspace Access through Roles.\n" +
 			"\n" +
@@ -135,24 +129,6 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"email": schema.StringAttribute{
 				Description: "Email of the user",
 				Optional:    true,
-			},
-			"api_key_id": schema.StringAttribute{
-				Description: "ID of the API key",
-				Computed:    true,
-			},
-			"api_key_created": schema.StringAttribute{
-				Description: "Timestamp of when the API key was created (RFC3339)",
-				CustomType:  customtypes.TimestampType{},
-				Computed:    true,
-			},
-			"api_key_name": schema.StringAttribute{
-				Description: "Name of the API key",
-				Optional:    true,
-			},
-			"api_key_expiration": schema.StringAttribute{
-				Description: "Expiration date of the API key",
-				CustomType:  customtypes.TimestampType{},
-				Computed:    true,
 			},
 		},
 	}
@@ -273,11 +249,6 @@ func copyUserToModel(user *api.User, state *UserResourceModel) {
 	state.FirstName = types.StringValue(user.FirstName)
 	state.LastName = types.StringValue(user.LastName)
 	state.Email = types.StringValue(user.Email)
-
-	state.APIKeyID = types.StringValue(user.APIKeyID)
-	state.APIKeyCreated = customtypes.NewTimestampPointerValue(user.APIKeyCreated)
-	state.APIKeyName = types.StringValue(user.APIKeyName)
-	state.APIKeyExpiration = customtypes.NewTimestampPointerValue(user.APIKeyExpiration)
 }
 
 // ImportState imports a user.

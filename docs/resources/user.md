@@ -3,7 +3,7 @@
 page_title: "prefect_user Resource - prefect"
 subcategory: ""
 description: |-
-  The resource user represents a Prefect Cloud User. A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information and API keys.
+  The resource user represents a Prefect Cloud User. A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information.
   You can also use this resource to assign Account and Workspace Access through Roles.
   Note that users cannot be created, and therefore must first be imported into the state before they can be managed.
   For more information, see manage users https://docs.prefect.io/v3/manage/cloud/manage-users/users.
@@ -11,7 +11,7 @@ description: |-
 
 # prefect_user (Resource)
 
-The resource `user` represents a Prefect Cloud User. A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information and API keys.
+The resource `user` represents a Prefect Cloud User. A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information.
 
 You can also use this resource to assign Account and Workspace Access through Roles.
 
@@ -26,7 +26,6 @@ For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `api_key_name` (String) Name of the API key
 - `email` (String) Email of the user
 - `first_name` (String) First name of the user
 - `handle` (String) A unique handle for the user, containing only lowercase letters, numbers, and dashes.
@@ -34,9 +33,6 @@ For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud
 ### Read-Only
 
 - `actor_id` (String) Actor ID (UUID), used for granting access to resources like Teams
-- `api_key_created` (String) Timestamp of when the API key was created (RFC3339)
-- `api_key_expiration` (String) Expiration date of the API key
-- `api_key_id` (String) ID of the API key
 - `created` (String) Timestamp of when the resource was created (RFC3339)
 - `id` (String) Service account ID (UUID)
 - `last_name` (String) Last name of the user

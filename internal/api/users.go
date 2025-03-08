@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"time"
 )
 
 // UsersClient is a client for working with users.
@@ -22,11 +21,6 @@ type User struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
-
-	APIKeyID         string     `json:"api_key_id"`
-	APIKeyCreated    *time.Time `json:"api_key_created"`
-	APIKeyName       string     `json:"api_key_name"`
-	APIKeyExpiration *time.Time `json:"api_key_expiration"`
 }
 
 // UserUpdate is a payload for updating a user.
