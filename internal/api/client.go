@@ -34,5 +34,6 @@ type PrefectClient interface {
 	WorkQueues(accountID uuid.UUID, workspaceID uuid.UUID, workPoolName string) (WorkQueuesClient, error)
 	Variables(accountID uuid.UUID, workspaceID uuid.UUID) (VariablesClient, error)
 	ServiceAccounts(accountID uuid.UUID) (ServiceAccountsClient, error)
+	Users() (UsersClient, error)
 	Webhooks(accountID, workspaceID uuid.UUID) (WebhooksClient, error)
 }
