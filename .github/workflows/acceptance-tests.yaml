@@ -52,3 +52,12 @@ jobs:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
+      - name: Run acceptance tests (user resource)
+        run: make testacc
+        env:
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
+          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_MARVIN_API_KEY }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
+          ACC_TEST_USER_RESOURCE: "yes"
+          ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
+          TESTS: "TestAccResource_user"

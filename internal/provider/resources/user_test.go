@@ -2,19 +2,16 @@ package resources_test
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-const (
-	marvinUserID = "48750018-b4c4-4484-8fbf-b61baf3926b5"
-)
-
-func fixtureAccUserResource() string {
+func fixtureAccUserResource(userID string) string {
 	return fmt.Sprintf(`
-resource "prefect_user" "marvin" {
+resource "prefect_user" "test" {
   id = "%s"
 
   # This is here as a safeguard to prevent the user from being
@@ -24,7 +21,7 @@ resource "prefect_user" "marvin" {
     prevent_destroy = true
   }
 }
-	`, marvinUserID)
+`, userID)
 }
 
 // This is a helper variable to unmanage the user resource.
@@ -32,16 +29,35 @@ resource "prefect_user" "marvin" {
 // to prevent the resource from being destroyed.
 var fixtureAccUserResourceUnmanage = `
 removed {
-  from = prefect_user.marvin
+  from = prefect_user.test
   lifecycle {
     destroy = false
   }
 }
 `
 
+// skipIfUserResource is used to decide whether to skip
+// acceptance tests for the User resource.
+//
+// The default behavior is to skip the test because of the
+// caveats noted in the resource documentation.
+//
+// To override this and manually test, do the following:
+//  1. Provide a value for `api_key` from an API key generated as a user,
+//     not a service account.
+//  2. Provide the user ID as an environment variable: `ACC_TEST_USER_RESOURCE_ID`
+func skipIfUserResource() (bool, error) {
+	if os.Getenv("ACC_TEST_USER_RESOURCE") == "yes" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_user(t *testing.T) {
-	resourceName := "prefect_user.marvin"
+	resourceName := "prefect_user.test"
+	userID := os.Getenv("ACC_TEST_USER_RESOURCE_ID")
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -50,24 +66,27 @@ func TestAccResource_user(t *testing.T) {
 			{
 				// Start by importing the user resource, since one cannot
 				// be created via Terraform.
-				Config:             fixtureAccUserResource(),
+				SkipFunc:           skipIfUserResource,
+				Config:             fixtureAccUserResource(userID),
 				ResourceName:       resourceName,
 				ImportState:        true,
-				ImportStateId:      marvinUserID,
+				ImportStateId:      userID,
 				ImportStatePersist: true, // persist the state for subsequent test steps
 			},
 			{
 				// Next, verify that importing doesn't change the values.
-				Config:            fixtureAccUserResource(),
+				SkipFunc:          skipIfUserResource,
+				Config:            fixtureAccUserResource(userID),
 				ResourceName:      resourceName,
 				ImportState:       true,
-				ImportStateId:     marvinUserID,
+				ImportStateId:     userID,
 				ImportStateVerify: true,
 			},
 			{
 				// Finally, unmanage the user resource, so that
 				// it is not destroyed when the test is finished.
-				Config: fixtureAccUserResourceUnmanage,
+				SkipFunc: skipIfUserResource,
+				Config:   fixtureAccUserResourceUnmanage,
 			},
 			// We don't test a resource update here because the user
 			// resource is currently hard-coded to refer to a specific user.
