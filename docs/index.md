@@ -46,6 +46,13 @@ provider "prefect" {
   workspace_id = var.prefect_workspace_id
 }
 
+# You also have the option to specify the account and workspace
+# in the `endpoint` attribute. This is the same format used for
+# the `PREFECT_API_KEY` value used in the Prefect CLI configuration file.
+provider "prefect" {
+  endpoint = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
+}
+
 # Finally, in rare occasions, you also have the option
 # to point the provider to a locally running Prefect Server,
 # with a limited set of functionality from the provider.
@@ -60,7 +67,7 @@ provider "prefect" {
 ### Optional
 
 - `account_id` (String) Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.
-- `api_key` (String, Sensitive) Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.
+- `api_key` (String, Sensitive) Prefect Cloud API key. Can also be set via the `PREFECT_API_KEY` environment variable.
 - `basic_auth_key` (String, Sensitive) Prefect basic auth key. Can also be set via the `PREFECT_BASIC_AUTH_KEY` environment variable.
-- `endpoint` (String) Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud`
+- `endpoint` (String) The Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud` if not configured. Can optionally include the default account ID and workspace ID in the following format: `https://api.prefect.cloud/api/accounts/<accountID>/workspaces/<workspaceID>`. This is the same format used for the `PREFECT_API_URL` value in the Prefect CLI configuration file. The `account_id` and `workspace_id` attributes and their matching environment variables will take priority over any account and workspace ID values provided in the `endpoint` attribute.
 - `workspace_id` (String) Default Prefect Cloud Workspace ID.
