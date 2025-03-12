@@ -75,6 +75,7 @@ type DeploymentUpdate struct {
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ManifestPath           string                 `json:"manifest_path,omitempty"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters             map[string]interface{} `json:"parameters,omitempty"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
