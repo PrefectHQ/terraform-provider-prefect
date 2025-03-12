@@ -10,9 +10,9 @@ description: |-
 
 Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.
 
-See [getting started](./guides/getting-started.md) for more information on setting up the provider.
+See [getting started](./docs/guides/getting-started.md) for more information on setting up the provider.
 
-See [troubleshoting](./guides/troubleshooting.md) for resources to address potential errors.
+See [troubleshoting](./docs/guides/troubleshooting.md) for resources to address potential errors.
 
 ## Example Usage
 
