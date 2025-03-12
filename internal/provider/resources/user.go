@@ -70,15 +70,7 @@ func (r *UserResource) Configure(_ context.Context, req resource.ConfigureReques
 // Schema returns the resource schema.
 func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `user` represents a Prefect Cloud User. " +
-			"A User is an individual user of Prefect Cloud. Use this resource to manage a user's profile information.\n" +
-			"\n" +
-			"You can also use this resource to assign membership to resources like Teams and Workspaces.\n" +
-			"\n" +
-			"Note that users cannot be created, and therefore must first be imported into the state before they can be managed." +
-			" The user ID can be found in the UI by clicking the dropdown menu in the top left corner and then clicking 'My Profile'.\n" +
-			"\n" +
-			"For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud/manage-users/users).",
+		Description: "The resource `user` represents a Prefect Cloud User.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
