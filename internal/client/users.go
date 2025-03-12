@@ -68,23 +68,3 @@ func (c *UsersClient) Update(ctx context.Context, userID string, payload api.Use
 
 	return nil
 }
-
-// Delete deletes a user.
-func (c *UsersClient) Delete(ctx context.Context, userID string) error {
-	cfg := requestConfig{
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, userID),
-		method:       http.MethodDelete,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
-	}
-
-	resp, err := request(ctx, c.hc, cfg)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	return nil
-}

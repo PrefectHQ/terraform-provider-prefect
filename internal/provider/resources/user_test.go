@@ -13,26 +13,16 @@ func fixtureAccUserResource(userID string) string {
 	return fmt.Sprintf(`
 resource "prefect_user" "test" {
   id = "%s"
-
-  # This is here as a safeguard to prevent the user from being
-  # destroyed when the test is finished. This is primarily handled by the
-  # 'fixtureAccUserResourceUnmanage' variable.
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 `, userID)
 }
 
-// This is a helper variable to unmanage the user resource.
-// Setting `Destroy: false` in the test steps apparently is not enough
-// to prevent the resource from being destroyed.
+// This is a helper variable to unmanage the user resource
+// so the acceptance test framework does not attempt to
+// destroy it.
 var fixtureAccUserResourceUnmanage = `
 removed {
   from = prefect_user.test
-  lifecycle {
-    destroy = false
-  }
 }
 `
 

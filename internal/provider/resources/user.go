@@ -204,29 +204,11 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 }
 
 // Delete deletes a user.
-func (r *UserResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state UserResourceModel
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	client, err := r.client.Users()
-	if err != nil {
-		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("User", err))
-
-		return
-	}
-
-	err = client.Delete(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("User", "delete", err))
-
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+// Delete is not implemented in the provider because Create is also not implemented.
+// While there is a valid Delete endpoint for Users, this is not something a practitioner
+// would typically want the provider to perform. User deletion is a more involved process
+// that includes removing API keys, personal accounts, workspaces, and other resources.
+func (r *UserResource) Delete(_ context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 }
 
 func copyUserToModel(user *api.User, state *UserResourceModel) {
