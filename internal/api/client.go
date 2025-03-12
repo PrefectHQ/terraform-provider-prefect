@@ -36,4 +36,5 @@ type PrefectClient interface {
 	ServiceAccounts(accountID uuid.UUID) (ServiceAccountsClient, error)
 	Users() (UsersClient, error)
 	Webhooks(accountID, workspaceID uuid.UUID) (WebhooksClient, error)
+	SLAs(accountID uuid.UUID, workspaceID uuid.UUID) (SLAsClient, error)
 }
