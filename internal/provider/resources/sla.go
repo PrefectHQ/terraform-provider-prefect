@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -93,7 +95,10 @@ For more information, see documentation on setting up [Service Level Agreements]
 						},
 						"severity": schema.StringAttribute{
 							Optional:    true,
-							Description: "Severity level of the SLA. Can be one of `minor`, `low`, `moderate`, `high`, or `critical`.",
+							Description: "Severity level of the SLA. Can be one of `minor`, `low`, `moderate`, `high`, or `critical`. Defaults to `high`.",
+							Validators: []validator.String{
+								stringvalidator.OneOf("minor", "low", "moderate", "high", "critical"),
+							},
 						},
 						"enabled": schema.BoolAttribute{
 							Optional:    true,
@@ -105,23 +110,23 @@ For more information, see documentation on setting up [Service Level Agreements]
 						},
 						"duration": schema.Int64Attribute{
 							Optional:    true,
-							Description: "(Freshness SLA) Duration of the SLA in seconds",
+							Description: "(TimeToCompletion SLA) The maximum flow run duration in seconds allowed before the SLA is violated.",
 						},
 						"stale_after": schema.Float64Attribute{
 							Optional:    true,
-							Description: "(Frequency SLA) Time in seconds after which the SLA is considered stale",
+							Description: "(Frequency SLA) The amount of time after a flow run is considered stale.",
 						},
 						"within": schema.Float64Attribute{
 							Optional:    true,
-							Description: "(Freshness SLA or Lateness SLA) Time window in seconds for the SLA",
+							Description: "(Freshness SLA or Lateness SLA) The amount of time after a flow run is considered stale or late.",
 						},
 						"expected_event": schema.StringAttribute{
 							Optional:    true,
-							Description: "(Freshness SLA) Event expected to occur within the SLA window",
+							Description: "(Freshness SLA) The event to expect for this SLA.",
 						},
 						"resource_match": schema.StringAttribute{
 							Optional:    true,
-							Description: "(Freshness SLA) Resource specification labels which this SLA will match. Use `jsonencode()`",
+							Description: "(Freshness SLA) The resource to match for this SLA. Use `jsonencode()`",
 							CustomType:  jsontypes.NormalizedType{},
 						},
 					},

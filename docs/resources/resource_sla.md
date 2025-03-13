@@ -26,24 +26,25 @@ resource "prefect_deployment" "my_deployment" {
   flow_id = prefect_flow.my_flow.id
 }
 
-resource "prefect_resource_sla" "test_json_payload" {
+resource "prefect_resource_sla" "slas" {
   resource_id = "prefect.deployment.${prefect_deployment.my_deployment.id}"
   slas = [
     {
-      name = "my-time-to-completion" # can be any string
-      # severity = "high" # the default value
-      duration = 60 # Max flow run duration in seconds before SLA is violated
+      name     = "my-time-to-completion-sla" # can be any string
+      duration = 60                          # Max flow run duration in seconds before SLA is violated
     },
     {
-      name        = "my-frequency"
+      name        = "my-frequency-sla"
       severity    = "critical"
       stale_after = 60 # Amount of time in seconds after a flow run is considered stale
     },
     {
-      name           = "my-freshness"
-      severity       = "moderate"
-      within         = 60 # The amount of time after a flow run is considered stale.
-      resource_match = {}
+      name     = "my-freshness"
+      severity = "moderate"
+      within   = 60 # The amount of time after a flow run is considered stale.
+      resource_match = jsonencode({
+        label = "my-label"
+      })
       expected_event = "my-event"
     },
     {
@@ -77,11 +78,11 @@ Required:
 
 Optional:
 
-- `duration` (Number) (Freshness SLA) Duration of the SLA in seconds
+- `duration` (Number) (TimeToCompletion SLA) The maximum flow run duration in seconds allowed before the SLA is violated.
 - `enabled` (Boolean) Whether the SLA is enabled
-- `expected_event` (String) (Freshness SLA) Event expected to occur within the SLA window
+- `expected_event` (String) (Freshness SLA) The event to expect for this SLA.
 - `owner_resource` (String) Resource that owns this SLA
-- `resource_match` (String) (Freshness SLA) Resource specification labels which this SLA will match. Use `jsonencode()`
-- `severity` (String) Severity level of the SLA. Can be one of `minor`, `low`, `moderate`, `high`, or `critical`.
-- `stale_after` (Number) (Frequency SLA) Time in seconds after which the SLA is considered stale
-- `within` (Number) (Freshness SLA or Lateness SLA) Time window in seconds for the SLA
+- `resource_match` (String) (Freshness SLA) The resource to match for this SLA. Use `jsonencode()`
+- `severity` (String) Severity level of the SLA. Can be one of `minor`, `low`, `moderate`, `high`, or `critical`. Defaults to `high`.
+- `stale_after` (Number) (Frequency SLA) The amount of time after a flow run is considered stale.
+- `within` (Number) (Freshness SLA or Lateness SLA) The amount of time after a flow run is considered stale or late.
