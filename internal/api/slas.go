@@ -2,13 +2,11 @@ package api
 
 import (
 	"context"
-
-	"github.com/google/uuid"
 )
 
 // SLAsClient is a client for working with SLAs.
 type SLAsClient interface {
-	ApplyResourceSLAs(ctx context.Context, resourceID uuid.UUID, SLAs []SLAUpsert) (*SLAResponse, error)
+	ApplyResourceSLAs(ctx context.Context, resourceID string, slas []SLAUpsert) (*SLAResponse, error)
 }
 
 // SLAResponse is the response from the ApplyResourceSLAs method.
@@ -28,20 +26,21 @@ type SLA struct {
 
 // SLAUpsert is the request data needed to create or update an SLA.
 type SLAUpsert struct {
-	Name          string `json:"name"`
-	Severity      string `json:"severity"`
-	Enabled       bool   `json:"enabled"`
-	OwnerResource string `json:"owner_resource"`
+	Name          string  `json:"name"`
+	Severity      *string `json:"severity,omitempty"`
+	Enabled       *bool   `json:"enabled,omitempty"`
+	OwnerResource *string `json:"owner_resource,omitempty"`
 
 	// For TimeToCompletionSLA
-	Duration *float64 `json:"duration,omitempty"`
+	Duration *int64 `json:"duration,omitempty"`
 
 	// For FrequencySLA
 	StaleAfter *float64 `json:"stale_after,omitempty"`
 
-	// For FreshnessSLA
+	// For FreshnessSLA or LatenessSLA
 	Within *float64 `json:"within,omitempty"`
 
-	// For LatenessSLA
-	After *float64 `json:"after,omitempty"`
+	// For FreshnessSLA
+	ExpectedEvent *string                 `json:"expected_event,omitempty"`
+	ResourceMatch *map[string]interface{} `json:"resource_match,omitempty"`
 }

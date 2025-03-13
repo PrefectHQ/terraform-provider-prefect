@@ -85,6 +85,8 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 }
 
 // Configure configures the provider's internal client.
+//
+//nolint:maintidx // this initialization logic is complex, and we can refactor it later
 func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	config := &PrefectProviderModel{}
 

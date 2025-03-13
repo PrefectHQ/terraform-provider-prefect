@@ -43,7 +43,7 @@ func (c *Client) SLAs(accountID uuid.UUID, workspaceID uuid.UUID) (api.SLAsClien
 }
 
 // ApplyResourceSLAs applies SLAs to a resource.
-func (c *SLAsClient) ApplyResourceSLAs(ctx context.Context, resourceID uuid.UUID, slas []api.SLAUpsert) (*api.SLAResponse, error) {
+func (c *SLAsClient) ApplyResourceSLAs(ctx context.Context, resourceID string, slas []api.SLAUpsert) (*api.SLAResponse, error) {
 	cfg := requestConfig{
 		method:       http.MethodPost,
 		url:          fmt.Sprintf("%s/apply-resource-slas/%s", c.routePrefix, resourceID),
