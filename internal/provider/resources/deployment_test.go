@@ -194,6 +194,9 @@ func TestAccResource_deployment(t *testing.T) {
 	parameterOpenAPISchema := `{"type": "object", "properties": {"some-parameter": {"type": "string"}}}`
 	expectedParameterOpenAPISchema := testutils.NormalizedValueForJSON(t, parameterOpenAPISchema)
 
+	parameterOpenAPISchemaUpdate := `{"type": "object", "properties": {"some-parameter": {"type": "string"}, "some-other-parameter": {"type": "string"}}}`
+	expectedParameterOpenAPISchemaUpdate := testutils.NormalizedValueForJSON(t, parameterOpenAPISchemaUpdate)
+
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,
 		FlowName:               flowName,
@@ -234,17 +237,18 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		ConcurrencyLimit:  2,
-		CollisionStrategy: "CANCEL_NEW",
-		Description:       "My deployment description v2",
-		Entrypoint:        "hello_world.py:hello_world2",
-		JobVariables:      `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:      "some-manifest-path2",
-		Parameters:        "some-value2",
-		Path:              "some-path2",
-		Paused:            true,
-		Version:           "v1.1.2",
-		WorkQueueName:     "default",
+		ConcurrencyLimit:       2,
+		CollisionStrategy:      "CANCEL_NEW",
+		Description:            "My deployment description v2",
+		Entrypoint:             "hello_world.py:hello_world2",
+		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
+		ManifestPath:           "some-manifest-path2",
+		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
+		Parameters:             "some-value2",
+		Path:                   "some-path2",
+		Paused:                 true,
+		Version:                "v1.1.2",
+		WorkQueueName:          "default",
 
 		// Enforcing parameter schema  returns the following error:
 		//
@@ -263,9 +267,6 @@ func TestAccResource_deployment(t *testing.T) {
 		//
 		// Tags: []string{"test1", "test3"}
 		Tags: cfgCreate.Tags,
-
-		// ParameterOpenAPISchema is not settable via the Update method.
-		ParameterOpenAPISchema: cfgCreate.ParameterOpenAPISchema,
 
 		// PullSteps require a replacement of the resource.
 		PullSteps: []api.PullStep{
@@ -355,7 +356,7 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
-					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchemaUpdate),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
 					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "paused", cfgUpdate.Paused),
 					testutils.ExpectKnownValueList(cfgUpdate.DeploymentResourceName, "tags", cfgUpdate.Tags),
