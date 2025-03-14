@@ -12,7 +12,7 @@ import (
 func fixtureAccUserResource(userID string) string {
 	return fmt.Sprintf(`
 resource "prefect_user" "test" {
-  id = "%s"
+  id = "%sinvalid"
 }
 `, userID)
 }
