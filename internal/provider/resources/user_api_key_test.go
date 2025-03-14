@@ -26,7 +26,7 @@ func fixtureAccUserAPIKeyRecreate(userID, name string, expiration time.Time) str
 resource "prefect_user_api_key" "test" {
   user_id = "%s"
   name = "%s"
-	api_key_expiration = "%s"
+	expiration = "%s"
 }
 `, userID, name, expiration.Format(time.RFC3339))
 }
