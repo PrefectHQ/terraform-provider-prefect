@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -17,8 +16,7 @@ import (
 func TestAccDatasource_service_account(t *testing.T) {
 	dataSourceNameByID := "data.prefect_service_account.bot_by_id"
 	dataSourceNameByName := "data.prefect_service_account.bot_by_name"
-	// generate random resource name
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.NewRandomPrefixedString()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,

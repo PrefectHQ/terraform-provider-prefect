@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -35,7 +34,7 @@ resource "prefect_user_api_key" "test" {
 func TestAccResource_user_api_key(t *testing.T) {
 	resourceName := "prefect_user_api_key.test"
 	userID := os.Getenv("ACC_TEST_USER_RESOURCE_ID")
-	name := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	name := testutils.NewRandomPrefixedString()
 	expiration := time.Now().Add(time.Hour * 24)
 
 	resource.ParallelTest(t, resource.TestCase{
