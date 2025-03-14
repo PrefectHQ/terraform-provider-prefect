@@ -109,6 +109,10 @@ var (
 	// successCodesStatusOKOrNoContent is a convenience variable to use for a common
 	// success criteria of either StatusOK or StatusNoContent.
 	successCodesStatusOKOrNoContent = []int{http.StatusOK, http.StatusNoContent}
+
+	// successCodesStatusOKOrCreated is a convenience variable to use for a common
+	// success criteria of either Status OK or StatusCreated.
+	successCodesStatusOKOrCreated = []int{http.StatusOK, http.StatusCreated}
 )
 
 // request performs an HTTP request with the provided configuration.
