@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -102,7 +101,6 @@ func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"expiration": schema.StringAttribute{
 				Optional:    true,
-				Computed:    true,
 				CustomType:  customtypes.TimestampType{},
 				Description: "Expiration of the API key (RFC3339). If left as null, the API key will not expire. Modify this attribute to re-create the API key.",
 				// API key expiration is only set on create, and
@@ -124,11 +122,11 @@ func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest,
 // copyUserAPIKeyToModel copies the UserAPIKey resource data to the Terraform model.
 // Note: we do not copy the Key field to the model, as it is only returned on Create.
 // For all other lifecycle methods, we will persist the existing State value.
-func copyUserAPIKeyToModel(apiKey *api.UserAPIKey, plan *UserAPIKeyResourceModel) {
-	plan.ID = types.StringValue(apiKey.ID.String())
-	plan.Created = customtypes.NewTimestampValue(apiKey.Created)
-	plan.Name = types.StringValue(apiKey.Name)
-	plan.Expiration = customtypes.NewTimestampPointerValue(apiKey.Expiration)
+func copyUserAPIKeyToModel(apiKey *api.UserAPIKey, model *UserAPIKeyResourceModel) {
+	model.ID = types.StringValue(apiKey.ID.String())
+	model.Created = customtypes.NewTimestampValue(apiKey.Created)
+	model.Name = types.StringValue(apiKey.Name)
+	model.Expiration = customtypes.NewTimestampPointerValue(apiKey.Expiration)
 }
 
 // Create creates a new User API Key.
@@ -149,13 +147,8 @@ func (r *UserAPIKeyResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createReq := api.UserAPIKeyCreate{
-		Name: plan.Name.ValueString(),
-	}
-
-	// Set expiration if provided
-	if !plan.Expiration.IsNull() {
-		expTime := plan.Expiration.ValueTime().Format(time.RFC3339)
-		createReq.Expiration = &expTime
+		Name:       plan.Name.ValueString(),
+		Expiration: plan.Expiration.ValueTimePointer(),
 	}
 
 	apiKey, err := userClient.CreateAPIKey(ctx, plan.UserID.ValueString(), createReq)

@@ -45,6 +45,6 @@ type UserAPIKey struct {
 }
 
 type UserAPIKeyCreate struct {
-	Name       string  `json:"name"`
-	Expiration *string `json:"expiration,omitempty"`
+	Name       string     `json:"name"`
+	Expiration *time.Time `json:"expiration,omitempty"`
 }
