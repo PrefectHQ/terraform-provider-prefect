@@ -68,4 +68,7 @@ jobs:
           ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
           # This ensures only the User resource tests run, instead of running
           # all the tests again because that was completed in the last step.
-          TESTS: "TestAccResource_user"
+          # Regex ensures that the following tests are included:
+          # - TestAccResource_user
+          # - TestAccResourcE_user_api_key
+          TESTS: "TestAccResource_user*"
