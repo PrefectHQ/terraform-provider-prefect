@@ -48,7 +48,7 @@ test:
 # NOTE: Acceptance Tests create real infrastructure
 # against a dedicated testing account
 testacc:
-	TF_ACC=1 make test
+	TF_ACC=1 TESTS=$(TESTS) make test
 .PHONY: testacc
 
 # NOTE: Acceptance Test sweepers delete real infrastructure against a dedicated testing account
