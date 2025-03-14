@@ -12,7 +12,7 @@ import (
 func fixtureAccUserResource(userID string) string {
 	return fmt.Sprintf(`
 resource "prefect_user" "test" {
-  id = "%sinvalid"
+  id = "%s"
 }
 `, userID)
 }
@@ -58,7 +58,7 @@ func TestAccResource_user(t *testing.T) {
 				// be created via Terraform.
 				SkipFunc:           SkipIfUserResource,
 				Config:             fixtureAccUserResource(userID),
-				ResourceName:       resourceName,
+				ResourceName:       resourceName + "wrong",
 				ImportState:        true,
 				ImportStateId:      userID,
 				ImportStatePersist: true, // persist the state for subsequent test steps
