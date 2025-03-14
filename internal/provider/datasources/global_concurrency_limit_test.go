@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
@@ -38,7 +37,7 @@ func TestAccDatasource_global_concurrency_limit(t *testing.T) {
 	dataSourceNameByID := "data.prefect_global_concurrency_limit.limit_by_id"
 	dataSourceNameByName := "data.prefect_global_concurrency_limit.limit_by_name"
 	workspace := testutils.NewEphemeralWorkspace()
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.NewRandomPrefixedString()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,

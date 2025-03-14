@@ -348,6 +348,7 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewTeamAccessResource,
 		resources.NewTeamResource,
 		resources.NewUserResource,
+		resources.NewUserAPIKeyResource,
 		resources.NewVariableResource,
 		resources.NewWebhookResource,
 		resources.NewWorkPoolResource,
