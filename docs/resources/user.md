@@ -3,12 +3,12 @@
 page_title: "prefect_user Resource - prefect"
 subcategory: ""
 description: |-
-  The resource user represents a Prefect Cloud User.
+  The resource user represents a Prefect User.
 ---
 
 # prefect_user (Resource)
 
-The resource `user` represents a Prefect Cloud User.
+The resource `user` represents a Prefect User.
 
 A User is an individual user of Prefect Cloud. Use this resource to manage a
 user's profile information. You can also use this resource to assign membership

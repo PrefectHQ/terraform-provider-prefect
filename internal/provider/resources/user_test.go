@@ -36,7 +36,7 @@ removed {
 //  1. Provide a value for `api_key` from an API key generated as a user,
 //     not a service account.
 //  2. Provide the user ID as an environment variable: `ACC_TEST_USER_RESOURCE_ID`
-func skipIfUserResource() (bool, error) {
+func SkipIfUserResource() (bool, error) {
 	if os.Getenv("ACC_TEST_USER_RESOURCE") == "yes" {
 		return false, nil
 	}
@@ -56,7 +56,7 @@ func TestAccResource_user(t *testing.T) {
 			{
 				// Start by importing the user resource, since one cannot
 				// be created via Terraform.
-				SkipFunc:           skipIfUserResource,
+				SkipFunc:           SkipIfUserResource,
 				Config:             fixtureAccUserResource(userID),
 				ResourceName:       resourceName,
 				ImportState:        true,
@@ -65,7 +65,7 @@ func TestAccResource_user(t *testing.T) {
 			},
 			{
 				// Next, verify that importing doesn't change the values.
-				SkipFunc:          skipIfUserResource,
+				SkipFunc:          SkipIfUserResource,
 				Config:            fixtureAccUserResource(userID),
 				ResourceName:      resourceName,
 				ImportState:       true,
@@ -75,7 +75,7 @@ func TestAccResource_user(t *testing.T) {
 			{
 				// Finally, unmanage the user resource, so that
 				// it is not destroyed when the test is finished.
-				SkipFunc: skipIfUserResource,
+				SkipFunc: SkipIfUserResource,
 				Config:   fixtureAccUserResourceUnmanage,
 			},
 			// We don't test a resource update here because the user
