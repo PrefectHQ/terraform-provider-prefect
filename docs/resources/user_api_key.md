@@ -4,11 +4,15 @@ page_title: "prefect_user_api_key Resource - prefect"
 subcategory: ""
 description: |-
   The resource user_api_key represents a Prefect User API Key.
+  User API Keys are used to authenticate requests to the Prefect API and are specifically bound to Prefect Users (and not Service Accounts - see prefect_service_account).
+  API Keys via prefect_user_api_key resources are not updateable, and any changes to the name or expiration attributes will force a replacement of the API key.
 ---
 
 # prefect_user_api_key (Resource)
 
-The resource `user_api_key` represents a Prefect User API Key.
+The resource `user_api_key` represents a Prefect User API Key. 
+User API Keys are used to authenticate requests to the Prefect API and are specifically bound to Prefect Users (and not Service Accounts - see `prefect_service_account`). 
+API Keys via `prefect_user_api_key` resources are not updateable, and any changes to the `name` or `expiration` attributes will force a replacement of the API key.
 
 
 
