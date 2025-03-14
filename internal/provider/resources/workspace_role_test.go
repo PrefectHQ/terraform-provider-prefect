@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -37,7 +36,7 @@ resource "prefect_workspace_role" "role" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_workspace_role(t *testing.T) {
 	resourceName := "prefect_workspace_role.role"
-	randomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	randomName := testutils.NewRandomPrefixedString()
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
