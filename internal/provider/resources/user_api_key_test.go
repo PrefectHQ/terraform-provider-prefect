@@ -56,7 +56,7 @@ func TestAccResource_user_api_key(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "user_id", userID),
 					testutils.ExpectKnownValue(resourceName, "name", name),
-					testutils.ExpectKnownValue(resourceName, "api_key_expiration", expiration.Format(time.RFC3339)),
+					testutils.ExpectKnownValue(resourceName, "expiration", expiration.Format(time.RFC3339)),
 				},
 			},
 		},
