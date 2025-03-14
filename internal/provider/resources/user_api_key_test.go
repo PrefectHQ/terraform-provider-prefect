@@ -46,7 +46,7 @@ func TestAccResource_user_api_key(t *testing.T) {
 				SkipFunc: SkipIfUserResource,
 				Config:   fixtureAccUserAPIKeyCreate(userID, name),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(resourceName, "id", userID),
+					testutils.ExpectKnownValue(resourceName, "user_id", userID),
 					testutils.ExpectKnownValue(resourceName, "name", name),
 				},
 			},
@@ -54,7 +54,7 @@ func TestAccResource_user_api_key(t *testing.T) {
 				SkipFunc: SkipIfUserResource,
 				Config:   fixtureAccUserAPIKeyRecreate(userID, name, expiration),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(resourceName, "id", userID),
+					testutils.ExpectKnownValue(resourceName, "user_id", userID),
 					testutils.ExpectKnownValue(resourceName, "name", name),
 					testutils.ExpectKnownValue(resourceName, "api_key_expiration", expiration.Format(time.RFC3339)),
 				},
