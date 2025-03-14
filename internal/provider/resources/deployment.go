@@ -312,12 +312,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Default:     stringdefault.StaticString("{}"),
-				// OpenAPI schema is also only set on create, and
-				// we do not support modifying this value. Therefore, any changes
-				// to this attribute will force a replacement.
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
@@ -832,6 +826,12 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	parameterOpenAPISchema, diags := helpers.UnmarshalOptional(model.ParameterOpenAPISchema)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            model.Description.ValueString(),
@@ -839,6 +839,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		Entrypoint:             model.Entrypoint.ValueString(),
 		JobVariables:           jobVariables,
 		ManifestPath:           model.ManifestPath.ValueString(),
+		ParameterOpenAPISchema: parameterOpenAPISchema,
 		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
 		Paused:                 model.Paused.ValueBool(),
