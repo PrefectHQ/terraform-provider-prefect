@@ -42,7 +42,8 @@ lint:
 .PHONY: lint
 
 test:
-	gotestsum --max-fails=50 ./...
+	gotestsum --max-fails=50 ./... -run "$(TESTS)"
+
 .PHONY: test
 
 # NOTE: Acceptance Tests create real infrastructure
