@@ -58,7 +58,7 @@ func TestAccResource_user(t *testing.T) {
 				// be created via Terraform.
 				SkipFunc:           SkipIfUserResource,
 				Config:             fixtureAccUserResource(userID),
-				ResourceName:       resourceName + "wrong",
+				ResourceName:       resourceName,
 				ImportState:        true,
 				ImportStateId:      userID,
 				ImportStatePersist: true, // persist the state for subsequent test steps
