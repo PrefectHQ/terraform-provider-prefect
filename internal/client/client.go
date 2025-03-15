@@ -129,7 +129,12 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 	// If the response is a 404 (NotFound), try again. This is particularly
 	// relevant for block-related objects that are created asynchronously.
 	if resp.StatusCode == http.StatusNotFound {
-		return true, err
+		// NOTE: we encode the status code in the error object as a workaround
+		// in cases where we want access to the status code on a failed client.Do() call
+		// due to exhausted retries.
+		// go-retryablehttp does not return the response object on exhausted retries.
+		// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L811-L825
+		return true, fmt.Errorf("status_code=%d, error=%w", resp.StatusCode, err)
 	}
 
 	// Fall back to the default retry policy for any other status codes.
