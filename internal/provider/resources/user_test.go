@@ -9,6 +9,8 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+const envUserResourceID = "ACC_TEST_USER_RESOURCE_ID"
+
 func fixtureAccUserResource(userID string) string {
 	return fmt.Sprintf(`
 resource "prefect_user" "test" {
@@ -26,7 +28,7 @@ removed {
 }
 `
 
-// skipIfUserResource is used to decide whether to skip
+// SkipUnlessUserResource is used to decide whether to skip
 // acceptance tests for the User resource.
 //
 // The default behavior is to skip the test because of the
@@ -36,8 +38,8 @@ removed {
 //  1. Provide a value for `api_key` from an API key generated as a user,
 //     not a service account.
 //  2. Provide the user ID as an environment variable: `ACC_TEST_USER_RESOURCE_ID`
-func SkipIfUserResource() (bool, error) {
-	if os.Getenv("ACC_TEST_USER_RESOURCE") == "yes" {
+func SkipUnlessUserResource() (bool, error) {
+	if _, set := os.LookupEnv(envUserResourceID); set {
 		return false, nil
 	}
 
@@ -47,7 +49,7 @@ func SkipIfUserResource() (bool, error) {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_user(t *testing.T) {
 	resourceName := "prefect_user.test"
-	userID := os.Getenv("ACC_TEST_USER_RESOURCE_ID")
+	userID := os.Getenv(envUserResourceID)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -56,7 +58,7 @@ func TestAccResource_user(t *testing.T) {
 			{
 				// Start by importing the user resource, since one cannot
 				// be created via Terraform.
-				SkipFunc:           SkipIfUserResource,
+				SkipFunc:           SkipUnlessUserResource,
 				Config:             fixtureAccUserResource(userID),
 				ResourceName:       resourceName,
 				ImportState:        true,
@@ -65,7 +67,7 @@ func TestAccResource_user(t *testing.T) {
 			},
 			{
 				// Next, verify that importing doesn't change the values.
-				SkipFunc:          SkipIfUserResource,
+				SkipFunc:          SkipUnlessUserResource,
 				Config:            fixtureAccUserResource(userID),
 				ResourceName:      resourceName,
 				ImportState:       true,
@@ -75,7 +77,7 @@ func TestAccResource_user(t *testing.T) {
 			{
 				// Finally, unmanage the user resource, so that
 				// it is not destroyed when the test is finished.
-				SkipFunc: SkipIfUserResource,
+				SkipFunc: SkipUnlessUserResource,
 				Config:   fixtureAccUserResourceUnmanage,
 			},
 			// We don't test a resource update here because the user
