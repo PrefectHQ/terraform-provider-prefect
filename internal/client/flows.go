@@ -52,7 +52,7 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 		body:         &data,
 		apiKey:       c.apiKey,
 		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		successCodes: successCodesStatusOKOrCreated,
 	}
 
 	var flow api.Flow
