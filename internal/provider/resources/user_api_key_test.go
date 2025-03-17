@@ -42,7 +42,7 @@ func TestAccResource_user_api_key(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				SkipFunc: SkipIfUserResource,
+				SkipFunc: SkipUnlessUserResource,
 				Config:   fixtureAccUserAPIKeyCreate(userID, name),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "user_id", userID),
@@ -50,7 +50,7 @@ func TestAccResource_user_api_key(t *testing.T) {
 				},
 			},
 			{
-				SkipFunc: SkipIfUserResource,
+				SkipFunc: SkipUnlessUserResource,
 				Config:   fixtureAccUserAPIKeyRecreate(userID, name, expiration),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "user_id", userID),

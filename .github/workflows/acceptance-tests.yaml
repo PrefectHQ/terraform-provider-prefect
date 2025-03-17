@@ -65,7 +65,6 @@ jobs:
           # The value is stored in 1Password: `Terraform provider acceptance test secrets`.
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_MARVIN_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
-          ACC_TEST_USER_RESOURCE: "yes"
           # This is the user ID retrieved by logging in as the Marvin user
           # and copying the ID on the "Profile" page.
           ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
