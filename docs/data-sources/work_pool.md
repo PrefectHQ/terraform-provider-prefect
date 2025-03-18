@@ -12,11 +12,13 @@ description: |-
 
 # prefect_work_pool (Data Source)
 
+
 Get information about an existing Work Pool by name.
 <br>
 Use this data source to obtain Work Pool-specific attributes.
 <br>
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
+
 
 ## Example Usage
 
