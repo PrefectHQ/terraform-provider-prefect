@@ -12,13 +12,11 @@ description: |-
 
 # prefect_global_concurrency_limit (Data Source)
 
-
 Get information about an existing Global Concurrency Limit
 <br>
 Use this data source to read down the pre-defined Global Concurrency Limits, to manage concurrency limits.
 <br>
 For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).
-
 
 ## Example Usage
 

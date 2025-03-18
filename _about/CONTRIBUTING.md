@@ -196,7 +196,8 @@ The `tfplugindocs` CLI will:
 
 **NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `make docs` and push any udpates to the working branch
 
-When adding a new resource or datasource, create a new file under either:
+Documentation will be rendered into the `docs/` directory. If you need to add additional
+information to a document page, create a template first. To do this, create a new file under either:
 
 - `templates/resources/<object>.md.tpl`, or
 - `templates/data-sources/<object>.md.tpl`

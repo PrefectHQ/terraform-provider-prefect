@@ -12,13 +12,11 @@ description: |-
 
 # prefect_worker_metadata (Data Source)
 
-
 Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
 <br>
 Use this data source to get the default base job configurations for those common Worker types.
 <br>
 For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers).
-
 
 ## Example Usage
 

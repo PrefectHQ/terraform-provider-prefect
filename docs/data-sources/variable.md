@@ -12,13 +12,11 @@ description: |-
 
 # prefect_variable (Data Source)
 
-
 Get information about an existing Variable by name or ID.
 <br>
 Use this data source to obtain Variable-specific attributes, such as the value.
 <br>
 For more information, see [get and set variables](https://docs.prefect.io/v3/develop/variables).
-
 
 ## Example Usage
 

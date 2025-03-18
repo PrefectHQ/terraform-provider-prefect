@@ -10,13 +10,11 @@ description: |-
 
 # prefect_block_access (Resource)
 
-
 This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
 
 All Actors/Teams must first be granted access to the Workspace where the Block resides.
 
 Leave fields empty to use the default access controls
-
 
 ## Example Usage
 

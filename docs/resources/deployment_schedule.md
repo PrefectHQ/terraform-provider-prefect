@@ -10,11 +10,9 @@ description: |-
 
 # prefect_deployment_schedule (Resource)
 
-
 The resource 'deployment_schedule' represents a schedule for a deployment.
 <br>
 For more information, see [schedule flow runs](https://docs.prefect.io/v3/automate/add-schedules).
-
 
 ## Example Usage
 

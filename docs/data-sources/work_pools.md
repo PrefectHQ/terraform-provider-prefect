@@ -12,13 +12,11 @@ description: |-
 
 # prefect_work_pools (Data Source)
 
-
 Get information about an multiple Work Pools.
 <br>
 Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
 <br>
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
-
 
 ## Example Usage
 

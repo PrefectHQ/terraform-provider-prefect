@@ -15,7 +15,6 @@ description: |-
 
 # prefect_block (Data Source)
 
-
 Get information about an existing Block by either:
 - ID, or
 - block type name and block name
@@ -25,7 +24,6 @@ If the ID is provided, then the block type name and block name will be ignored.
 Use this data source to obtain Block-specific attributes, such as the data.
 <br>
 For more information, see [securely store typed configuration](https://docs.prefect.io/v3/develop/blocks).
-
 
 ## Example Usage
 

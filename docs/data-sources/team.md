@@ -12,13 +12,11 @@ description: |-
 
 # prefect_team (Data Source)
 
-
 Get information about an existing Team by their name.
 <br>
 Use this data source to obtain team IDs to manage Workspace Access.
 <br>
 For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
-
 
 ## Example Usage
 
