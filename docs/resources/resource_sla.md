@@ -10,9 +10,11 @@ description: |-
 
 # prefect_resource_sla (Resource)
 
+
 The resource 'resource_sla' represents a Prefect Resource SLA.
 <br>
 For more information, see documentation on setting up [Service Level Agreements](https://docs.prefect.io/v3/automate/events/slas) on Prefect resources.
+
 
 ## Example Usage
 

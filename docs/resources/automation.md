@@ -10,9 +10,11 @@ description: |-
 
 # prefect_automation (Resource)
 
+
 The resource 'automations' represents a Prefect Automation.
 <br>
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
+
 
 ## Example Usage
 
