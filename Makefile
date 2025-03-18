@@ -67,9 +67,7 @@ testacc-dev-user:
 .PHONY: testacc-dev-user
 
 docs:
-	mkdir -p docs
-	rm -rf ./docs/images
-	go generate ./...
+	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect
 .PHONY: docs
 
 dev-new:
