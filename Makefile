@@ -67,7 +67,7 @@ testacc-dev-user:
 .PHONY: testacc-dev-user
 
 docs:
-	go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect
+	tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect
 .PHONY: docs
 
 dev-new:
