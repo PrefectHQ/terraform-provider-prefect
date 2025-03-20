@@ -14,7 +14,7 @@ const (
 	descriptionTemplate = `
 %s
 
-This feature is available in the following product plans: %s.
+This feature is available in the following [product plans](https://www.prefect.io/pricing): %s.
 `
 )
 
