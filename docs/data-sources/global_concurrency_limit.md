@@ -8,7 +8,7 @@ description: |-
   Use this data source to read down the pre-defined Global Concurrency Limits, to manage concurrency limits.
   
   For more information, see apply global concurrency and rate limits https://docs.prefect.io/v3/develop/global-concurrency-limits.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_global_concurrency_limit (Data Source)
@@ -20,7 +20,7 @@ Use this data source to read down the pre-defined Global Concurrency Limits, to 
 For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).
 
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

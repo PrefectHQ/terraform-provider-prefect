@@ -4,14 +4,14 @@ page_title: "prefect_task_run_concurrency_limit Resource - prefect"
 subcategory: ""
 description: |-
   The resource task_run_concurrency_limit represents a task run concurrency limit. Task run concurrency limits allow you to control how many tasks with specific tags can run simultaneously. For more information, see limit concurrent task runs with tags https://docs.prefect.io/v3/develop/task-run-limits.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_task_run_concurrency_limit (Resource)
 
 The resource `task_run_concurrency_limit` represents a task run concurrency limit. Task run concurrency limits allow you to control how many tasks with specific tags can run simultaneously. For more information, see [limit concurrent task runs with tags](https://docs.prefect.io/v3/develop/task-run-limits).
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

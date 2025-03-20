@@ -8,7 +8,7 @@ description: |-
   Use this data source to get the default base job configurations for those common Worker types.
   
   For more information, see workers https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_worker_metadata (Data Source)
@@ -20,7 +20,7 @@ Use this data source to get the default base job configurations for those common
 For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers).
 
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

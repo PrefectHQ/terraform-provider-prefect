@@ -20,10 +20,10 @@ This feature is available in the following [product plans](https://www.prefect.i
 
 var (
 	AllPlans = []string{
+		PlanPrefectOSS,
 		PlanPrefectCloudFree,
 		PlanPrefectCloudPro,
 		PlanPrefectCloudEnterprise,
-		PlanPrefectOSS,
 	}
 
 	AllCloudPlans = []string{
