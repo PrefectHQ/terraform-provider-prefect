@@ -55,9 +55,7 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-roles#manage-account-roles).
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -107,9 +107,7 @@ Use this data source to obtain Workspace IDs
 <br>
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: workspaceAttributes,
 	}

@@ -25,6 +25,12 @@ var (
 		PlanPrefectCloudEnterprise,
 		PlanPrefectOSS,
 	}
+
+	AllCloudPlans = []string{
+		PlanPrefectCloudFree,
+		PlanPrefectCloudPro,
+		PlanPrefectCloudEnterprise,
+	}
 )
 
 // DescriptionWithPlans adds a note to the description denoting which plans

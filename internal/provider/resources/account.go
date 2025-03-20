@@ -80,9 +80,7 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"Note that this resource can only be imported, as account creation is not currently supported "+
 			"via the API. Additionally, be aware that account deletion is possible once it is imported, "+
 			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{

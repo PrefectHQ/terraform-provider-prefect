@@ -69,9 +69,7 @@ Get information about an existing Account.
 <br>
 Use this data source to obtain account-level attributes
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

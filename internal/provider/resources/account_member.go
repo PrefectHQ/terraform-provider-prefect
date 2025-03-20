@@ -82,9 +82,7 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 			"first import the resource and then the attributes can be updated as needed."+
 			"\n"+
 			"For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud/manage-users)",
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

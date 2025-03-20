@@ -48,9 +48,7 @@ Use this data source to obtain user or actor IDs to manage Workspace Access.
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{

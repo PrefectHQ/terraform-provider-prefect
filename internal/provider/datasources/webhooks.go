@@ -128,9 +128,7 @@ Use this data source to obtain webhook-level attributes, such as ID, Name, Templ
 <br>
 For more information, see [receive events with webhooks](https://docs.prefect.io/v3/automate/events/webhook-triggers).
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: webhookAttributes,
 	}

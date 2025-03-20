@@ -72,10 +72,7 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 	resp.Schema = schema.Schema{
 		Description: helpers.DescriptionWithPlans(
 			"The resource `user` represents a Prefect User.",
-			helpers.PlanPrefectOSS,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

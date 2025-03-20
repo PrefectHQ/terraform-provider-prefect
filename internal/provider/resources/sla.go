@@ -78,9 +78,7 @@ The resource 'resource_sla' represents a Prefect Resource SLA.
 <br>
 For more information, see documentation on setting up [Service Level Agreements](https://docs.prefect.io/v3/automate/events/slas) on Prefect resources.
 `,
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{

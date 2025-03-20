@@ -71,9 +71,7 @@ func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				"and are specifically bound to Prefect Users (and not Service Accounts - see `prefect_service_account`). "+
 				"\n"+
 				"API Keys via `prefect_user_api_key` resources are not updateable, and any changes to the `name` or `expiration` attributes will force a replacement of the API key.",
-			helpers.PlanPrefectCloudFree,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.AllCloudPlans...,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
