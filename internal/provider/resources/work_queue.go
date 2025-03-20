@@ -76,12 +76,15 @@ func (r *WorkQueueResource) Configure(_ context.Context, req resource.ConfigureR
 // Schema defines the schema for the resource.
 func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `work_queue` represents a Prefect Work Queue. " +
-			"Work Queues are used to configure and manage job execution queues in Prefect.\n" +
-			"\n" +
-			"Work Queues can be associated with a work pool and have configurations like concurrency limits.\n" +
-			"\n" +
-			"For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `work_queue` represents a Prefect Work Queue. "+
+				"Work Queues are used to configure and manage job execution queues in Prefect.\n"+
+				"\n"+
+				"Work Queues can be associated with a work pool and have configurations like concurrency limits.\n"+
+				"\n"+
+				"For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).",
+			helpers.AllPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

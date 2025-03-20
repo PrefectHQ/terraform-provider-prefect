@@ -6,6 +6,7 @@ description: |-
   This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
   All Actors/Teams must first be granted access to the Workspace where the Block resides.
   Leave fields empty to use the default access controls
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_block_access (Resource)
@@ -15,6 +16,9 @@ This resource manages access control to Blocks. Accessors can be Service Account
 All Actors/Teams must first be granted access to the Workspace where the Block resides.
 
 Leave fields empty to use the default access controls
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

@@ -6,6 +6,7 @@ description: |-
   The resource work_pool represents a Prefect Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
   Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the prefect_worker_metadata data source to bootstrap new Work Pools quickly.
   For more information, see configure dynamic infrastructure with work pools https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_work_pool (Resource)
@@ -15,6 +16,8 @@ The resource `work_pool` represents a Prefect Work Pool. Work Pools represent in
 Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.
 
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

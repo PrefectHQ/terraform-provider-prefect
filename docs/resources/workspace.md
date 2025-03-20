@@ -4,11 +4,14 @@ page_title: "prefect_workspace Resource - prefect"
 subcategory: ""
 description: |-
   The resource workspace represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using work_pool and workspace_access resources. For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_workspace (Resource)
 
 The resource `workspace` represents a Prefect Cloud Workspace. Workspaces are discrete environments in Prefect Cloud for your flows, configurations, and deployments. Manage your workflows and RBAC policies using `work_pool` and `workspace_access` resources. For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

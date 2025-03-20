@@ -6,6 +6,7 @@ description: |-
   The resource workspace_role represents a Prefect Cloud Workspace Role. Workspace Roles hold a set of permissions to a specific Workspace, and can be attached to an accessor (User or Service Account) to grant access to the Workspace.
   To obtain a list of available scopes, please refer to the GET /api/workspace_scopes API https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get.
   For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Enterprise), Prefect Cloud (Pro).
 ---
 
 # prefect_workspace_role (Resource)
@@ -15,6 +16,8 @@ The resource `workspace_role` represents a Prefect Cloud Workspace Role. Workspa
 To obtain a list of available scopes, please refer to the `GET /api/workspace_scopes` [API](https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get).
 
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Enterprise), Prefect Cloud (Pro).
 
 ## Example Usage
 
