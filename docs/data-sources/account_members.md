@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain user or actor IDs to manage Workspace Access.
   
   For more information, see manage account roles https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_account_members (Data Source)
@@ -17,6 +18,9 @@ Get information about all members of account.
 Use this data source to obtain user or actor IDs to manage Workspace Access.
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

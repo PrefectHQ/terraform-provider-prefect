@@ -106,13 +106,17 @@ func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	}
 
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Account Member (user)	by their email.
 <br>
 Use this data source to obtain user or actor IDs to manage Workspace Access.
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 `,
+			helpers.PlanPrefectCloudFree,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Attributes: accountMemberAttributes,
 	}
 }

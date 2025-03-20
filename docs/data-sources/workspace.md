@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain Workspace IDs
   
   For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_workspace (Data Source)
@@ -17,6 +18,9 @@ Get information about an existing Workspace by handle.
 Use this data source to obtain Workspace IDs
 <br>
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

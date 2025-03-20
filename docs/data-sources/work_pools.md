@@ -8,6 +8,7 @@ description: |-
   Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
   
   For more information, see configure dynamic infrastructure with work pools https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_work_pools (Data Source)
@@ -17,6 +18,9 @@ Get information about an multiple Work Pools.
 Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
 <br>
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

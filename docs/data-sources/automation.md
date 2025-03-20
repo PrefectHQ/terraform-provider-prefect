@@ -6,6 +6,7 @@ description: |-
   Get information about an existing Automation by its ID
   
   For more information, see automate overview https://docs.prefect.io/v3/automate/index.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_automation (Data Source)
@@ -13,6 +14,9 @@ description: |-
 Get information about an existing Automation by its ID
 <br>
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

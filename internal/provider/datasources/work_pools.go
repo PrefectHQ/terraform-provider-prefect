@@ -64,13 +64,15 @@ func (d *WorkPoolsDataSource) Configure(_ context.Context, req datasource.Config
 // Schema defines the schema for the data source.
 func (d *WorkPoolsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an multiple Work Pools.
 <br>
 Use this data source to search for multiple Work Pools. Defaults to fetching all Work Pools in the Workspace.
 <br>
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},

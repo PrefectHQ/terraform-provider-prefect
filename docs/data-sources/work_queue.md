@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain Work Queue-specific attributes.
   
   For more information, see work queues https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_work_queue (Data Source)
@@ -17,6 +18,9 @@ Get information about an existing Work Queue by name.
 Use this data source to obtain Work Queue-specific attributes.
 <br>
 For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

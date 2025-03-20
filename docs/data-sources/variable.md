@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain Variable-specific attributes, such as the value.
   
   For more information, see get and set variables https://docs.prefect.io/v3/develop/variables.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_variable (Data Source)
@@ -17,6 +18,9 @@ Get information about an existing Variable by name or ID.
 Use this data source to obtain Variable-specific attributes, such as the value.
 <br>
 For more information, see [get and set variables](https://docs.prefect.io/v3/develop/variables).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

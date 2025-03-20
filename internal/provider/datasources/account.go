@@ -64,12 +64,15 @@ func (d *AccountDataSource) Configure(_ context.Context, req datasource.Configur
 // Schema defines the schema for the data source.
 func (d *AccountDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		// Description: "Data Source representing a Prefect Cloud account",
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Account.
 <br>
 Use this data source to obtain account-level attributes
 `,
+			helpers.PlanPrefectCloudFree,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},

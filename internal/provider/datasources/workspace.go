@@ -100,13 +100,17 @@ var workspaceAttributes = map[string]schema.Attribute{
 // Schema defines the schema for the data source.
 func (d *WorkspaceDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Workspace by handle.
 <br>
 Use this data source to obtain Workspace IDs
 <br>
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 `,
+			helpers.PlanPrefectCloudFree,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Attributes: workspaceAttributes,
 	}
 }

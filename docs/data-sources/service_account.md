@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain service account-level attributes, such as ID.
   
   For more information, see manage service accounts https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts.
+  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_service_account (Data Source)
@@ -17,6 +18,9 @@ Get information about an existing Service Account, by name or ID.
 Use this data source to obtain service account-level attributes, such as ID.
 <br>
 For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).
+
+
+This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 
