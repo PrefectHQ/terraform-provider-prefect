@@ -77,8 +77,8 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				"[API](https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get).\n"+
 				"\n"+
 				"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
-			helpers.PlanPrefectCloudEnterprise,
 			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
