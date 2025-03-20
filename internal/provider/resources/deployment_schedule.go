@@ -85,11 +85,13 @@ func (r *DeploymentScheduleResource) Configure(_ context.Context, req resource.C
 
 func (r *DeploymentScheduleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 The resource 'deployment_schedule' represents a schedule for a deployment.
 <br>
 For more information, see [schedule flow runs](https://docs.prefect.io/v3/automate/add-schedules).
 `,
+			helpers.AllPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

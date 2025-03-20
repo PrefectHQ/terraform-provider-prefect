@@ -7,6 +7,7 @@ description: |-
   Service Accounts are used to configure API access for workers or programs. Use this resource to provision and rotate Keys as well as assign Account and Workspace Access through Roles.
   API Keys for service_account resources can be rotated by modifying the api_key_expiration attribute.
   For more information, see manage service accounts https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts.
+  This feature is available in the following product plans: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_service_account (Resource)
@@ -17,6 +18,8 @@ Service Accounts are used to configure API access for workers or programs. Use t
 
 API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.
 For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).
+
+This feature is available in the following product plans: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

@@ -66,11 +66,13 @@ func (r *AutomationResource) Configure(_ context.Context, req resource.Configure
 // Schema defines the schema for the resource.
 func (r *AutomationResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 The resource 'automations' represents a Prefect Automation.
 <br>
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
 `,
+			helpers.AllPlans...,
+		),
 		Version:    0,
 		Attributes: AutomationSchema(),
 	}

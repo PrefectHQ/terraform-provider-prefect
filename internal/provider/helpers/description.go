@@ -6,29 +6,31 @@ import (
 )
 
 const (
-	TierPrefectCloudFree = "Prefect Cloud (free)"
-	TierPrefectCloudPaid = "Prefect Cloud (paid)"
-	TierPrefectOSS       = "Prefect OSS"
+	PlanPrefectCloudFree       = "Prefect Cloud (Free)"
+	PlanPrefectCloudPro        = "Prefect Cloud (Pro)"
+	PlanPrefectCloudEnterprise = "Prefect Cloud (Enterprise)"
+	PlanPrefectOSS             = "Prefect OSS"
 
 	descriptionTemplate = `
 %s
 
-This feature is available in the following product tiers: %s.
+This feature is available in the following product plans: %s.
 `
 )
 
 var (
-	AllTiers = []string{
-		TierPrefectCloudFree,
-		TierPrefectCloudPaid,
-		TierPrefectOSS,
+	AllPlans = []string{
+		PlanPrefectCloudFree,
+		PlanPrefectCloudPro,
+		PlanPrefectCloudEnterprise,
+		PlanPrefectOSS,
 	}
 )
 
-// DescriptionWithTiers adds a note to the description denoting which tiers
+// DescriptionWithPlans adds a note to the description denoting which plans
 // the resource or datasource supports.
-func DescriptionWithTiers(description string, tiers []string) string {
-	tiersFormatted := strings.Join(tiers, ", ")
+func DescriptionWithPlans(description string, plans ...string) string {
+	plansFormatted := strings.Join(plans, ", ")
 
-	return fmt.Sprintf(descriptionTemplate, description, tiersFormatted)
+	return fmt.Sprintf(descriptionTemplate, description, plansFormatted)
 }

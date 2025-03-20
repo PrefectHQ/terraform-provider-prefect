@@ -89,14 +89,18 @@ func (r *ServiceAccountResource) Configure(_ context.Context, req resource.Confi
 
 func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `service_account` represents a Prefect Cloud Service Account. " +
-			"A Service Account allows you to create an API Key that is not associated with a user account.\n" +
-			"\n" +
-			"Service Accounts are used to configure API access for workers or programs. Use this resource to provision " +
-			"and rotate Keys as well as assign Account and Workspace Access through Roles.\n" +
-			"\n" +
-			"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n" +
-			"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `service_account` represents a Prefect Cloud Service Account. "+
+				"A Service Account allows you to create an API Key that is not associated with a user account.\n"+
+				"\n"+
+				"Service Accounts are used to configure API access for workers or programs. Use this resource to provision "+
+				"and rotate Keys as well as assign Account and Workspace Access through Roles.\n"+
+				"\n"+
+				"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n"+
+				"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Version: 1,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

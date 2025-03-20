@@ -4,11 +4,14 @@ page_title: "prefect_team_access Resource - prefect"
 subcategory: ""
 description: |-
   The resource team_access grants access to a team for a user or service account. For more information, see manage teams https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
+  This feature is available in the following product plans: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_team_access (Resource)
 
 The resource `team_access` grants access to a team for a user or service account. For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
+
+This feature is available in the following product plans: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

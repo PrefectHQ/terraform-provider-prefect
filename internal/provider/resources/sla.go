@@ -73,11 +73,15 @@ func (r *SLAResource) Configure(_ context.Context, req resource.ConfigureRequest
 
 func (r *SLAResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 The resource 'resource_sla' represents a Prefect Resource SLA.
 <br>
 For more information, see documentation on setting up [Service Level Agreements](https://docs.prefect.io/v3/automate/events/slas) on Prefect resources.
 `,
+			helpers.PlanPrefectCloudFree,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"resource_id": schema.StringAttribute{

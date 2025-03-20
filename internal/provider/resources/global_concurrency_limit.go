@@ -76,8 +76,11 @@ func (r *GlobalConcurrencyLimitResource) Configure(_ context.Context, req resour
 // Schema defines the schema for the resource.
 func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).",
-		Version:     0,
+		Description: helpers.DescriptionWithPlans(
+			"The resource `global_concurrency_limit` represents a global concurrency limit. Global concurrency limits allow you to control how many tasks can run simultaneously across all workspaces. For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).",
+			helpers.AllPlans...,
+		),
+		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

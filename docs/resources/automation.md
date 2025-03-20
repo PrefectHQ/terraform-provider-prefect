@@ -6,6 +6,7 @@ description: |-
   The resource 'automations' represents a Prefect Automation.
   
   For more information, see automate overview https://docs.prefect.io/v3/automate/index.
+  This feature is available in the following product plans: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 ---
 
 # prefect_automation (Resource)
@@ -13,6 +14,9 @@ description: |-
 The resource 'automations' represents a Prefect Automation.
 <br>
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
+
+
+This feature is available in the following product plans: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise), Prefect OSS.
 
 ## Example Usage
 

@@ -73,18 +73,17 @@ func (r *AccountResource) Configure(_ context.Context, req resource.ConfigureReq
 
 // Schema defines the schema for the resource.
 func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	tiers := []string{
-		helpers.TierPrefectCloudFree,
-		helpers.TierPrefectCloudPaid,
-	}
-
 	resp.Schema = schema.Schema{
-		Description: helpers.DescriptionWithTiers("The resource `account` represents a Prefect Cloud account. "+
+		Description: helpers.DescriptionWithPlans("The resource `account` represents a Prefect Cloud account. "+
 			"It is used to manage the account's attributes, such as the name, handle, and location.\n"+
 			"\n"+
 			"Note that this resource can only be imported, as account creation is not currently supported "+
 			"via the API. Additionally, be aware that account deletion is possible once it is imported, "+
-			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.", tiers),
+			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
+			helpers.PlanPrefectCloudFree,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
