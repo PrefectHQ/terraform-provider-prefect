@@ -8,7 +8,7 @@ description: |-
   Use this data source read down the pre-defined Roles, to manage User and Service Account access.
   
   For more information, see manage account roles https://docs.prefect.io/v3/manage/cloud/manage-users/manage-roles#manage-account-roles.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_account_role (Data Source)
@@ -20,7 +20,7 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-roles#manage-account-roles).
 
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

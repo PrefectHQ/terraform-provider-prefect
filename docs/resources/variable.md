@@ -4,14 +4,14 @@ page_title: "prefect_variable Resource - prefect"
 subcategory: ""
 description: |-
   The resource variable represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows. For more information, see set and get variables https://docs.prefect.io/v3/develop/variables#set-and-get-variables.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_variable (Resource)
 
 The resource `variable` represents a Prefect Variable. Variables enable you to store and reuse non-sensitive information in your flows. For more information, see [set and get variables](https://docs.prefect.io/v3/develop/variables#set-and-get-variables).
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

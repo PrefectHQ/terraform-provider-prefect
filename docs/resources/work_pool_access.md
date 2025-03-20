@@ -4,14 +4,14 @@ page_title: "prefect_work_pool_access Resource - prefect"
 subcategory: ""
 description: |-
   The resource work_pool_access represents a connection between an accessor (User, Service Account or Team) with a Work Pool. This resource specifies an actor's access level to a specific Work Pool in the Account. For more information, see object access control lists https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_work_pool_access (Resource)
 
 The resource `work_pool_access` represents a connection between an accessor (User, Service Account or Team) with a Work Pool. This resource specifies an actor's access level to a specific Work Pool in the Account. For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

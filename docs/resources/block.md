@@ -9,7 +9,7 @@ description: |-
   Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
   Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
   NOTE: if a Block is managed in Terraform, the .data attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
-  This feature is available in the following product plans https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_block (Resource)
@@ -22,7 +22,7 @@ Use `prefect block type ls` to view all available Block type slugs, which is use
 Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
 *NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
 
-This feature is available in the following [product plans](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 
 ## Example Usage
