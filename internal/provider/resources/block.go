@@ -63,19 +63,22 @@ func (r *BlockResource) Configure(_ context.Context, req resource.ConfigureReque
 
 func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `block` allows creating and managing [Prefect Blocks](https://docs.prefect.io/latest/concepts/blocks/), " +
-			"which are primitives for configuration / secrets in your flows." +
-			"\n" +
-			"`block` resources represent configurations for schemas for all different Block types. " +
-			"Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas." +
-			"\n" +
-			"*Note:* you should be on version `3.0.0rc1` or later to use the following commands:" +
-			"\n" +
-			"Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute." +
-			"\n" +
-			"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)." +
-			"\n" +
-			"*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `block` allows creating and managing [Prefect Blocks](https://docs.prefect.io/latest/concepts/blocks/), "+
+				"which are primitives for configuration / secrets in your flows."+
+				"\n"+
+				"`block` resources represent configurations for schemas for all different Block types. "+
+				"Because of the polymorphic nature of Blocks, you should utilize the `prefect` [CLI](https://docs.prefect.io/latest/getting-started/installation/) to inspect all Block types and schemas."+
+				"\n"+
+				"*Note:* you should be on version `3.0.0rc1` or later to use the following commands:"+
+				"\n"+
+				"Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute."+
+				"\n"+
+				"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)."+
+				"\n"+
+				"*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.",
+			helpers.AllPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

@@ -56,13 +56,15 @@ func (d *WorkerMetadataDataSource) Configure(_ context.Context, req datasource.C
 // Schema defines the schema for the data source.
 func (d *WorkerMetadataDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
 <br>
 Use this data source to get the default base job configurations for those common Worker types.
 <br>
 For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},

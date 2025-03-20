@@ -161,12 +161,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		// Description: "Resource representing a Prefect Workspace",
-		Description: "Deployments are server-side representations of flows. " +
-			"They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. " +
-			"Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. " +
+		Description: helpers.DescriptionWithPlans("Deployments are server-side representations of flows. "+
+			"They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. "+
+			"Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. "+
 			"For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).",
-
+			helpers.AllPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

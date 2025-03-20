@@ -11,9 +11,6 @@ import (
 
 const providerAddress = "registry.terraform.io/prefecthq/prefect"
 
-// Run "go generate" to generate the docs
-//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect
-
 func main() {
 	providerServer := providerserver.NewProtocol6(&provider.PrefectProvider{})
 

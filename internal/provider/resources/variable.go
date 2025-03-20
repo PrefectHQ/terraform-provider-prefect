@@ -149,9 +149,11 @@ func (r *VariableResource) Configure(_ context.Context, req resource.ConfigureRe
 // Schema defines the schema for the resource.
 func (r *VariableResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `variable` represents a Prefect Variable. " +
-			"Variables enable you to store and reuse non-sensitive information in your flows. " +
+		Description: helpers.DescriptionWithPlans("The resource `variable` represents a Prefect Variable. "+
+			"Variables enable you to store and reuse non-sensitive information in your flows. "+
 			"For more information, see [set and get variables](https://docs.prefect.io/v3/develop/variables#set-and-get-variables).",
+			helpers.AllPlans...,
+		),
 		Version:    1,
 		Attributes: VariableResourceSchemaAttributes,
 	}

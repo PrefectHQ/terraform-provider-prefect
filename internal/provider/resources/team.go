@@ -69,9 +69,12 @@ func (r *TeamResource) Configure(_ context.Context, req resource.ConfigureReques
 // Schema returns the resource schema.
 func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `team` represents a Prefect Team. " +
-			"Teams are used to organize users and their permissions. " +
-			"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `team` represents a Prefect Team. "+
+				"Teams are used to organize users and their permissions. "+
+				"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

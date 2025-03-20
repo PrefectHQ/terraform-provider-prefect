@@ -64,12 +64,15 @@ func (r *UserAPIKeyResource) Configure(_ context.Context, req resource.Configure
 // Schema returns the resource schema.
 func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `user_api_key` represents a Prefect User API Key. " +
-			"\n" +
-			"User API Keys are used to authenticate requests to the Prefect API " +
-			"and are specifically bound to Prefect Users (and not Service Accounts - see `prefect_service_account`). " +
-			"\n" +
-			"API Keys via `prefect_user_api_key` resources are not updateable, and any changes to the `name` or `expiration` attributes will force a replacement of the API key.",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `user_api_key` represents a Prefect User API Key. "+
+				"\n"+
+				"User API Keys are used to authenticate requests to the Prefect API "+
+				"and are specifically bound to Prefect Users (and not Service Accounts - see `prefect_service_account`). "+
+				"\n"+
+				"API Keys via `prefect_user_api_key` resources are not updateable, and any changes to the `name` or `expiration` attributes will force a replacement of the API key.",
+			helpers.AllCloudPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

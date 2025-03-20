@@ -58,11 +58,13 @@ func (d *TeamsDataSource) Configure(_ context.Context, req datasource.ConfigureR
 // Schema defines the schema for the data source.
 func (d *TeamsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about multiple Teams.
 <br>
 Use this data source to search for multiple Teams. Defaults to fetching all Teams in the Account.
 `,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},

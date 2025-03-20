@@ -70,7 +70,10 @@ func (r *UserResource) Configure(_ context.Context, req resource.ConfigureReques
 // Schema returns the resource schema.
 func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `user` represents a Prefect User.",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `user` represents a Prefect User.",
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

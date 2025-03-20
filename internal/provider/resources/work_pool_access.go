@@ -67,10 +67,14 @@ func (r *WorkPoolAccessResource) Schema(_ context.Context, _ resource.SchemaRequ
 	defaultEmptyList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		Description: "The resource `work_pool_access` represents a connection between an accessor " +
-			"(User, Service Account or Team) with a Work Pool. This resource specifies an actor's access level " +
-			"to a specific Work Pool in the Account. " +
-			"For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).",
+		Description: helpers.DescriptionWithPlans(
+			"The resource `work_pool_access` represents a connection between an accessor "+
+				"(User, Service Account or Team) with a Work Pool. This resource specifies an actor's access level "+
+				"to a specific Work Pool in the Account. "+
+				"For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).",
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{

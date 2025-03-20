@@ -61,13 +61,15 @@ func (d *WorkQueuesDataSource) Configure(_ context.Context, req datasource.Confi
 // Schema defines the schema for the data source.
 func (d *WorkQueuesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about multiple Work Queues.
 <br>
 Use this data source to search for multiple Work Queues. Defaults to fetching all Work Queues in the Workspace.
 <br>
 For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},

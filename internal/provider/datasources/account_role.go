@@ -48,13 +48,15 @@ func (d *AccountRoleDataSource) Metadata(_ context.Context, req datasource.Metad
 // Schema defines the schema for the data source.
 func (d *AccountRoleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Workspace Role.
 <br>
 Use this data source read down the pre-defined Roles, to manage User and Service Account access.
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-roles#manage-account-roles).
 `,
+			helpers.AllCloudPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
