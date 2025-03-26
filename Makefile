@@ -67,6 +67,7 @@ testacc-dev-user:
 .PHONY: testacc-dev-user
 
 docs:
+	rm -rf docs/ && mkdir docs/
 	tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect
 .PHONY: docs
 

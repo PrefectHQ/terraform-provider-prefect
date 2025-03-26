@@ -84,5 +84,6 @@ Read-Only:
 - `kubernetes` (String) Default base job configuration for Kubernetes workers
 - `modal_push` (String) Default base job configuration for Modal Push workers
 - `prefect_agent` (String) Default base job configuration for Prefect Agent workers
+- `prefect_managed` (String) Default base job configuration for Prefect Managed workers
 - `process` (String) Default base job configuration for Process workers
 - `vertex_ai` (String) Default base job configuration for Vertex AI workers
