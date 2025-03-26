@@ -40,7 +40,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						datasourceName,
 						tfjsonpath.New("base_job_configs"),
-						knownvalue.MapSizeExact(14),
+						knownvalue.MapSizeExact(15),
 					),
 					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.kubernetes"),
 					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.ecs"),
@@ -56,6 +56,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.cloud_run_v2_push"),
 					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.modal_push"),
 					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.ecs_push"),
+					testutils.ExpectKnownValueNotNull(datasourceName, "base_job_configs.prefect_managed"),
 				},
 			},
 		}})
