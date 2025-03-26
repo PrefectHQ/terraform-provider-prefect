@@ -4,7 +4,8 @@ page_title: "prefect_deployment Data Source - prefect"
 subcategory: ""
 description: |-
   Get information about an existing Deployment by either:
-  deployment ID, ordeployment name
+  - deployment ID, or
+  - deployment name
   The Deployment ID takes precedence over deployment name.
   
   For more information, see deploy overview https://docs.prefect.io/v3/deploy/index.

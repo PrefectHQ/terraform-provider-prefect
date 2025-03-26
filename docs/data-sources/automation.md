@@ -144,7 +144,7 @@ Read-Only:
 - `metric` (Attributes) A trigger that fires based on the results of a metric query (see [below for nested schema](#nestedatt--trigger--compound--triggers--metric))
 
 <a id="nestedatt--trigger--compound--triggers--event"></a>
-### Nested Schema for `trigger.compound.triggers.event`
+### Nested Schema for `trigger.compound.triggers.metric`
 
 Read-Only:
 
@@ -236,7 +236,7 @@ Read-Only:
 - `metric` (Attributes) A trigger that fires based on the results of a metric query (see [below for nested schema](#nestedatt--trigger--sequence--triggers--metric))
 
 <a id="nestedatt--trigger--sequence--triggers--event"></a>
-### Nested Schema for `trigger.sequence.triggers.event`
+### Nested Schema for `trigger.sequence.triggers.metric`
 
 Read-Only:
 
