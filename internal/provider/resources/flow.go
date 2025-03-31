@@ -167,10 +167,9 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	client, err := r.client.Flows(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flows client",
-			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	flow, err := client.Create(ctx, api.FlowCreate{
@@ -178,10 +177,7 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 		Tags: tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flow",
-			fmt.Sprintf("Could not create flow, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "create", err))
 
 		return
 	}
@@ -209,10 +205,9 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flow client",
-			fmt.Sprintf("Could not create flow client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	// A flow can be imported + read by specifying the workspace_id and the flow_id.
@@ -325,10 +320,9 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	client, err := r.client.Flows(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flows client",
-			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	flowID, err := uuid.Parse(state.ID.ValueString())
@@ -344,10 +338,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = client.Delete(ctx, flowID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Flow",
-			fmt.Sprintf("Could not delete Flow, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "delete", err))
 
 		return
 	}
