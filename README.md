@@ -3,8 +3,8 @@
 <p align="center">
     <a href="https://prefect.io/slack" alt="Slack">
         <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=0052FF&labelColor=090422&logo=slack" /></a>
-    <a href="https://discourse.prefect.io/" alt="Discourse">
-        <img src="https://img.shields.io/badge/discourse-browse_forum-red.svg?color=0052FF&labelColor=090422&logo=discourse" /></a>
+    <a href="https://discourse.prefect.io/" alt="GitHub Discussions">
+        <img src="https://img.shields.io/github/discussions/prefecthq/prefect"></a>
 </p>
 
 <a href="https://terraform.io">
