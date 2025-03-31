@@ -31,5 +31,5 @@ We appreciate your interest in the Prefect provider! If you find any issues or h
 
 - [Check out our contributing guide](/_about/CONTRIBUTING.md)
 - [File an issue](https://github.com/PrefectHQ/terraform-provider-prefect/issues/new?assignees=&labels=bug&projects=&template=bug.md)
-- [Shoot us a note](mailto:security@prefect.io) for any potential security issues
-- Drop us a line in the [Prefect Slack community workspace](https://communityinviter.com/apps/prefect-community/prefect-community)
+- [Send us a note](mailto:security@prefect.io) for any potential security issues
+- Reach out in the [Prefect community Slack workspace](https://communityinviter.com/apps/prefect-community/prefect-community)
