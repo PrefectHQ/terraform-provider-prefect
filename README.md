@@ -21,7 +21,7 @@
 
 ## Supported objects
 
-We're continuously adding more Prefect Cloud object support, striving for near-parity by the `v1.x.x` release.
+We're continuously adding more Prefect Cloud object support, striving for near-parity around spring of 2025.
 
 See our [Milestone for API parity](https://github.com/PrefectHQ/terraform-provider-prefect/milestone/1) for more information.
 
