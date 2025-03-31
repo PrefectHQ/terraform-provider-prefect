@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -129,9 +128,6 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyTagList),
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
 			},
 		},
 	}
@@ -259,8 +255,63 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *FlowResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
-	// Unsupported - redeploy by default
+func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan FlowResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.Flows(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
+	}
+
+	var tags []string
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	flowID, err := uuid.Parse(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Flow ID",
+			fmt.Sprintf("Could not parse flow ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Update(ctx, flowID, api.FlowUpdate{
+		Tags: tags,
+	})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "update", err))
+
+		return
+	}
+
+	flow, err := client.Get(ctx, flowID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "update", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
