@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -129,9 +128,6 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Optional:    true,
 				Computed:    true,
 				Default:     listdefault.StaticValue(defaultEmptyTagList),
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
-				},
 			},
 		},
 	}
@@ -171,10 +167,9 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	client, err := r.client.Flows(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flows client",
-			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	flow, err := client.Create(ctx, api.FlowCreate{
@@ -182,10 +177,7 @@ func (r *FlowResource) Create(ctx context.Context, req resource.CreateRequest, r
 		Tags: tags,
 	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flow",
-			fmt.Sprintf("Could not create flow, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "create", err))
 
 		return
 	}
@@ -213,10 +205,9 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	client, err := r.client.Flows(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flow client",
-			fmt.Sprintf("Could not create flow client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	// A flow can be imported + read by specifying the workspace_id and the flow_id.
@@ -259,8 +250,63 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
-func (r *FlowResource) Update(_ context.Context, _ resource.UpdateRequest, _ *resource.UpdateResponse) {
-	// Unsupported - redeploy by default
+func (r *FlowResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan FlowResourceModel
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	client, err := r.client.Flows(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
+	}
+
+	var tags []string
+	resp.Diagnostics.Append(plan.Tags.ElementsAs(ctx, &tags, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	flowID, err := uuid.Parse(plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("id"),
+			"Error parsing Flow ID",
+			fmt.Sprintf("Could not parse flow ID to UUID, unexpected error: %s", err.Error()),
+		)
+
+		return
+	}
+
+	err = client.Update(ctx, flowID, api.FlowUpdate{
+		Tags: tags,
+	})
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "update", err))
+
+		return
+	}
+
+	flow, err := client.Get(ctx, flowID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "update", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(copyFlowToModel(ctx, flow, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete deletes the resource and removes the Terraform state on success.
@@ -274,10 +320,9 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	client, err := r.client.Flows(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating flows client",
-			fmt.Sprintf("Could not create flows client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
-		)
+		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Flow", err))
+
+		return
 	}
 
 	flowID, err := uuid.Parse(state.ID.ValueString())
@@ -293,10 +338,7 @@ func (r *FlowResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	err = client.Delete(ctx, flowID)
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error deleting Flow",
-			fmt.Sprintf("Could not delete Flow, unexpected error: %s", err),
-		)
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Flow", "delete", err))
 
 		return
 	}

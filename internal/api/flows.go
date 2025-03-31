@@ -32,7 +32,6 @@ type FlowCreate struct {
 
 // FlowUpdate is a subset of Flow used when updating flows.
 type FlowUpdate struct {
-	Name *string  `json:"name"`
 	Tags []string `json:"tags"`
 }
 
