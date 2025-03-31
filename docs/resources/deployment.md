@@ -77,11 +77,13 @@ resource "prefect_deployment" "deployment" {
       branch             = "main"
       include_submodules = true
 
-      # For private repositiroeis, choose from either:
+      # For private repositories, choose from one of the following options:
       #
-      # Option 1: using an access token
+      # Option 1: using an access token by passing it as plaintext
       access_token = "123abc"
-      # Or option 2: using a credentials block
+      # Option 2: using an access token by referencing a Secret block
+      access_token = "{{ prefect.blocks.secret.github-token }}"
+      # Option 3: using a Credentials block
       credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
