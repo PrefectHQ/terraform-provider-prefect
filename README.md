@@ -17,7 +17,7 @@
 - [Documentation](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs)
 - [Examples](https://github.com/PrefectHQ/terraform-provider-prefect/tree/main/examples)
 
-[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications.  The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud). This provider is maintained by the [engineering team at Prefect](https://www.prefect.io/blog#engineering).
+[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications. The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud). This provider is maintained by the Platform team at Prefect.
 
 ## Supported objects
 
