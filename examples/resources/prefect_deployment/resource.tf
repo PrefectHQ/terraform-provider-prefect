@@ -55,8 +55,14 @@ resource "prefect_deployment" "deployment" {
       type               = "git_clone"
       repository         = "https://github.com/some/repo"
       branch             = "main"
-      access_token       = "123abc"
       include_submodules = true
+
+      # For private repositiroeis, choose from either:
+      #
+      # Option 1: using an access token
+      access_token = "123abc"
+      # Or option 2: using a credentials block
+      credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
       type     = "pull_from_s3",
