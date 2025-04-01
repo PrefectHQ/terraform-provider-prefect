@@ -243,8 +243,7 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	copyWorkPoolToModel(pool, &plan)
-	resp.Diagnostics.Append()
+	resp.Diagnostics.Append(copyWorkPoolToModel(pool, &plan))
 	if resp.Diagnostics.HasError() {
 		return
 	}
