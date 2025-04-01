@@ -22,10 +22,10 @@ This feature is available in the following [product plan(s)](https://www.prefect
 ## Example Usage
 
 ```terraform
+# Use the default base job template by omitting the `base_job_template` argument.
 resource "prefect_work_pool" "example" {
   name         = "my-work-pool"
-  type         = "kubernetes"
-  paused       = false
+  type         = "prefect:managed"
   workspace_id = "my-workspace-id"
 }
 
