@@ -28,9 +28,15 @@ The provider may return an error that looks similar to the following:
 │ Not Allowed, error={"detail":"Method Not Allowed"}
 ```
 
+or timeout when trying to create a resource.
+
 This is often an indication that Prefect is being [self-hosted](https://docs.prefect.io/v3/manage/self-host)
 and is running behind a proxy. It can usually be fixed by setting `FORWARD_ALLOW_IPS` in your networking
 provider.
+
+Related status codes:
+- 307 Temporary Redirect: You may also notice 307 redirects in your prefect server logs for the corresponding component
+which also may point to the above scenario.
 
 See related issues for more information:
 - [#328: Prefect Flows and Deployments 405 Response](https://github.com/PrefectHQ/terraform-provider-prefect/issues/328)
