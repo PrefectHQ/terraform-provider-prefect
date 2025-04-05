@@ -1,8 +1,52 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "inflection",
+#     "requests",
+#     "rich",
+# ]
+# ///
 import requests
 from pprint import pprint
 from rich.console import Console
 from rich.table import Table
 import inflection
+
+
+# key = normalized cloud resource
+# value = list of known TF aliases (resource or datasource)
+known_aliases = {
+    "account_membership": ["account_member"],
+    "account_role": ["account_member"],
+    "block_document": ["block"],
+    "block_type": ["block"],
+    "bot": ["service_account"],
+    "concurrency_limit": ["global_concurrency_limit"],
+    "sla": ["resource_sla"],
+    "workspace_bot_access": ["workspace_access"],
+    "workspace_team_access": ["workspace_access"],
+    "workspace_user_access": ["workspace_access"],
+}
+
+# normalized cloud resource names
+# that we want to omit from reporting
+# because they're not going to be implemented.
+blacklist = [
+    "ai",
+    "download",
+    "event",
+    "flow_run_state",
+    "flow_run",
+    "invitation",
+    "log",
+    "me",
+    "root",
+    "savedsearch",
+    "task_run_state",
+    "task_run",
+    "ui",
+    "workspace_invitation",
+]
 
 
 def get_latest_tf_provider_version_id():
@@ -46,6 +90,9 @@ def get_provider_implemented_resource_slugs() -> dict[str, list[str]]:
         if category in response and "slug" in attributes:
             response[category].append(normalize_name(attributes["slug"]))
 
+    response["resources"] = sorted(response["resources"])
+    response["data-sources"] = sorted(response["data-sources"])
+
     return response
 
 
@@ -86,6 +133,24 @@ def get_prefect_cloud_resources() -> list[str]:
     return [normalize_name(tag) for tag in sorted(tags)]
 
 
+def does_exist_in_list(resource: str, list: list[str]) -> bool:
+    """
+    Check if a cloud resource exists in either the TF resource or datasource list.
+
+    This performs a normalized value check by checking:
+        - does the normalized cloud resource exist?
+        - does the cloud resource have a known alias?
+    """
+    if resource in list:
+        return True
+
+    for value in known_aliases.get(resource, []):
+        if value in list:
+            return True
+
+    return False
+
+
 def find_diffs(
     implemented_provider_resources: dict[str, list[str]],
     openapi_resource_tags: list[str],
@@ -98,11 +163,16 @@ def find_diffs(
     table.add_column("datasource")
 
     for cloud_resource in openapi_resource_tags:
+        if cloud_resource in blacklist:
+            continue
+
         resource = implemented_provider_resources["resources"]
         datasource = implemented_provider_resources["data-sources"]
 
-        resource_status = "✅" if cloud_resource in resource else "❌"
-        datasource_status = "✅" if cloud_resource in datasource else "❌"
+        resource_status = "✅" if does_exist_in_list(cloud_resource, resource) else "❌"
+        datasource_status = (
+            "✅" if does_exist_in_list(cloud_resource, datasource) else "❌"
+        )
 
         table.add_row(cloud_resource, resource_status, datasource_status)
 
