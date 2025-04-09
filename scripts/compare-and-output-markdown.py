@@ -3,22 +3,14 @@
 # dependencies = [
 #     "inflection",
 #     "requests",
-#     "rich",
-#     "pygithub",
 #     "tabulate",
 # ]
 # ///
 import requests
 from pprint import pprint
-from rich.console import Console
-from rich.table import Table
 from tabulate import tabulate
 import inflection
-from github import Github
-from github import Auth
 import datetime
-import os
-import json
 
 # Update this list to omit an API resource from this reporting.
 #   value = normalized cloud resource name
@@ -177,13 +169,23 @@ def find_diffs(
     implemented_provider_resources: dict[str, list[str]],
     openapi_resource_tags: list[str],
 ) -> dict[str, dict[str, bool]]:
-    table = Table(
-        show_header=True, show_lines=True, title="Cloud Resource - Provider Status"
-    )
-    table.add_column("cloud resource")
-    table.add_column("resource")
-    table.add_column("datasource")
+    """
+    Returns a dict of cloud API resources, with their corresponding
+    resource and datasource implementation statuses.
 
+    ex:
+    {
+      "artifacts": {
+        "resource": True,
+        "datasource": False,
+      },
+      "automations": {
+        "resource": True,
+        "datasource": True,
+      },
+      ...
+    }
+    """
     implemented_status: dict[str, dict[str, bool]] = {}
     for cloud_resource in openapi_resource_tags:
         if cloud_resource in apis_we_wont_implement:
@@ -198,79 +200,12 @@ def find_diffs(
             implemented_provider_resources["data-sources"],
         )
 
-        table.add_row(
-            cloud_resource,
-            "✅" if is_resource_implemented else "❌",
-            "✅" if is_datasource_implemented else "❌",
-        )
-
         implemented_status[cloud_resource] = {
             "resource": is_resource_implemented,
             "datasource": is_datasource_implemented,
         }
 
-    console = Console()
-    console.print(table)
-
     return implemented_status
-
-
-def sync_github_issues(implemented_status: dict[str, dict[str, bool]]):
-    issue_label_to_search = "parity-audit"
-
-    auth = Auth.Token(os.environ["GITHUB_TOKEN"])
-    g = Github(auth=auth)
-
-    repo = g.get_repo("prefecthq/terraform-provider-prefect")
-    existing_parity_audit_issues = repo.get_issues(
-        state="open", labels=[issue_label_to_search]
-    )
-
-    issue_title_prefix: str = "Feature Request: "
-
-    # close existing feature request issues which have later been determined to not be implemented
-    # or were deemed to be implemented after an addition to the known_aliases list
-    for issue in existing_parity_audit_issues:
-        requested_api_resource = issue.title.removeprefix(issue_title_prefix)
-
-        if requested_api_resource in apis_we_wont_implement:
-            print(
-                f"{requested_api_resource}: closing feature request due to not being implemented"
-            )
-            issue.edit(state="closed", state_reason="not_planned")
-        elif (
-            requested_api_resource in implemented_status
-            and implemented_status[requested_api_resource]["resource"]
-            and implemented_status[requested_api_resource]["datasource"]
-        ):
-            print(
-                f"{requested_api_resource}: closing feature request due to being implemented"
-            )
-            issue.edit(state="closed", state_reason="completed")
-
-    # upsert feature request issues, based on our dictionary of resources to implement
-    for resource_to_check, status in implemented_status.items():
-        # skip if both resource and datasource are implemented
-        if status["resource"] and status["datasource"]:
-            continue
-
-        issue_body = f"Implementation Status: `{json.dumps(status)}`"
-
-        # if the issue already exists, update the body with the current status
-        if any(
-            resource_to_check == issue.title.removeprefix(issue_title_prefix)
-            for issue in existing_parity_audit_issues
-        ):
-            issue.edit(body=issue_body)
-
-        # if the issue doesn't exist, let's create it
-        else:
-            repo.create_issue(
-                title=f"{issue_title_prefix}{resource_to_check}",
-                body=issue_body,
-                labels=[issue_label_to_search],
-            )
-
 
 def generate_wiki_markdown(implemented_status: dict[str, dict[str, bool]]):
     """
@@ -294,7 +229,7 @@ def generate_wiki_markdown(implemented_status: dict[str, dict[str, bool]]):
 
     with open("wiki_output.md", "w") as f:
         f.write(
-            f"# API Parity\n\n_Last updated: {datetime.date.today()}_\n\n{markdown_table}\n"
+            f"_Last updated: {datetime.date.today()}_\n\n{markdown_table}\n"
         )
 
 
