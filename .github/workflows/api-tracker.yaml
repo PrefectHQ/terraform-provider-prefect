@@ -1,4 +1,4 @@
-name: Track API Parity and create issues
+name: Track API Parity and update wiki
 
 'on':
   # Run weekly on Monday at 9:00 AM UTC
@@ -7,12 +7,6 @@ name: Track API Parity and create issues
 
   # Allow manual triggering
   workflow_dispatch: {}
-
-  # Allow testing from PRs
-  # TODO: remove before merge
-  pull_request:
-    branches:
-      - main
 
 permissions: {}
 
