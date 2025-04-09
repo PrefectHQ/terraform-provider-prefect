@@ -5,15 +5,18 @@
 #     "requests",
 #     "rich",
 #     "pygithub",
+#     "tabulate",
 # ]
 # ///
 import requests
 from pprint import pprint
 from rich.console import Console
 from rich.table import Table
+from tabulate import tabulate
 import inflection
 from github import Github
 from github import Auth
+import datetime
 import os
 import json
 
@@ -269,6 +272,32 @@ def sync_github_issues(implemented_status: dict[str, dict[str, bool]]):
             )
 
 
+def generate_wiki_markdown(implemented_status: dict[str, dict[str, bool]]):
+    """
+    Generates a markdown table of the current implementation status for each cloud resource.
+
+    Outputs this to a `wiki_output.md` file, which can later be used to update the repo wiki.
+    """
+    headers = ["Cloud Resource", "Resource", "Datasource"]
+    markdown_table = tabulate(
+        [
+            [
+                cloud_resource,
+                "✅" if status["resource"] else "❌",
+                "✅" if status["datasource"] else "❌",
+            ]
+            for cloud_resource, status in implemented_status.items()
+        ],
+        headers=headers,
+        tablefmt="github",
+    )
+
+    with open("wiki_output.md", "w") as f:
+        f.write(
+            f"# API Parity\n\n_Last updated: {datetime.date.today()}_\n\n{markdown_table}\n"
+        )
+
+
 def main():
     implemented_provider_resources = get_provider_implemented_resource_slugs()
     pprint(implemented_provider_resources)
@@ -286,7 +315,7 @@ def main():
         openapi_resource_tags,
     )
 
-    sync_github_issues(implemented_status)
+    generate_wiki_markdown(implemented_status)
 
 
 if __name__ == "__main__":

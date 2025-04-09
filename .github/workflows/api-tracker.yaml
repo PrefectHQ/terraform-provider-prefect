@@ -8,6 +8,12 @@ name: Track API Parity and create issues
   # Allow manual triggering
   workflow_dispatch: {}
 
+  # Allow testing from PRs
+  # TODO: remove before merge
+  pull_request:
+    branches:
+      - main
+
 permissions: {}
 
 jobs:
@@ -30,7 +36,25 @@ jobs:
         with:
           version: "0.6.13"
 
-      - name: Run compare.py
-        run: uv run scripts/compare-and-sync-issues.py
+      - name: Run compare-and-output-markdown.py
+        run: uv run scripts/compare-and-output-markdown.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit output to wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          WIKI_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.wiki.git"
+          git clone "$WIKI_URL" wiki
+
+          cp wiki_output.md wiki/API_Parity.md
+
+          cd wiki
+          git add API_Parity.md
+          git commit -m "Update API Parity page from workflow"
+          git push
