@@ -52,7 +52,7 @@ jobs:
           WIKI_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.wiki.git"
           git clone "$WIKI_URL" wiki
 
-          cp wiki_output.md wiki/API_Parity.md
+          cp wiki_output.md wiki/API-Parity.md
 
           cd wiki
           git add API-Parity.md
