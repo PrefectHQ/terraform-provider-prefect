@@ -19,7 +19,7 @@ permissions: {}
 jobs:
   detect-api-drift:
     permissions:
-      # required to read from the repo
+      # required to read from repo + write to wiki
       contents: write
       # required for the paths-filter GHA, if workflow triggered by PR
       pull-requests: read
@@ -55,6 +55,6 @@ jobs:
           cp wiki_output.md wiki/API_Parity.md
 
           cd wiki
-          git add API_Parity.md
+          git add API-Parity.md
           git commit -m "Update API Parity page from workflow"
           git push
