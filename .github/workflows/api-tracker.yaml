@@ -8,12 +8,6 @@ name: Track API Parity and create issues
   # Allow manual triggering
   workflow_dispatch: {}
 
-  # Allow testing from PRs
-  # TODO: remove before merge
-  pull_request:
-    branches:
-      - main
-
 permissions: {}
 
 jobs:
