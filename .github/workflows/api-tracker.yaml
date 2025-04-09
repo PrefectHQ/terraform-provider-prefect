@@ -1,0 +1,54 @@
+name: Track API Parity and update wiki
+
+'on':
+  # Run weekly on Monday at 9:00 AM UTC
+  schedule:
+    - cron: '0 9 * * 1'
+
+  # Allow manual triggering
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  detect-api-drift:
+    permissions:
+      # required to read from repo + write to wiki
+      contents: write
+      # required for the paths-filter GHA, if workflow triggered by PR
+      pull-requests: read
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # We need history to compare with previous schemas
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.6.13"
+
+      - name: Run compare-and-output-markdown.py
+        run: uv run scripts/compare-and-output-markdown.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit output to wiki
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          WIKI_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.wiki.git"
+          git clone "$WIKI_URL" wiki
+
+          cp wiki_output.md wiki/API-Parity.md
+
+          cd wiki
+          git add API-Parity.md
+          git commit -m "Update API Parity page from workflow"
+          git push

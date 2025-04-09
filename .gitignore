@@ -14,3 +14,5 @@ build/*
 .envrc
 
 dev/*
+
+wiki_output.md
