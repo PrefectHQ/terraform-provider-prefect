@@ -17,25 +17,6 @@ from github import Auth
 import os
 import json
 
-# Update this dict to whitelist an API resource
-# which may not have a direct TF implementation with the same name,
-# but is functionally covered by a TF resources/datasources.
-#   key = normalized cloud resource name
-#   value = list of known TF aliases (resource or datasource)
-known_aliases = {
-    "account_membership": ["account_member"],
-    "account_role": ["account_member"],
-    "block_document": ["block"],
-    "block_type": ["block"],
-    "bot": ["service_account"],
-    "concurrency_limits_v2": ["global_concurrency_limit"],
-    "notification": ["resource_sla"],
-    "sla": ["resource_sla"],
-    "workspace_bot_access": ["workspace_access"],
-    "workspace_team_access": ["workspace_access"],
-    "workspace_user_access": ["workspace_access"],
-}
-
 # Update this list to omit an API resource from this reporting.
 #   value = normalized cloud resource name
 #   (normalized = singularize + underscore)
@@ -64,8 +45,26 @@ apis_we_wont_implement = [
     "ui",
     "workspace_invitation",
     "workspace_scope",
-    "flow",
 ]
+
+# Update this dict to whitelist an API resource
+# which may not have a direct TF implementation with the same name,
+# but is functionally covered by a TF resources/datasources.
+#   key = normalized cloud resource name
+#   value = list of known TF aliases (resource or datasource)
+known_aliases = {
+    "account_membership": ["account_member"],
+    "account_role": ["account_member"],
+    "block_document": ["block"],
+    "block_type": ["block"],
+    "bot": ["service_account"],
+    "concurrency_limits_v2": ["global_concurrency_limit"],
+    "notification": ["resource_sla"],
+    "sla": ["resource_sla"],
+    "workspace_bot_access": ["workspace_access"],
+    "workspace_team_access": ["workspace_access"],
+    "workspace_user_access": ["workspace_access"],
+}
 
 
 def get_latest_tf_provider_version_id():
