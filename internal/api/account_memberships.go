@@ -9,10 +9,12 @@ import (
 
 type AccountMembershipsClient interface {
 	List(ctx context.Context, emails []string) ([]*AccountMembership, error)
+	Update(ctx context.Context, accountMembershipID uuid.UUID, payload *AccountMembershipUpdate) error
+	Delete(ctx context.Context, accountMembershipID uuid.UUID) error
 }
 
 type AccountMembership struct {
-	ID              uuid.UUID  `json:"id"`
+	ID              string     `json:"id"`
 	ActorID         uuid.UUID  `json:"actor_id"`
 	UserID          uuid.UUID  `json:"user_id"`
 	FirstName       string     `json:"first_name"`
@@ -34,4 +36,9 @@ type AccountMembershipFilter struct {
 			Any []string `json:"any_"`
 		} `json:"email,omitempty"`
 	} `json:"account_memberships"`
+}
+
+// AccountMembershipUpdate defines the payload for updating an account membership.
+type AccountMembershipUpdate struct {
+	AccountRoleID uuid.UUID `json:"account_role_id"`
 }

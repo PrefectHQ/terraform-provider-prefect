@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -79,8 +78,8 @@ resource "prefect_service_account" "bot" {
 func TestAccResource_service_account(t *testing.T) {
 	botResourceName := "prefect_service_account.bot"
 
-	botRandomName := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
-	botRandomName2 := testutils.TestAccPrefix + acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	botRandomName := testutils.NewRandomPrefixedString()
+	botRandomName2 := testutils.NewRandomPrefixedString()
 
 	expiration := time.Now().AddDate(0, 0, 1)
 

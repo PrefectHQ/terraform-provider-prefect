@@ -21,7 +21,7 @@ type AccountMemberDataSource struct {
 }
 
 type AccountMemberDataSourceModel struct {
-	ID              customtypes.UUIDValue `tfsdk:"id"`
+	ID              types.String          `tfsdk:"id"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	UserID          customtypes.UUIDValue `tfsdk:"user_id"`
 	FirstName       types.String          `tfsdk:"first_name"`
@@ -52,7 +52,6 @@ func (d *AccountMemberDataSource) Metadata(_ context.Context, req datasource.Met
 var accountMemberAttributesBase = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:    true,
-		CustomType:  customtypes.UUIDType{},
 		Description: "Account Member ID (UUID)",
 	},
 	"actor_id": schema.StringAttribute{
@@ -107,13 +106,15 @@ func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	}
 
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Account Member (user)	by their email.
 <br>
 Use this data source to obtain user or actor IDs to manage Workspace Access.
 <br>
 For more information, see [manage account roles](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 `,
+			helpers.AllCloudPlans...,
+		),
 		Attributes: accountMemberAttributes,
 	}
 }
@@ -173,7 +174,7 @@ func (d *AccountMemberDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	fetchedAccountMember := accountMembers[0]
 
-	config.ID = customtypes.NewUUIDValue(fetchedAccountMember.ID)
+	config.ID = types.StringValue(fetchedAccountMember.ID)
 	config.ActorID = customtypes.NewUUIDValue(fetchedAccountMember.ActorID)
 	config.UserID = customtypes.NewUUIDValue(fetchedAccountMember.UserID)
 	config.FirstName = types.StringValue(fetchedAccountMember.FirstName)

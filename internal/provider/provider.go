@@ -24,6 +24,15 @@ import (
 
 var _ = provider.Provider(&PrefectProvider{})
 
+const (
+	envAccountID    = "PREFECT_CLOUD_ACCOUNT_ID"
+	envAPIURL       = "PREFECT_API_URL"
+	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
+	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
+
+	defaultAPIURL = "https://api.prefect.cloud"
+)
+
 // New returns a new Prefect Provider instance.
 //
 //nolint:ireturn // required by Terraform API
@@ -39,13 +48,20 @@ func (p *PrefectProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 // Schema defines the provider-level schema for configuration data.
 func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Description: "Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				Description: "Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud`",
-				Optional:    true,
+				Description: "The Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable." +
+					" Defaults to `https://api.prefect.cloud` if not configured." +
+					" Can optionally include the default account ID and workspace ID in the following format:" +
+					" `https://api.prefect.cloud/api/accounts/<accountID>/workspaces/<workspaceID>`." +
+					" This is the same format used for the `PREFECT_API_URL` value in the Prefect CLI configuration file." +
+					" The `account_id` and `workspace_id` attributes and their matching environment variables will take" +
+					" priority over any account and workspace ID values provided in the `endpoint` attribute.",
+				Optional: true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "Prefect Cloud API Key. Can also be set via the `PREFECT_API_KEY` environment variable.",
+				Description: "Prefect Cloud API key. Can also be set via the `PREFECT_API_KEY` environment variable.",
 				Optional:    true,
 				Sensitive:   true,
 			},
@@ -69,6 +85,8 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 }
 
 // Configure configures the provider's internal client.
+//
+//nolint:maintidx // this initialization logic is complex, and we can refactor it later
 func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	config := &PrefectProviderModel{}
 
@@ -121,19 +139,15 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	// Extract endpoint from configuration or environment variable.
-	// If the endpoint is not set, or the value is not a valid URL, emit an error.
 	var endpoint string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
-	} else if apiURLEnvVar, ok := os.LookupEnv("PREFECT_API_URL"); ok {
+	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
 	}
+
 	if endpoint == "" {
-		endpoint = "https://api.prefect.cloud"
-	}
-	// Here, we'll ensure that the /api suffix is present on the endpoint
-	if !strings.HasSuffix(endpoint, "/api") {
-		endpoint = fmt.Sprintf("%s/api", endpoint)
+		endpoint = defaultAPIURL
 	}
 
 	endpointURL, err := url.Parse(endpoint)
@@ -144,20 +158,12 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
 	}
-	isPrefectCloudEndpoint := helpers.IsCloudEndpoint(endpointURL.Host)
-
-	// Extracts the host (without the /api suffix),
-	// so we can store it on the Client object in addition to the endpoint.
-	// For non-Cloud endpoints, it will likely be the same as .endpoint.
-	// This is useful for certain resources where we need access to the
-	// endpoint host to construct custom URLs as a resource attribute.
-	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
 	// Extract the API Key from configuration or environment variable.
 	var apiKey string
 	if !config.APIKey.IsNull() {
 		apiKey = config.APIKey.ValueString()
-	} else if apiKeyEnvVar, ok := os.LookupEnv("PREFECT_API_KEY"); ok {
+	} else if apiKeyEnvVar, ok := os.LookupEnv(envAPIKey); ok {
 		apiKey = apiKeyEnvVar
 	}
 
@@ -165,31 +171,66 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	var basicAuthKey string
 	if !config.BasicAuthKey.IsNull() {
 		basicAuthKey = config.BasicAuthKey.ValueString()
-	} else if basicAuthKeyEnvVar, ok := os.LookupEnv("PREFECT_BASIC_AUTH_KEY"); ok {
+	} else if basicAuthKeyEnvVar, ok := os.LookupEnv(envBasicAuthKey); ok {
 		basicAuthKey = basicAuthKeyEnvVar
 	}
 
-	// Extract the Account ID from configuration or environment variable.
-	// If the ID is set to an invalid UUID, emit an error.
+	// Extract the Account ID from configuration, the PREFECT_CLOUD_ACCOUNT_ID
+	// environment variable, or the PREFECT_API_URL environment variable.
 	var accountID uuid.UUID
 	if !config.AccountID.IsNull() {
 		accountID = config.AccountID.ValueUUID()
-	} else if accountIDEnvVar, ok := os.LookupEnv("PREFECT_CLOUD_ACCOUNT_ID"); ok {
+	} else if accountIDEnvVar, ok := os.LookupEnv(envAccountID); ok {
 		accountID, err = uuid.Parse(accountIDEnvVar)
 		if err != nil {
-			resp.Diagnostics.AddAttributeWarning(
+			resp.Diagnostics.AddAttributeError(
 				path.Root("account_id"),
 				"Invalid Prefect Account ID defined in PREFECT_CLOUD_ACCOUNT_ID ",
 				fmt.Sprintf("The PREFECT_CLOUD_ACCOUNT_ID value %q is not a valid UUID: %s", accountIDEnvVar, err),
 			)
+
+			return
 		}
+	} else if URLContainsIDs(endpoint) {
+		aID, err := GetAccountIDFromPath(endpointURL.Path)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("account_id"),
+				"Invalid Prefect Account ID defined in PREFECT_API_URL ",
+				fmt.Sprintf("The PREFECT_API_URL contains an account value is not a valid UUID: %s", err),
+			)
+
+			return
+		}
+
+		accountID = aID
+	}
+
+	// Extract the Workspace ID from configuration or the PREFECT_API_URL
+	// environment variable.
+	var workspaceID uuid.UUID
+	if !config.WorkspaceID.IsNull() {
+		workspaceID = config.WorkspaceID.ValueUUID()
+	} else if URLContainsIDs(endpoint) {
+		wID, err := GetWorkspaceIDFromPath(endpointURL.Path)
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("workspace_id"),
+				"Invalid Prefect Workspace ID defined in PREFECT_API_URL ",
+				fmt.Sprintf("The PREFECT_API_URL contains a workspace value is not a valid UUID: %s", err),
+			)
+
+			return
+		}
+
+		workspaceID = wID
 	}
 
 	// If the endpoint is pointed to Prefect Cloud, we will ensure
 	// that a valid API Key is passed.
 	// Additionally, we will warn if an Account ID is missing,
 	// as it's likely that this is a user misconfiguration.
-	if isPrefectCloudEndpoint {
+	if helpers.IsCloudEndpoint(endpointURL.Host) {
 		if apiKey == "" {
 			resp.Diagnostics.AddAttributeError(
 				path.Root("api_key"),
@@ -197,6 +238,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 				"The Prefect API Endpoint is configured to Prefect Cloud, however, the Prefect API Key is empty. "+
 					"Potential resolutions: set the endpoint attribute or PREFECT_API_URL environment variable to a Prefect server installation, set the PREFECT_API_KEY environment variable, or configure the api_key attribute.",
 			)
+
+			return
 		}
 
 		if accountID == uuid.Nil {
@@ -209,8 +252,15 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		}
 	}
 
-	if resp.Diagnostics.HasError() {
-		return
+	// If the endpoint contained the account and workspace IDs,
+	// truncate it to the base URL now that those IDs have been captured.
+	//
+	// Or, if the endpoint did not contain the account and workspace IDs,
+	// just ensure it has the '/api' suffix.
+	if URLContainsIDs(endpoint) {
+		endpoint = fmt.Sprintf("%s://%s/api", endpointURL.Scheme, endpointURL.Host)
+	} else if !strings.HasSuffix(endpoint, "/api") {
+		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
@@ -219,14 +269,21 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_basic_auth_key")
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
-	ctx = tflog.SetField(ctx, "prefect_workspace_id", config.WorkspaceID.ValueString())
+	ctx = tflog.SetField(ctx, "prefect_workspace_id", workspaceID)
 	tflog.Debug(ctx, "Creating Prefect client")
+
+	// Extracts the host (without the /api suffix),
+	// so we can store it on the Client object in addition to the endpoint.
+	// For non-Cloud endpoints, it will likely be the same as .endpoint.
+	// This is useful for certain resources where we need access to the
+	// endpoint host to construct custom URLs as a resource attribute.
+	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
 		client.WithBasicAuthKey(basicAuthKey),
-		client.WithDefaults(accountID, config.WorkspaceID.ValueUUID()),
+		client.WithDefaults(accountID, workspaceID),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -276,6 +333,7 @@ func (p *PrefectProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		resources.NewAccountResource,
+		resources.NewAccountMemberResource,
 		resources.NewAutomationResource,
 		resources.NewBlockAccessResource,
 		resources.NewBlockResource,
@@ -285,10 +343,16 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewFlowResource,
 		resources.NewGlobalConcurrencyLimitResource,
 		resources.NewServiceAccountResource,
+		resources.NewSLAResource,
 		resources.NewTaskRunConcurrencyLimitResource,
+		resources.NewTeamAccessResource,
+		resources.NewTeamResource,
+		resources.NewUserResource,
+		resources.NewUserAPIKeyResource,
 		resources.NewVariableResource,
 		resources.NewWebhookResource,
 		resources.NewWorkPoolResource,
+		resources.NewWorkPoolAccessResource,
 		resources.NewWorkspaceAccessResource,
 		resources.NewWorkspaceResource,
 		resources.NewWorkspaceRoleResource,

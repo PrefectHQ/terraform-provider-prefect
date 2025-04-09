@@ -6,6 +6,7 @@ description: |-
   The resource work_pool represents a Prefect Work Pool. Work Pools represent infrastructure configurations for jobs across several common environments.
   Work Pools can be set up with default base job configurations, based on which type. Use this in conjunction with the prefect_worker_metadata data source to bootstrap new Work Pools quickly.
   For more information, see configure dynamic infrastructure with work pools https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools.
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_work_pool (Resource)
@@ -16,13 +17,15 @@ Work Pools can be set up with default base job configurations, based on which ty
 
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
 
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+
 ## Example Usage
 
 ```terraform
+# Use the default base job template by omitting the `base_job_template` argument.
 resource "prefect_work_pool" "example" {
   name         = "my-work-pool"
-  type         = "kubernetes"
-  paused       = false
+  type         = "prefect:managed"
   workspace_id = "my-workspace-id"
 }
 
@@ -53,14 +56,26 @@ resource "prefect_work_pool" "example_with_file_encoded" {
 
 # Alternatively, use the prefect_worker_metadata datasource
 # to load a default base job configuration dynamically.
+# See the `prefect_worker_metadata` datasource documentation an exhaustive list of keys.
+# https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs/data-sources/worker_metadata
 data "prefect_worker_metadata" "d" {}
 
-resource "prefect_work_pool" "example_with_datasource" {
+# example: use the `.kubernetes` key to map to a `kubernetes` work pool type
+resource "prefect_work_pool" "example_with_datasource_kubernetes" {
   name              = "test-k8s-pool"
   type              = "kubernetes"
   workspace_id      = data.prefect_workspace.prd.id
   paused            = false
   base_job_template = data.prefect_worker_metadata.d.base_job_configs.kubernetes
+}
+
+# example: use the `.prefect_managed` key to map to a `prefect:managed` work pool type
+resource "prefect_work_pool" "example_with_datasource_prefect_managed" {
+  name              = "test-prefect-managed-pool"
+  type              = "prefect:managed"
+  workspace_id      = data.prefect_workspace.prd.id
+  paused            = false
+  base_job_template = data.prefect_worker_metadata.d.base_job_configs.prefect_managed
 }
 ```
 

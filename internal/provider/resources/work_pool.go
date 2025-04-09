@@ -3,6 +3,7 @@ package resources
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -76,13 +77,15 @@ func (r *WorkPoolResource) Configure(_ context.Context, req resource.ConfigureRe
 // Schema defines the schema for the resource.
 func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `work_pool` represents a Prefect Work Pool. " +
-			"Work Pools represent infrastructure configurations for jobs across several common environments.\n" +
-			"\n" +
-			"Work Pools can be set up with default base job configurations, based on which type. " +
-			"Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.\n" +
-			"\n" +
+		Description: helpers.DescriptionWithPlans("The resource `work_pool` represents a Prefect Work Pool. "+
+			"Work Pools represent infrastructure configurations for jobs across several common environments.\n"+
+			"\n"+
+			"Work Pools can be set up with default base job configurations, based on which type. "+
+			"Use this in conjunction with the `prefect_worker_metadata` data source to bootstrap new Work Pools quickly.\n"+
+			"\n"+
 			"For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).",
+			helpers.AllPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -163,9 +166,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 				},
 			},
 			"base_job_template": schema.StringAttribute{
-				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Default:     stringdefault.StaticString("{}"),
 				Description: "The base job template for the work pool, as a JSON string",
 				Optional:    true,
 			},
@@ -189,12 +190,13 @@ func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) dia
 	tfModel.Paused = types.BoolValue(pool.IsPaused)
 	tfModel.Type = types.StringValue(pool.Type)
 
-	byteSlice, err := json.Marshal(pool.BaseJobTemplate)
-	if err != nil {
-		return helpers.SerializeDataErrorDiagnostic("data", "Base Job Template", err)
+	if !tfModel.BaseJobTemplate.IsNull() {
+		byteSlice, err := json.Marshal(pool.BaseJobTemplate)
+		if err != nil {
+			return helpers.SerializeDataErrorDiagnostic("data", "Base Job Template", err)
+		}
+		tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(string(byteSlice))
 	}
-
-	tfModel.BaseJobTemplate = jsontypes.NewNormalizedValue(string(byteSlice))
 
 	return nil
 }
@@ -209,12 +211,6 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
@@ -222,14 +218,25 @@ func (r *WorkPoolResource) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	pool, err := client.Create(ctx, api.WorkPoolCreate{
+	payload := api.WorkPoolCreate{
 		Name:             plan.Name.ValueString(),
 		Description:      plan.Description.ValueStringPointer(),
 		Type:             plan.Type.ValueString(),
-		BaseJobTemplate:  baseJobTemplate,
 		IsPaused:         plan.Paused.ValueBool(),
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
-	})
+	}
+
+	// only append the deserialized base job template if it is provided in the user's config
+	if !plan.BaseJobTemplate.IsNull() {
+		baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+		payload.BaseJobTemplate = &baseJobTemplate
+	}
+
+	pool, err := client.Create(ctx, payload)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "create", err))
 
@@ -266,6 +273,19 @@ func (r *WorkPoolResource) Read(ctx context.Context, req resource.ReadRequest, r
 
 	pool, err := client.Get(ctx, state.Name.ValueString())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		//
+		// NOTE: as a workaround, we encode + check this status code string on the error object.
+		// See `checkRetryPolicy` in `internal/client/client.go` for more details.
+		if strings.Contains(err.Error(), "status_code=404") {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
+		// Otherwise, we can log the error diagnostic and return
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "get", err))
 
 		return
@@ -291,12 +311,6 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	client, err := r.client.WorkPools(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Work Pool", err))
@@ -304,12 +318,24 @@ func (r *WorkPoolResource) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	err = client.Update(ctx, plan.Name.ValueString(), api.WorkPoolUpdate{
+	payload := api.WorkPoolUpdate{
 		Description:      plan.Description.ValueStringPointer(),
 		IsPaused:         plan.Paused.ValueBoolPointer(),
-		BaseJobTemplate:  baseJobTemplate,
 		ConcurrencyLimit: plan.ConcurrencyLimit.ValueInt64Pointer(),
-	})
+	}
+
+	// only append the deserialized base job template if it is provided in the user's config
+	if !plan.BaseJobTemplate.IsNull() {
+		baseJobTemplate, diags := helpers.UnmarshalOptional(plan.BaseJobTemplate)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		payload.BaseJobTemplate = &baseJobTemplate
+	}
+
+	err = client.Update(ctx, plan.Name.ValueString(), payload)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool", "update", err))
 

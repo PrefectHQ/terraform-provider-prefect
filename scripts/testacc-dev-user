@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e
+
+# This script runs the acceptance tests from a local machine
+# specifically for user-related resources. These resources operate
+# differently than others, requiring the API key to be generated
+# for the user being queried.
+#
+# It collects the required environment variables from 1Password
+# using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
+
+vault_entry='op://Platform/Terraform provider acceptance test secrets'
+
+# User tests
+TF_ACC=1 \
+  TF_LOG="INFO" \
+  PREFECT_API_URL=$(op read "${vault_entry}/PREFECT_API_URL") \
+  PREFECT_API_KEY=$(op read "${vault_entry}/ACC_TEST_PREFECT_MARVIN_API_KEY") \
+  PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/PREFECT_CLOUD_ACCOUNT_ID") \
+  ACC_TEST_USER_RESOURCE_ID=$(op read "${vault_entry}/ACC_TEST_USER_RESOURCE_ID") \
+  gotestsum --max-fails=50 ./... -count=1 -v -run "TestAccResource_user"

@@ -1,12 +1,16 @@
 [tools]
 1password = '2.30.3'
-golang = '1.21.10'
-golangci-lint = '1.61.0'
-goreleaser = '1.26.2'
-gotestsum = '1.12.0'
-pre-commit = '3.7.1'
-terraform = '1.9.8'
+go = "1.24"
+'go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs' = "0.21.0"
+"go:github.com/BurntSushi/toml/cmd/tomlv" = "1.5.0"
+golangci-lint = "2.0.2"
+goreleaser = "2.8.2"
+gotestsum = "1.12.1"
+pre-commit = "4.2.0"
+terraform = "1.11.3"
 
-# tomlv does not currently have an entry in the registry.
-# For now, install with `go`:
-# go get github.com/BurntSushi/toml/cmd/tomlv
+[settings]
+# Enable experimental mode to support installing
+# specific go binaries by URL, for those that are
+# not yet available in the mise registry..
+experimental = true

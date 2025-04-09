@@ -4,11 +4,16 @@ page_title: "prefect_deployment Resource - prefect"
 subcategory: ""
 description: |-
   Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see deploy overview https://docs.prefect.io/v3/deploy/index.
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_deployment (Resource)
 
+
 Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).
+
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+
 
 ## Example Usage
 
@@ -70,8 +75,16 @@ resource "prefect_deployment" "deployment" {
       type               = "git_clone"
       repository         = "https://github.com/some/repo"
       branch             = "main"
-      access_token       = "123abc"
       include_submodules = true
+
+      # For private repositories, choose from one of the following options:
+      #
+      # Option 1: using an access token by passing it as plaintext
+      access_token = "123abc"
+      # Option 2: using an access token by referencing a Secret block
+      access_token = "{{ prefect.blocks.secret.github-token }}"
+      # Option 3: using a Credentials block
+      credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
       type     = "pull_from_s3",

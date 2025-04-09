@@ -74,12 +74,14 @@ func (r *AccountResource) Configure(_ context.Context, req resource.ConfigureReq
 // Schema defines the schema for the resource.
 func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "The resource `account` represents a Prefect Cloud account. " +
-			"It is used to manage the account's attributes, such as the name, handle, and location.\n" +
-			"\n" +
-			"Note that this resource can only be imported, as account creation is not currently supported " +
-			"via the API. Additionally, be aware that account deletion is possible once it is imported, " +
+		Description: helpers.DescriptionWithPlans("The resource `account` represents a Prefect Cloud account. "+
+			"It is used to manage the account's attributes, such as the name, handle, and location.\n"+
+			"\n"+
+			"Note that this resource can only be imported, as account creation is not currently supported "+
+			"via the API. Additionally, be aware that account deletion is possible once it is imported, "+
 			"so be attentive to any destroy plans or unlink the resource through `terraform state rm`.",
+			helpers.AllCloudPlans...,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -189,8 +191,14 @@ func copyAccountToModel(_ context.Context, account *api.Account, tfModel *Accoun
 
 // copyAccountDomainsToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyAccountDomainsToModel(ctx context.Context, accountDomains *api.AccountDomainsUpdate, tfModel *AccountResourceModel) diag.Diagnostics {
-	domainNames, diags := types.ListValueFrom(ctx, types.StringType, accountDomains.DomainNames)
+func copyAccountDomainsToModel(ctx context.Context, accountDomains []*api.AccountDomain, tfModel *AccountResourceModel) diag.Diagnostics {
+	// Convert the list of AccountDomain to a list of names as strings.
+	names := make([]string, 0, len(accountDomains))
+	for _, name := range accountDomains {
+		names = append(names, name.Name)
+	}
+
+	domainNames, diags := types.ListValueFrom(ctx, types.StringType, names)
 	if diags.HasError() {
 		return diags
 	}

@@ -60,13 +60,16 @@ func (r *BlockAccessResource) Schema(_ context.Context, _ resource.SchemaRequest
 	defaultEmptyList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 This resource manages access control to Blocks. Accessors can be Service Accounts, Users, or Teams. Accessors can be Managers or Viewers.
 
 All Actors/Teams must first be granted access to the Workspace where the Block resides.
 
 Leave fields empty to use the default access controls
 `,
+			helpers.PlanPrefectCloudPro,
+			helpers.PlanPrefectCloudEnterprise,
+		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"block_id": schema.StringAttribute{

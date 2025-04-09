@@ -27,6 +27,13 @@ provider "prefect" {
   workspace_id = var.prefect_workspace_id
 }
 
+# You also have the option to specify the account and workspace
+# in the `endpoint` attribute. This is the same format used for
+# the `PREFECT_API_KEY` value used in the Prefect CLI configuration file.
+provider "prefect" {
+  endpoint = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
+}
+
 # Finally, in rare occasions, you also have the option
 # to point the provider to a locally running Prefect Server,
 # with a limited set of functionality from the provider.

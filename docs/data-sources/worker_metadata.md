@@ -8,6 +8,7 @@ description: |-
   Use this data source to get the default base job configurations for those common Worker types.
   
   For more information, see workers https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers.
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_worker_metadata (Data Source)
@@ -17,6 +18,9 @@ Get metadata information about the common Worker types, such as Kubernetes, ECS,
 Use this data source to get the default base job configurations for those common Worker types.
 <br>
 For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers).
+
+
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 
@@ -80,5 +84,6 @@ Read-Only:
 - `kubernetes` (String) Default base job configuration for Kubernetes workers
 - `modal_push` (String) Default base job configuration for Modal Push workers
 - `prefect_agent` (String) Default base job configuration for Prefect Agent workers
+- `prefect_managed` (String) Default base job configuration for Prefect Managed workers
 - `process` (String) Default base job configuration for Process workers
 - `vertex_ai` (String) Default base job configuration for Vertex AI workers

@@ -1,8 +1,6 @@
-run:
-  timeout: 5m
-
+version: "2"
 linters:
-  disable-all: true
+  default: none
   enable:
     - asasalint
     - asciicheck
@@ -10,6 +8,7 @@ linters:
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     - dogsled
     - dupword
@@ -19,7 +18,6 @@ linters:
     - errname
     - errorlint
     - exhaustive
-    - copyloopvar
     - forbidigo
     - forcetypeassert
     - gocheckcompilerdirectives
@@ -29,13 +27,10 @@ linters:
     - godot
     - godox
     - goheader
-    - goimports
-    - mnd
     - gomoddirectives
     - gomodguard
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - grouper
     - importas
@@ -46,6 +41,7 @@ linters:
     - maintidx
     - makezero
     - misspell
+    - mnd
     - musttag
     - nakedret
     - nestif
@@ -64,87 +60,103 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
-    - stylecheck
-    - tenv
     - testableexamples
     - testpackage
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unused
     - usestdlibvars
     - wastedassign
     - whitespace
     - wrapcheck
-
-linters-settings:
-  gocritic:
-    enabled-checks:
-      - appendCombine
-      - badLock
-      - badRegexp
-      - badSorting
-      - boolExprSimplify
-      - builtinShadow
-      - builtinShadowDecl
-      - commentedOutCode
-      - commentedOutImport
-      - deferInLoop
-      - deferUnlambda
-      - docStub
-      - dupImport
-      - dynamicFmtString
-      - emptyDecl
-      - emptyFallthrough
-      - emptyStringTest
-      - equalFold
-      - evalOrder
-      - exposedSyncMutex
-      - externalErrorReassign
-      - filepathJoin
-      - hexLiteral
-      - httpNoBody
-      - importShadow
-      - indexAlloc
-      - initClause
-      - methodExprCall
-      - nestingReduce
-      - nilValReturn
-      - octalLiteral
-      - preferDecodeRune
-      - preferFilepathJoin
-      - preferFprint
-      - preferStringWriter
-      - preferWriteByte
-      - ptrToRefParam
-      - rangeExprCopy
-      - rangeValCopy
-      - redundantSprint
-      - regexpPattern
-      - regexpSimplify
-      - returnAfterHttpError
-      - ruleguard
-      - sliceClear
-      - sloppyReassign
-      - sortSlice
-      - sprintfQuotedString
-      - sqlQuery
-      - stringConcatSimplify
-      - stringsCompare
-      - stringXbytes
-      - syncMapLoadAndDelete
-      - timeExprSimplify
-      - todoCommentWithoutDetail
-      - tooManyResultsChecker
-      - truncateCmp
-      - typeAssertChain
-      - typeDefFirst
-      - typeUnparen
-      - uncheckedInlineErr
-      - unlabelStmt
-      - unnecessaryBlock
-      - unnecessaryDefer
-      - weakCond
-      - whyNoLint
-      - yodaStyleExpr
+  settings:
+    gocritic:
+      enabled-checks:
+        - appendCombine
+        - badLock
+        - badRegexp
+        - badSorting
+        - boolExprSimplify
+        - builtinShadow
+        - builtinShadowDecl
+        - commentedOutCode
+        - commentedOutImport
+        - deferInLoop
+        - deferUnlambda
+        - docStub
+        - dupImport
+        - dynamicFmtString
+        - emptyDecl
+        - emptyFallthrough
+        - emptyStringTest
+        - equalFold
+        - evalOrder
+        - exposedSyncMutex
+        - externalErrorReassign
+        - filepathJoin
+        - hexLiteral
+        - httpNoBody
+        - importShadow
+        - indexAlloc
+        - initClause
+        - methodExprCall
+        - nestingReduce
+        - nilValReturn
+        - octalLiteral
+        - preferDecodeRune
+        - preferFilepathJoin
+        - preferFprint
+        - preferStringWriter
+        - preferWriteByte
+        - ptrToRefParam
+        - rangeExprCopy
+        - rangeValCopy
+        - redundantSprint
+        - regexpPattern
+        - regexpSimplify
+        - returnAfterHttpError
+        - ruleguard
+        - sliceClear
+        - sloppyReassign
+        - sortSlice
+        - sprintfQuotedString
+        - sqlQuery
+        - stringConcatSimplify
+        - stringsCompare
+        - stringXbytes
+        - syncMapLoadAndDelete
+        - timeExprSimplify
+        - todoCommentWithoutDetail
+        - tooManyResultsChecker
+        - truncateCmp
+        - typeAssertChain
+        - typeDefFirst
+        - typeUnparen
+        - uncheckedInlineErr
+        - unlabelStmt
+        - unnecessaryBlock
+        - unnecessaryDefer
+        - weakCond
+        - whyNoLint
+        - yodaStyleExpr
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

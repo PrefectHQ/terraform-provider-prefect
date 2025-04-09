@@ -55,13 +55,15 @@ func (d *globalConcurrencyLimitDataSource) Configure(_ context.Context, req data
 // Schema defines the schema for the data source.
 func (d *globalConcurrencyLimitDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Global Concurrency Limit
 <br>
 Use this data source to read down the pre-defined Global Concurrency Limits, to manage concurrency limits.
 <br>
 For more information, see [apply global concurrency and rate limits](https://docs.prefect.io/v3/develop/global-concurrency-limits).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

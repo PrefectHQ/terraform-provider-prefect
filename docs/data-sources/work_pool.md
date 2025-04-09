@@ -8,6 +8,7 @@ description: |-
   Use this data source to obtain Work Pool-specific attributes.
   
   For more information, see configure dynamic infrastructure with work pools https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools.
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_work_pool (Data Source)
@@ -17,6 +18,9 @@ Get information about an existing Work Pool by name.
 Use this data source to obtain Work Pool-specific attributes.
 <br>
 For more information, see [configure dynamic infrastructure with work pools](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools).
+
+
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

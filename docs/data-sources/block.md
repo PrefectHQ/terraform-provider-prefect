@@ -11,6 +11,7 @@ description: |-
   Use this data source to obtain Block-specific attributes, such as the data.
   
   For more information, see securely store typed configuration https://docs.prefect.io/v3/develop/blocks.
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 ---
 
 # prefect_block (Data Source)
@@ -24,6 +25,9 @@ If the ID is provided, then the block type name and block name will be ignored.
 Use this data source to obtain Block-specific attributes, such as the data.
 <br>
 For more information, see [securely store typed configuration](https://docs.prefect.io/v3/develop/blocks).
+
+
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
 ## Example Usage
 

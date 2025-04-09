@@ -51,7 +51,7 @@ func (d *blockDataSource) Metadata(_ context.Context, req datasource.MetadataReq
 // Schema defines the scema for the data source.
 func (d *blockDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Block by either:
 - ID, or
 - block type name and block name
@@ -62,6 +62,8 @@ Use this data source to obtain Block-specific attributes, such as the data.
 <br>
 For more information, see [securely store typed configuration](https://docs.prefect.io/v3/develop/blocks).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

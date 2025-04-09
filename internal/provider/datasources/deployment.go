@@ -53,7 +53,7 @@ func (d *deploymentDataSource) Metadata(_ context.Context, req datasource.Metada
 // Schema defines the scema for the data source.
 func (d *deploymentDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get information about an existing Deployment by either:
 - deployment ID, or
 - deployment name
@@ -61,6 +61,8 @@ The Deployment ID takes precedence over deployment name.
 <br>
 For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

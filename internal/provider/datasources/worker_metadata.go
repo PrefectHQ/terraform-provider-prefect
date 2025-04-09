@@ -56,13 +56,15 @@ func (d *WorkerMetadataDataSource) Configure(_ context.Context, req datasource.C
 // Schema defines the schema for the data source.
 func (d *WorkerMetadataDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: `
+		Description: helpers.DescriptionWithPlans(`
 Get metadata information about the common Worker types, such as Kubernetes, ECS, etc.
 <br>
 Use this data source to get the default base job configurations for those common Worker types.
 <br>
 For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastructure-concepts/workers).
 `,
+			helpers.AllPlans...,
+		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
@@ -148,6 +150,11 @@ For more information, see [workers](https://docs.prefect.io/v3/deploy/infrastruc
 						Description: "Default base job configuration for Modal Push workers",
 						CustomType:  jsontypes.NormalizedType{},
 					},
+					"prefect_managed": schema.StringAttribute{
+						Computed:    true,
+						Description: "Default base job configuration for Prefect Managed workers",
+						CustomType:  jsontypes.NormalizedType{},
+					},
 				},
 			},
 		},
@@ -204,6 +211,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"cloud_run_v2_push":              jsontypes.NormalizedType{},
 		"ecs_push":                       jsontypes.NormalizedType{},
 		"modal_push":                     jsontypes.NormalizedType{},
+		"prefect_managed":                jsontypes.NormalizedType{},
 	}
 	attributeValues := map[string]attr.Value{
 		"kubernetes":                     jsontypes.NewNormalizedValue(string(remap["kubernetes"])),
@@ -220,6 +228,7 @@ func (d *WorkerMetadataDataSource) Read(ctx context.Context, req datasource.Read
 		"cloud_run_v2_push":              jsontypes.NewNormalizedValue(string(remap["cloud-run-v2:push"])),
 		"ecs_push":                       jsontypes.NewNormalizedValue(string(remap["ecs:push"])),
 		"modal_push":                     jsontypes.NewNormalizedValue(string(remap["modal:push"])),
+		"prefect_managed":                jsontypes.NewNormalizedValue(string(remap["prefect:managed"])),
 	}
 
 	obj, diag := types.ObjectValue(attributeTypes, attributeValues)

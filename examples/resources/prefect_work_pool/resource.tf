@@ -1,7 +1,7 @@
+# Use the default base job template by omitting the `base_job_template` argument.
 resource "prefect_work_pool" "example" {
   name         = "my-work-pool"
-  type         = "kubernetes"
-  paused       = false
+  type         = "prefect:managed"
   workspace_id = "my-workspace-id"
 }
 
@@ -32,12 +32,24 @@ resource "prefect_work_pool" "example_with_file_encoded" {
 
 # Alternatively, use the prefect_worker_metadata datasource
 # to load a default base job configuration dynamically.
+# See the `prefect_worker_metadata` datasource documentation an exhaustive list of keys.
+# https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs/data-sources/worker_metadata
 data "prefect_worker_metadata" "d" {}
 
-resource "prefect_work_pool" "example_with_datasource" {
+# example: use the `.kubernetes` key to map to a `kubernetes` work pool type
+resource "prefect_work_pool" "example_with_datasource_kubernetes" {
   name              = "test-k8s-pool"
   type              = "kubernetes"
   workspace_id      = data.prefect_workspace.prd.id
   paused            = false
   base_job_template = data.prefect_worker_metadata.d.base_job_configs.kubernetes
+}
+
+# example: use the `.prefect_managed` key to map to a `prefect:managed` work pool type
+resource "prefect_work_pool" "example_with_datasource_prefect_managed" {
+  name              = "test-prefect-managed-pool"
+  type              = "prefect:managed"
+  workspace_id      = data.prefect_workspace.prd.id
+  paused            = false
+  base_job_template = data.prefect_worker_metadata.d.base_job_configs.prefect_managed
 }

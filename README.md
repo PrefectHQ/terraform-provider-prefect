@@ -3,8 +3,8 @@
 <p align="center">
     <a href="https://prefect.io/slack" alt="Slack">
         <img src="https://img.shields.io/badge/slack-join_community-red.svg?color=0052FF&labelColor=090422&logo=slack" /></a>
-    <a href="https://discourse.prefect.io/" alt="Discourse">
-        <img src="https://img.shields.io/badge/discourse-browse_forum-red.svg?color=0052FF&labelColor=090422&logo=discourse" /></a>
+    <a href="https://discourse.prefect.io/" alt="GitHub Discussions">
+        <img src="https://img.shields.io/github/discussions/prefecthq/prefect"></a>
 </p>
 
 <a href="https://terraform.io">
@@ -14,14 +14,14 @@
 # Terraform Provider for Prefect Cloud
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/prefecthq/terraform-provider-prefect?label=release)](https://github.com/prefecthq/terraform-provider-prefect/releases) ![Acceptance tests](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/acceptance-tests.yaml/badge.svg) ![Provider Release](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/provider-release.yaml/badge.svg)
 
+[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications. The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud). This provider is maintained by the Platform team at Prefect.
+
 - [Documentation](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs)
 - [Examples](https://github.com/PrefectHQ/terraform-provider-prefect/tree/main/examples)
 
-[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications.  The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud). This provider is maintained by the [engineering team at Prefect](https://www.prefect.io/blog#engineering).
-
 ## Supported objects
 
-We're continuously adding more Prefect Cloud object support, striving for near-parity by the `v1.x.x` release.
+We're continuously adding more Prefect Cloud object support, striving for near-parity around spring of 2025.
 
 See our [Milestone for API parity](https://github.com/PrefectHQ/terraform-provider-prefect/milestone/1) for more information.
 
@@ -31,5 +31,5 @@ We appreciate your interest in the Prefect provider! If you find any issues or h
 
 - [Check out our contributing guide](/_about/CONTRIBUTING.md)
 - [File an issue](https://github.com/PrefectHQ/terraform-provider-prefect/issues/new?assignees=&labels=bug&projects=&template=bug.md)
-- [Shoot us a note](mailto:security@prefect.io) for any potential security issues
-- Drop us a line in the [Prefect Slack community workspace](https://communityinviter.com/apps/prefect-community/prefect-community)
+- [Send us a note](mailto:security@prefect.io) for any potential security issues
+- Reach out in the [Prefect community Slack workspace](https://communityinviter.com/apps/prefect-community/prefect-community)
