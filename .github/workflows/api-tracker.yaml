@@ -20,7 +20,7 @@ jobs:
   detect-api-drift:
     permissions:
       # required to read from the repo
-      contents: read
+      contents: write
       # required for the paths-filter GHA, if workflow triggered by PR
       pull-requests: read
       issues: write
