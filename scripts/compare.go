@@ -19,6 +19,8 @@ type result struct {
 // resource names.
 //
 // TODO: get this from registering Resources and Datasources?
+//
+//nolint:godox // this script is being saved in the parking lot
 var relations = map[string][]string{
 	"artifacts":                 {},
 	"automations":               {"automation_resource"},
@@ -117,6 +119,7 @@ func getNonImplementedAPIs(resultsAPI, resultsTF []string) []string {
 // getTerraformResources will return a list of Terraform resources that are
 // implemented based on available files under `internal/provider/`.
 func getTerraformResources() []string {
+	//nolint:godox // this script is being saved in the parking lot
 	// TODO: also get datasources
 	entries, err := os.ReadDir("internal/provider/resources")
 	if err != nil {

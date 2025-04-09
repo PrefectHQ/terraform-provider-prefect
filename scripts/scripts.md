@@ -1,6 +1,6 @@
 # Scripts
 
-## `compare.py`
+## `compare-and-output-markdown.py`
 
 A python script to query:
 
@@ -17,5 +17,5 @@ and output a report of yet-to-be-implemented Prefect Cloud resources.
 ### Usage
 
 ```bash
-➜ uv run ./scripts/compare.py
+➜ uv run ./scripts/compare-and-output-markdown.py
 ```
