@@ -71,8 +71,8 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Team Access ID",
 				CustomType:  customtypes.UUIDType{},
+				Description: "Team Access ID",
 			},
 			"team_id": schema.StringAttribute{
 				Required:    true,

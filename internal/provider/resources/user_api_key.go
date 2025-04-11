@@ -24,7 +24,7 @@ type UserAPIKeyResource struct {
 
 // UserAPIKeyResourceModel defines the Terraform resource model.
 type UserAPIKeyResourceModel struct {
-	ID      types.String               `tfsdk:"id"`
+	ID      customtypes.UUIDValue      `tfsdk:"id"`
 	Created customtypes.TimestampValue `tfsdk:"created"`
 
 	UserID     types.String               `tfsdk:"user_id"`
@@ -76,6 +76,7 @@ func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "User API Key ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -131,7 +132,7 @@ func (r *UserAPIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest,
 // Note: we do not copy the Key field to the model, as it is only returned on Create.
 // For all other lifecycle methods, we will persist the existing State value.
 func copyUserAPIKeyToModel(apiKey *api.UserAPIKey, model *UserAPIKeyResourceModel) {
-	model.ID = types.StringValue(apiKey.ID.String())
+	model.ID = customtypes.NewUUIDValue(apiKey.ID)
 	model.Created = customtypes.NewTimestampValue(apiKey.Created)
 	model.Name = types.StringValue(apiKey.Name)
 	model.Expiration = customtypes.NewTimestampPointerValue(apiKey.Expiration)

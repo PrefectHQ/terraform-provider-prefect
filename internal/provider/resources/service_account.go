@@ -105,6 +105,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Service account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -194,7 +195,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 func copyServiceAccountToModel(serviceAccount *api.ServiceAccount, tfModel *ServiceAccountResourceModel) {
 	// NOTE: the API Key is attached to the resource model outside of this helper,
 	// as it is only returned on Create/Update operations.
-	tfModel.ID = types.StringValue(serviceAccount.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(serviceAccount.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(serviceAccount.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(serviceAccount.Updated)
 

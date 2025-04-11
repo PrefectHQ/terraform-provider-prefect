@@ -88,10 +88,8 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -135,7 +133,7 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 
 // copyFlowToModel copies an api.Flow to a FlowResourceModel.
 func copyFlowToModel(ctx context.Context, flow *api.Flow, model *FlowResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(flow.ID.String())
+	model.ID = customtypes.NewUUIDValue(flow.ID)
 	model.Created = customtypes.NewTimestampPointerValue(flow.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(flow.Updated)
 	model.Name = types.StringValue(flow.Name)

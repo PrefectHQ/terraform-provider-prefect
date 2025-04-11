@@ -84,6 +84,7 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace Role ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -134,7 +135,7 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 // copyWorkspaceRoleToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyWorkspaceRoleToModel(_ context.Context, role *api.WorkspaceRole, tfModel *WorkspaceRoleResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(role.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(role.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(role.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(role.Updated)
 

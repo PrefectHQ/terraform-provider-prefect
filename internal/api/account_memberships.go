@@ -14,7 +14,7 @@ type AccountMembershipsClient interface {
 }
 
 type AccountMembership struct {
-	ID              string     `json:"id"`
+	ID              uuid.UUID  `json:"id"`
 	ActorID         uuid.UUID  `json:"actor_id"`
 	UserID          uuid.UUID  `json:"user_id"`
 	FirstName       string     `json:"first_name"`

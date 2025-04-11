@@ -66,6 +66,7 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Deployment ID (UUID)",
 				Optional:    true,
 			},

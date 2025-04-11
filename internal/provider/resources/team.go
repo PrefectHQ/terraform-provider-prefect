@@ -78,6 +78,7 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Team ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -258,7 +259,7 @@ func (r *TeamResource) ImportState(ctx context.Context, req resource.ImportState
 // copyTeamToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyTeamToModel(team *api.Team, tfModel *TeamResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(team.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(team.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(team.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(team.Updated)
 	tfModel.Name = types.StringValue(team.Name)

@@ -83,6 +83,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Block ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -199,7 +200,7 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(block.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(block.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(block.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 	tfModel.Name = types.StringValue(block.Name)

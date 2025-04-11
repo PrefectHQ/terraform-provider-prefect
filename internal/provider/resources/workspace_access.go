@@ -24,7 +24,7 @@ type WorkspaceAccessResource struct {
 }
 
 type WorkspaceAccessResourceModel struct {
-	ID              types.String          `tfsdk:"id"`
+	ID              customtypes.UUIDValue `tfsdk:"id"`
 	AccessorType    types.String          `tfsdk:"accessor_type"`
 	AccessorID      customtypes.UUIDValue `tfsdk:"accessor_id"`
 	WorkspaceRoleID customtypes.UUIDValue `tfsdk:"workspace_role_id"`
@@ -79,6 +79,7 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace Access ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -121,7 +122,7 @@ func copyWorkspaceAccessToModel(access *api.WorkspaceAccess, tfModel *WorkspaceA
 	// NOTE: api.WorkspaceAccess represents a combined model for all accessor types,
 	// meaning accessor-specific attributes like BotID and UserID will be conditionally nil
 	// depending on the accessor type.
-	tfModel.ID = types.StringValue(access.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(access.ID)
 	tfModel.WorkspaceRoleID = customtypes.NewUUIDValue(access.WorkspaceRoleID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(access.WorkspaceID)
 

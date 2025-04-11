@@ -67,6 +67,7 @@ For more information, see [apply global concurrency and rate limits](https://doc
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Global Concurrency Limit ID (UUID)",
 				Optional:    true,
 			},
@@ -175,7 +176,7 @@ func (d *globalConcurrencyLimitDataSource) Read(ctx context.Context, req datasou
 		return
 	}
 
-	model.ID = types.StringValue(limit.ID.String())
+	model.ID = customtypes.NewUUIDValue(limit.ID)
 	model.Created = customtypes.NewTimestampPointerValue(limit.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(limit.Updated)
 	model.AccountID = customtypes.NewUUIDValue(limit.AccountID)

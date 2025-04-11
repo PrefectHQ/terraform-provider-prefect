@@ -280,7 +280,7 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 	var diags diag.Diagnostics
 
 	// Map base attributes
-	tfModel.ID = types.StringValue(apiAutomation.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(apiAutomation.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(apiAutomation.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(apiAutomation.Updated)
 	tfModel.Name = types.StringValue(apiAutomation.Name)

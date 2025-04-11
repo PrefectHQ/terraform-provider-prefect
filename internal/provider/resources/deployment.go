@@ -170,11 +170,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
-				Description: "Workspace ID (UUID)",
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "Deployment ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -555,7 +553,7 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 // CopyDeploymentToModel copies an api.Deployment to a DeploymentResourceModel.
 // The function is exported for reuse in the Deployment datasource.
 func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, model *DeploymentResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(deployment.ID.String())
+	model.ID = customtypes.NewUUIDValue(deployment.ID)
 	model.Created = customtypes.NewTimestampPointerValue(deployment.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 

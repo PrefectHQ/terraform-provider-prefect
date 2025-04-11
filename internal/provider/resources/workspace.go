@@ -80,10 +80,8 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -127,7 +125,7 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 // copyWorkspaceModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, tfModel *WorkspaceResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(workspace.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(workspace.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(workspace.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(workspace.Updated)
 
