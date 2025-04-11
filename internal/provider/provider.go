@@ -96,48 +96,6 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
-	// Ensure that all configuration values passed in to provider are known
-	// https://developer.hashicorp.com/terraform/plugin/framework/handling-data/terraform-concepts#unknown-values
-	if config.Endpoint.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("endpoint"),
-			"Unknown Prefect API Endpoint",
-			"The Prefect API Endpoint is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or set the PREFECT_API_URL environment variable.",
-		)
-	}
-
-	if config.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("api_key"),
-			"Unknown Prefect API Key",
-			"The Prefect API Key is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, set the PREFECT_API_KEY environment variable, or remove the value.",
-		)
-	}
-
-	if config.AccountID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("account_id"),
-			"Unknown Prefect Account ID",
-			"The Prefect Account ID is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
-		)
-	}
-
-	if config.WorkspaceID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("workspace_id"),
-			"Unknown Prefect Workspace ID",
-			"The Prefect Workspace ID is not known at configuration time. "+
-				"Potential resolutions: target apply the source of the value first, set the value statically in the configuration, or remove the value.",
-		)
-	}
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Extract endpoint from configuration or environment variable.
 	var endpoint string
 	if !config.Endpoint.IsNull() {
