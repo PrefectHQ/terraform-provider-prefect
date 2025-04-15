@@ -84,6 +84,7 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Global concurrency limit ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -189,7 +190,7 @@ func (r *GlobalConcurrencyLimitResource) Create(ctx context.Context, req resourc
 }
 
 func copyGlobalConcurrencyLimitToModel(globalConcurrencyLimit *api.GlobalConcurrencyLimit, model *GlobalConcurrencyLimitResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(globalConcurrencyLimit.ID.String())
+	model.ID = customtypes.NewUUIDValue(globalConcurrencyLimit.ID)
 	model.Created = customtypes.NewTimestampValue(*globalConcurrencyLimit.Created)
 	model.Updated = customtypes.NewTimestampValue(*globalConcurrencyLimit.Updated)
 	model.Name = types.StringValue(globalConcurrencyLimit.Name)

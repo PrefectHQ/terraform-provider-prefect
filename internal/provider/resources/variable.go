@@ -69,10 +69,8 @@ var defaultEmptyTagList, _ = basetypes.NewListValue(types.StringType, []attr.Val
 
 var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
-		Computed: true,
-		// We cannot use a CustomType due to a conflict with PlanModifiers; see
-		// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-		// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+		Computed:    true,
+		CustomType:  customtypes.UUIDType{},
 		Description: "Variable ID (UUID)",
 		PlanModifiers: []planmodifier.String{
 			stringplanmodifier.UseStateForUnknown(),
@@ -225,7 +223,7 @@ func (r *VariableResource) UpgradeState(_ context.Context) map[int64]resource.St
 // copyVariableToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *VariableResourceModelV1) diag.Diagnostics {
-	tfModel.ID = types.StringValue(variable.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(variable.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(variable.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(variable.Updated)
 

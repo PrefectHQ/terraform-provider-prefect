@@ -75,6 +75,7 @@ func (r *TaskRunConcurrencyLimitResource) Schema(_ context.Context, _ resource.S
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Task run concurrency limit ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -161,7 +162,7 @@ func (r *TaskRunConcurrencyLimitResource) Create(ctx context.Context, req resour
 }
 
 func copyTaskRunConcurrencyLimitToModel(concurrencyLimit *api.TaskRunConcurrencyLimit, model *TaskRunConcurrencyLimitResourceModel) diag.Diagnostics {
-	model.ID = types.StringValue(concurrencyLimit.ID.String())
+	model.ID = customtypes.NewUUIDValue(concurrencyLimit.ID)
 	model.Created = customtypes.NewTimestampValue(*concurrencyLimit.Created)
 	model.Updated = customtypes.NewTimestampValue(*concurrencyLimit.Updated)
 	model.Tag = types.StringValue(concurrencyLimit.Tag)

@@ -89,6 +89,7 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Work queue ID (UUID)",
 			},
 			"created": schema.StringAttribute{
@@ -149,7 +150,7 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 
 // copyWorkQueueToModel maps an API response to a model that is saved in Terraform state.
 func copyWorkQueueToModel(queue *api.WorkQueue, tfModel *WorkQueueResourceModel) {
-	tfModel.ID = types.StringValue(queue.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(queue.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(queue.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(queue.Updated)
 	tfModel.ConcurrencyLimit = types.Int64PointerValue(queue.ConcurrencyLimit)

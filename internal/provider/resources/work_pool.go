@@ -89,10 +89,8 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Work pool ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -179,7 +177,7 @@ func (r *WorkPoolResource) Schema(_ context.Context, _ resource.SchemaRequest, r
 //
 //nolint:ireturn // required to return Diagnostics
 func copyWorkPoolToModel(pool *api.WorkPool, tfModel *WorkPoolResourceModel) diag.Diagnostic {
-	tfModel.ID = types.StringValue(pool.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(pool.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(pool.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(pool.Updated)
 

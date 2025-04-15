@@ -85,10 +85,8 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Computed: true,
-				// We cannot use a CustomType due to a conflict with PlanModifiers; see
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-				// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -161,7 +159,7 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 // copyAccountToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyAccountToModel(_ context.Context, account *api.Account, tfModel *AccountResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(account.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(account.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 

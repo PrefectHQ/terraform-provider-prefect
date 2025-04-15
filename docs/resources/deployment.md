@@ -133,7 +133,7 @@ resource "prefect_deployment" "deployment" {
 ### Read-Only
 
 - `created` (String) Timestamp of when the resource was created (RFC3339)
-- `id` (String) Workspace ID (UUID)
+- `id` (String) Deployment ID (UUID)
 - `updated` (String) Timestamp of when the resource was updated (RFC3339)
 
 <a id="nestedatt--concurrency_options"></a>

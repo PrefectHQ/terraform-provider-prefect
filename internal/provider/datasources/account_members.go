@@ -126,7 +126,7 @@ func (d *AccountMembersDataSource) Read(ctx context.Context, req datasource.Read
 	for _, accountMember := range accountMembers {
 		attributeValues := map[string]attr.Value{
 
-			"id":                types.StringValue(accountMember.ID),
+			"id":                customtypes.NewUUIDValue(accountMember.ID),
 			"actor_id":          customtypes.NewUUIDValue(accountMember.ActorID),
 			"user_id":           customtypes.NewUUIDValue(accountMember.UserID),
 			"first_name":        types.StringValue(accountMember.FirstName),

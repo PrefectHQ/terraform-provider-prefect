@@ -28,7 +28,7 @@ type WebhookResource struct {
 }
 
 type WebhookResourceModel struct {
-	ID               types.String               `tfsdk:"id"`
+	ID               customtypes.UUIDValue      `tfsdk:"id"`
 	Created          customtypes.TimestampValue `tfsdk:"created"`
 	Updated          customtypes.TimestampValue `tfsdk:"updated"`
 	Name             types.String               `tfsdk:"name"`
@@ -78,6 +78,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Webhook ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -150,7 +151,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 
 // copyWebhookResponseToModel maps an API response to a model that is saved in Terraform state.
 func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceModel, endpointHost string) {
-	tfModel.ID = types.StringValue(webhook.ID.String())
+	tfModel.ID = customtypes.NewUUIDValue(webhook.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(webhook.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(webhook.Updated)
 	tfModel.Name = types.StringValue(webhook.Name)

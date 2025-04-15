@@ -30,7 +30,7 @@ type AccountMemberResource struct {
 // AccountMemberResourceModel defines the Terraform resource model.
 type AccountMemberResourceModel struct {
 	// This has the same fields as the AccountMemberDataSourceModel.
-	ID              types.String          `tfsdk:"id"`
+	ID              customtypes.UUIDValue `tfsdk:"id"`
 	ActorID         customtypes.UUIDValue `tfsdk:"actor_id"`
 	UserID          customtypes.UUIDValue `tfsdk:"user_id"`
 	FirstName       types.String          `tfsdk:"first_name"`
@@ -87,6 +87,7 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
 				Description: "Account Member ID (UUID)",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -141,7 +142,7 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 }
 
 func copyAccountMemberToModel(member *api.AccountMembership, tfModel *AccountMemberResourceModel) diag.Diagnostics {
-	tfModel.ID = types.StringValue(member.ID)
+	tfModel.ID = customtypes.NewUUIDValue(member.ID)
 	tfModel.ActorID = customtypes.NewUUIDValue(member.ActorID)
 	tfModel.UserID = customtypes.NewUUIDValue(member.UserID)
 	tfModel.FirstName = types.StringValue(member.FirstName)

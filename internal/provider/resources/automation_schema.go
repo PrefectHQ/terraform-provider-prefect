@@ -24,10 +24,8 @@ import (
 func AutomationSchema() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
 		"id": schema.StringAttribute{
-			Computed: true,
-			// We cannot use a CustomType due to a conflict with PlanModifiers; see
-			// https://github.com/hashicorp/terraform-plugin-framework/issues/763
-			// https://github.com/hashicorp/terraform-plugin-framework/issues/754
+			Computed:    true,
+			CustomType:  customtypes.UUIDType{},
 			Description: "Automation ID (UUID)",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.UseStateForUnknown(),
