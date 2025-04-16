@@ -1,48 +1,48 @@
 # example:
-# An automation with an event trigger + a run-deployment action
-resource "prefect_work_pool" "my_work_pool" {
-  name = "my-work-pool"
-  type = "prefect:managed"
-}
-resource "prefect_flow" "my_flow" {
-  name = "my-flow"
-}
-resource "prefect_deployment" "my_deployment" {
-  name    = "my-deployment"
-  flow_id = prefect_flow.my_flow.id
-
-  work_pool_name  = prefect_work_pool.my_work_pool.name
-  work_queue_name = "default"
-
-  pull_steps = [
-    {
-      type       = "git_clone"
-      repository = "https://github.com/org/repo"
-      branch     = "main"
-    },
-  ]
-  entrypoint = "dir/file.py:flow_name"
-}
+# An automation with an event trigger
 resource "prefect_automation" "event_trigger" {
-  name    = "my-automation"
-  enabled = true
+  name        = "tfp-test-event-trigger"
+  description = "ayu carumba"
+  enabled     = true
 
   trigger = {
     event = {
-      posture   = "Reactive"
-      expect    = ["external.event.happened"]
+      posture = "Reactive"
+      match = jsonencode({
+        "prefect.resource.id" : "prefect.flow-run.*"
+      })
+      match_related = jsonencode({
+        "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
+        "prefect.resource.role" : "flow"
+      })
+      after     = ["prefect.flow-run.completed"]
+      expect    = ["prefect.flow-run.failed"]
+      for_each  = ["prefect.resource.id"]
       threshold = 1
-      within    = 0
+      within    = 60
     }
   }
   actions = [
     {
-      type          = "run-deployment"
-      source        = "selected"
-      deployment_id = prefect_deployment.my_deployment.id
-      parameters    = jsonencode({})
-      job_variables = jsonencode({})
+      type   = "run-deployment"
+      source = "inferred"
+      parameters = jsonencode({
+        "param1" = "value1"
+        "param2" = "value2"
+      })
+      job_variables = jsonencode({
+        "var1" = "value1"
+        "var2" = "value2"
+        "var3" = 3
+        "var4" = true
+        "var5" = {
+          "key1" = "value1"
+        }
+      })
     },
+    {
+      type = "declare-incident"
+    }
   ]
 }
 
