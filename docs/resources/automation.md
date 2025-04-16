@@ -11,6 +11,8 @@ description: |-
 
 # prefect_automation (Resource)
 
+
+
 The resource 'automations' represents a Prefect Automation.
 <br>
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
@@ -18,7 +20,73 @@ For more information, see [automate overview](https://docs.prefect.io/v3/automat
 
 This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
 
+
 ## Example Usage
+
+A common use case is to create an Automation that runs a Deployment.
+
+This Automation can be set up to trigger off of an external event, such as a Webhook call:
+
+```hcl
+# set up the necessary resources for a Work Pool, Flow, and Deployment
+resource "prefect_work_pool" "my_work_pool" {
+  name = "my-work-pool"
+  type = "prefect:managed"
+}
+resource "prefect_flow" "my_flow" {
+  name = "my-flow"
+}
+resource "prefect_deployment" "my_deployment" {
+  name    = "my-deployment"
+  flow_id = prefect_flow.my_flow.id
+
+  work_pool_name  = prefect_work_pool.my_work_pool.name
+  work_queue_name = "default"
+
+  pull_steps = [
+    {
+      type       = "git_clone"
+      repository = "https://github.com/org/repo"
+      branch     = "main"
+    },
+  ]
+  entrypoint = "dir/file.py:flow_name"
+}
+
+# create the Automation, which has a `run-deployment` action
+# selecting the above deployment to run
+resource "prefect_automation" "event_trigger" {
+  name    = "my-automation"
+  enabled = true
+
+  trigger = {
+    event = {
+      posture   = "Reactive"
+      expect    = ["external.event.happened"]
+      threshold = 1
+      within    = 0
+    }
+  }
+  actions = [
+    {
+      type          = "run-deployment"
+      source        = "selected"
+      deployment_id = prefect_deployment.my_deployment.id
+      parameters    = jsonencode({})
+      job_variables = jsonencode({})
+    },
+  ]
+}
+
+# optionally, create a Prefect Webhook that you can use to trigger the Automation
+resource "prefect_webhook" "webhook" {
+  name    = "my-webhook"
+  enabled = true
+  template = jsonencode({
+    event = "external.event.happened"
+  })
+}
+```
 
 ```terraform
 # example:
