@@ -43,12 +43,22 @@ var TestAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"prefect": providerserver.NewProtocol6WithError(TestAccProvider),
 }
 
+func TestContextOSS() bool {
+	return os.Getenv("TEST_CONTEXT") == "OSS"
+}
+
 // AccTestPreCheck is a utility hook, which every test suite will call
 // in order to verify if the necessary provider configurations are passed
 // through the environment variables.
 // https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/testcase#precheck
 func AccTestPreCheck(t *testing.T) {
 	t.Helper()
+
+	// Exit early if we're testing against Prefect OSS.
+	if TestContextOSS() {
+		return
+	}
+
 	neededVars := []string{"PREFECT_API_URL", "PREFECT_API_KEY", "PREFECT_CLOUD_ACCOUNT_ID"}
 	for _, key := range neededVars {
 		if v := os.Getenv(key); v == "" {
@@ -68,8 +78,6 @@ func AccTestPreCheck(t *testing.T) {
 func NewTestClient() (api.PrefectClient, error) {
 	endpoint := os.Getenv("PREFECT_API_URL")
 	apiKey := os.Getenv("PREFECT_API_KEY")
-	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
-	accountID, _ := uuid.Parse(aID)
 
 	if !strings.HasSuffix(endpoint, "/api") {
 		endpoint = fmt.Sprintf("%s/api", endpoint)
@@ -78,11 +86,20 @@ func NewTestClient() (api.PrefectClient, error) {
 	endpointURL, _ := url.Parse(endpoint)
 	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
-	prefectClient, _ := client.New(
+	var prefectClient *client.Client
+
+	opts := []client.Option{
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
-		client.WithDefaults(accountID, uuid.Nil),
-	)
+	}
+
+	if !TestContextOSS() {
+		aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+		accountID, _ := uuid.Parse(aID)
+		opts = append(opts, client.WithDefaults(accountID, uuid.Nil))
+	}
+
+	prefectClient, _ = client.New(opts...)
 
 	return prefectClient, nil
 }
