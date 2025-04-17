@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -e
+
+# Use this script to run tests against Prefect OSS.
+#
+# Start Prefect OSS by running:
+#   docker compose up -d
+#
+# Then, run the OSS tests:
+#   ./scripts/testacc-oss [tests]
+
+tests=${1:-""}
+
+TF_ACC=1 \
+  TEST_CONTEXT="OSS" \
+  PREFECT_API_URL="http://localhost:4200/api" \
+  gotestsum --max-fails=50 ./... -count=1 -v -run TestAccResource_flow "^${tests}$"
