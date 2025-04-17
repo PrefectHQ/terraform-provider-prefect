@@ -46,7 +46,16 @@ jobs:
           terraform_wrapper: false
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
-      - name: Run acceptance tests
+
+      # Run OSS tests before Cloud tests because they are faster
+      # and do not use Cloud resources. This should result in a
+      # faster feedback loop.
+      - name: Run acceptance tests (OSS)
+        run: make testacc-oss
+        env:
+          PREFECT_API_URL: http://localhost:4200/api
+
+      - name: Run acceptance tests (Cloud)
         run: make testacc
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
@@ -55,6 +64,7 @@ jobs:
           # The value is stored in 1Password: `Terraform provider acceptance test secrets`.
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
+
       - name: Run acceptance tests (user resource)
         run: make testacc
         env:

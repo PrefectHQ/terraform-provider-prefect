@@ -21,6 +21,7 @@ help:
 	@echo "  testacc-sweepers - run automated acceptance tests sweepers"
 	@echo "  testacc-dev      - run automated acceptance tests from a local machine (args: TESTS=<tests or empty> LOG_LEVEL=<level> SWEEP=<yes or empty>)"
 	@echo "  testacc-dev-user - run automated acceptance tests for user-related resources from a local machine"
+	@echo "  testacc-oss      - run automated acceptance tests for Prefect OSS"
 	@echo "  docs             - builds Terraform documentation"
 	@echo "  dev-new          - creates a new dev testfile (args: resource=<resource> name=<name>)"
 	@echo "  dev-clean        - cleans up dev directory"
@@ -65,6 +66,11 @@ testacc-dev:
 testacc-dev-user:
 	./scripts/testacc-dev-user
 .PHONY: testacc-dev-user
+
+testacc-oss:
+	docker compose up -d
+	./scripts/testacc-oss $(TESTS)
+.PHONY: testacc-oss
 
 docs:
 	rm -rf docs/ && mkdir docs/
