@@ -54,6 +54,8 @@ jobs:
         run: make testacc-oss
         env:
           PREFECT_API_URL: http://localhost:4200/api
+          # Temporary: only run tests we've added so far
+          TESTS: TestAccResource_flow
 
       - name: Run acceptance tests (Cloud)
         run: make testacc
