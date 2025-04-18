@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -e
-set -x
 
 # Use this script to run tests against Prefect OSS.
 #
