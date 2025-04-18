@@ -11,6 +11,7 @@ import (
 func TestMain(m *testing.M) {
 	sweep.AddWorkspaceSweeper()
 	sweep.AddServiceAccountSweeper()
+	sweep.AddWorkspaceRoleSweeper()
 
 	resource.TestMain(m)
 }
