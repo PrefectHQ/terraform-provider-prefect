@@ -198,6 +198,19 @@ func TestAccResource_deployment(t *testing.T) {
 	parameterOpenAPISchemaUpdate := `{"type": "object", "properties": {"some-parameter": {"type": "string"}, "some-other-parameter": {"type": "string"}}}`
 	expectedParameterOpenAPISchemaUpdate := testutils.NormalizedValueForJSON(t, parameterOpenAPISchemaUpdate)
 
+	enforceParameterSchema := false
+	expectedManifestPath := "some-manifest-path"
+	expectedManifestPathUpdate := "some-manifest-path2"
+
+	if testutils.TestContextOSS() {
+		// This field defaults to "true" in OSS.
+		enforceParameterSchema = true
+
+		// This field is not supported in OSS.
+		expectedManifestPath = ""
+		expectedManifestPathUpdate = ""
+	}
+
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,
 		FlowName:               flowName,
@@ -208,10 +221,10 @@ func TestAccResource_deployment(t *testing.T) {
 		ConcurrencyLimit:       1,
 		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
-		EnforceParameterSchema: false,
+		EnforceParameterSchema: enforceParameterSchema,
 		Entrypoint:             "hello_world.py:hello_world",
 		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           "some-manifest-path",
+		ManifestPath:           expectedManifestPath,
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
@@ -245,7 +258,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Description:            "My deployment description v2",
 		Entrypoint:             "hello_world.py:hello_world2",
 		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:           "some-manifest-path2",
+		ManifestPath:           expectedManifestPathUpdate,
 		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
 		Parameters:             "some-value2",
 		Path:                   "some-path2",

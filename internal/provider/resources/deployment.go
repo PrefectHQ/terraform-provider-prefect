@@ -215,8 +215,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 			},
+			// `enforce_parameter_schema` defaults to `false` in Prefect Cloud for backward compatibility.
 			"enforce_parameter_schema": schema.BoolAttribute{
-				Description: "Whether or not the deployment should enforce the parameter schema.",
+				Description: "Whether or not the deployment should enforce the parameter schema. The default is `true` in Prefect OSS.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
@@ -227,8 +228,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the associated storage document (UUID)",
 			},
+			// `manifest_path` is an old, unused field so Cloud needs it to support older clients but doesn't need it for modern clients.
 			"manifest_path": schema.StringAttribute{
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
+				Description: "The path to the flow's manifest file, relative to the chosen storage. Only available in Prefect Cloud.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{

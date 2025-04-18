@@ -114,10 +114,10 @@ resource "prefect_deployment" "deployment" {
 - `concurrency_limit` (Number) The deployment's concurrency limit.
 - `concurrency_options` (Attributes) Concurrency options for the deployment. (see [below for nested schema](#nestedatt--concurrency_options))
 - `description` (String) A description for the deployment.
-- `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
+- `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema. The default is `true` in Prefect OSS.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
-- `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
+- `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage. Only available in Prefect Cloud.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
