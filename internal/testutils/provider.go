@@ -46,8 +46,19 @@ var TestAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"prefect": providerserver.NewProtocol6WithError(TestAccProvider),
 }
 
+// TestContextOSS checks an environment variable to determine if the tests are running
+// against Prefect OSS.
 func TestContextOSS() bool {
 	return os.Getenv("TEST_CONTEXT") == "OSS"
+}
+
+// SkipTestsIfCloud skips the test if running against Prefect OSS.
+func SkipTestsIfOSS(t *testing.T) {
+	t.Helper()
+
+	if TestContextOSS() {
+		t.Skip("skipping test in OSS mode")
+	}
 }
 
 // AccTestPreCheck is a utility hook, which every test suite will call
