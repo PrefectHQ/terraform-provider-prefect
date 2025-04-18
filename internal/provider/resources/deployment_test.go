@@ -16,7 +16,8 @@ import (
 )
 
 type deploymentConfig struct {
-	Workspace string
+	Workspace      string
+	WorkspaceIDArg string
 
 	DeploymentName         string
 	DeploymentResourceName string
@@ -56,21 +57,21 @@ resource "prefect_block" "test_gh_repository" {
 		"reference": "main"
 	})
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_work_pool" "{{.WorkPoolName}}" {
   name         = "{{.WorkPoolName}}"
   type         = "kubernetes"
   paused       = false
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_deployment" "{{.DeploymentName}}" {
@@ -177,7 +178,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
@@ -197,19 +198,33 @@ func TestAccResource_deployment(t *testing.T) {
 	parameterOpenAPISchemaUpdate := `{"type": "object", "properties": {"some-parameter": {"type": "string"}, "some-other-parameter": {"type": "string"}}}`
 	expectedParameterOpenAPISchemaUpdate := testutils.NormalizedValueForJSON(t, parameterOpenAPISchemaUpdate)
 
+	enforceParameterSchema := false
+	expectedManifestPath := "some-manifest-path"
+	expectedManifestPathUpdate := "some-manifest-path2"
+
+	if testutils.TestContextOSS() {
+		// This field defaults to "true" in OSS.
+		enforceParameterSchema = true
+
+		// This field is not supported in OSS.
+		expectedManifestPath = ""
+		expectedManifestPathUpdate = ""
+	}
+
 	cfgCreate := deploymentConfig{
 		DeploymentName:         deploymentName,
 		FlowName:               flowName,
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		Workspace:              workspace.Resource,
+		WorkspaceIDArg:         workspace.IDArg,
 
 		ConcurrencyLimit:       1,
 		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
-		EnforceParameterSchema: false,
+		EnforceParameterSchema: enforceParameterSchema,
 		Entrypoint:             "hello_world.py:hello_world",
 		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           "some-manifest-path",
+		ManifestPath:           expectedManifestPath,
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
@@ -234,6 +249,7 @@ func TestAccResource_deployment(t *testing.T) {
 		FlowName:               cfgCreate.FlowName,
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
 		Workspace:              cfgCreate.Workspace,
+		WorkspaceIDArg:         cfgCreate.WorkspaceIDArg,
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
@@ -242,7 +258,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Description:            "My deployment description v2",
 		Entrypoint:             "hello_world.py:hello_world2",
 		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:           "some-manifest-path2",
+		ManifestPath:           expectedManifestPathUpdate,
 		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
 		Parameters:             "some-value2",
 		Path:                   "some-path2",
@@ -387,10 +403,14 @@ func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api
 			return fmt.Errorf("error fetching deployment ID: %w", err)
 		}
 
-		// Get the workspace resource we just created from the state
-		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
-		if err != nil {
-			return fmt.Errorf("error fetching workspace ID: %w", err)
+		var workspaceID uuid.UUID
+
+		if !testutils.TestContextOSS() {
+			// Get the workspace resource we just created from the state
+			workspaceID, err = testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+			if err != nil {
+				return fmt.Errorf("error fetching workspace ID: %w", err)
+			}
 		}
 
 		// Initialize the client with the associated workspaceID

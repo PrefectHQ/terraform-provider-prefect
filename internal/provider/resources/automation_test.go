@@ -282,6 +282,9 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_automation(t *testing.T) {
+	// Automations are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	eventTriggerAutomationResourceName := testutils.NewRandomPrefixedString()
 	eventTriggerAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", eventTriggerAutomationResourceName)
 
