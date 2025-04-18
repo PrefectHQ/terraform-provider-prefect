@@ -97,7 +97,10 @@ func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
 // List returns a list of workspace roles, based on the provided filter.
 func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]*api.WorkspaceRole, error) {
 	filterQuery := api.WorkspaceRoleFilter{}
-	filterQuery.WorkspaceRoles.Name.Any = roleNames
+
+	if len(roleNames) != 0 {
+		filterQuery.WorkspaceRoles.Name.Any = roleNames
+	}
 
 	cfg := requestConfig{
 		method:       http.MethodPost,
