@@ -10,6 +10,7 @@ import (
 // TestMain adds sweeper functionality to the "go test" command.
 func TestMain(m *testing.M) {
 	sweep.AddWorkspaceSweeper()
+	sweep.AddServiceAccountSweeper()
 
 	resource.TestMain(m)
 }
