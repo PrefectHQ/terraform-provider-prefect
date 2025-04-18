@@ -23,7 +23,7 @@ This feature is available in the following [product plan(s)](https://www.prefect
 
 ## Example Usage
 
-A common use case is to create an Automation that runs a Deployment.
+A common use case is to create an Automation that runs a Deployment
 
 This Automation can be set up to trigger off of an external event, such as a Webhook call:
 
