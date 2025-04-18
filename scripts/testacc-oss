@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+set -x
 
 # Use this script to run tests against Prefect OSS.
 #
@@ -14,4 +15,4 @@ tests=${1:-""}
 TF_ACC=1 \
   TEST_CONTEXT="OSS" \
   PREFECT_API_URL="http://localhost:4200/api" \
-  gotestsum --max-fails=50 ./... -count=1 -v -run TestAccResource_flow "^${tests}$"
+  gotestsum --max-fails=50 ./... -count=1 -v -run "^${tests}$"
