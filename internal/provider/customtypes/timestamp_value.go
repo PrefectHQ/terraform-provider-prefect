@@ -109,7 +109,7 @@ func (v TimestampValue) ValueTime() time.Time {
 		return time.Time{}
 	}
 
-	value, _ := time.Parse(time.RFC3339, v.StringValue.ValueString())
+	value, _ := time.Parse(time.RFC3339, v.ValueString())
 
 	return value
 }

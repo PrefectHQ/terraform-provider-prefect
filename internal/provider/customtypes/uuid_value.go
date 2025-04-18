@@ -109,7 +109,7 @@ func (v UUIDValue) ValueUUID() uuid.UUID {
 		return uuid.Nil
 	}
 
-	value, _ := uuid.Parse(v.StringValue.ValueString())
+	value, _ := uuid.Parse(v.ValueString())
 
 	return value
 }
