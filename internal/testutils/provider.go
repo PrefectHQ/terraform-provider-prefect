@@ -28,6 +28,9 @@ const (
 
 	// WorkspaceResourceName is the name of the workspace resource.
 	WorkspaceResourceName = "prefect_workspace.test"
+
+	// WorkspaceIDArg is the argument used to set the workspace ID in the resource configuration.
+	WorkspaceIDArg = "workspace_id = prefect_workspace.test.id"
 )
 
 // TestAccProvider defines the actual Provider, which is used during acceptance testing.
@@ -112,6 +115,7 @@ func NewRandomPrefixedString() string {
 // Workspace is a struct that represents a workspace for acceptance tests.
 type Workspace struct {
 	Resource    string
+	IDArg       string
 	Name        string
 	Description string
 }
@@ -120,9 +124,15 @@ type Workspace struct {
 func NewEphemeralWorkspace() Workspace {
 	workspace := Workspace{}
 
+	// When testing against Prefect OSS, there are no workspaces.
+	if TestContextOSS() {
+		return workspace
+	}
+
 	randomName := NewRandomPrefixedString()
 	workspace.Name = randomName
 	workspace.Description = randomName
+	workspace.IDArg = WorkspaceIDArg
 
 	workspace.Resource = fmt.Sprintf(`
 resource "prefect_workspace" "test" {
