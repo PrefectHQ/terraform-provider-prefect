@@ -54,6 +54,7 @@ type DeploymentResourceModel struct {
 	Entrypoint             types.String          `tfsdk:"entrypoint"`
 	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
 	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
+	ManifestPath           types.String          `tfsdk:"manifest_path"`
 	Name                   types.String          `tfsdk:"name"`
 	ParameterOpenAPISchema jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
 	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
@@ -230,7 +231,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
 				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 				Optional:           true,
-				Computed:           true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
