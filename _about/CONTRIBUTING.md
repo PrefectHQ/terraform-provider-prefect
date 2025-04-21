@@ -276,3 +276,31 @@ using `fmt.Sprintf`.
 - If the fixture is longer, or has more than 3-5 variables, `RenderTemplate` is a better choice.
 
 For examples for both approaches, see `internal/provider/{resources,datasources}/*_test.go` files.
+
+### Writing tests for Prefect Cloud and Prefect OSS
+
+The [Prefect Cloud API][Prefect Cloud API] and [Prefect OSS API][Prefect OSS API]
+have slight difference that we need to account for in the Terraform provider.
+
+To ensure compatibility with both options, we run Terraform acceptance tests against both.
+
+For features that are known to be Prefect Cloud-only, skip the entire feature. For example:
+
+```go
+func TestAccResource_automation(t *testing.T) {
+	// Automations are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+}
+```
+
+For features that work with both Prefect Cloud and Prefect OSS, you will usually need additional
+logic to account for Cloud-only resources like workspaces. For example, see the
+[`prefect_block` tests](https://github.com/PrefectHQ/terraform-provider-prefect/blob/main/internal/provider/resources/block_test.go):
+
+- The fixture config struct includes fields for `Workspace` and `WorkspaceIDArg`.
+- The fixture config function uses these fields in the string.
+- Using the `testutils.TestContextOSS` method, the workspace value is excluded if the context is Prefect OSS.
+- That same method can be used elsewhere in the testing logic to account for differences between Cloud and OSS.
+
+[Prefect Cloud API]: https://app.prefect.cloud/api/docs
+[Prefect OSS API]: https://docs.prefect.io/3.0/api-ref/rest-api
