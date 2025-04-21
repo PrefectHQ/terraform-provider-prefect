@@ -28,7 +28,6 @@ type deploymentConfig struct {
 	EnforceParameterSchema bool
 	Entrypoint             string
 	JobVariables           string
-	ManifestPath           string
 	Parameters             string
 	Path                   string
 	Paused                 bool
@@ -87,7 +86,6 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	job_variables = jsonencode(
 		{{.JobVariables}}
 	)
-	manifest_path = "{{.ManifestPath}}"
 	parameters = jsonencode({
 		"some-parameter": "{{.Parameters}}"
 	})
@@ -199,16 +197,10 @@ func TestAccResource_deployment(t *testing.T) {
 	expectedParameterOpenAPISchemaUpdate := testutils.NormalizedValueForJSON(t, parameterOpenAPISchemaUpdate)
 
 	enforceParameterSchema := false
-	expectedManifestPath := "some-manifest-path"
-	expectedManifestPathUpdate := "some-manifest-path2"
 
 	if testutils.TestContextOSS() {
 		// This field defaults to "true" in OSS.
 		enforceParameterSchema = true
-
-		// This field is not supported in OSS.
-		expectedManifestPath = ""
-		expectedManifestPathUpdate = ""
 	}
 
 	cfgCreate := deploymentConfig{
@@ -224,7 +216,6 @@ func TestAccResource_deployment(t *testing.T) {
 		EnforceParameterSchema: enforceParameterSchema,
 		Entrypoint:             "hello_world.py:hello_world",
 		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           expectedManifestPath,
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
@@ -258,7 +249,6 @@ func TestAccResource_deployment(t *testing.T) {
 		Description:            "My deployment description v2",
 		Entrypoint:             "hello_world.py:hello_world2",
 		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:           expectedManifestPathUpdate,
 		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
 		Parameters:             "some-value2",
 		Path:                   "some-path2",
@@ -339,7 +329,6 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", cfgCreate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
-					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
@@ -370,7 +359,6 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", cfgUpdate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
-					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchemaUpdate),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),

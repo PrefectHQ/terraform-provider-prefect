@@ -32,7 +32,6 @@ resource "prefect_deployment" "deployment" {
   job_variables = jsonencode({
     "env" : { "some-key" : "some-value" }
   })
-  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
