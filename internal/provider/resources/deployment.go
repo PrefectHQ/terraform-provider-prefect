@@ -219,7 +219,10 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Whether or not the deployment should enforce the parameter schema.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				// The Prefect Cloud API defaults this value to `false`, but this is only for backward
+				// compatibility. We intentionally set this to `true` to align with the default value
+				// used in Prefect OSS.
+				Default: booldefault.StaticBool(true),
 			},
 			"storage_document_id": schema.StringAttribute{
 				Optional:    true,
