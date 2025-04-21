@@ -231,9 +231,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "ID of the associated storage document (UUID)",
 			},
 			"manifest_path": schema.StringAttribute{
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+				Optional:           true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -564,7 +564,6 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
-	model.ManifestPath = types.StringValue(deployment.ManifestPath)
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
 	model.Paused = types.BoolValue(deployment.Paused)
@@ -681,7 +680,6 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		Entrypoint:             plan.Entrypoint.ValueString(),
 		FlowID:                 plan.FlowID.ValueUUID(),
 		JobVariables:           jobVariables,
-		ManifestPath:           plan.ManifestPath.ValueString(),
 		Name:                   plan.Name.ValueString(),
 		Parameters:             parameters,
 		Path:                   plan.Path.ValueString(),
@@ -839,7 +837,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
 		Entrypoint:             model.Entrypoint.ValueString(),
 		JobVariables:           jobVariables,
-		ManifestPath:           model.ManifestPath.ValueString(),
 		ParameterOpenAPISchema: parameterOpenAPISchema,
 		Parameters:             parameters,
 		Path:                   model.Path.ValueString(),
