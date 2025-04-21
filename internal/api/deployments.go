@@ -24,7 +24,7 @@ type Deployment struct {
 	ConcurrencyLimit       *int64                         `json:"concurrency_limit"`
 	ConcurrencyOptions     *ConcurrencyOptions            `json:"concurrency_options"`
 	Description            string                         `json:"description"`
-	EnforceParameterSchema bool                           `json:"enforce_parameter_schema"`
+	EnforceParameterSchema *bool                          `json:"enforce_parameter_schema"`
 	Entrypoint             string                         `json:"entrypoint"`
 	FlowID                 uuid.UUID                      `json:"flow_id"`
 	GlobalConcurrencyLimit *CurrentGlobalConcurrencyLimit `json:"global_concurrency_limit"`
@@ -47,7 +47,7 @@ type DeploymentCreate struct {
 	ConcurrencyLimit       *int64                 `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions     *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
 	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
+	EnforceParameterSchema *bool                  `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	FlowID                 uuid.UUID              `json:"flow_id"` // required
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
@@ -69,7 +69,7 @@ type DeploymentUpdate struct {
 	ConcurrencyLimit       *int64                 `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions     *ConcurrencyOptions    `json:"concurrency_options"`
 	Description            string                 `json:"description,omitempty"`
-	EnforceParameterSchema bool                   `json:"enforce_parameter_schema,omitempty"`
+	EnforceParameterSchema *bool                  `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`

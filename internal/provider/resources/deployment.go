@@ -561,7 +561,7 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
 	model.Description = types.StringValue(deployment.Description)
-	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
+	model.EnforceParameterSchema = types.BoolPointerValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
 	model.Name = types.StringValue(deployment.Name)
@@ -676,7 +676,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	createPayload := api.DeploymentCreate{
 		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            plan.Description.ValueString(),
-		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
+		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:             plan.Entrypoint.ValueString(),
 		FlowID:                 plan.FlowID.ValueUUID(),
 		JobVariables:           jobVariables,
@@ -834,7 +834,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
 		Description:            model.Description.ValueString(),
-		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
+		EnforceParameterSchema: model.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:             model.Entrypoint.ValueString(),
 		JobVariables:           jobVariables,
 		ParameterOpenAPISchema: parameterOpenAPISchema,
