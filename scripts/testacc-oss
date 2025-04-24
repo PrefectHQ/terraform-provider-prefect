@@ -22,6 +22,7 @@ TestAccResource_automation
 TestAccResource_block
 TestAccResource_deployment
 TestAccResource_flow
+TestAccResource_global_concurrency_limit
 "
 
 tests=${1:-""}
