@@ -139,9 +139,10 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Computed:    true,
 			},
 			"max_active_runs": schema.Float32Attribute{
-				Description: "(Cloud only) The maximum number of active runs for the schedule.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "(Cloud only) The maximum number of active runs for the schedule.",
+				Optional:           true,
+				Computed:           true,
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"catchup": schema.BoolAttribute{
 				Description: "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
@@ -207,7 +208,6 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 		{
 			Active:           plan.Active.ValueBoolPointer(),
 			Catchup:          plan.Catchup.ValueBool(),
-			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 			Schedule: api.Schedule{
 				AnchorDate: plan.AnchorDate.ValueString(),
@@ -304,7 +304,6 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 	cfgUpdate := api.DeploymentSchedulePayload{
 		Active:           plan.Active.ValueBoolPointer(),
 		Catchup:          plan.Catchup.ValueBool(),
-		MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 		Schedule: api.Schedule{
 			AnchorDate: plan.AnchorDate.ValueString(),
@@ -383,7 +382,6 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.DeploymentID = customtypes.NewUUIDValue(schedule.DeploymentID)
 
 	model.Active = types.BoolPointerValue(schedule.Active)
-	model.MaxActiveRuns = types.Float32Value(schedule.MaxActiveRuns)
 
 	model.Catchup = types.BoolValue(schedule.Catchup)
 	model.MaxScheduledRuns = types.Float32Value(schedule.MaxScheduledRuns)
