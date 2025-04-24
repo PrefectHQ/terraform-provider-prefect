@@ -32,6 +32,7 @@ TestAccResource_user_api_key
 TestAccResource_user
 TestAccResource_variable
 TestAccResource_webhook
+TestAccResource_work_pool
 "
 
 tests=${1:-""}

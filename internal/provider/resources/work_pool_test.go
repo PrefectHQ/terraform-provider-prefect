@@ -21,7 +21,7 @@ resource "prefect_work_pool" "invalid_work_pool" {
 }
 `
 
-func fixtureAccWorkPoolCreate(workspace, name, poolType, baseJobTemplate string, paused bool) string {
+func fixtureAccWorkPoolCreate(workspace, workspaceIDArg, name, poolType, baseJobTemplate string, paused bool) string {
 	return fmt.Sprintf(`
 %s
 
@@ -30,10 +30,9 @@ resource "prefect_work_pool" "%s" {
 	type = "%s"
 	paused = %t
 	base_job_template = jsonencode(%s)
-	workspace_id = prefect_workspace.test.id
-	depends_on = [prefect_workspace.test]
+	%s
 }
-`, workspace, name, name, poolType, paused, baseJobTemplate)
+`, workspace, name, name, poolType, paused, baseJobTemplate, workspaceIDArg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -67,10 +66,11 @@ func TestAccResource_work_pool(t *testing.T) {
 				// Check that workspace_id missing causes a failure
 				Config:      workPoolWithoutWorkspaceID,
 				ExpectError: regexp.MustCompile(".*require an account_id and workspace_id to be set.*"),
+				SkipFunc:    testutils.SkipFuncOSS,
 			},
 			{
 				// Check creation + existence of the work pool resource
-				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName, poolType, baseJobTemplate, true),
+				Config: fixtureAccWorkPoolCreate(workspace.Resource, workspace.IDArg, randomName, poolType, baseJobTemplate, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolValues(&workPool, &api.WorkPool{Name: randomName, Type: poolType, IsPaused: true}),
@@ -84,7 +84,7 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the paused state will update the resource in place
-				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName, poolType, baseJobTemplate, false),
+				Config: fixtureAccWorkPoolCreate(workspace.Resource, workspace.IDArg, randomName, poolType, baseJobTemplate, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
@@ -98,7 +98,7 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the baseJobTemplate will update the resource in place
-				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName, poolType, baseJobTemplate2, false),
+				Config: fixtureAccWorkPoolCreate(workspace.Resource, workspace.IDArg, randomName, poolType, baseJobTemplate2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDAreEqual(workPoolResourceName, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName, &workPool),
@@ -109,7 +109,7 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the name will re-create the resource
-				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName2, poolType, baseJobTemplate2, false),
+				Config: fixtureAccWorkPoolCreate(workspace.Resource, workspace.IDArg, randomName2, poolType, baseJobTemplate2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, &workPool),
@@ -118,7 +118,7 @@ func TestAccResource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that changing the poolType will re-create the resource
-				Config: fixtureAccWorkPoolCreate(workspace.Resource, randomName2, poolType2, baseJobTemplate2, false),
+				Config: fixtureAccWorkPoolCreate(workspace.Resource, workspace.IDArg, randomName2, poolType2, baseJobTemplate2, false),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckIDsNotEqual(workPoolResourceName2, &workPool),
 					testAccCheckWorkPoolExists(workPoolResourceName2, &workPool),
@@ -144,9 +144,14 @@ func testAccCheckWorkPoolExists(workPoolResourceName string, workPool *api.WorkP
 			return fmt.Errorf("error fetching work pool name: %w", err)
 		}
 
-		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
-		if err != nil {
-			return fmt.Errorf("error fetching workspace ID: %w", err)
+		var workspaceID uuid.UUID
+
+		if !testutils.TestContextOSS() {
+			// Get the workspace resource we just created from the state
+			workspaceID, err = testutils.GetResourceWorkspaceIDFromState(state)
+			if err != nil {
+				return fmt.Errorf("error fetching workspace ID: %w", err)
+			}
 		}
 
 		// Create a new client, and use the default configurations from the environment
