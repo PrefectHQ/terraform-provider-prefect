@@ -30,6 +30,7 @@ TestAccResource_team
 TestAccResource_team_access
 TestAccResource_user_api_key
 TestAccResource_user
+TestAccResource_variable
 "
 
 tests=${1:-""}
