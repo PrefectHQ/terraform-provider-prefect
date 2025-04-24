@@ -141,7 +141,6 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 			"max_active_runs": schema.Float32Attribute{
 				Description:        "(Cloud only) The maximum number of active runs for the schedule.",
 				Optional:           true,
-				Computed:           true,
 				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"catchup": schema.BoolAttribute{
