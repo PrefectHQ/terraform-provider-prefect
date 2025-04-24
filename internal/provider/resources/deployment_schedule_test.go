@@ -36,7 +36,6 @@ resource "prefect_deployment_schedule" "test" {
 
 	active = true
 	catchup = false
-	max_active_runs = 10
 	timezone = "America/New_York"
 
 	interval = 30
@@ -70,7 +69,6 @@ resource "prefect_deployment_schedule" "test" {
 	# Update these values
 	active = false
 	catchup = true
-	max_active_runs = 20
 	timezone = "America/Chicago"
 
 	interval = 30
@@ -208,7 +206,6 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueBool(resourceName, "active", false),
 					testutils.ExpectKnownValueBool(resourceName, "catchup", true),
-					testutils.ExpectKnownValueNumber(resourceName, "max_active_runs", 20),
 					testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
 				},
 			},
