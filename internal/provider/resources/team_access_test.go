@@ -33,6 +33,9 @@ resource "prefect_team_access" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_team_access_service_account(t *testing.T) {
+	// Team access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	accessResourceName := "prefect_team_access.test"
 	randomName := testutils.NewRandomPrefixedString()
 

@@ -32,6 +32,9 @@ resource "prefect_user_api_key" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_user_api_key(t *testing.T) {
+	// API keys are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	resourceName := "prefect_user_api_key.test"
 	userID := os.Getenv("ACC_TEST_USER_RESOURCE_ID")
 	name := testutils.NewRandomPrefixedString()

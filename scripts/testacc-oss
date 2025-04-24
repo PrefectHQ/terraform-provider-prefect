@@ -26,6 +26,10 @@ TestAccResource_global_concurrency_limit
 TestAccResource_service_account
 TestAccResource_resource_sla
 TestAccResource_task_run_concurrency_limit
+TestAccResource_team
+TestAccResource_team_access
+TestAccResource_user_api_key
+TestAccResource_user
 "
 
 tests=${1:-""}
