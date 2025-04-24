@@ -326,6 +326,9 @@ var baseJobTemplateTplForQueues = `
       },
       "env": {
         "title": "Environment Variables",
+        "default": {
+          "PREFECT_CLOUD_API_URL": "http://localhost:8000/"
+        },
         "description": "Environment variables to set when starting a flow run.",
         "type": "object",
         "additionalProperties": {
