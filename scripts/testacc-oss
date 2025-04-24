@@ -34,6 +34,7 @@ TestAccResource_variable
 TestAccResource_webhook
 TestAccResource_work_pool
 TestAccResource_work_pool_access
+TestAccResource_work_queue
 "
 
 tests=${1:-""}

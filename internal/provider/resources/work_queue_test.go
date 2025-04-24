@@ -14,6 +14,7 @@ import (
 
 func fixtureAccWorkQueueCreate(
 	workspace string,
+	workspaceIDArg string,
 	workPoolName string,
 	poolType string,
 	baseJobTemplate string,
@@ -30,8 +31,7 @@ resource "prefect_work_pool" "%s" {
   type = "%s"
   paused = %t
   base_job_template = jsonencode(%s)
-  workspace_id = prefect_workspace.test.id
-  depends_on = [prefect_workspace.test]
+  %s
 }
 
 resource "prefect_work_queue" "%s" {
@@ -39,10 +39,10 @@ resource "prefect_work_queue" "%s" {
   work_pool_name = prefect_work_pool.%s.name
   priority = %d
   description = "%s"
-  workspace_id = prefect_workspace.test.id
+  %s
 }
 
-`, workspace, workPoolName, workPoolName, poolType, paused, baseJobTemplate, workQueueName, workQueueName, workPoolName, priority, description)
+`, workspace, workPoolName, workPoolName, poolType, paused, baseJobTemplate, workspaceIDArg, workQueueName, workQueueName, workPoolName, priority, description, workspaceIDArg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -77,6 +77,7 @@ func TestAccResource_work_queue(t *testing.T) {
 				// Check creation + existence of the work queue resource
 				Config: fixtureAccWorkQueueCreate(
 					workspace.Resource,
+					workspace.IDArg,
 					workPoolName,
 					poolType,
 					baseJobTemplate,
@@ -106,6 +107,7 @@ func TestAccResource_work_queue(t *testing.T) {
 				// Check that changing the priority will update the resource in place
 				Config: fixtureAccWorkQueueCreate(
 					workspace.Resource,
+					workspace.IDArg,
 					workPoolName,
 					poolType,
 					baseJobTemplate,
@@ -136,6 +138,7 @@ func TestAccResource_work_queue(t *testing.T) {
 				// Check that changing the Description will update the resource in place
 				Config: fixtureAccWorkQueueCreate(
 					workspace.Resource,
+					workspace.IDArg,
 					workPoolName,
 					poolType,
 					baseJobTemplate,
@@ -166,6 +169,7 @@ func TestAccResource_work_queue(t *testing.T) {
 				// Check that changing the name will re-create the resource
 				Config: fixtureAccWorkQueueCreate(
 					workspace.Resource,
+					workspace.IDArg,
 					workPoolName,
 					poolType,
 					baseJobTemplate,
@@ -206,11 +210,16 @@ func testAccCheckWorkQueueExists(workQueueResourceName string, workQueue *api.Wo
 			return fmt.Errorf("Resource not found in state: %s", workQueueResourceName)
 		}
 
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		var workspaceID uuid.UUID
+		var err error
+
+		if !testutils.TestContextOSS() {
+			// Get the workspace resource we just created from the state
+			workspaceID, err = testutils.GetResourceWorkspaceIDFromState(state)
+			if err != nil {
+				return fmt.Errorf("error fetching workspace ID: %w", err)
+			}
 		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		// Create a new client, and use the default configurations from the environment
 		c, _ := testutils.NewTestClient()
@@ -290,17 +299,21 @@ func testAccCheckQueueIDsNotEqual(resourceName string, fetchedWorkQueue *api.Wor
 
 func getWorkQueueImportStateID(workQueueResourceName string, workPoolName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
-		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
-
 		workQueueResource, exists := state.RootModule().Resources[workQueueResourceName]
 		if !exists {
 			return "", fmt.Errorf("Resource not found in state: %s", workQueueResourceName)
 		}
 		workQueueName := workQueueResource.Primary.Attributes["name"]
+
+		if testutils.TestContextOSS() {
+			return fmt.Sprintf("%s,%s", workPoolName, workQueueName), nil
+		}
+
+		workspaceResource, exists := state.RootModule().Resources[testutils.WorkspaceResourceName]
+		if !exists {
+			return "", fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+		}
+		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
 
 		return fmt.Sprintf("%s,%s,%s", workPoolName, workQueueName, workspaceID), nil
 	}
