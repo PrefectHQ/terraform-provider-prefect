@@ -22,21 +22,22 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
-	ConcurrencyLimit       int64
-	CollisionStrategy      string
-	Description            string
-	EnforceParameterSchema bool
-	Entrypoint             string
-	JobVariables           string
-	Parameters             string
-	Path                   string
-	Paused                 bool
-	PullSteps              []api.PullStep
-	Tags                   []string
-	Version                string
-	WorkPoolName           string
-	WorkQueueName          string
-	ParameterOpenAPISchema string
+	ConcurrencyLimit         int64
+	CollisionStrategy        string
+	Description              string
+	EnforceParameterSchema   bool
+	Entrypoint               string
+	GlobalConcurrencyLimitID bool
+	JobVariables             string
+	Parameters               string
+	Path                     string
+	Paused                   bool
+	PullSteps                []api.PullStep
+	Tags                     []string
+	Version                  string
+	WorkPoolName             string
+	WorkQueueName            string
+	ParameterOpenAPISchema   string
 
 	FlowName string
 
@@ -73,6 +74,13 @@ resource "prefect_flow" "{{.FlowName}}" {
 	{{.WorkspaceIDArg}}
 }
 
+resource "prefect_global_concurrency_limit" "test_limit" {
+  name = "test-limit"
+  concurrency_limit = 5
+
+  {{.WorkspaceIDArg}}
+}
+
 resource "prefect_deployment" "{{.DeploymentName}}" {
 	name = "{{.DeploymentName}}"
 	description = "{{.Description}}"
@@ -95,6 +103,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	version = "{{.Version}}"
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
+	global_concurrency_limit_id = {{if .GlobalConcurrencyLimitID}}prefect_global_concurrency_limit.test_limit.id{{else}}null{{end}}
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	pull_steps = [
 	  {{range .PullSteps}}
@@ -335,6 +344,187 @@ func TestAccResource_deployment(t *testing.T) {
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", cfgUpdate.ConcurrencyLimit),
+					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": cfgUpdate.CollisionStrategy,
+					}),
+					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", cfgUpdate.EnforceParameterSchema),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchemaUpdate),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
+					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "paused", cfgUpdate.Paused),
+					testutils.ExpectKnownValueList(cfgUpdate.DeploymentResourceName, "tags", cfgUpdate.Tags),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
+					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
+					testutils.ExpectKnownValueNotNull(cfgUpdate.DeploymentResourceName, "storage_document_id"),
+				},
+			},
+			{
+				// Import State checks - import by ID (default)
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(cfgCreate.DeploymentResourceName),
+				ResourceName:      cfgCreate.DeploymentResourceName,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+
+	parameterOpenAPISchema := `{"type": "object", "properties": {"some-parameter": {"type": "string"}}}`
+	expectedParameterOpenAPISchema := testutils.NormalizedValueForJSON(t, parameterOpenAPISchema)
+
+	parameterOpenAPISchemaUpdate := `{"type": "object", "properties": {"some-parameter": {"type": "string"}, "some-other-parameter": {"type": "string"}}}`
+	expectedParameterOpenAPISchemaUpdate := testutils.NormalizedValueForJSON(t, parameterOpenAPISchemaUpdate)
+
+	cfgCreate := deploymentConfig{
+		DeploymentName:         deploymentName,
+		FlowName:               flowName,
+		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
+		Workspace:              workspace.Resource,
+		WorkspaceIDArg:         workspace.IDArg,
+
+		CollisionStrategy:        "ENQUEUE",
+		Description:              "My deployment description",
+		EnforceParameterSchema:   true,
+		Entrypoint:               "hello_world.py:hello_world",
+		GlobalConcurrencyLimitID: true,
+		JobVariables:             `{"env":{"some-key":"some-value"}}`,
+		Parameters:               "some-value1",
+		Path:                     "some-path",
+		Paused:                   false,
+		PullSteps: []api.PullStep{
+			{
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/directory"),
+				},
+			},
+		},
+		Tags:                   []string{"test1", "test2"},
+		Version:                "v1.1.1",
+		WorkPoolName:           "some-pool",
+		WorkQueueName:          "default",
+		ParameterOpenAPISchema: parameterOpenAPISchema,
+		StorageDocumentName:    testutils.NewRandomPrefixedString(),
+	}
+
+	cfgUpdate := deploymentConfig{
+		// Keep some values from cfgCreate so we refer to the same resources for the update.
+		DeploymentName:         cfgCreate.DeploymentName,
+		FlowName:               cfgCreate.FlowName,
+		DeploymentResourceName: cfgCreate.DeploymentResourceName,
+		Workspace:              cfgCreate.Workspace,
+		WorkspaceIDArg:         cfgCreate.WorkspaceIDArg,
+		WorkPoolName:           cfgCreate.WorkPoolName,
+
+		// Configure new values to test the update.
+		CollisionStrategy:        "CANCEL_NEW",
+		Description:              "My deployment description v2",
+		EnforceParameterSchema:   false,
+		Entrypoint:               "hello_world.py:hello_world2",
+		GlobalConcurrencyLimitID: false,
+		JobVariables:             `{"env":{"some-key":"some-value2"}}`,
+		ParameterOpenAPISchema:   parameterOpenAPISchemaUpdate,
+		Parameters:               "some-value2",
+		Path:                     "some-path2",
+		Paused:                   true,
+		Version:                  "v1.1.2",
+		WorkQueueName:            "default",
+
+		// Changing the tags results in a "404 Deployment not found" error.
+		// Will avoid testing this until a solution is found.
+		//
+		// Tags: []string{"test1", "test3"}
+		Tags: cfgCreate.Tags,
+
+		// PullSteps require a replacement of the resource.
+		PullSteps: []api.PullStep{
+			{
+				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
+					Directory: ptr.To("/some/other/directory"),
+				},
+			},
+			{
+				PullStepGitClone: &api.PullStepGitClone{
+					Repository:        ptr.To("https://github.com/prefecthq/prefect"),
+					Branch:            ptr.To("main"),
+					AccessToken:       ptr.To("123abc"),
+					IncludeSubmodules: ptr.To(true),
+				},
+			},
+			{
+				PullStepPullFromS3: &api.PullStepPullFrom{
+					Bucket: ptr.To("some-bucket"),
+					Folder: ptr.To("some-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("some-credentials"),
+						Requires:    ptr.To("prefect-aws>=0.3.4"),
+					},
+				},
+			},
+		},
+
+		StorageDocumentName: cfgCreate.StorageDocumentName,
+	}
+
+	var deployment api.Deployment
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Check creation + existence of the deployment resource
+				Config: fixtureAccDeployment(cfgCreate),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists(cfgCreate.DeploymentResourceName, &deployment),
+					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
+						name:        cfgCreate.DeploymentName,
+						description: cfgCreate.Description,
+						pullSteps:   cfgCreate.PullSteps,
+					}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", 5),
+					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "global_concurrency_limit"),
+					testutils.ExpectKnownValueMap(cfgCreate.DeploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": cfgCreate.CollisionStrategy,
+					}),
+					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", cfgCreate.EnforceParameterSchema),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
+					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "paused", cfgCreate.Paused),
+					testutils.ExpectKnownValueList(cfgCreate.DeploymentResourceName, "tags", cfgCreate.Tags),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
+					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
+					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "storage_document_id"),
+				},
+			},
+			{
+				// Check update of existing deployment resource
+				Config: fixtureAccDeployment(cfgUpdate),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists(cfgUpdate.DeploymentResourceName, &deployment),
+					testAccCheckDeploymentValues(&deployment, expectedDeploymentValues{
+						name:        cfgUpdate.DeploymentName,
+						description: cfgUpdate.Description,
+						pullSteps:   cfgUpdate.PullSteps,
+					}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", 0),
+					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "global_concurrency_limit"),
 					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgUpdate.CollisionStrategy,
 					}),
