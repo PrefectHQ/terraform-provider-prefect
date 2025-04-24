@@ -25,6 +25,7 @@ TestAccResource_flow
 TestAccResource_global_concurrency_limit
 TestAccResource_service_account
 TestAccResource_resource_sla
+TestAccResource_task_run_concurrency_limit
 "
 
 tests=${1:-""}
