@@ -35,6 +35,9 @@ TestAccResource_webhook
 TestAccResource_work_pool
 TestAccResource_work_pool_access
 TestAccResource_work_queue
+TestAccResource_workspace_access
+TestAccResource_workspace_role
+TestAccResource_workspace
 "
 
 tests=${1:-""}

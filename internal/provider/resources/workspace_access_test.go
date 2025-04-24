@@ -50,6 +50,9 @@ resource "prefect_workspace_access" "bot_access" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_bot_workspace_access(t *testing.T) {
+	// Workspace access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	accessResourceName := "prefect_workspace_access.bot_access"
 	botResourceName := "prefect_service_account.bot"
 	developerRoleDatsourceName := "data.prefect_workspace_role.developer"
@@ -130,6 +133,9 @@ resource "prefect_workspace_access" "team_access" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_team_workspace_access(t *testing.T) {
+	// Workspace access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	accessResourceName := "prefect_workspace_access.team_access"
 	teamResourceName := "data.prefect_team.my_team"
 	viewerRoleDatsourceName := "data.prefect_workspace_role.viewer"

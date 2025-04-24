@@ -35,6 +35,9 @@ resource "prefect_workspace_role" "role" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_workspace_role(t *testing.T) {
+	// Workspace role is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	resourceName := "prefect_workspace_role.role"
 	randomName := testutils.NewRandomPrefixedString()
 
