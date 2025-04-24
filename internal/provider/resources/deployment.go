@@ -220,7 +220,10 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Whether or not the deployment should enforce the parameter schema.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				// The Prefect Cloud API defaults this value to `false`, but this is only for backward
+				// compatibility. We intentionally set this to `true` to align with the default value
+				// used in Prefect OSS.
+				Default: booldefault.StaticBool(true),
 			},
 			"storage_document_id": schema.StringAttribute{
 				Optional:    true,
@@ -229,9 +232,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "ID of the associated storage document (UUID)",
 			},
 			"manifest_path": schema.StringAttribute{
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+				Optional:           true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -564,10 +567,9 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
 	model.Description = types.StringValue(deployment.Description)
-	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
+	model.EnforceParameterSchema = types.BoolPointerValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
-	model.ManifestPath = types.StringValue(deployment.ManifestPath)
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
 	model.Paused = types.BoolValue(deployment.Paused)
@@ -683,13 +685,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 
 	createPayload := api.DeploymentCreate{
 		ConcurrencyLimit:         plan.ConcurrencyLimit.ValueInt64Pointer(),
-		GlobalConcurrencyLimitID: plan.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		Description:              plan.Description.ValueString(),
-		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBool(),
+		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               plan.Entrypoint.ValueString(),
 		FlowID:                   plan.FlowID.ValueUUID(),
+		GlobalConcurrencyLimitID: plan.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		JobVariables:             jobVariables,
-		ManifestPath:             plan.ManifestPath.ValueString(),
 		Name:                     plan.Name.ValueString(),
 		Parameters:               parameters,
 		Path:                     plan.Path.ValueString(),
@@ -843,12 +844,11 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
-		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		Description:              model.Description.ValueString(),
-		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBool(),
+		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               model.Entrypoint.ValueString(),
+		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		JobVariables:             jobVariables,
-		ManifestPath:             model.ManifestPath.ValueString(),
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
 		Path:                     model.Path.ValueString(),

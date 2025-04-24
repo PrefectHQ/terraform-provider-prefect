@@ -16,7 +16,8 @@ import (
 )
 
 type deploymentConfig struct {
-	Workspace string
+	Workspace      string
+	WorkspaceIDArg string
 
 	DeploymentName         string
 	DeploymentResourceName string
@@ -27,7 +28,6 @@ type deploymentConfig struct {
 	EnforceParameterSchema bool
 	Entrypoint             string
 	JobVariables           string
-	ManifestPath           string
 	Parameters             string
 	Path                   string
 	Paused                 bool
@@ -56,21 +56,21 @@ resource "prefect_block" "test_gh_repository" {
 		"reference": "main"
 	})
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_work_pool" "{{.WorkPoolName}}" {
   name         = "{{.WorkPoolName}}"
   type         = "kubernetes"
   paused       = false
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_deployment" "{{.DeploymentName}}" {
@@ -86,7 +86,6 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	job_variables = jsonencode(
 		{{.JobVariables}}
 	)
-	manifest_path = "{{.ManifestPath}}"
 	parameters = jsonencode({
 		"some-parameter": "{{.Parameters}}"
 	})
@@ -177,7 +176,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
@@ -202,14 +201,14 @@ func TestAccResource_deployment(t *testing.T) {
 		FlowName:               flowName,
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		Workspace:              workspace.Resource,
+		WorkspaceIDArg:         workspace.IDArg,
 
 		ConcurrencyLimit:       1,
 		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
-		EnforceParameterSchema: false,
+		EnforceParameterSchema: true,
 		Entrypoint:             "hello_world.py:hello_world",
 		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           "some-manifest-path",
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
@@ -234,33 +233,22 @@ func TestAccResource_deployment(t *testing.T) {
 		FlowName:               cfgCreate.FlowName,
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
 		Workspace:              cfgCreate.Workspace,
+		WorkspaceIDArg:         cfgCreate.WorkspaceIDArg,
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
 		ConcurrencyLimit:       2,
 		CollisionStrategy:      "CANCEL_NEW",
 		Description:            "My deployment description v2",
+		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world2",
 		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:           "some-manifest-path2",
 		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
 		Parameters:             "some-value2",
 		Path:                   "some-path2",
 		Paused:                 true,
 		Version:                "v1.1.2",
 		WorkQueueName:          "default",
-
-		// Enforcing parameter schema  returns the following error:
-		//
-		//   Could not update deployment, unexpected error: status code 409 Conflict,
-		//   error={"detail":"Error updating deployment: Cannot update parameters because
-		//   parameter schema enforcement is enabledand the deployment does not have a
-		//   valid parameter schema."}
-		//
-		// Will avoid testing this for now until a schema is configurable in the provider.
-		//
-		// EnforceParameterSchema: true
-		EnforceParameterSchema: cfgCreate.EnforceParameterSchema,
 
 		// Changing the tags results in a "404 Deployment not found" error.
 		// Will avoid testing this until a solution is found.
@@ -323,7 +311,6 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", cfgCreate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
-					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
@@ -354,7 +341,6 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", cfgUpdate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
-					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchemaUpdate),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
@@ -387,10 +373,14 @@ func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api
 			return fmt.Errorf("error fetching deployment ID: %w", err)
 		}
 
-		// Get the workspace resource we just created from the state
-		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
-		if err != nil {
-			return fmt.Errorf("error fetching workspace ID: %w", err)
+		var workspaceID uuid.UUID
+
+		if !testutils.TestContextOSS() {
+			// Get the workspace resource we just created from the state
+			workspaceID, err = testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+			if err != nil {
+				return fmt.Errorf("error fetching workspace ID: %w", err)
+			}
 		}
 
 		// Initialize the client with the associated workspaceID

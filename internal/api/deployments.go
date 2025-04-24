@@ -24,12 +24,11 @@ type Deployment struct {
 	ConcurrencyLimit       *int64                         `json:"concurrency_limit"`
 	ConcurrencyOptions     *ConcurrencyOptions            `json:"concurrency_options"`
 	Description            string                         `json:"description"`
-	EnforceParameterSchema bool                           `json:"enforce_parameter_schema"`
+	EnforceParameterSchema *bool                          `json:"enforce_parameter_schema"`
 	Entrypoint             string                         `json:"entrypoint"`
 	FlowID                 uuid.UUID                      `json:"flow_id"`
 	GlobalConcurrencyLimit *CurrentGlobalConcurrencyLimit `json:"global_concurrency_limit"`
 	JobVariables           map[string]interface{}         `json:"job_variables"`
-	ManifestPath           string                         `json:"manifest_path"`
 	Name                   string                         `json:"name"`
 	ParameterOpenAPISchema map[string]interface{}         `json:"parameter_openapi_schema"`
 	Parameters             map[string]interface{}         `json:"parameters"`
@@ -48,12 +47,11 @@ type DeploymentCreate struct {
 	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
 	Description              string                 `json:"description,omitempty"`
-	EnforceParameterSchema   bool                   `json:"enforce_parameter_schema,omitempty"`
+	EnforceParameterSchema   *bool                  `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint               string                 `json:"entrypoint,omitempty"`
 	FlowID                   uuid.UUID              `json:"flow_id"` // required
 	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
 	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath             string                 `json:"manifest_path,omitempty"`
 	Name                     string                 `json:"name"` // required
 	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters               map[string]interface{} `json:"parameters,omitempty"`
@@ -72,11 +70,10 @@ type DeploymentUpdate struct {
 	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options"`
 	Description              string                 `json:"description,omitempty"`
-	EnforceParameterSchema   bool                   `json:"enforce_parameter_schema,omitempty"`
+	EnforceParameterSchema   *bool                  `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint               string                 `json:"entrypoint,omitempty"`
 	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
 	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
-	ManifestPath             string                 `json:"manifest_path,omitempty"`
 	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
 	Parameters               map[string]interface{} `json:"parameters,omitempty"`
 	Path                     string                 `json:"path,omitempty"`

@@ -9,16 +9,16 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccFlowCreate(workspace, name, tag string) string {
+func fixtureAccFlowCreate(workspace testutils.Workspace, name, tag string) string {
 	return fmt.Sprintf(`
 %s
 
 resource "prefect_flow" "flow" {
 	name = "%s"
-	workspace_id = prefect_workspace.test.id
+	%s
 	tags = ["%s"]
 }
-`, workspace, name, tag)
+	`, workspace.Resource, name, workspace.IDArg, tag)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -33,7 +33,7 @@ func TestAccResource_flow(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check creation + existence of the flow resource
-				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test1"),
+				Config: fixtureAccFlowCreate(workspace, randomName, "test1"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
 					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test1"}),
@@ -41,7 +41,7 @@ func TestAccResource_flow(t *testing.T) {
 			},
 			{
 				// Check updating the resource
-				Config: fixtureAccFlowCreate(workspace.Resource, randomName, "test2"),
+				Config: fixtureAccFlowCreate(workspace, randomName, "test2"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
 					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test2"}),
