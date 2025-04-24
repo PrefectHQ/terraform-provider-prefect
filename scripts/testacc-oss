@@ -17,6 +17,7 @@ set -e
 # At that point, tests that are known not to be compatible with OSS will include
 # logic to be skipped if the target instance is OSS.
 testsDefault="
+TestAccResource_account
 TestAccResource_automation
 TestAccResource_block
 TestAccResource_deployment

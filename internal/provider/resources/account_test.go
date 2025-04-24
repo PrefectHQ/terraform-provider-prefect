@@ -10,6 +10,9 @@ import (
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account(t *testing.T) {
+	// Accounts are not compatible OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	resourceName := "prefect_account.test"
 
 	resource.ParallelTest(t, resource.TestCase{
