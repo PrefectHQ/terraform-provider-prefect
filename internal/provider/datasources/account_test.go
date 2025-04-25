@@ -20,6 +20,9 @@ data "prefect_account" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_account(t *testing.T) {
+	// Accounts are not available in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	datasourceName := "data.prefect_account.test"
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
