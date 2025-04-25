@@ -49,6 +49,7 @@ func TestAccDatasource_work_pool(t *testing.T) {
 	singleWorkPoolDatasourceName := "data.prefect_work_pool.test"
 	multipleWorkPoolDatasourceName := "data.prefect_work_pools.test"
 	workspace := testutils.NewEphemeralWorkspace()
+	workPoolName := testutils.NewRandomPrefixedString()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -56,9 +57,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work pool
-				Config: fixtureAccSingleWorkPool(workspace.Resource, workspace.IDArg, "test-pool"),
+				Config: fixtureAccSingleWorkPool(workspace.Resource, workspace.IDArg, workPoolName),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(singleWorkPoolDatasourceName, "name", "test-pool"),
+					testutils.ExpectKnownValue(singleWorkPoolDatasourceName, "name", workPoolName),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "id"),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "created"),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "updated"),
@@ -70,9 +71,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work pools
-				Config: fixtureAccMultipleWorkPools(workspace.Resource, workspace.IDArg, "test-pool"),
+				Config: fixtureAccMultipleWorkPools(workspace.Resource, workspace.IDArg, workPoolName),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(multipleWorkPoolDatasourceName, "work_pools.0.name", "test-pool"),
+					testutils.ExpectKnownValue(multipleWorkPoolDatasourceName, "work_pools.0.name", workPoolName),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.id"),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.created"),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.updated"),

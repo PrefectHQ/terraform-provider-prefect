@@ -96,13 +96,16 @@ func TestAccDatasource_work_queue(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 	workQueues := []*api.WorkQueue{}
 
+	workPoolName := testutils.NewRandomPrefixedString()
+	workPoolMultiName := testutils.NewRandomPrefixedString()
+
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work queue
-				Config: fixtureAccSingleWorkQueue(workspace.Resource, workspace.IDArg, "test-pool", "test-queue"),
+				Config: fixtureAccSingleWorkQueue(workspace.Resource, workspace.IDArg, workPoolName, "test-queue"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queue"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "id"),
@@ -114,7 +117,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work queues
-				Config: fixtureAccMultipleWorkQueue(workspace.Resource, workspace.IDArg, "test-pool-multi", "test-queue", "test-queue-2"),
+				Config: fixtureAccMultipleWorkQueue(workspace.Resource, workspace.IDArg, workPoolMultiName, "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckworkQueueExists("prefect_work_pool.test_multi", &workQueues),
 					testAccCheckWorkQueueValues(&workQueues, expectedWorkQueues),
