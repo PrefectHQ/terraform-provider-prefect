@@ -77,6 +77,9 @@ resource "prefect_work_pool_access" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_work_pool_access(t *testing.T) {
+	// Work pool access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	workspace := testutils.NewEphemeralWorkspace()
 	serviceAccountName := "my-service-account"
 	teamName := "my-team"

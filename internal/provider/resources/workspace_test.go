@@ -15,6 +15,9 @@ import (
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_workspace(t *testing.T) {
+	// Workspace is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	ephemeralWorkspaceCreate := testutils.NewEphemeralWorkspace()
 	ephemeralWorkspaceUpdate := testutils.NewEphemeralWorkspace()
 

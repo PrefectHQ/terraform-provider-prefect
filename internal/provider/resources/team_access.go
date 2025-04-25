@@ -66,7 +66,7 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		Description: helpers.DescriptionWithPlans(
 			"The resource `team_access` grants access to a team for a user or service account. "+
 				"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
-			helpers.AllPlans...,
+			helpers.PlanPrefectCloudEnterprise,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

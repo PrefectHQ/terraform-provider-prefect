@@ -20,6 +20,9 @@ resource "prefect_team" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_team(t *testing.T) {
+	// Teams are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	randomName := testutils.NewRandomPrefixedString()
 	randomName2 := testutils.NewRandomPrefixedString()
 

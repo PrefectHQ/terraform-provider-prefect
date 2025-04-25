@@ -69,6 +69,9 @@ const webhookTemplateStatic = `
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_webhook(t *testing.T) {
+	// Webhooks are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	workspace := testutils.NewEphemeralWorkspace()
 
 	randomName := testutils.NewRandomPrefixedString()

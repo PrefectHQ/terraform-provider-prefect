@@ -17,10 +17,7 @@ set -e
 # At that point, tests that are known not to be compatible with OSS will include
 # logic to be skipped if the target instance is OSS.
 testsDefault="
-TestAccResource_deployment
-TestAccResource_block
-TestAccResource_automation
-TestAccResource_flow
+TestAccResource_*
 "
 
 tests=${1:-""}
@@ -29,7 +26,7 @@ function run() {
   TF_ACC=1 \
     TEST_CONTEXT="OSS" \
     PREFECT_API_URL="http://localhost:4200/api" \
-    gotestsum --max-fails=50 ./... -count=1 -v -run "^${1}$"
+    gotestsum --max-fails=50 ./... -count=1 -v -run "${1}"
 }
 
 if [ "${tests}" == "" ]; then
@@ -40,5 +37,5 @@ if [ "${tests}" == "" ]; then
   done
 else
   echo "Running specified tests: ${tests}"
-  run ${tests}
+  run "^${tests}$"
 fi
