@@ -14,6 +14,9 @@ import (
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_service_account(t *testing.T) {
+	// Service accounts are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceNameByID := "data.prefect_service_account.bot_by_id"
 	dataSourceNameByName := "data.prefect_service_account.bot_by_name"
 	randomName := testutils.NewRandomPrefixedString()
