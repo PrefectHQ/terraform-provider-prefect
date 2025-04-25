@@ -16,8 +16,13 @@ set -e
 # When all tests have been updated, this default list can be removed.
 # At that point, tests that are known not to be compatible with OSS will include
 # logic to be skipped if the target instance is OSS.
+#
+# Note: for automations, the resource test is incorrectly skipped in OSS and the
+# datasource testing in OSS needs to be properly implemented. This will happen
+# in a separate change.
 testsDefault="
 TestAccResource_*
+TestAccDatasource_*
 "
 
 tests=${1:-""}
