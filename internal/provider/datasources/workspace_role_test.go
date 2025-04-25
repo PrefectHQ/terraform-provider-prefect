@@ -19,6 +19,9 @@ data "prefect_workspace_role" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_workspace_role_defaults(t *testing.T) {
+	// Workspaces are not supportedin OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceName := "data.prefect_workspace_role.test"
 
 	// Default workspace role names - these exist in every account
