@@ -99,7 +99,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// Ensure that all configuration values passed in to provider are known
 	// https://developer.hashicorp.com/terraform/plugin/framework/handling-data/terraform-concepts#unknown-values
 	if config.Endpoint.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("endpoint"),
 			"Unknown Prefect API Endpoint",
 			"The Prefect API Endpoint is not known at configuration time. "+
@@ -108,7 +108,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("api_key"),
 			"Unknown Prefect API Key",
 			"The Prefect API Key is not known at configuration time. "+
@@ -117,7 +117,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.AccountID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("account_id"),
 			"Unknown Prefect Account ID",
 			"The Prefect Account ID is not known at configuration time. "+
@@ -126,7 +126,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.WorkspaceID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("workspace_id"),
 			"Unknown Prefect Workspace ID",
 			"The Prefect Workspace ID is not known at configuration time. "+
