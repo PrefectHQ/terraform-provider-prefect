@@ -19,6 +19,9 @@ data "prefect_account_role" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_account_role_defaults(t *testing.T) {
+	// Account roles are not available in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceName := "data.prefect_account_role.test"
 
 	type defaultAccountRole struct {

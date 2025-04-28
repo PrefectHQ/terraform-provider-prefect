@@ -10,8 +10,9 @@ import (
 )
 
 type deploymentFixtureConfig struct {
-	Workspace string
-	AccountID string
+	Workspace      string
+	WorkspaceIDArg string
+	AccountID      string
 }
 
 func fixtureAccDeployment(cfg deploymentFixtureConfig) string {
@@ -22,7 +23,7 @@ resource "prefect_flow" "test" {
 	name = "test"
 	tags = ["test"]
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_deployment" "test" {
@@ -32,15 +33,13 @@ resource "prefect_deployment" "test" {
   description = "test description"
   version = "1.2.3"
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 data "prefect_deployment" "test_by_id" {
   id = prefect_deployment.test.id
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 
   depends_on = [prefect_deployment.test]
 }
@@ -49,8 +48,7 @@ data "prefect_deployment" "test_by_name" {
   name = prefect_deployment.test.name
   flow_name = prefect_flow.test.name
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 
   depends_on = [prefect_deployment.test]
 }
@@ -67,8 +65,9 @@ func TestAccDatasource_deployment(t *testing.T) {
 	datasourceNameByName := "data.prefect_deployment.test_by_name"
 
 	cfg := deploymentFixtureConfig{
-		Workspace: workspace.Resource,
-		AccountID: os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"),
+		Workspace:      workspace.Resource,
+		WorkspaceIDArg: workspace.IDArg,
+		AccountID:      os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

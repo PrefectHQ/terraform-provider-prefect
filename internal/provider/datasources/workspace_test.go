@@ -32,6 +32,9 @@ data "prefect_workspace" "testdata" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_workspace(t *testing.T) {
+	// Workspaces are not supportedin OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	ephemeralWorkspace := testutils.NewEphemeralWorkspace()
 	dataSourceName := "data.prefect_workspace.testdata"
 

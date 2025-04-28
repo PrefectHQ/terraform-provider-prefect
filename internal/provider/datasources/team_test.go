@@ -20,6 +20,9 @@ data "prefect_team" "default" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_team(t *testing.T) {
+	// Teams are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceName := "data.prefect_team.default"
 
 	resource.ParallelTest(t, resource.TestCase{
