@@ -9,22 +9,6 @@ set -e
 # Then, run the OSS tests:
 #   ./scripts/testacc-oss [tests]
 
-# This is the list of tests that will run if a specific test is not provided.
-# This list is required because only certain tests have adjusted their logic to
-# work as expected on OSS.
-#
-# When all tests have been updated, this default list can be removed.
-# At that point, tests that are known not to be compatible with OSS will include
-# logic to be skipped if the target instance is OSS.
-#
-# Note: for automations, the resource test is incorrectly skipped in OSS and the
-# datasource testing in OSS needs to be properly implemented. This will happen
-# in a separate change.
-testsDefault="
-TestAccResource_*
-TestAccDatasource_*
-"
-
 tests=${1:-""}
 
 function run() {
@@ -36,10 +20,7 @@ function run() {
 
 if [ "${tests}" == "" ]; then
   echo "Running all tests..."
-  for test in ${testsDefault}; do
-    echo "Running test: ${test}"
-    run ${test}
-  done
+  run
 else
   echo "Running specified tests: ${tests}"
   run "^${tests}$"
