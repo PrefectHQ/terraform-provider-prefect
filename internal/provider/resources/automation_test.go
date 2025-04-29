@@ -16,17 +16,17 @@ import (
 )
 
 type automationFixtureConfig struct {
-	EphemeralWorkspace             string
-	EphemeralWorkspaceResourceName string
-	AutomationResourceName         string
+	Workspace              string
+	WorkspaceIDArg         string
+	AutomationResourceName string
 }
 
 func fixtureAccAutomationResourceEventTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-event-automation"
 	description  = "description for test-event-automation"
@@ -84,10 +84,10 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceMetricTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-metric-automation"
 	description  = "description for test-metric-automation"
@@ -128,10 +128,10 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceCompoundTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-compound-automation"
 	description  = "description for test-compound-automation"
@@ -208,10 +208,10 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceSequenceTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-sequence-automation"
 	description  = "description for test-sequence-automation"
@@ -282,9 +282,6 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_automation(t *testing.T) {
-	// Automations are not supported in OSS.
-	testutils.SkipTestsIfOSS(t)
-
 	eventTriggerAutomationResourceName := testutils.NewRandomPrefixedString()
 	eventTriggerAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", eventTriggerAutomationResourceName)
 
@@ -304,9 +301,9 @@ func TestAccResource_automation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccAutomationResourceEventTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         eventTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: eventTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckAutomationResourceExists(eventTriggerAutomationResourceNameAndPath, &api.Automation{}),
@@ -339,9 +336,9 @@ func TestAccResource_automation(t *testing.T) {
 			},
 			{
 				Config: fixtureAccAutomationResourceMetricTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         metricTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: metricTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckAutomationResourceExists(metricTriggerAutomationResourceNameAndPath, &api.Automation{}),
@@ -372,9 +369,9 @@ func TestAccResource_automation(t *testing.T) {
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         compoundTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: compoundTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckAutomationResourceExists(compoundTriggerAutomationResourceNameAndPath, &api.Automation{}),
@@ -414,9 +411,9 @@ func TestAccResource_automation(t *testing.T) {
 			},
 			{
 				Config: fixtureAccAutomationResourceSequenceTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         sequenceTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: sequenceTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckAutomationResourceExists(sequenceTriggerAutomationResourceNameAndPath, &api.Automation{}),
