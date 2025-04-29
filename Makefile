@@ -70,6 +70,7 @@ testacc-dev-user:
 testacc-oss:
 	docker compose up -d
 	./scripts/testacc-oss $(TESTS)
+	docker compose down
 .PHONY: testacc-oss
 
 docs:
