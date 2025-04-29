@@ -12,12 +12,15 @@ import (
 type automationFixtureConfig struct {
 	Workspace              string
 	WorkspaceIDArg         string
+	Deployment             string
 	AutomationResourceName string
 }
 
 func fixtureAccAutomationResourceEventTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
 {{ .Workspace }}
+
+{{ .Deployment }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
   {{ .WorkspaceIDArg }}
@@ -33,7 +36,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
         "prefect.resource.id" : "prefect.flow-run.*"
       })
       match_related = jsonencode({
-        "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
+        "prefect.resource.id" : ["prefect.flow.${prefect_flow.test_flow.id}"]
         "prefect.resource.role" : "flow"
       })
       after     = ["prefect.flow-run.completed"]
@@ -48,7 +51,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
     {
       type = "run-deployment"
       source        = "selected"
-      deployment_id = "123e4567-e89b-12d3-a456-426614174000"
+      deployment_id = prefect_deployment.test_deployment.id
       parameters = jsonencode({
         param1 = "value1"
         param2 = "value2"
@@ -299,6 +302,7 @@ func TestAccDatasource_automation(t *testing.T) {
 				Config: fixtureAccAutomationResourceEventTrigger(automationFixtureConfig{
 					Workspace:              ephemeralWorkspace.Resource,
 					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					Deployment:             testutils.FixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
 					AutomationResourceName: eventTriggerAutomationResourceName,
 				}),
 				ConfigStateChecks: []statecheck.StateCheck{
@@ -332,6 +336,12 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.ExpectKnownValueListSize(metricTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
 				},
+				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
+				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				//
+				// We will skip this test for now, but might be able to either adapt the fixture to work against both
+				// environments, or create a separate fixture and text for each environment.
+				SkipFunc: testutils.SkipFuncOSS,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{

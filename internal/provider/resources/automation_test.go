@@ -306,7 +306,7 @@ func TestAccResource_automation(t *testing.T) {
 				Config: fixtureAccAutomationResourceEventTrigger(automationFixtureConfig{
 					Workspace:              ephemeralWorkspace.Resource,
 					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
-					Deployment:             fixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
+					Deployment:             testutils.FixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
 					AutomationResourceName: eventTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -520,37 +520,4 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 
 		return nil
 	}
-}
-
-func fixtureAccAutomationDeployment(workspaceIDArg string) string {
-	return fmt.Sprintf(`
-resource "prefect_block" "test_block" {
-	name = "test-block"
-	type_slug = "github-repository"
-
-	data = jsonencode({
-		"repository_url": "https://github.com/foo/bar",
-		"reference": "main"
-	})
-
-	%s
-}
-
-resource "prefect_flow" "test_flow" {
-	name = "test-flow"
-
-	%s
-}
-
-resource "prefect_deployment" "test_deployment" {
-	name = "test-deployment"
-	description = "Test description"
-	flow_id = prefect_flow.test_flow.id
-	storage_document_id = prefect_block.test_block.id
-
-	depends_on = [prefect_flow.test_flow]
-
-	%s
-}
-`, workspaceIDArg, workspaceIDArg, workspaceIDArg)
 }
