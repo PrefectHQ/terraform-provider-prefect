@@ -18,12 +18,15 @@ import (
 type automationFixtureConfig struct {
 	Workspace              string
 	WorkspaceIDArg         string
+	Deployment             string
 	AutomationResourceName string
 }
 
 func fixtureAccAutomationResourceEventTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
 {{ .Workspace }}
+
+{{ .Deployment }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
 	{{ .WorkspaceIDArg }}
@@ -39,7 +42,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
         "prefect.resource.id" : "prefect.flow-run.*"
       })
       match_related = jsonencode({
-        "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
+        "prefect.resource.id" : ["prefect.flow.${prefect_flow.test_flow.id}"]
         "prefect.resource.role" : "flow"
       })
       after     = [
@@ -64,7 +67,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
     {
       type = "run-deployment"
       source        = "selected"
-      deployment_id = "123e4567-e89b-12d3-a456-426614174000"
+      deployment_id = prefect_deployment.test_deployment.id
       parameters = jsonencode({
         param1 = "value1"
         param2 = "value2"
@@ -303,6 +306,7 @@ func TestAccResource_automation(t *testing.T) {
 				Config: fixtureAccAutomationResourceEventTrigger(automationFixtureConfig{
 					Workspace:              ephemeralWorkspace.Resource,
 					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					Deployment:             fixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
 					AutomationResourceName: eventTriggerAutomationResourceName,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -320,9 +324,9 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValueNumber(eventTriggerAutomationResourceNameAndPath, "trigger.event.within", 60),
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.type", "run-deployment"),
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.source", "selected"),
-					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.deployment_id", "123e4567-e89b-12d3-a456-426614174000"),
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationResourceNameAndPath, "actions.0.deployment_id"),
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "trigger.event.match", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":"prefect.flow-run.*"}`)),
-					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "trigger.event.match_related", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"],"prefect.resource.role":"flow"}`)),
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationResourceNameAndPath, "trigger.event.match_related"),
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.parameters", testutils.NormalizedValueForJSON(t, `{"param1":"value1","param2":"value2"}`)),
 					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.job_variables", testutils.NormalizedValueForJSON(t, `{"string_var":"value1","int_var":2,"bool_var":true}`)),
 				},
@@ -359,6 +363,12 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.name", "Failed by automation"),
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.message", "Flow run failed"),
 				},
+				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
+				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				//
+				// We will skip this test for now, but might be able to either adapt the fixture to work against both
+				// environments, or create a separate fixture and text for each environment.
+				SkipFunc: testutils.SkipFuncOSS,
 			},
 			{
 				// Import State checks - import by automation_id
@@ -366,6 +376,9 @@ func TestAccResource_automation(t *testing.T) {
 				ResourceName:      metricTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(metricTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
+				// Because we skip the previous test in OSS, we have to skip this test in OSS as well because there will
+				// be no resource by that name available to import.
+				SkipFunc: testutils.SkipFuncOSS,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
@@ -482,9 +495,13 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 			return fmt.Errorf("unable to get resource ID from state: %w", err)
 		}
 
-		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(s)
-		if err != nil {
-			return fmt.Errorf("unable to get workspaceID from state: %w", err)
+		var workspaceID uuid.UUID
+
+		if !testutils.TestContextOSS() {
+			workspaceID, err = testutils.GetResourceWorkspaceIDFromState(s)
+			if err != nil {
+				return fmt.Errorf("unable to get workspaceID from state: %w", err)
+			}
 		}
 
 		// Initialize the client with the associated workspaceID
@@ -503,4 +520,37 @@ func testAccCheckAutomationResourceExists(automationResourceName string, automat
 
 		return nil
 	}
+}
+
+func fixtureAccAutomationDeployment(workspaceIDArg string) string {
+	return fmt.Sprintf(`
+resource "prefect_block" "test_block" {
+	name = "test-block"
+	type_slug = "github-repository"
+
+	data = jsonencode({
+		"repository_url": "https://github.com/foo/bar",
+		"reference": "main"
+	})
+
+	%s
+}
+
+resource "prefect_flow" "test_flow" {
+	name = "test-flow"
+
+	%s
+}
+
+resource "prefect_deployment" "test_deployment" {
+	name = "test-deployment"
+	description = "Test description"
+	flow_id = prefect_flow.test_flow.id
+	storage_document_id = prefect_block.test_block.id
+
+	depends_on = [prefect_flow.test_flow]
+
+	%s
+}
+`, workspaceIDArg, workspaceIDArg, workspaceIDArg)
 }
