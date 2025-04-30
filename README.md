@@ -14,7 +14,7 @@
 # Terraform Provider for Prefect Cloud
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/prefecthq/terraform-provider-prefect?label=release)](https://github.com/prefecthq/terraform-provider-prefect/releases) ![Acceptance tests](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/acceptance-tests.yaml/badge.svg) ![Provider Release](https://github.com/PrefectHQ/terraform-provider-prefect/actions/workflows/provider-release.yaml/badge.svg)
 
-[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications. The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud). This provider is maintained by the Platform team at Prefect.
+[Prefect](https://www.prefect.io/) is a powerful tool for creating workflow applications. The Terraform Prefect provider is a plugin that allows Terraform to manage resources on [Prefect Cloud](https://app.prefect.cloud) and [Prefect OSS](https://github.com/prefecthq/prefect). This provider is maintained by the Platform team at Prefect.
 
 - [Documentation](https://registry.terraform.io/providers/PrefectHQ/prefect/latest/docs)
 - [Examples](https://github.com/PrefectHQ/terraform-provider-prefect/tree/main/examples)

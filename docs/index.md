@@ -10,6 +10,9 @@ description: |-
 
 Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.
 
+The provider supports both [Prefect Cloud](https://app.prefect.cloud) and
+[Prefect OSS](https://github.com/prefecthq/prefect).
+
 See [getting started](./docs/guides/getting-started.md) for more information on setting up the provider.
 
 See [troubleshoting](./docs/guides/troubleshooting.md) for resources to address potential errors.
