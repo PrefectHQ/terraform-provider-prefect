@@ -121,14 +121,18 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 	filters := make([]string, 0, len(model.FilterAny.Elements()))
 
 	for _, filter := range model.FilterAny.Elements() {
-		uuid, err := uuid.Parse(filter.String())
+		u, err := uuid.Parse(filter.String())
 		if err != nil {
-			resp.Diagnostics.AddAttributeError(path.Root("filter_any"), "Invalid UUID", fmt.Sprintf("Invalid UUID: %s", err))
+			resp.Diagnostics.AddAttributeError(
+				path.Root("filter_any"),
+				"Error parsing work pool %s ID",
+				fmt.Sprintf("Could not parse work pool ID %s to UUID, unexpected error: %s", u.String(), err.Error()),
+			)
 
 			return
 		}
 
-		filters = append(filters, uuid.String())
+		filters = append(filters, u.String())
 	}
 
 	pools, err := client.List(ctx, filters)
