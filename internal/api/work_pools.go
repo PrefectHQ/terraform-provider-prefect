@@ -9,7 +9,7 @@ import (
 // WorkPoolsClient is a client for working with work pools.
 type WorkPoolsClient interface {
 	Create(ctx context.Context, data WorkPoolCreate) (*WorkPool, error)
-	List(ctx context.Context, filter WorkPoolFilter) ([]*WorkPool, error)
+	List(ctx context.Context, ids []string) ([]*WorkPool, error)
 	Get(ctx context.Context, name string) (*WorkPool, error)
 	Update(ctx context.Context, name string, data WorkPoolUpdate) error
 	Delete(ctx context.Context, name string) error
@@ -47,5 +47,9 @@ type WorkPoolUpdate struct {
 
 // WorkPoolFilter defines filters when searching for work pools.
 type WorkPoolFilter struct {
-	Any []uuid.UUID `json:"any_"`
+	WorkPools struct {
+		ID struct {
+			Any []string `json:"any_"`
+		} `json:"id"`
+	} `json:"work_pools"`
 }
