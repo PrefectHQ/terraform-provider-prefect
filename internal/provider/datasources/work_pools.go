@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -117,9 +118,20 @@ func (d *WorkPoolsDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	filter := api.WorkPoolFilter{}
+	filters := make([]string, 0, len(model.FilterAny.Elements()))
 
-	pools, err := client.List(ctx, filter)
+	for _, filter := range model.FilterAny.Elements() {
+		uuid, err := uuid.Parse(filter.String())
+		if err != nil {
+			resp.Diagnostics.AddAttributeError(path.Root("filter_any"), "Invalid UUID", fmt.Sprintf("Invalid UUID: %s", err))
+
+			return
+		}
+
+		filters = append(filters, uuid.String())
+	}
+
+	pools, err := client.List(ctx, filters)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pools", "list", err))
 

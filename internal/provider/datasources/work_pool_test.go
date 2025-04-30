@@ -39,6 +39,11 @@ resource "prefect_work_pool" "test" {
 
 data "prefect_work_pools" "test" {
 	%s
+
+	filter_any = [
+	  prefect_work_pool.test.id,
+	]
+
 	depends_on = [prefect_work_pool.test]
 }
 `, workspace, name, workspaceIDArg, workspaceIDArg)
