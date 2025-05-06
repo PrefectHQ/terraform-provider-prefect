@@ -146,7 +146,6 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 			"catchup": schema.BoolAttribute{
 				Description:        "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
 				Optional:           true,
-				Computed:           true,
 				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			// Timezone is a common field for all schedule kinds.
