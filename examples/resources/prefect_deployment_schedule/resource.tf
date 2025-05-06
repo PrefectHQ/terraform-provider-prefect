@@ -21,7 +21,6 @@ resource "prefect_deployment_schedule" "test_interval" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # Interval-specific fields
@@ -34,7 +33,6 @@ resource "prefect_deployment_schedule" "test_cron" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # Cron-specific fields
@@ -47,7 +45,6 @@ resource "prefect_deployment_schedule" "test_rrule" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # RRule-specific fields

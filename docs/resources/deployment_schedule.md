@@ -44,7 +44,6 @@ resource "prefect_deployment_schedule" "test_interval" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # Interval-specific fields
@@ -57,7 +56,6 @@ resource "prefect_deployment_schedule" "test_cron" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # Cron-specific fields
@@ -70,7 +68,6 @@ resource "prefect_deployment_schedule" "test_rrule" {
   deployment_id = prefect_deployment.test.id
 
   active   = true
-  catchup  = false
   timezone = "America/New_York"
 
   # RRule-specific fields
@@ -90,7 +87,7 @@ resource "prefect_deployment_schedule" "test_rrule" {
 - `account_id` (String) Account ID (UUID)
 - `active` (Boolean) Whether or not the schedule is active.
 - `anchor_date` (String) The anchor date of the schedule.
-- `catchup` (Boolean) (Cloud only) Whether or not a worker should catch up on Late runs for the schedule.
+- `catchup` (Boolean, Deprecated) (Cloud only) Whether or not a worker should catch up on Late runs for the schedule.
 - `cron` (String) The cron expression of the schedule.
 - `day_or` (Boolean) Control croniter behavior for handling day and day_of_week entries.
 - `id` (String) Deployment Schedule ID (UUID)

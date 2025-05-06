@@ -17,7 +17,6 @@ type fixtureConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
 	WorkspaceIDArg        string
-	CatchupArg            string
 }
 
 func fixtureAccDeploymentScheduleInterval(cfg fixtureConfig) string {
@@ -41,7 +40,6 @@ resource "prefect_deployment_schedule" "test" {
 	deployment_id = prefect_deployment.test.id
 
 	active = true
-	{{.CatchupArg}}
 	timezone = "America/New_York"
 
 	interval = 30
@@ -74,7 +72,6 @@ resource "prefect_deployment_schedule" "test" {
 
 	# Update these values
 	active = false
-	{{.CatchupArg}}
 	timezone = "America/Chicago"
 
 	interval = 30
@@ -196,21 +193,6 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 	stateChecksForIntervalUpdate := []statecheck.StateCheck{
 		testutils.ExpectKnownValueBool(resourceName, "active", false),
 		testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
-	}
-
-	if !testutils.TestContextOSS() {
-		fixtureCfg.CatchupArg = "catchup = false"
-		fixtureCfgUpdate.CatchupArg = "catchup = true"
-
-		stateChecksForInterval = append(
-			stateChecksForInterval,
-			testutils.ExpectKnownValueBool(resourceName, "catchup", false),
-		)
-
-		stateChecksForIntervalUpdate = append(
-			stateChecksForIntervalUpdate,
-			testutils.ExpectKnownValueBool(resourceName, "catchup", true),
-		)
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
