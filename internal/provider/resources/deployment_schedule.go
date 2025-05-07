@@ -144,9 +144,9 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"catchup": schema.BoolAttribute{
-				Description: "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
+				Optional:           true,
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			// Timezone is a common field for all schedule kinds.
 			"timezone": schema.StringAttribute{
@@ -206,7 +206,6 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
 			Active:           plan.Active.ValueBoolPointer(),
-			Catchup:          plan.Catchup.ValueBool(),
 			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 			Schedule: api.Schedule{
 				AnchorDate: plan.AnchorDate.ValueString(),
@@ -302,7 +301,6 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 
 	cfgUpdate := api.DeploymentSchedulePayload{
 		Active:           plan.Active.ValueBoolPointer(),
-		Catchup:          plan.Catchup.ValueBool(),
 		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
 		Schedule: api.Schedule{
 			AnchorDate: plan.AnchorDate.ValueString(),
@@ -382,7 +380,6 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 
 	model.Active = types.BoolPointerValue(schedule.Active)
 
-	model.Catchup = types.BoolValue(schedule.Catchup)
 	model.MaxScheduledRuns = types.Float32Value(schedule.MaxScheduledRuns)
 
 	model.Timezone = types.StringValue(schedule.Schedule.Timezone)
