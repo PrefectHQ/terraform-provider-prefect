@@ -76,7 +76,8 @@ resource "prefect_flow" "{{.FlowName}}" {
 
 resource "prefect_global_concurrency_limit" "test_limit" {
   name = "test-limit"
-  concurrency_limit = 5
+	limit = 5
+	active = true
 
   {{.WorkspaceIDArg}}
 }
