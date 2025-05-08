@@ -22,7 +22,7 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
-	ConcurrencyLimit         int64
+	ConcurrencyLimit         *int64
 	CollisionStrategy        string
 	Description              string
 	EnforceParameterSchema   bool
@@ -85,7 +85,7 @@ resource "prefect_global_concurrency_limit" "test_limit" {
 resource "prefect_deployment" "{{.DeploymentName}}" {
 	name = "{{.DeploymentName}}"
 	description = "{{.Description}}"
-	concurrency_limit = {{.ConcurrencyLimit}}
+	concurrency_limit = {{if .ConcurrencyLimit}}{{.ConcurrencyLimit}}{{else}}null{{end}}
 	concurrency_options = {
 		collision_strategy = "{{.CollisionStrategy}}"
 	}
@@ -213,7 +213,7 @@ func TestAccResource_deployment(t *testing.T) {
 		Workspace:              workspace.Resource,
 		WorkspaceIDArg:         workspace.IDArg,
 
-		ConcurrencyLimit:       1,
+		ConcurrencyLimit:       ptr.To(int64(1)),
 		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
 		EnforceParameterSchema: true,
@@ -247,7 +247,7 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		ConcurrencyLimit:       2,
+		ConcurrencyLimit:       ptr.To(int64(2)),
 		CollisionStrategy:      "CANCEL_NEW",
 		Description:            "My deployment description v2",
 		EnforceParameterSchema: false,
@@ -314,7 +314,7 @@ func TestAccResource_deployment(t *testing.T) {
 					}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", cfgCreate.ConcurrencyLimit),
+					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", *cfgCreate.ConcurrencyLimit),
 					testutils.ExpectKnownValueMap(cfgCreate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgCreate.CollisionStrategy,
 					}),
@@ -344,7 +344,7 @@ func TestAccResource_deployment(t *testing.T) {
 					}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", cfgUpdate.ConcurrencyLimit),
+					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", *cfgUpdate.ConcurrencyLimit),
 					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgUpdate.CollisionStrategy,
 					}),
@@ -393,6 +393,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 		WorkspaceIDArg:         workspace.IDArg,
 
 		CollisionStrategy:        "ENQUEUE",
+		ConcurrencyLimit:         nil,
 		Description:              "My deployment description",
 		EnforceParameterSchema:   true,
 		Entrypoint:               "hello_world.py:hello_world",
@@ -427,6 +428,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 
 		// Configure new values to test the update.
 		CollisionStrategy:        "CANCEL_NEW",
+		ConcurrencyLimit:         nil,
 		Description:              "My deployment description v2",
 		EnforceParameterSchema:   false,
 		Entrypoint:               "hello_world.py:hello_world2",
