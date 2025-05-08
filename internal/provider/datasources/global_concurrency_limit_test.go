@@ -9,12 +9,12 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccGlobalConcurrencyLimitDataSource(workspace, name string) string {
+func fixtureAccGlobalConcurrencyLimitDataSource(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
 %s
 
 resource "prefect_global_concurrency_limit" "global_concurrency_limit" {
-	workspace_id = prefect_workspace.test.id
+	%s
 	name = "%s"
 	limit = 10
 	active = true
@@ -29,7 +29,7 @@ data "prefect_global_concurrency_limit" "limit_by_id" {
 	id = prefect_global_concurrency_limit.global_concurrency_limit.id
 	workspace_id = prefect_global_concurrency_limit.global_concurrency_limit.workspace_id
 }
-	`, workspace, name)
+	`, workspace, workspaceIDArg, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -44,7 +44,7 @@ func TestAccDatasource_global_concurrency_limit(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccGlobalConcurrencyLimitDataSource(workspace.Resource, randomName),
+				Config: fixtureAccGlobalConcurrencyLimitDataSource(workspace.Resource, workspace.IDArg, randomName),
 				ConfigStateChecks: []statecheck.StateCheck{
 					// Check the prefect_global_concurrency_limit datasource that queries by ID
 					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "id"),

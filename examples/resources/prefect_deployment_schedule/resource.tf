@@ -20,10 +20,8 @@ resource "prefect_deployment_schedule" "test_interval" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # Interval-specific fields
   interval    = 30
@@ -34,10 +32,8 @@ resource "prefect_deployment_schedule" "test_cron" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # Cron-specific fields
   cron   = "0 0 * * *"
@@ -48,10 +44,8 @@ resource "prefect_deployment_schedule" "test_rrule" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # RRule-specific fields
   rrule = "FREQ=DAILY;INTERVAL=1"

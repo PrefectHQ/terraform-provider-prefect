@@ -2,7 +2,6 @@ package datasources_test
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -12,17 +11,14 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccWorkerMetadtata(workspace string) string {
-	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
-
+func fixtureAccWorkerMetadtata(workspace, workspaceIDArg string) string {
 	return fmt.Sprintf(`
 %s
 
 data "prefect_worker_metadata" "default" {
-  account_id = "%s"
-  workspace_id = prefect_workspace.test.id
+	%s
 }
-`, workspace, aID)
+`, workspace, workspaceIDArg)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -35,7 +31,7 @@ func TestAccDatasource_worker_metadata(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkerMetadtata(workspace.Resource),
+				Config: fixtureAccWorkerMetadtata(workspace.Resource, workspace.IDArg),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						datasourceName,

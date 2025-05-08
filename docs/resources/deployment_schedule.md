@@ -43,10 +43,8 @@ resource "prefect_deployment_schedule" "test_interval" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # Interval-specific fields
   interval    = 30
@@ -57,10 +55,8 @@ resource "prefect_deployment_schedule" "test_cron" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # Cron-specific fields
   cron   = "0 0 * * *"
@@ -71,10 +67,8 @@ resource "prefect_deployment_schedule" "test_rrule" {
   workspace_id  = data.prefect_workspace.test.id
   deployment_id = prefect_deployment.test.id
 
-  active          = true
-  catchup         = false
-  max_active_runs = 10
-  timezone        = "America/New_York"
+  active   = true
+  timezone = "America/New_York"
 
   # RRule-specific fields
   rrule = "FREQ=DAILY;INTERVAL=1"
@@ -93,12 +87,12 @@ resource "prefect_deployment_schedule" "test_rrule" {
 - `account_id` (String) Account ID (UUID)
 - `active` (Boolean) Whether or not the schedule is active.
 - `anchor_date` (String) The anchor date of the schedule.
-- `catchup` (Boolean) (Cloud only) Whether or not a worker should catch up on Late runs for the schedule.
+- `catchup` (Boolean, Deprecated) (Cloud only) Whether or not a worker should catch up on Late runs for the schedule.
 - `cron` (String) The cron expression of the schedule.
 - `day_or` (Boolean) Control croniter behavior for handling day and day_of_week entries.
 - `id` (String) Deployment Schedule ID (UUID)
 - `interval` (Number) The interval of the schedule.
-- `max_active_runs` (Number) (Cloud only) The maximum number of active runs for the schedule.
+- `max_active_runs` (Number, Deprecated) (Cloud only) The maximum number of active runs for the schedule.
 - `max_scheduled_runs` (Number) The maximum number of scheduled runs for the schedule.
 - `rrule` (String) The rrule expression of the schedule.
 - `timezone` (String) The timezone of the schedule.

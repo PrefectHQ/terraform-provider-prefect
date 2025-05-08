@@ -76,6 +76,9 @@ resource "prefect_service_account" "bot" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_service_account(t *testing.T) {
+	// Service accounts are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	botResourceName := "prefect_service_account.bot"
 
 	botRandomName := testutils.NewRandomPrefixedString()

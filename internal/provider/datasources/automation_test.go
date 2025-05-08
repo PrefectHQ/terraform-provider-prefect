@@ -10,21 +10,24 @@ import (
 )
 
 type automationFixtureConfig struct {
-	EphemeralWorkspace             string
-	EphemeralWorkspaceResourceName string
-	AutomationResourceName         string
+	Workspace              string
+	WorkspaceIDArg         string
+	Deployment             string
+	AutomationResourceName string
 }
 
 func fixtureAccAutomationResourceEventTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
+
+{{ .Deployment }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+  {{ .WorkspaceIDArg }}
 
-	name         = "test-event-automation"
-	description  = "description for test-event-automation"
-	enabled      = true
+  name         = "test-event-automation"
+  description  = "description for test-event-automation"
+  enabled      = true
 
   trigger = {
     event = {
@@ -33,7 +36,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
         "prefect.resource.id" : "prefect.flow-run.*"
       })
       match_related = jsonencode({
-        "prefect.resource.id" : ["prefect.flow.ce6ec0c9-4b51-483b-a776-43c085b6c4f8"]
+        "prefect.resource.id" : ["prefect.flow.${prefect_flow.test_flow.id}"]
         "prefect.resource.role" : "flow"
       })
       after     = ["prefect.flow-run.completed"]
@@ -48,23 +51,23 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
     {
       type = "run-deployment"
       source        = "selected"
-      deployment_id = "123e4567-e89b-12d3-a456-426614174000"
+      deployment_id = prefect_deployment.test_deployment.id
       parameters = jsonencode({
         param1 = "value1"
         param2 = "value2"
       })
       job_variables = jsonencode({
         string_var = "value1"
-				int_var = 2
-				bool_var = true
+        int_var = 2
+        bool_var = true
       })
     }
   ]
 }
 
 data "prefect_automation" "{{ .AutomationResourceName }}" {
-	id = prefect_automation.{{ .AutomationResourceName }}.id
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+  id = prefect_automation.{{ .AutomationResourceName }}.id
+  {{ .WorkspaceIDArg }}
 }
 `
 
@@ -73,10 +76,10 @@ data "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceMetricTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+  {{ .WorkspaceIDArg }}
 
 	name         = "test-metric-automation"
 	description  = "description for test-metric-automation"
@@ -113,7 +116,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 data "prefect_automation" "{{ .AutomationResourceName }}" {
 	id = prefect_automation.{{ .AutomationResourceName }}.id
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 }
 `
 
@@ -122,10 +125,10 @@ data "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceCompoundTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-compound-automation"
 	description  = "description for test-compound-automation"
@@ -185,7 +188,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 data "prefect_automation" "{{ .AutomationResourceName }}" {
 	id = prefect_automation.{{ .AutomationResourceName }}.id
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 }
 `
 
@@ -194,10 +197,10 @@ data "prefect_automation" "{{ .AutomationResourceName }}" {
 
 func fixtureAccAutomationResourceSequenceTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
-{{ .EphemeralWorkspace }}
+{{ .Workspace }}
 
 resource "prefect_automation" "{{ .AutomationResourceName }}" {
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 
 	name         = "test-sequence-automation"
 	description  = "description for test-sequence-automation"
@@ -264,7 +267,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 
 data "prefect_automation" "{{ .AutomationResourceName }}" {
 	id = prefect_automation.{{ .AutomationResourceName }}.id
-	workspace_id = {{ .EphemeralWorkspaceResourceName }}.id
+	{{ .WorkspaceIDArg }}
 }
 `
 
@@ -297,9 +300,10 @@ func TestAccDatasource_automation(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: fixtureAccAutomationResourceEventTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         eventTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					Deployment:             testutils.FixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
+					AutomationResourceName: eventTriggerAutomationResourceName,
 				}),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(eventTriggerAutomationDataSourceNameAndPath, "id"),
@@ -316,9 +320,9 @@ func TestAccDatasource_automation(t *testing.T) {
 			},
 			{
 				Config: fixtureAccAutomationResourceMetricTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         metricTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: metricTriggerAutomationResourceName,
 				}),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(metricTriggerAutomationDataSourceNameAndPath, "id"),
@@ -332,12 +336,18 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.ExpectKnownValueListSize(metricTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
 				},
+				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
+				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				//
+				// We will skip this test for now, but might be able to either adapt the fixture to work against both
+				// environments, or create a separate fixture and text for each environment.
+				SkipFunc: testutils.SkipFuncOSS,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         compoundTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: compoundTriggerAutomationResourceName,
 				}),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(compoundTriggerAutomationDataSourceNameAndPath, "id"),
@@ -354,9 +364,9 @@ func TestAccDatasource_automation(t *testing.T) {
 			},
 			{
 				Config: fixtureAccAutomationResourceSequenceTrigger(automationFixtureConfig{
-					EphemeralWorkspace:             ephemeralWorkspace.Resource,
-					EphemeralWorkspaceResourceName: testutils.WorkspaceResourceName,
-					AutomationResourceName:         sequenceTriggerAutomationResourceName,
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: sequenceTriggerAutomationResourceName,
 				}),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(sequenceTriggerAutomationDataSourceNameAndPath, "id"),

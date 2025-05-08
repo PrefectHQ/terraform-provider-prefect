@@ -61,6 +61,12 @@ func SkipTestsIfOSS(t *testing.T) {
 	}
 }
 
+// SkipFuncOSS implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against Prefect OSS.
+func SkipFuncOSS() (bool, error) {
+	return TestContextOSS(), nil
+}
+
 // AccTestPreCheck is a utility hook, which every test suite will call
 // in order to verify if the necessary provider configurations are passed
 // through the environment variables.

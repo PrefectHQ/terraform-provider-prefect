@@ -63,7 +63,12 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 }
 
 // List returns a list of work pools matching filter criteria.
-func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) ([]*api.WorkPool, error) {
+func (c *WorkPoolsClient) List(ctx context.Context, ids []string) ([]*api.WorkPool, error) {
+	filter := &api.WorkPoolFilter{}
+	if len(ids) > 0 {
+		filter.WorkPools.ID.Any = ids
+	}
+
 	cfg := requestConfig{
 		method:       http.MethodPost,
 		url:          c.routePrefix + "/filter",

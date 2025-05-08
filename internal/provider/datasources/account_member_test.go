@@ -19,6 +19,9 @@ data "prefect_account_member" "member" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_account_member(t *testing.T) {
+	// Account members are not available in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceName := "data.prefect_account_member.member"
 
 	resource.ParallelTest(t, resource.TestCase{

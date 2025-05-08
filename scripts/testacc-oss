@@ -9,36 +9,19 @@ set -e
 # Then, run the OSS tests:
 #   ./scripts/testacc-oss [tests]
 
-# This is the list of tests that will run if a specific test is not provided.
-# This list is required because only certain tests have adjusted their logic to
-# work as expected on OSS.
-#
-# When all tests have been updated, this default list can be removed.
-# At that point, tests that are known not to be compatible with OSS will include
-# logic to be skipped if the target instance is OSS.
-testsDefault="
-TestAccResource_deployment
-TestAccResource_block
-TestAccResource_automation
-TestAccResource_flow
-"
-
 tests=${1:-""}
 
 function run() {
   TF_ACC=1 \
     TEST_CONTEXT="OSS" \
     PREFECT_API_URL="http://localhost:4200/api" \
-    gotestsum --max-fails=50 ./... -count=1 -v -run "^${1}$"
+    gotestsum --max-fails=50 ./... -count=1 -v -run "${1}"
 }
 
 if [ "${tests}" == "" ]; then
   echo "Running all tests..."
-  for test in ${testsDefault}; do
-    echo "Running test: ${test}"
-    run ${test}
-  done
+  run
 else
   echo "Running specified tests: ${tests}"
-  run ${tests}
+  run "^${tests}$"
 fi

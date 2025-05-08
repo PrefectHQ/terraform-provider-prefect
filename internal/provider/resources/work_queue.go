@@ -339,20 +339,26 @@ func (r *WorkQueueResource) Delete(ctx context.Context, req resource.DeleteReque
 // ImportState imports the resource into Terraform state.
 func (r *WorkQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Allow input values in the form of:
+	// - "work_pool_name,work_queue_name"
 	// - "work_pool_name,work_queue_name,workspace_id"
-	reqInputCount := 3
+	minInputCount := 2
+	maxInputCount := 3
 	inputParts := strings.Split(req.ID, ",")
 
-	if len(inputParts) != reqInputCount {
+	switch inputCount := len(inputParts); inputCount {
+	case minInputCount:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
+	case maxInputCount:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), inputParts[2])...)
+	default:
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected 3 import identifiers, in the form of `work_pool_name,work_queue_name,workspace_id`. Got %q", req.ID),
+			fmt.Sprintf("Expected import identifiers, in the form of `work_pool_name,work_queue_name,workspace_id` or `work_pool_name,work_queue_name`. Got %q", req.ID),
 		)
 
 		return
 	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), inputParts[2])...)
 }

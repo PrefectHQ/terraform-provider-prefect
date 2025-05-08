@@ -107,6 +107,9 @@ resource "prefect_resource_sla" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_resource_sla(t *testing.T) {
+	// SLAs are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	resourceName := "prefect_resource_sla.test"
 	workspace := testutils.NewEphemeralWorkspace()
 
