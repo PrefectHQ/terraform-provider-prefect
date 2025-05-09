@@ -62,7 +62,10 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 
 func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*api.ServiceAccount, error) {
 	filter := api.ServiceAccountFilter{}
-	filter.ServiceAccounts.Name.Any = names
+
+	if len(names) != 0 {
+		filter.ServiceAccounts.Name.Any = names
+	}
 
 	cfg := requestConfig{
 		method:       http.MethodPost,
