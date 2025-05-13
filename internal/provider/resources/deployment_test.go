@@ -495,7 +495,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 					}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", 5),
+					testutils.ExpectKnownValueNull(cfgCreate.DeploymentResourceName, "concurrency_limit"),
 					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "global_concurrency_limit"),
 					testutils.ExpectKnownValueMap(cfgCreate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgCreate.CollisionStrategy,
@@ -526,7 +526,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 					}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", 0),
+					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "concurrency_limit"),
 					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "global_concurrency_limit"),
 					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgUpdate.CollisionStrategy,
