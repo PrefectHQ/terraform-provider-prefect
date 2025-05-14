@@ -22,22 +22,23 @@ type deploymentConfig struct {
 	DeploymentName         string
 	DeploymentResourceName string
 
-	ConcurrencyLimit         *int64
-	CollisionStrategy        string
-	Description              string
-	EnforceParameterSchema   bool
-	Entrypoint               string
-	GlobalConcurrencyLimitID bool
-	JobVariables             string
-	Parameters               string
-	Path                     string
-	Paused                   bool
-	PullSteps                []api.PullStep
-	Tags                     []string
-	Version                  string
-	WorkPoolName             string
-	WorkQueueName            string
-	ParameterOpenAPISchema   string
+	ConcurrencyLimit           *int64
+	CollisionStrategy          string
+	Description                string
+	EnforceParameterSchema     bool
+	Entrypoint                 string
+	GlobalConcurrencyLimitID   bool
+	GlobalConcurrencyLimitName string
+	JobVariables               string
+	Parameters                 string
+	Path                       string
+	Paused                     bool
+	PullSteps                  []api.PullStep
+	Tags                       []string
+	Version                    string
+	WorkPoolName               string
+	WorkQueueName              string
+	ParameterOpenAPISchema     string
 
 	FlowName string
 
@@ -74,8 +75,8 @@ resource "prefect_flow" "{{.FlowName}}" {
 	{{.WorkspaceIDArg}}
 }
 
-resource "prefect_global_concurrency_limit" "test_limit" {
-  name = "test-limit"
+resource "prefect_global_concurrency_limit" "{{.GlobalConcurrencyLimitName}}" {
+  name = "{{.GlobalConcurrencyLimitName}}"
 	limit = 5
 	active = true
 
@@ -213,15 +214,16 @@ func TestAccResource_deployment(t *testing.T) {
 		Workspace:              workspace.Resource,
 		WorkspaceIDArg:         workspace.IDArg,
 
-		ConcurrencyLimit:       ptr.To(int64(1)),
-		CollisionStrategy:      "ENQUEUE",
-		Description:            "My deployment description",
-		EnforceParameterSchema: true,
-		Entrypoint:             "hello_world.py:hello_world",
-		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		Parameters:             "some-value1",
-		Path:                   "some-path",
-		Paused:                 false,
+		ConcurrencyLimit:           ptr.To(int64(1)),
+		CollisionStrategy:          "ENQUEUE",
+		Description:                "My deployment description",
+		EnforceParameterSchema:     true,
+		Entrypoint:                 "hello_world.py:hello_world",
+		GlobalConcurrencyLimitName: "test-limit",
+		JobVariables:               `{"env":{"some-key":"some-value"}}`,
+		Parameters:                 "some-value1",
+		Path:                       "some-path",
+		Paused:                     false,
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
@@ -247,18 +249,19 @@ func TestAccResource_deployment(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		ConcurrencyLimit:       ptr.To(int64(2)),
-		CollisionStrategy:      "CANCEL_NEW",
-		Description:            "My deployment description v2",
-		EnforceParameterSchema: false,
-		Entrypoint:             "hello_world.py:hello_world2",
-		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
-		Parameters:             "some-value2",
-		Path:                   "some-path2",
-		Paused:                 true,
-		Version:                "v1.1.2",
-		WorkQueueName:          "default",
+		ConcurrencyLimit:           ptr.To(int64(2)),
+		CollisionStrategy:          "CANCEL_NEW",
+		Description:                "My deployment description v2",
+		EnforceParameterSchema:     false,
+		Entrypoint:                 "hello_world.py:hello_world2",
+		GlobalConcurrencyLimitName: "test-limit",
+		JobVariables:               `{"env":{"some-key":"some-value2"}}`,
+		ParameterOpenAPISchema:     parameterOpenAPISchemaUpdate,
+		Parameters:                 "some-value2",
+		Path:                       "some-path2",
+		Paused:                     true,
+		Version:                    "v1.1.2",
+		WorkQueueName:              "default",
 
 		// Changing the tags results in a "404 Deployment not found" error.
 		// Will avoid testing this until a solution is found.
@@ -392,16 +395,16 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 		Workspace:              workspace.Resource,
 		WorkspaceIDArg:         workspace.IDArg,
 
-		CollisionStrategy:        "ENQUEUE",
-		ConcurrencyLimit:         nil,
-		Description:              "My deployment description",
-		EnforceParameterSchema:   true,
-		Entrypoint:               "hello_world.py:hello_world",
-		GlobalConcurrencyLimitID: true,
-		JobVariables:             `{"env":{"some-key":"some-value"}}`,
-		Parameters:               "some-value1",
-		Path:                     "some-path",
-		Paused:                   false,
+		CollisionStrategy:          "ENQUEUE",
+		ConcurrencyLimit:           nil,
+		Description:                "My deployment description",
+		EnforceParameterSchema:     true,
+		Entrypoint:                 "hello_world.py:hello_world",
+		GlobalConcurrencyLimitName: "test-limit2",
+		JobVariables:               `{"env":{"some-key":"some-value"}}`,
+		Parameters:                 "some-value1",
+		Path:                       "some-path",
+		Paused:                     false,
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
@@ -411,7 +414,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 		},
 		Tags:                   []string{"test1", "test2"},
 		Version:                "v1.1.1",
-		WorkPoolName:           "some-pool",
+		WorkPoolName:           "some-pool2",
 		WorkQueueName:          "default",
 		ParameterOpenAPISchema: parameterOpenAPISchema,
 		StorageDocumentName:    testutils.NewRandomPrefixedString(),
@@ -427,19 +430,19 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
-		CollisionStrategy:        "CANCEL_NEW",
-		ConcurrencyLimit:         nil,
-		Description:              "My deployment description v2",
-		EnforceParameterSchema:   false,
-		Entrypoint:               "hello_world.py:hello_world2",
-		GlobalConcurrencyLimitID: false,
-		JobVariables:             `{"env":{"some-key":"some-value2"}}`,
-		ParameterOpenAPISchema:   parameterOpenAPISchemaUpdate,
-		Parameters:               "some-value2",
-		Path:                     "some-path2",
-		Paused:                   true,
-		Version:                  "v1.1.2",
-		WorkQueueName:            "default",
+		CollisionStrategy:          "CANCEL_NEW",
+		ConcurrencyLimit:           nil,
+		Description:                "My deployment description v2",
+		EnforceParameterSchema:     false,
+		Entrypoint:                 "hello_world.py:hello_world2",
+		GlobalConcurrencyLimitName: "test-limit2",
+		JobVariables:               `{"env":{"some-key":"some-value2"}}`,
+		ParameterOpenAPISchema:     parameterOpenAPISchemaUpdate,
+		Parameters:                 "some-value2",
+		Path:                       "some-path2",
+		Paused:                     true,
+		Version:                    "v1.1.2",
+		WorkQueueName:              "default",
 
 		// Changing the tags results in a "404 Deployment not found" error.
 		// Will avoid testing this until a solution is found.

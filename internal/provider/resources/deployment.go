@@ -337,8 +337,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 			"global_concurrency_limit_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
-				Description: "The ID of the global concurrency limit for the deployment.",
+				Computed:    true,
 				Optional:    true,
+				Description: "The ID of the global concurrency limit for the deployment.",
 			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
 			// In the resource schema, we only make `type` required. The other attributes are needed
@@ -598,6 +599,8 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 
 	if deployment.GlobalConcurrencyLimit != nil {
 		model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
+	} else {
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 	}
 
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
