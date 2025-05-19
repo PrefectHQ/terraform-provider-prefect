@@ -158,6 +158,8 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 // Schema defines the schema for the resource.
+//
+//nolint:maintidx // this is a complex schema, and we can refactor it later
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
@@ -318,6 +320,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
 				Optional:    true,
+				Computed:    true,
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
 				},
@@ -589,18 +592,16 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
 	if deployment.GlobalConcurrencyLimit != nil {
 		model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
+	} else {
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
+		model.ConcurrencyLimit = types.Int64Null()
 	}
 
 	if deployment.ConcurrencyOptions != nil {
 		model.ConcurrencyOptions = &ConcurrencyOptions{
 			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
-	}
-
-	if deployment.GlobalConcurrencyLimit != nil {
-		model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
-	} else {
-		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 	}
 
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
@@ -686,8 +687,14 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// This function returns 0 if unknown and it should be nil
+	concurrencyLimit := plan.ConcurrencyLimit.ValueInt64Pointer()
+	if plan.ConcurrencyLimit.IsUnknown() {
+		concurrencyLimit = nil
+	}
+
 	createPayload := api.DeploymentCreate{
-		ConcurrencyLimit:         plan.ConcurrencyLimit.ValueInt64Pointer(),
+		ConcurrencyLimit:         concurrencyLimit,
 		Description:              plan.Description.ValueString(),
 		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               plan.Entrypoint.ValueString(),

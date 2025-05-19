@@ -105,7 +105,7 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	version = "{{.Version}}"
 	work_pool_name = "{{.WorkPoolName}}"
 	work_queue_name = "{{.WorkQueueName}}"
-	global_concurrency_limit_id = {{if .GlobalConcurrencyLimitID}}prefect_global_concurrency_limit.test_limit.id{{else}}null{{end}}
+	global_concurrency_limit_id = {{if .GlobalConcurrencyLimitID}}prefect_global_concurrency_limit.{{.GlobalConcurrencyLimitName}}.id{{else}}null{{end}}
 	parameter_openapi_schema = jsonencode({{.ParameterOpenAPISchema}})
 	pull_steps = [
 	  {{range .PullSteps}}
@@ -401,6 +401,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 		EnforceParameterSchema:     true,
 		Entrypoint:                 "hello_world.py:hello_world",
 		GlobalConcurrencyLimitName: "test-limit2",
+		GlobalConcurrencyLimitID:   true,
 		JobVariables:               `{"env":{"some-key":"some-value"}}`,
 		Parameters:                 "some-value1",
 		Path:                       "some-path",
@@ -498,8 +499,8 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 					}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNull(cfgCreate.DeploymentResourceName, "concurrency_limit"),
-					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "global_concurrency_limit"),
+					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", 5),
+					testutils.ExpectKnownValueNotNull(cfgCreate.DeploymentResourceName, "global_concurrency_limit_id"),
 					testutils.ExpectKnownValueMap(cfgCreate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgCreate.CollisionStrategy,
 					}),
@@ -530,7 +531,7 @@ func TestAccResource_deployment_global_concurrency_limit(t *testing.T) {
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "concurrency_limit"),
-					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "global_concurrency_limit"),
+					testutils.ExpectKnownValueNull(cfgUpdate.DeploymentResourceName, "global_concurrency_limit_id"),
 					testutils.ExpectKnownValueMap(cfgUpdate.DeploymentResourceName, "concurrency_options", map[string]string{
 						"collision_strategy": cfgUpdate.CollisionStrategy,
 					}),

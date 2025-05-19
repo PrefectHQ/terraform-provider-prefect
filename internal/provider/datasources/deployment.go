@@ -185,6 +185,12 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 					},
 				},
 			},
+			"global_concurrency_limit_id": schema.StringAttribute{
+				CustomType:  customtypes.UUIDType{},
+				Computed:    true,
+				Optional:    true,
+				Description: "The ID of the global concurrency limit for the deployment.",
+			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
 			// In the resource schema, we only make `type` required. The other attributes are needed
 			// based on the pull step type, which we'll validate in the resource layer.

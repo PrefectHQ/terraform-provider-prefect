@@ -56,6 +56,7 @@ data "prefect_deployment" "existing_by_id_string" {
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
 - `flow_name` (String) Flow name associated with the deployment
+- `global_concurrency_limit_id` (String) The ID of the global concurrency limit for the deployment.
 - `id` (String) Deployment ID (UUID)
 - `name` (String) Name of the deployment
 - `workspace_id` (String) Workspace ID (UUID) to associate deployment to
