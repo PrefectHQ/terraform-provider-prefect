@@ -139,5 +139,5 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 
 	// Fall back to the default retry policy for any other status codes.
 	//nolint:wrapcheck // we've extended this method, no need to wrap error
-	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+	return retryablehttp.ErrorPropagatedRetryPolicy(ctx, resp, err)
 }
