@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -134,10 +135,12 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 		// due to exhausted retries.
 		// go-retryablehttp does not return the response object on exhausted retries.
 		// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L811-L825
-		return true, fmt.Errorf("status_code=%d, error=%w", resp.StatusCode, err)
+		body, _ := io.ReadAll(resp.Body)
+
+		return true, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
 	}
 
 	// Fall back to the default retry policy for any other status codes.
 	//nolint:wrapcheck // we've extended this method, no need to wrap error
-	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+	return retryablehttp.ErrorPropagatedRetryPolicy(ctx, resp, err)
 }

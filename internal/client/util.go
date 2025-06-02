@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -145,16 +146,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("http error: %w", err)
 	}
 
-	success := false
-	for _, successCode := range cfg.successCodes {
-		if resp.StatusCode == successCode {
-			success = true
-
-			break
-		}
-	}
-
-	if !success {
+	if !slices.Contains(cfg.successCodes, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 
 		return nil, fmt.Errorf("status code=%s, error=%s", resp.Status, body)
