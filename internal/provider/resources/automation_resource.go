@@ -145,6 +145,14 @@ func (r *AutomationResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	automation, err := client.Get(ctx, automationID)
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
 
 		return

@@ -231,10 +231,7 @@ func (r *WorkQueueResource) Read(ctx context.Context, req resource.ReadRequest, 
 		// If the remote object does not exist, we can remove it from TF state
 		// so that the framework can queue up a new Create.
 		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
-		//
-		// NOTE: as a workaround, we encode + check this status code string on the error object.
-		// See `checkRetryPolicy` in `internal/client/client.go` for more details.
-		if strings.Contains(err.Error(), "status_code=404") {
+		if helpers.Is404Error(err) {
 			resp.State.RemoveResource(ctx)
 
 			return
