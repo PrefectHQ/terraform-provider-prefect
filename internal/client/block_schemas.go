@@ -61,3 +61,57 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 
 	return blockSchemas, nil
 }
+
+// Create creates a new BlockSchema.
+func (c *BlockSchemaClient) Create(ctx context.Context, payload *api.BlockSchemaCreate) (*api.BlockSchema, error) {
+	cfg := requestConfig{
+		method:       http.MethodPost,
+		url:          c.routePrefix,
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusCreated,
+	}
+
+	var createdBlockSchema *api.BlockSchema
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &createdBlockSchema); err != nil {
+		return nil, fmt.Errorf("failed to create block schema: %w", err)
+	}
+
+	return createdBlockSchema, nil
+}
+
+// Read gets a BlockSchema by ID.
+func (c *BlockSchemaClient) Read(ctx context.Context, id uuid.UUID) (*api.BlockSchema, error) {
+	cfg := requestConfig{
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/" + id.String(),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
+	}
+
+	var blockSchema *api.BlockSchema
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockSchema); err != nil {
+		return nil, fmt.Errorf("failed to get block schema: %w", err)
+	}
+
+	return blockSchema, nil
+}
+
+// Delete deletes a BlockSchema by ID.
+func (c *BlockSchemaClient) Delete(ctx context.Context, id uuid.UUID) error {
+	cfg := requestConfig{
+		method:       http.MethodDelete,
+		url:          c.routePrefix + "/" + id.String(),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
+	}
+
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, nil); err != nil {
+		return fmt.Errorf("failed to delete block schema: %w", err)
+	}
+
+	return nil
+}
