@@ -19,9 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v2
         with:
-          go-version-file: 'go.mod'
+          install_args: go
       - name: Run sweeper tests
         run: make testacc-sweepers
         env:
