@@ -12,10 +12,12 @@ import (
 var _ = api.DeploymentScheduleClient(&DeploymentScheduleClient{})
 
 type DeploymentScheduleClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // DeploymentSchedule returns a DeploymentScheduleClient.
@@ -35,21 +37,25 @@ func (c *Client) DeploymentSchedule(accountID, workspaceID uuid.UUID) (api.Deplo
 	}
 
 	return &DeploymentScheduleClient{
-		hc:           c.hc,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
 func (c *DeploymentScheduleClient) Create(ctx context.Context, deploymentID uuid.UUID, payload []api.DeploymentSchedulePayload) ([]*api.DeploymentSchedule, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
-		body:         &payload,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
+		body:            &payload,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusCreated,
 	}
 
 	var schedules []*api.DeploymentSchedule
@@ -62,12 +68,14 @@ func (c *DeploymentScheduleClient) Create(ctx context.Context, deploymentID uuid
 
 func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.UUID) ([]*api.DeploymentSchedule, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s/schedules", c.routePrefix, deploymentID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var schedules []*api.DeploymentSchedule
@@ -80,12 +88,14 @@ func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.U
 
 func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID, payload api.DeploymentSchedulePayload) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
-		body:         &payload,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodPatch,
+		url:             fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
+		body:            &payload,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -99,12 +109,14 @@ func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid
 
 func (c *DeploymentScheduleClient) Delete(ctx context.Context, deploymentID uuid.UUID, scheduleID uuid.UUID) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodDelete,
+		url:             fmt.Sprintf("%s/%s/%s/%s", c.routePrefix, deploymentID.String(), "schedules", scheduleID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

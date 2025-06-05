@@ -13,10 +13,12 @@ var _ = api.WorkQueuesClient(&WorkQueuesClient{})
 
 // WorkQueuesClient is a client for working with work queues.
 type WorkQueuesClient struct {
-	hc           *http.Client
-	apiKey       string
-	basicAuthKey string
-	routePrefix  string
+	hc              *http.Client
+	apiKey          string
+	basicAuthKey    string
+	routePrefix     string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // WorkQueues returns a WorkQueuesClient.
@@ -38,22 +40,26 @@ func (c *Client) WorkQueues(accountID uuid.UUID, workspaceID uuid.UUID, workPool
 	route := fmt.Sprintf("work_pools/%s/queues", workPoolName)
 
 	return &WorkQueuesClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, route),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, route),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
 // Create returns details for a new work queue.
 func (c *WorkQueuesClient) Create(ctx context.Context, data api.WorkQueueCreate) (*api.WorkQueue, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		successCodes: successCodesStatusCreated,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		successCodes:    successCodesStatusCreated,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}
 
 	var queue api.WorkQueue
@@ -67,12 +73,14 @@ func (c *WorkQueuesClient) Create(ctx context.Context, data api.WorkQueueCreate)
 // List returns a list of work queues matching filter criteria.
 func (c *WorkQueuesClient) List(ctx context.Context, filter api.WorkQueueFilter) ([]*api.WorkQueue, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/filter",
-		body:         &filter,
-		successCodes: successCodesStatusOK,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/filter",
+		body:            &filter,
+		successCodes:    successCodesStatusOK,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}
 
 	var queues []*api.WorkQueue
@@ -86,12 +94,14 @@ func (c *WorkQueuesClient) List(ctx context.Context, filter api.WorkQueueFilter)
 // Get returns details for a work queue by name.
 func (c *WorkQueuesClient) Get(ctx context.Context, name string) (*api.WorkQueue, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/" + name,
-		successCodes: successCodesStatusOK,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + name,
+		successCodes:    successCodesStatusOK,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}
 
 	var queue api.WorkQueue
@@ -105,12 +115,14 @@ func (c *WorkQueuesClient) Get(ctx context.Context, name string) (*api.WorkQueue
 // Update modifies an existing work queue by name.
 func (c *WorkQueuesClient) Update(ctx context.Context, name string, data api.WorkQueueUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          c.routePrefix + "/" + name,
-		body:         &data,
-		successCodes: successCodesStatusOKOrNoContent,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPatch,
+		url:             c.routePrefix + "/" + name,
+		body:            &data,
+		successCodes:    successCodesStatusOKOrNoContent,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -125,12 +137,14 @@ func (c *WorkQueuesClient) Update(ctx context.Context, name string, data api.Wor
 // Delete removes a work queue by name.
 func (c *WorkQueuesClient) Delete(ctx context.Context, name string) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          c.routePrefix + "/" + name,
-		successCodes: successCodesStatusOKOrNoContent,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodDelete,
+		url:             c.routePrefix + "/" + name,
+		successCodes:    successCodesStatusOKOrNoContent,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
