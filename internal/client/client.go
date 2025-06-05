@@ -43,11 +43,7 @@ func New(opts ...Option) (*Client, error) {
 	// the `retryablehttp.Client` interface in our client methods.
 	httpClient := retryableClient.StandardClient()
 
-	client := &Client{
-		hc:              httpClient,
-		csrfClientToken: uuid.NewString(),
-		// csrfToken will be fetched by ObtainCsrfToken() below
-	}
+	client := &Client{hc: httpClient}
 
 	var errs []error
 	for _, opt := range opts {
@@ -62,31 +58,14 @@ func New(opts ...Option) (*Client, error) {
 		return nil, errors.Join(errs...)
 	}
 
-	// Obtain the CSRF token from the server after basic configuration
-	if err := client.ObtainCsrfToken(context.Background()); err != nil {
-		// Depending on strictness, you might want to return an error here
-		// or log it and proceed without the CSRF token for non-server endpoints.
-		// For now, we'll return it as it's crucial for server communication.
-		return nil, fmt.Errorf("failed to obtain CSRF token: %w", err)
-	}
-
 	return client, nil
 }
 
-// ObtainCsrfToken fetches the CSRF token from the Prefect server.
+// obtainCsrfToken fetches the CSRF token from the Prefect server.
 // It should be called after the client's endpoint and auth are configured.
-func (c *Client) ObtainCsrfToken(ctx context.Context) error {
-	if c.endpoint == "" {
-		return fmt.Errorf("endpoint must be configured before obtaining CSRF token")
-	}
-
-	// Servers may not have CSRF enabled. If the endpoint is not a Prefect Cloud endpoint,
-	// we can make this best-effort.
-	// For this initial implementation, we will assume it's required if the endpoint is set.
-
+func (c *Client) obtainCsrfToken() error {
 	tokenURL := fmt.Sprintf("%s/csrf-token?client=%s", c.endpoint, c.csrfClientToken)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenURL, http.NoBody)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tokenURL, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating CSRF token request: %w", err)
 	}
@@ -160,6 +139,21 @@ func WithBasicAuthKey(basicAuthKey string) Option {
 	}
 }
 
+// WithCsrfEnabled configures the client to enable CSRF protection.
+func WithCsrfEnabled(csrfEnabled bool) Option {
+	return func(client *Client) error {
+		if csrfEnabled {
+			client.csrfClientToken = uuid.NewString()
+
+			if err := client.obtainCsrfToken(); err != nil {
+				return fmt.Errorf("failed to obtain CSRF token: %w", err)
+			}
+		}
+
+		return nil
+	}
+}
+
 // WithDefaults configures the default account and workspace ID.
 func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 	return func(client *Client) error {
@@ -185,6 +179,14 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 	// eventually succeeded and we don't need to make the request again.
 	if resp.StatusCode == http.StatusConflict {
 		return false, nil
+	}
+
+	// If the request is forbidden, no need to retry the request. Print
+	// out the error and stop retrying.
+	if resp.StatusCode == http.StatusForbidden {
+		body, _ := io.ReadAll(resp.Body)
+
+		return false, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
 	}
 
 	// If the response is a 404 (NotFound), try again. This is particularly
