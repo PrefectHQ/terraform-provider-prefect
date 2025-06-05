@@ -338,6 +338,7 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewBlockAccessResource,
 		resources.NewBlockResource,
 		resources.NewBlockSchemaResource,
+		resources.NewBlockTypeResource,
 		resources.NewDeploymentAccessResource,
 		resources.NewDeploymentResource,
 		resources.NewDeploymentScheduleResource,
