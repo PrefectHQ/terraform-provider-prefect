@@ -11,10 +11,12 @@ import (
 
 // BlockSchemaClient is a client for working with block schemas.
 type BlockSchemaClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // BlockSchemas returns a BlockSchemaClient.
@@ -33,10 +35,12 @@ func (c *Client) BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (api.B
 	}
 
 	return &BlockSchemaClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_schemas"),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_schemas"),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
@@ -46,12 +50,14 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 	filterQuery.BlockSchemas.BlockTypeID.Any = blockTypeIDs
 
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/filter",
-		body:         filterQuery,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/filter",
+		body:            filterQuery,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var blockSchemas []*api.BlockSchema

@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -43,7 +44,9 @@ func New(opts ...Option) (*Client, error) {
 	httpClient := retryableClient.StandardClient()
 
 	client := &Client{
-		hc: httpClient,
+		hc:              httpClient,
+		csrfClientToken: uuid.NewString(),
+		// csrfToken will be fetched by ObtainCsrfToken() below
 	}
 
 	var errs []error
@@ -59,7 +62,63 @@ func New(opts ...Option) (*Client, error) {
 		return nil, errors.Join(errs...)
 	}
 
+	// Obtain the CSRF token from the server after basic configuration
+	if err := client.ObtainCsrfToken(context.Background()); err != nil {
+		// Depending on strictness, you might want to return an error here
+		// or log it and proceed without the CSRF token for non-server endpoints.
+		// For now, we'll return it as it's crucial for server communication.
+		return nil, fmt.Errorf("failed to obtain CSRF token: %w", err)
+	}
+
 	return client, nil
+}
+
+// ObtainCsrfToken fetches the CSRF token from the Prefect server.
+// It should be called after the client's endpoint and auth are configured.
+func (c *Client) ObtainCsrfToken(ctx context.Context) error {
+	if c.endpoint == "" {
+		return fmt.Errorf("endpoint must be configured before obtaining CSRF token")
+	}
+
+	// Servers may not have CSRF enabled. If the endpoint is not a Prefect Cloud endpoint,
+	// we can make this best-effort.
+	// For this initial implementation, we will assume it's required if the endpoint is set.
+
+	tokenURL := fmt.Sprintf("%s/csrf-token?client=%s", c.endpoint, c.csrfClientToken)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, tokenURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("error creating CSRF token request: %w", err)
+	}
+
+	// Set necessary headers. Note: Prefect-Csrf-Token is NOT sent for this request.
+	setAuthorizationHeader(req, c.apiKey, c.basicAuthKey)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Prefect-Csrf-Client", c.csrfClientToken)
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return fmt.Errorf("http error on CSRF token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to fetch CSRF token, status: %s, body: %s", resp.Status, string(bodyBytes))
+	}
+
+	var tokenResponse api.CSRFTokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		return fmt.Errorf("failed to decode CSRF token response: %w", err)
+	}
+
+	if tokenResponse.Token == "" {
+		return fmt.Errorf("CSRF token not found in response")
+	}
+
+	c.csrfToken = tokenResponse.Token
+
+	return nil
 }
 
 // WithEndpoint configures the client to communicate with a self-hosted

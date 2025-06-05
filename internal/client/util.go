@@ -63,13 +63,22 @@ func setAuthorizationHeader(request *http.Request, apiKey, basicAuthKey string) 
 	}
 }
 
-// setDefaultHeaders will set Authorization, Content-Type, and Accept
-// headers that are common to most requests.
-func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey string) {
+// setDefaultHeaders will set Authorization, Content-Type, Accept,
+// and CSRF headers that are common to most requests.
+func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientToken, csrfToken string) {
 	setAuthorizationHeader(request, apiKey, basicAuthKey)
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
+
+	// Set CSRF headers if tokens are provided
+	if csrfClientToken != "" {
+		request.Header.Set("Prefect-Csrf-Client", csrfClientToken)
+	}
+	if csrfToken != "" {
+		// This token is now obtained via client.ObtainCsrfToken()
+		request.Header.Set("Prefect-Csrf-Token", csrfToken)
+	}
 }
 
 // validateCloudEndpoint validates that proper configuration is provided
@@ -90,8 +99,10 @@ type requestConfig struct {
 
 	successCodes []int
 
-	apiKey       string
-	basicAuthKey string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string // Populated by ObtainCsrfToken on client initialization
 }
 
 var (
@@ -138,7 +149,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey)
+	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken)
 
 	// Body will be closed by the caller.
 	resp, err := client.Do(req)

@@ -14,10 +14,12 @@ import (
 var _ = api.WorkspaceAccessClient(&WorkspaceAccessClient{})
 
 type WorkspaceAccessClient struct {
-	hc           *http.Client
-	apiKey       string
-	basicAuthKey string
-	routePrefix  string
+	hc              *http.Client
+	apiKey          string
+	basicAuthKey    string
+	routePrefix     string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // WorkspaceAccess is a factory that initializes and returns a WorkspaceAccessClient.
@@ -37,10 +39,12 @@ func (c *Client) WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (ap
 	}
 
 	return &WorkspaceAccessClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  fmt.Sprintf("%s/accounts/%s/workspaces/%s", c.endpoint, accountID.String(), workspaceID.String()),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     fmt.Sprintf("%s/accounts/%s/workspaces/%s", c.endpoint, accountID.String(), workspaceID.String()),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
@@ -80,12 +84,14 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 	}
 
 	cfg := requestConfig{
-		method:       requestMethod,
-		url:          requestPath,
-		body:         &payloads,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          requestMethod,
+		url:             requestPath,
+		body:            &payloads,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var workspaceAccesses []api.WorkspaceAccess
@@ -126,12 +132,14 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	}
 
 	cfg := requestConfig{
-		method:       requestMethod,
-		url:          requestPath,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          requestMethod,
+		url:             requestPath,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -198,12 +206,14 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 	}
 
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          requestPath,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodDelete,
+		url:             requestPath,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

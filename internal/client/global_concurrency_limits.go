@@ -13,10 +13,12 @@ var _ = api.GlobalConcurrencyLimitsClient(&GlobalConcurrencyLimitsClient{})
 
 // GlobalConcurrencyLimitsClient is a client for working with global concurrency limits.
 type GlobalConcurrencyLimitsClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // GlobalConcurrencyLimits returns a GlobalConcurrencyLimitsClient.
@@ -36,22 +38,26 @@ func (c *Client) GlobalConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.U
 	}
 
 	return &GlobalConcurrencyLimitsClient{
-		hc:           c.hc,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "v2/concurrency_limits"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "v2/concurrency_limits"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
 // Create creates a new global concurrency limit.
 func (c *GlobalConcurrencyLimitsClient) Create(ctx context.Context, data api.GlobalConcurrencyLimitCreate) (*api.GlobalConcurrencyLimit, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusCreated,
 	}
 
 	var globalConcurrencyLimit api.GlobalConcurrencyLimit
@@ -65,11 +71,13 @@ func (c *GlobalConcurrencyLimitsClient) Create(ctx context.Context, data api.Glo
 // Read returns a global concurrency limit.
 func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurrencyLimitID string) (*api.GlobalConcurrencyLimit, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var globalConcurrencyLimit api.GlobalConcurrencyLimit
@@ -83,12 +91,14 @@ func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurre
 // Update updates a global concurrency limit.
 func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcurrencyLimitID string, data api.GlobalConcurrencyLimitUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodPatch,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -103,11 +113,13 @@ func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcur
 // Delete deletes a global concurrency limit.
 func (c *GlobalConcurrencyLimitsClient) Delete(ctx context.Context, globalConcurrencyLimitID string) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodDelete,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, globalConcurrencyLimitID),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
