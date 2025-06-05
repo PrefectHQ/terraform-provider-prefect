@@ -22,7 +22,7 @@ jobs:
       - name: Install tool dependencies
         uses: jdx/mise-action@v2
         with:
-          install_args: go
+          install_args: go terraform
       - name: Run sweeper tests
         run: make testacc-sweepers
         env:
