@@ -279,6 +279,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// endpoint host to construct custom URLs as a resource attribute.
 	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
+	//nolint:contextcheck // no context is used here
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),

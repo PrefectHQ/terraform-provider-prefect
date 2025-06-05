@@ -104,6 +104,7 @@ func (c *Client) ObtainCsrfToken(ctx context.Context) error {
 
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf("failed to fetch CSRF token, status: %s, body: %s", resp.Status, string(bodyBytes))
 	}
 
