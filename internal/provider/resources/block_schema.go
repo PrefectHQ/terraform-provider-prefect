@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -111,11 +112,17 @@ func (r *BlockSchemaResource) Schema(_ context.Context, _ resource.SchemaRequest
 				Description: "The fields of the block schema.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"block_type_id": schema.StringAttribute{
 				Description: "The ID of the block type.",
 				Required:    true,
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"block_type": schema.StringAttribute{
 				Description: "The type of the block.",
@@ -125,10 +132,16 @@ func (r *BlockSchemaResource) Schema(_ context.Context, _ resource.SchemaRequest
 				Description: "The capabilities of the block schema.",
 				Optional:    true,
 				ElementType: types.StringType,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.RequiresReplace(),
+				},
 			},
 			"version": schema.StringAttribute{
 				Description: "The version of the block schema.",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
