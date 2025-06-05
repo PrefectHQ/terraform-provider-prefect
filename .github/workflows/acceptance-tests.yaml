@@ -37,17 +37,17 @@ jobs:
           github.event_name == 'push'
         uses: actions/checkout@v4
 
-      - name: Install tool dependencies
-        uses: jdx/mise-action@v2
-        with:
-          install_args: gotestsum terraform
-
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
       - name: Set up Golang
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
+
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v2
+        with:
+          install_args: gotestsum terraform
 
       - name: Run acceptance tests
         run: make testacc
