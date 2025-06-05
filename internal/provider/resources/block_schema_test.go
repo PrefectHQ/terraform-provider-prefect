@@ -19,7 +19,6 @@ type blockSchemaFixtureConfig struct {
 	Capabilities []string
 	Version      string
 	Fields       string
-	Checksum     string
 }
 
 func fixtureAccBlockSchema(cfg blockSchemaFixtureConfig) string {
