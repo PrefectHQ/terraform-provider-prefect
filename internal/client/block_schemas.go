@@ -109,9 +109,11 @@ func (c *BlockSchemaClient) Delete(ctx context.Context, id uuid.UUID) error {
 		successCodes: successCodesStatusNoContent,
 	}
 
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, nil); err != nil {
+	resp, err := request(ctx, c.hc, cfg)
+	if err != nil {
 		return fmt.Errorf("failed to delete block schema: %w", err)
 	}
+	defer resp.Body.Close()
 
 	return nil
 }

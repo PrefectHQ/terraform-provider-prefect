@@ -105,10 +105,7 @@ func (r *BlockSchemaResource) Schema(_ context.Context, _ resource.SchemaRequest
 			},
 			"checksum": schema.StringAttribute{
 				Description: "The checksum of the block schema.",
-				Optional:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
+				Computed:    true,
 			},
 			"fields": schema.StringAttribute{
 				Description: "The fields of the block schema.",
@@ -117,12 +114,12 @@ func (r *BlockSchemaResource) Schema(_ context.Context, _ resource.SchemaRequest
 			},
 			"block_type_id": schema.StringAttribute{
 				Description: "The ID of the block type.",
-				Optional:    true,
+				Required:    true,
 				CustomType:  customtypes.UUIDType{},
 			},
 			"block_type": schema.StringAttribute{
 				Description: "The type of the block.",
-				Optional:    true,
+				Computed:    true,
 			},
 			"capabilities": schema.ListAttribute{
 				Description: "The capabilities of the block schema.",
@@ -148,11 +145,15 @@ func copyBlockSchemaToModel(ctx context.Context, blockSchema *api.BlockSchema, t
 	tfModel.BlockType = types.StringValue(blockSchema.BlockType.Slug)
 	tfModel.Version = types.StringValue(blockSchema.Version)
 
-	fields, err := json.Marshal(blockSchema.Fields)
-	if err != nil {
-		diags.Append(helpers.SerializeDataErrorDiagnostic("fields", "Block Schema", err))
-	}
-	tfModel.Fields = jsontypes.NewNormalizedValue(string(fields))
+	// We do not persist the fields value from the API -> State
+	// because the resulting value is sometimes mutated by the API, leading to
+	// "inconsistent result after apply" errors.
+	//
+	// fields, err := json.Marshal(blockSchema.Fields)
+	// if err != nil {
+	// 	diags.Append(helpers.SerializeDataErrorDiagnostic("fields", "Block Schema", err))
+	// }
+	// tfModel.Fields = jsontypes.NewNormalizedValue(string(fields))
 
 	capabilities, diags := types.ListValueFrom(ctx, types.StringType, blockSchema.Capabilities)
 	if diags.HasError() {

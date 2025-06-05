@@ -12,27 +12,39 @@ type blockSchemaFixtureConfig struct {
 	Workspace       string
 	WorkspaceIDArg  string
 	BlockSchemaName string
-	BlockTypeID     string
-	BlockType       string
-	Capabilities    []string
-	Version         string
-	Fields          string
-	Checksum        string
+
+	BlockTypeName string
+	BlockTypeSlug string
+
+	Capabilities []string
+	Version      string
+	Fields       string
+	Checksum     string
 }
 
 func fixtureAccBlockSchema(cfg blockSchemaFixtureConfig) string {
 	tmpl := `
 {{ .Workspace }}
 
+resource "prefect_block_type" "test" {
+	name = "{{ .BlockTypeName }}"
+	slug = "{{ .BlockTypeSlug }}"
+
+	logo_url = "https://example.com/logo.png"
+	documentation_url = "https://example.com/documentation"
+	description = "test"
+	code_example = "test"
+
+	{{ .WorkspaceIDArg }}
+}
+
 resource "prefect_block_schema" "test" {
 	{{ .WorkspaceIDArg }}
 
-	block_type_id = "{{ .BlockTypeID }}"
-	block_type = "{{ .BlockType }}"
+	block_type_id = prefect_block_type.test.id
 	capabilities = [{{ range .Capabilities }}"{{ . }}", {{ end }}]
 	version = "{{ .Version }}"
 	fields = jsonencode({{ .Fields }})
-	checksum = "{{ .Checksum }}"
 }
 `
 
@@ -44,8 +56,7 @@ func TestAccResource_block_schema(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 	resourceName := "prefect_block_schema.test"
 
-	blockType := "string"
-	blockTypeID := "" // need to get this from the `prefect_block_type` resource
+	blockTypeName := testutils.NewRandomPrefixedString()
 
 	fields := `{"title": "x", "type": "object", "properties": {"foo": {"title": "Foo", "type": "string"}}, "required": ["foo"]}`
 
@@ -54,12 +65,14 @@ func TestAccResource_block_schema(t *testing.T) {
 	cfgCreate := blockSchemaFixtureConfig{
 		Workspace:      workspace.Resource,
 		WorkspaceIDArg: workspace.IDArg,
-		BlockTypeID:    blockTypeID,
-		BlockType:      blockType,
-		Capabilities:   []string{"read", "write"},
-		Version:        "1.0.0",
-		Checksum:       "123",
-		Fields:         fields,
+
+		BlockTypeName: blockTypeName,
+		BlockTypeSlug: blockTypeName,
+
+		Capabilities: []string{"read", "write"},
+		Version:      "1.0.0",
+		Checksum:     "123",
+		Fields:       fields,
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -69,12 +82,15 @@ func TestAccResource_block_schema(t *testing.T) {
 			{
 				Config: fixtureAccBlockSchema(cfgCreate),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(resourceName, "block_type_id", blockTypeID),
-					testutils.ExpectKnownValue(resourceName, "block_type", blockType),
-					testutils.ExpectKnownValueList(resourceName, "capabilities", []string{"read", "write"}),
-					testutils.ExpectKnownValue(resourceName, "version", "1.0.0"),
+					// Check required/optional fields.
+					testutils.ExpectKnownValueNotNull(resourceName, "block_type_id"),
+					testutils.ExpectKnownValueList(resourceName, "capabilities", cfgCreate.Capabilities),
+					testutils.ExpectKnownValue(resourceName, "version", cfgCreate.Version),
 					testutils.ExpectKnownValue(resourceName, "fields", expectedFields),
-					testutils.ExpectKnownValue(resourceName, "checksum", "123"),
+
+					// Check computed fields.
+					testutils.ExpectKnownValueNotNull(resourceName, "block_type"),
+					testutils.ExpectKnownValueNotNull(resourceName, "checksum"),
 				},
 			},
 		},
