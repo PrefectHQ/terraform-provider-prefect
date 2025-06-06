@@ -36,15 +36,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Configure Go
+      # This action installs go and caches downloaded modules, so we favor
+      # this over using the `mise-action` to install Go.
+      - name: Set up Golang
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-          cache: true
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v2
+        with:
+          install_args: gotestsum
       - name: Build
         run: make build
-      - name: Install gotestsum
-        run: go install gotest.tools/gotestsum@latest
       - name: Unit Test
         run: make test
 
