@@ -12,10 +12,12 @@ import (
 var _ = api.TeamsClient(&TeamsClient{})
 
 type TeamsClient struct {
-	hc           *http.Client
-	apiKey       string
-	basicAuthKey string
-	routePrefix  string
+	hc              *http.Client
+	apiKey          string
+	basicAuthKey    string
+	routePrefix     string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // Teams is a factory that initializes and returns a TeamsClient.
@@ -27,10 +29,12 @@ func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 	}
 
 	return &TeamsClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "teams"),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "teams"),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
@@ -39,12 +43,14 @@ func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *TeamsClient) Create(ctx context.Context, payload api.TeamCreate) (*api.Team, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix,
-		body:         payload,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix,
+		body:            payload,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusCreated,
 	}
 
 	var team api.Team
@@ -60,11 +66,13 @@ func (c *TeamsClient) Create(ctx context.Context, payload api.TeamCreate) (*api.
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *TeamsClient) Read(ctx context.Context, teamID string) (*api.Team, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, teamID),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, teamID),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var team api.Team
@@ -80,12 +88,14 @@ func (c *TeamsClient) Read(ctx context.Context, teamID string) (*api.Team, error
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *TeamsClient) Update(ctx context.Context, teamID string, payload api.TeamUpdate) (*api.Team, error) {
 	cfg := requestConfig{
-		method:       http.MethodPut,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, teamID),
-		body:         payload,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodPut,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, teamID),
+		body:            payload,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var team api.Team
@@ -101,11 +111,13 @@ func (c *TeamsClient) Update(ctx context.Context, teamID string, payload api.Tea
 //nolint:ireturn // required to support PrefectClient mocking
 func (c *TeamsClient) Delete(ctx context.Context, teamID string) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, teamID),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodDelete,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, teamID),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -123,12 +135,14 @@ func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, er
 	filterQuery.Teams.Name.Any = names
 
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          fmt.Sprintf("%s/filter", c.routePrefix),
-		body:         &filterQuery,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodPost,
+		url:             fmt.Sprintf("%s/filter", c.routePrefix),
+		body:            &filterQuery,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var teams []*api.Team

@@ -117,6 +117,26 @@ provider "prefect" {
 
 The provider will automatically base64 encode the value you provide for `basic_auth_key`.
 
+### Enabling CSRF support
+
+When using an endpoint that references Prefect server running with CSRF protection enabled, apply the following configuration:
+
+```terraform
+provider "prefect" {
+  endpoint     = "http://localhost:4200"
+  csrf_enabled = true
+}
+```
+
+This will instruct the provider to:
+
+- Generate a client ID (UUID)
+- Pass the client ID to the [CSRF token endpoint](https://docs.prefect.io/v3/api-ref/rest-api/server/create-csrf-token) to retrieve a token
+- Pass the client in the `Prefect-Csrf-Client` header, and the token in the `Prefect-Csrf-Token` header for all requests
+
+See the [security settings](https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings) documentation for more information
+on CSRF protection settings for Prefect server.
+
 ## RBAC + Permissions
 
 For any API Key used in the provider, note that the associated actor (User or Service Account) needs the necessary permissions to manage certain resources, depending on the associated Role.  See our [documentation on RBAC for more detail](https://docs.prefect.io/latest/cloud/users/roles/).

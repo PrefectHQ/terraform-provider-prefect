@@ -29,6 +29,7 @@ const (
 	envAPIURL       = "PREFECT_API_URL"
 	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
 	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
+	envCSRFEnabled  = "PREFECT_CSRF_ENABLED"
 
 	defaultAPIURL = "https://api.prefect.cloud"
 )
@@ -70,6 +71,13 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"csrf_enabled": schema.BoolAttribute{
+				Description: "Enable CSRF protection for API requests. Defaults to false. " +
+					"If enabled, the provider will fetch a CSRF token from the Prefect API and include it in all requests. " +
+					"This should be enabled if your Prefect server instance has CSRF protection active. " +
+					"Can also be set via the `PREFECT_CSRF_ENABLED` environment variable.",
+				Optional: true,
+			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.",
@@ -86,7 +94,7 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 
 // Configure configures the provider's internal client.
 //
-//nolint:maintidx // this initialization logic is complex, and we can refactor it later
+//nolint:maintidx,gocyclo // this initialization logic is complex, and we can refactor it later
 func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	config := &PrefectProviderModel{}
 
@@ -263,11 +271,20 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
+	// Extract the CSRF enabled flag from configuration or environment variable.
+	csrfEnabled := false
+	if !config.CSRFEnabled.IsNull() {
+		csrfEnabled = config.CSRFEnabled.ValueBool()
+	} else if csrfEnabledEnvVar, ok := os.LookupEnv(envCSRFEnabled); ok {
+		csrfEnabled = csrfEnabledEnvVar == "true"
+	}
+
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
 	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_basic_auth_key")
+	ctx = tflog.SetField(ctx, "prefect_csrf_enabled", csrfEnabled)
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
 	ctx = tflog.SetField(ctx, "prefect_workspace_id", workspaceID)
 	tflog.Debug(ctx, "Creating Prefect client")
@@ -279,11 +296,13 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// endpoint host to construct custom URLs as a resource attribute.
 	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
+	//nolint:contextcheck // no context is used here
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
 		client.WithBasicAuthKey(basicAuthKey),
 		client.WithDefaults(accountID, workspaceID),
+		client.WithCsrfEnabled(csrfEnabled),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -337,6 +356,8 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewAutomationResource,
 		resources.NewBlockAccessResource,
 		resources.NewBlockResource,
+		resources.NewBlockSchemaResource,
+		resources.NewBlockTypeResource,
 		resources.NewDeploymentAccessResource,
 		resources.NewDeploymentResource,
 		resources.NewDeploymentScheduleResource,

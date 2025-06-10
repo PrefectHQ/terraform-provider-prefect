@@ -14,10 +14,12 @@ var _ = api.FlowsClient(&FlowsClient{})
 
 // FlowsClient is a client for working with Flows.
 type FlowsClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
 }
 
 // Flows returns a FlowsClient.
@@ -37,22 +39,26 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 	}
 
 	return &FlowsClient{
-		hc:           c.hc,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "flows"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
 	}, nil
 }
 
 // Create returns details for a new Flow.
 func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flow, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOKOrCreated,
 	}
 
 	var flow api.Flow
@@ -72,12 +78,14 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 	}
 
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          fmt.Sprintf("%s/filter", c.routePrefix),
-		body:         &filterQuery,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodPost,
+		url:             fmt.Sprintf("%s/filter", c.routePrefix),
+		body:            &filterQuery,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var flows []*api.Flow
@@ -91,12 +99,14 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 // Get returns details for a Flow by ID.
 func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var flow api.Flow
@@ -110,12 +120,14 @@ func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, err
 // Update modifies an existing Flow by ID.
 func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.FlowUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodPatch,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -130,12 +142,14 @@ func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.Flo
 // Delete removes a Flow by ID.
 func (c *FlowsClient) Delete(ctx context.Context, flowID uuid.UUID) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodDelete,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, flowID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

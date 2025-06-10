@@ -231,6 +231,15 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			"Error refreshing flow state",
 			fmt.Sprintf("Could not read Flow, unexpected error: %s", err.Error()),
