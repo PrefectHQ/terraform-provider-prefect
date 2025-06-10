@@ -18,10 +18,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      # This action installs go and caches downloaded modules, so we favor
+      # this over using the `mise-action` to install Go.
+      - name: Set up Golang
+        uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-          cache: true
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v6
         id: import_gpg
