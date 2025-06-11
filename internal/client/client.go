@@ -189,9 +189,20 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 		return false, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
 	}
 
-	// If the response is a 404 (NotFound), try again. This is particularly
-	// relevant for block-related objects that are created asynchronously.
+	// Context-aware 404 handling: Skip retries for DELETE operations.
+	// This prevents timing issues in acceptance tests during post-destroy plans.
 	if resp.StatusCode == http.StatusNotFound {
+		// Check if this is a DELETE operation - if so, don't retry 404s
+		if httpMethod, ok := ctx.Value(httpMethodContextKey).(string); ok && httpMethod == http.MethodDelete {
+			// For DELETE operations, 404 means the resource is already deleted.
+			// This is the expected outcome, so don't retry.
+			body, _ := io.ReadAll(resp.Body)
+
+			return false, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
+		}
+
+		// For non-DELETE operations (GET, POST, PUT, PATCH), retry 404s.
+		// This is particularly relevant for block-related objects that are created asynchronously.
 		// NOTE: we encode the status code in the error object as a workaround
 		// in cases where we want access to the status code on a failed client.Do() call
 		// due to exhausted retries.

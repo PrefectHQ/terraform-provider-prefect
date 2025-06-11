@@ -15,6 +15,12 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
+// contextKey is a type for context keys to avoid collisions.
+type contextKey string
+
+// httpMethodContextKey is used to pass the HTTP method through context to the retry policy.
+const httpMethodContextKey contextKey = "http_method"
+
 // getAccountScopedURL constructs a URL for an account-scoped route.
 func getAccountScopedURL(endpoint string, accountID uuid.UUID, route string) string {
 	var builder strings.Builder
@@ -143,6 +149,9 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 	} else {
 		body = http.NoBody
 	}
+
+	// Add HTTP method to context for retry policy to make context-aware decisions
+	ctx = context.WithValue(ctx, httpMethodContextKey, cfg.method)
 
 	req, err := http.NewRequestWithContext(ctx, cfg.method, cfg.url, body)
 	if err != nil {
