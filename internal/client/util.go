@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -63,22 +62,13 @@ func setAuthorizationHeader(request *http.Request, apiKey, basicAuthKey string) 
 	}
 }
 
-// setDefaultHeaders will set Authorization, Content-Type, Accept,
-// and CSRF headers that are common to most requests.
-func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientToken, csrfToken string) {
+// setDefaultHeaders will set Authorization, Content-Type, and Accept
+// headers that are common to most requests.
+func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey string) {
 	setAuthorizationHeader(request, apiKey, basicAuthKey)
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
-
-	// Set CSRF headers if tokens are provided
-	if csrfClientToken != "" {
-		request.Header.Set("Prefect-Csrf-Client", csrfClientToken)
-	}
-	if csrfToken != "" {
-		// This token is now obtained via client.ObtainCsrfToken()
-		request.Header.Set("Prefect-Csrf-Token", csrfToken)
-	}
 }
 
 // validateCloudEndpoint validates that proper configuration is provided
@@ -99,10 +89,8 @@ type requestConfig struct {
 
 	successCodes []int
 
-	apiKey          string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string // Populated by ObtainCsrfToken on client initialization
+	apiKey       string
+	basicAuthKey string
 }
 
 var (
@@ -149,7 +137,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken)
+	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey)
 
 	// Body will be closed by the caller.
 	resp, err := client.Do(req)
@@ -157,7 +145,16 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("http error: %w", err)
 	}
 
-	if !slices.Contains(cfg.successCodes, resp.StatusCode) {
+	success := false
+	for _, successCode := range cfg.successCodes {
+		if resp.StatusCode == successCode {
+			success = true
+
+			break
+		}
+	}
+
+	if !success {
 		body, _ := io.ReadAll(resp.Body)
 
 		return nil, fmt.Errorf("status code=%s, error=%s", resp.Status, body)

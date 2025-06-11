@@ -13,12 +13,10 @@ import (
 var _ = api.BlockDocumentClient(&BlockDocumentClient{})
 
 type BlockDocumentClient struct {
-	hc              *http.Client
-	apiKey          string
-	basicAuthKey    string
-	routePrefix     string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // BlockDocuments is a factory that initializes and returns a BlockDocumentClient.
@@ -38,12 +36,10 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	}
 
 	return &BlockDocumentClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
 	}, nil
 }
 
@@ -52,14 +48,12 @@ func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.Block
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             reqURL,
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocument api.BlockDocument
@@ -77,14 +71,12 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 	reqURL = fmt.Sprintf("%s?include_secrets=true", reqURL)
 
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             reqURL,
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocument api.BlockDocument
@@ -97,14 +89,12 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 
 func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocumentCreate) (*api.BlockDocument, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             c.routePrefix + "/",
-		body:            payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var blockDocument api.BlockDocument
@@ -117,14 +107,12 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 
 func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload api.BlockDocumentUpdate) error {
 	cfg := requestConfig{
-		method:          http.MethodPatch,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
-		body:            payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodPatch,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -138,14 +126,12 @@ func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload 
 
 func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -161,14 +147,12 @@ func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api
 	reqURL := fmt.Sprintf("%s/%s/access", c.routePrefix, id.String())
 
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             reqURL,
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          reqURL,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var blockDocumentAccess api.BlockDocumentAccess
@@ -181,14 +165,12 @@ func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api
 
 func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, payload api.BlockDocumentAccessUpsert) error {
 	cfg := requestConfig{
-		method:          http.MethodPut,
-		url:             fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()),
-		body:            payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, id.String()),
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

@@ -12,12 +12,10 @@ import (
 var _ = api.AutomationsClient(&AutomationsClient{})
 
 type AutomationsClient struct {
-	hc              *http.Client
-	apiKey          string
-	basicAuthKey    string
-	routePrefix     string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Automations is a factory that initializes and returns a AutomationsClient.
@@ -37,25 +35,21 @@ func (c *Client) Automations(accountID uuid.UUID, workspaceID uuid.UUID) (api.Au
 	}
 
 	return &AutomationsClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "automations"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "automations"),
 	}, nil
 }
 
 func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automation, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, id),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var automation api.Automation
@@ -68,14 +62,12 @@ func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automat
 
 func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUpsert) (*api.Automation, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             c.routePrefix + "/",
-		body:            payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var automation api.Automation
@@ -88,14 +80,12 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 
 func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload api.AutomationUpsert) error {
 	cfg := requestConfig{
-		method:          http.MethodPut,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, id),
-		body:            payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -109,14 +99,12 @@ func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload ap
 
 func (c *AutomationsClient) Delete(ctx context.Context, id uuid.UUID) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, id),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, id),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

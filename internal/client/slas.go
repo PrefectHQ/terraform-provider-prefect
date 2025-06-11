@@ -14,12 +14,9 @@ var _ = api.SLAsClient(&SLAsClient{})
 
 // SLAsClient is a client for working with SLAs.
 type SLAsClient struct {
-	hc              *http.Client
-	routePrefix     string
-	apiKey          string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string
+	hc          *http.Client
+	routePrefix string
+	apiKey      string
 }
 
 // SLAs returns a SLAsClient.
@@ -39,26 +36,20 @@ func (c *Client) SLAs(accountID uuid.UUID, workspaceID uuid.UUID) (api.SLAsClien
 	}
 
 	return &SLAsClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "slas"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:          c.hc,
+		apiKey:      c.apiKey,
+		routePrefix: getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "slas"),
 	}, nil
 }
 
 // ApplyResourceSLAs applies SLAs to a resource.
 func (c *SLAsClient) ApplyResourceSLAs(ctx context.Context, resourceID string, slas []api.SLAUpsert) (*api.SLAResponse, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             fmt.Sprintf("%s/apply-resource-slas/%s", c.routePrefix, resourceID),
-		body:            slas,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/apply-resource-slas/%s", c.routePrefix, resourceID),
+		body:         slas,
+		apiKey:       c.apiKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var response api.SLAResponse

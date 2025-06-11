@@ -13,12 +13,10 @@ import (
 var _ = api.CollectionsClient(&CollectionsClient{})
 
 type CollectionsClient struct {
-	hc              *http.Client
-	apiKey          string
-	basicAuthKey    string
-	routePrefix     string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // Collections returns an CollectionsClient.
@@ -38,12 +36,10 @@ func (c *Client) Collections(accountID, workspaceID uuid.UUID) (api.CollectionsC
 	}
 
 	return &CollectionsClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "collections"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "collections"),
 	}, nil
 }
 
@@ -58,14 +54,12 @@ func (c *CollectionsClient) GetWorkerMetadataViews(ctx context.Context) (api.Wor
 	url := fmt.Sprintf("%s/%s", c.routePrefix, routeSuffix)
 
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             url,
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          url,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var workerTypeByPackage api.WorkerTypeByPackage

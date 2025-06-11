@@ -12,12 +12,10 @@ import (
 var _ = api.DeploymentAccessClient(&DeploymentAccessClient{})
 
 type DeploymentAccessClient struct {
-	hc              *http.Client
-	routePrefix     string
-	apiKey          string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // DeploymentAccess returns a DeploymentAccessClient.
@@ -37,25 +35,21 @@ func (c *Client) DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (a
 	}
 
 	return &DeploymentAccessClient{
-		hc:              c.hc,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
 func (c *DeploymentAccessClient) Read(ctx context.Context, deploymentID uuid.UUID) (*api.DeploymentAccessControl, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var accessControl api.DeploymentAccessControl
@@ -68,14 +62,12 @@ func (c *DeploymentAccessClient) Read(ctx context.Context, deploymentID uuid.UUI
 
 func (c *DeploymentAccessClient) Set(ctx context.Context, deploymentID uuid.UUID, accessControl api.DeploymentAccessSet) error {
 	cfg := requestConfig{
-		method:          http.MethodPut,
-		url:             fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
-		body:            &accessControl,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, deploymentID.String()),
+		body:         &accessControl,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

@@ -13,12 +13,10 @@ var _ = api.TaskRunConcurrencyLimitsClient(&TaskRunConcurrencyLimitsClient{})
 
 // TaskRunConcurrencyLimitsClient is a client for working with task run concurrency limits.
 type TaskRunConcurrencyLimitsClient struct {
-	hc              *http.Client
-	routePrefix     string
-	apiKey          string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // TaskRunConcurrencyLimits returns a TaskRunConcurrencyLimitsClient.
@@ -38,26 +36,22 @@ func (c *Client) TaskRunConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.
 	}
 
 	return &TaskRunConcurrencyLimitsClient{
-		hc:              c.hc,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "concurrency_limits"),
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "concurrency_limits"),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}, nil
 }
 
 // Create creates a new task run concurrency limit.
 func (c *TaskRunConcurrencyLimitsClient) Create(ctx context.Context, data api.TaskRunConcurrencyLimitCreate) (*api.TaskRunConcurrencyLimit, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             c.routePrefix + "/",
-		body:            &data,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         &data,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var taskRunConcurrencyLimit api.TaskRunConcurrencyLimit
@@ -71,13 +65,11 @@ func (c *TaskRunConcurrencyLimitsClient) Create(ctx context.Context, data api.Ta
 // Read returns a task run concurrency limit.
 func (c *TaskRunConcurrencyLimitsClient) Read(ctx context.Context, taskRunConcurrencyLimitID string) (*api.TaskRunConcurrencyLimit, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var taskRunConcurrencyLimit api.TaskRunConcurrencyLimit
@@ -91,13 +83,11 @@ func (c *TaskRunConcurrencyLimitsClient) Read(ctx context.Context, taskRunConcur
 // Delete deletes a task run concurrency limit.
 func (c *TaskRunConcurrencyLimitsClient) Delete(ctx context.Context, taskRunConcurrencyLimitID string) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, taskRunConcurrencyLimitID),
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

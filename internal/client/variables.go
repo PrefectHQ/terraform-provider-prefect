@@ -14,12 +14,10 @@ var _ = api.VariablesClient(&VariablesClient{})
 
 // VariablesClient is a client for working with variables.
 type VariablesClient struct {
-	hc              *http.Client
-	routePrefix     string
-	apiKey          string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	routePrefix  string
+	apiKey       string
+	basicAuthKey string
 }
 
 // Variables returns a VariablesClient.
@@ -39,26 +37,22 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 	}
 
 	return &VariablesClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
 	}, nil
 }
 
 // Create returns details for a new variable.
 func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (*api.Variable, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             c.routePrefix + "/",
-		body:            &data,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		method:       http.MethodPost,
+		url:          c.routePrefix + "/",
+		body:         &data,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var variable api.Variable
@@ -80,14 +74,12 @@ func (c *VariablesClient) List(ctx context.Context, filter api.VariableFilter) (
 // Get returns details for a variable by ID.
 func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.Variable, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             c.routePrefix + "/" + variableID.String(),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var variable api.Variable
@@ -101,14 +93,12 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 // GetByName returns details for a variable by name.
 func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Variable, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             c.routePrefix + "/name/" + name,
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          c.routePrefix + "/name/" + name,
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var variable api.Variable
@@ -122,14 +112,12 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 // Update modifies an existing variable by ID.
 func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data api.VariableUpdate) error {
 	cfg := requestConfig{
-		method:          http.MethodPatch,
-		url:             c.routePrefix + "/" + variableID.String(),
-		body:            &data,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		method:       http.MethodPatch,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         &data,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -145,14 +133,12 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 // Delete removes a variable by ID.
 func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             c.routePrefix + "/" + variableID.String(),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		method:       http.MethodDelete,
+		url:          c.routePrefix + "/" + variableID.String(),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

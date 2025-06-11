@@ -13,12 +13,10 @@ var _ = api.TeamAccessClient(&TeamAccessClient{})
 
 // TeamAccessClient is a client for the TeamAccess resource.
 type TeamAccessClient struct {
-	hc              *http.Client
-	apiKey          string
-	basicAuthKey    string
-	routePrefix     string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // TeamAccess is a factory that initializes and returns a TeamAccessClient.
@@ -30,12 +28,10 @@ func (c *Client) TeamAccess(accountID uuid.UUID, teamID uuid.UUID) (api.TeamAcce
 	}
 
 	return &TeamAccessClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     fmt.Sprintf("%s/accounts/%s/teams/%s", c.endpoint, accountID.String(), teamID.String()),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  fmt.Sprintf("%s/accounts/%s/teams/%s", c.endpoint, accountID.String(), teamID.String()),
 	}, nil
 }
 
@@ -51,14 +47,12 @@ func (c *TeamAccessClient) Upsert(ctx context.Context, memberType string, member
 	}
 
 	cfg := requestConfig{
-		method:          http.MethodPut,
-		url:             fmt.Sprintf("%s/members", c.routePrefix),
-		body:            &payload,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodPut,
+		url:          fmt.Sprintf("%s/members", c.routePrefix),
+		body:         &payload,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -73,13 +67,11 @@ func (c *TeamAccessClient) Upsert(ctx context.Context, memberType string, member
 // Read fetches a team access by member actor ID.
 func (c *TeamAccessClient) Read(ctx context.Context, teamID, memberID, memberActorID uuid.UUID) (*api.TeamAccess, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             c.routePrefix,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          c.routePrefix,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var teamAccessRead api.TeamAccessRead
@@ -112,14 +104,12 @@ func (c *TeamAccessClient) Read(ctx context.Context, teamID, memberID, memberAct
 // Delete deletes a team access by member ID.
 func (c *TeamAccessClient) Delete(ctx context.Context, memberID uuid.UUID) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             fmt.Sprintf("%s/members/%s", c.routePrefix, memberID.String()),
-		body:            http.NoBody,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusNoContent,
+		method:       http.MethodDelete,
+		url:          fmt.Sprintf("%s/members/%s", c.routePrefix, memberID.String()),
+		body:         http.NoBody,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

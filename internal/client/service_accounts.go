@@ -10,12 +10,10 @@ import (
 )
 
 type ServiceAccountsClient struct {
-	hc              *http.Client
-	apiKey          string
-	routePrefix     string
-	basicAuthKey    string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	routePrefix  string
+	basicAuthKey string
 }
 
 //nolint:ireturn // required to support PrefectClient mocking
@@ -37,25 +35,21 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 	routePrefix := getAccountScopedURL(c.endpoint, accountID, "bots")
 
 	return &ServiceAccountsClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     routePrefix,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  routePrefix,
 	}, nil
 }
 
 func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.ServiceAccountCreateRequest) (*api.ServiceAccount, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             sa.routePrefix + "/",
-		body:            &request,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		method:       http.MethodPost,
+		url:          sa.routePrefix + "/",
+		body:         &request,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var serviceAccount api.ServiceAccount
@@ -71,14 +65,12 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 	filter.ServiceAccounts.Name.Any = names
 
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             sa.routePrefix + "/filter",
-		body:            &filter,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodPost,
+		url:          sa.routePrefix + "/filter",
+		body:         &filter,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var serviceAccounts []*api.ServiceAccount
@@ -91,14 +83,12 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 
 func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.ServiceAccount, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             sa.routePrefix + "/" + botID,
-		body:            http.NoBody,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusOK,
+		method:       http.MethodGet,
+		url:          sa.routePrefix + "/" + botID,
+		body:         http.NoBody,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var serviceAccount api.ServiceAccount
@@ -111,14 +101,12 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.Se
 
 func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, requestPayload api.ServiceAccountUpdateRequest) error {
 	cfg := requestConfig{
-		method:          http.MethodPatch,
-		url:             sa.routePrefix + "/" + botID,
-		body:            &requestPayload,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		method:       http.MethodPatch,
+		url:          sa.routePrefix + "/" + botID,
+		body:         &requestPayload,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, sa.hc, cfg)
@@ -133,14 +121,12 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 
 func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error {
 	cfg := requestConfig{
-		method:          http.MethodDelete,
-		url:             sa.routePrefix + "/" + botID,
-		body:            http.NoBody,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		method:       http.MethodDelete,
+		url:          sa.routePrefix + "/" + botID,
+		body:         http.NoBody,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, sa.hc, cfg)
@@ -155,14 +141,12 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 
 func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID string, data api.ServiceAccountRotateKeyRequest) (*api.ServiceAccount, error) {
 	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID),
-		body:            &data,
-		apiKey:          sa.apiKey,
-		basicAuthKey:    sa.basicAuthKey,
-		csrfClientToken: sa.csrfClientToken,
-		csrfToken:       sa.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		method:       http.MethodPost,
+		url:          fmt.Sprintf("%s/%s/rotate_api_key", sa.routePrefix, serviceAccountID),
+		body:         &data,
+		apiKey:       sa.apiKey,
+		basicAuthKey: sa.basicAuthKey,
+		successCodes: successCodesStatusCreated,
 	}
 
 	var serviceAccount api.ServiceAccount

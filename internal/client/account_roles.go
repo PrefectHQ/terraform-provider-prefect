@@ -13,12 +13,10 @@ import (
 var _ = api.AccountRolesClient(&AccountRolesClient{})
 
 type AccountRolesClient struct {
-	hc              *http.Client
-	apiKey          string
-	basicAuthKey    string
-	routePrefix     string
-	csrfClientToken string
-	csrfToken       string
+	hc           *http.Client
+	apiKey       string
+	basicAuthKey string
+	routePrefix  string
 }
 
 // AccountRoles is a factory that initializes and returns a AccountRolesClient.
@@ -30,12 +28,10 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 	}
 
 	return &AccountRolesClient{
-		hc:              c.hc,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "account_roles"),
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		hc:           c.hc,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "account_roles"),
 	}, nil
 }
 
@@ -45,14 +41,12 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 	filterQuery.AccountRoles.Name.Any = roleNames
 
 	cfg := requestConfig{
-		url:             fmt.Sprintf("%s/filter", c.routePrefix),
-		method:          http.MethodPost,
-		body:            filterQuery,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		url:          fmt.Sprintf("%s/filter", c.routePrefix),
+		method:       http.MethodPost,
+		body:         filterQuery,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
+		successCodes: successCodesStatusOK,
 	}
 
 	var accountRoles []*api.AccountRole
@@ -66,14 +60,12 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 // Get returns an account role by ID.
 func (c *AccountRolesClient) Get(ctx context.Context, roleID uuid.UUID) (*api.AccountRole, error) {
 	cfg := requestConfig{
-		method:          http.MethodGet,
-		url:             fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()),
-		body:            http.NoBody,
-		successCodes:    successCodesStatusOK,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
+		method:       http.MethodGet,
+		url:          fmt.Sprintf("%s/%s", c.routePrefix, roleID.String()),
+		body:         http.NoBody,
+		successCodes: successCodesStatusOK,
+		apiKey:       c.apiKey,
+		basicAuthKey: c.basicAuthKey,
 	}
 
 	var accountRole api.AccountRole

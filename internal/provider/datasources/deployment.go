@@ -290,7 +290,7 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 
 	if getErr != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment", operation, getErr))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment", operation, err))
 
 		return
 	}
