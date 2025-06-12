@@ -191,17 +191,10 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 
 	// Context-aware 404 handling: Skip retries for DELETE operations.
 	// This prevents timing issues in acceptance tests during post-destroy plans.
+	//
+	// For non-DELETE operations (GET, POST, PUT, PATCH), retry 404s.
+	// This is particularly relevant for block-related objects that are created asynchronously.
 	if resp.StatusCode == http.StatusNotFound {
-		retry := true
-		// Check if this is a DELETE operation - if so, don't retry 404s.
-		if httpMethod, ok := ctx.Value(httpMethodContextKey).(string); ok && httpMethod == http.MethodDelete {
-			retry = false
-		}
-
-		// For non-DELETE operations (GET, POST, PUT, PATCH), retry 404s.
-		//
-		// This is particularly relevant for block-related objects that are created asynchronously.
-		//
 		// NOTE: we encode the status code in the error object as a workaround
 		// in cases where we want access to the status code on a failed client.Do() call
 		// due to exhausted retries.
@@ -210,8 +203,13 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 		//
 		// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L811-L825
 		body, _ := io.ReadAll(resp.Body)
+		errResult := fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
 
-		return retry, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
+		if httpMethod, ok := ctx.Value(httpMethodContextKey).(string); ok && httpMethod == http.MethodDelete {
+			return false, errResult
+		}
+
+		return true, errResult
 	}
 
 	// Fall back to the default retry policy for any other status codes.
