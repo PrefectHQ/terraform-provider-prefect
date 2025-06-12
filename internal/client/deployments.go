@@ -58,7 +58,7 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusCreated,
+		successCodes:    successCodesStatusOKOrCreated,
 	}
 
 	var deployment api.Deployment
@@ -122,7 +122,7 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -144,7 +144,7 @@ func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOKOrNoContent,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
