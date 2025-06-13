@@ -157,7 +157,6 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 			"parameters": schema.StringAttribute{
 				Description: "Parameters for flow runs scheduled by the deployment schedule.",
 				Optional:    true,
-				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 			},
 			"slug": schema.StringAttribute{
