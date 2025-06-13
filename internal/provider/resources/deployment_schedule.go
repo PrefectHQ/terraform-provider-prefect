@@ -2,8 +2,10 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -53,6 +55,10 @@ type DeploymentScheduleResourceModel struct {
 
 	// Schedule kind: rrule
 	RRule types.String `tfsdk:"rrule"`
+
+	// Schedule parameters and metadata
+	Parameters jsontypes.Normalized `tfsdk:"parameters"`
+	Slug       types.String         `tfsdk:"slug"`
 }
 
 // NewDeploymentScheduleResource returns a new DeploymentScheduleResource.
@@ -148,6 +154,17 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Optional:           true,
 				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
+			"parameters": schema.StringAttribute{
+				Description: "Parameters for flow runs scheduled by the deployment schedule.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  jsontypes.NormalizedType{},
+			},
+			"slug": schema.StringAttribute{
+				Description: "An optional unique identifier for the schedule.",
+				Optional:    true,
+				Computed:    true,
+			},
 			// Timezone is a common field for all schedule kinds.
 			"timezone": schema.StringAttribute{
 				Description: "The timezone of the schedule.",
@@ -203,10 +220,18 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	parameters, diags := helpers.UnmarshalOptional(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
 			Active:           plan.Active.ValueBoolPointer(),
 			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+			Parameters:       parameters,
+			Slug:             plan.Slug.ValueString(),
 			Schedule: api.Schedule{
 				AnchorDate: plan.AnchorDate.ValueString(),
 				Cron:       plan.Cron.ValueString(),
@@ -308,9 +333,17 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
+	parameters, diags := helpers.UnmarshalOptional(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	cfgUpdate := api.DeploymentSchedulePayload{
 		Active:           plan.Active.ValueBoolPointer(),
 		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+		Parameters:       parameters,
+		Slug:             plan.Slug.ValueString(),
 		Schedule: api.Schedule{
 			AnchorDate: plan.AnchorDate.ValueString(),
 			Cron:       plan.Cron.ValueString(),
@@ -397,6 +430,18 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.Cron = types.StringValue(schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringValue(schedule.Schedule.RRule)
+
+	// Handle parameters
+	if len(schedule.Parameters) > 0 {
+		parametersByteSlice, err := json.Marshal(schedule.Parameters)
+		if err == nil {
+			model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+		}
+	} else {
+		model.Parameters = jsontypes.NewNormalizedNull()
+	}
+
+	model.Slug = types.StringValue(schedule.Slug)
 }
 
 // validateSchedules ensures that the list of schedules is not empty.
