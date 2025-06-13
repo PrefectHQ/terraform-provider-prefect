@@ -94,7 +94,9 @@ resource "prefect_deployment_schedule" "test_rrule" {
 - `interval` (Number) The interval of the schedule.
 - `max_active_runs` (Number, Deprecated) (Cloud only) The maximum number of active runs for the schedule.
 - `max_scheduled_runs` (Number) The maximum number of scheduled runs for the schedule.
+- `parameters` (String) Parameters for flow runs scheduled by the deployment schedule.
 - `rrule` (String) The rrule expression of the schedule.
+- `slug` (String) An optional unique identifier for the schedule.
 - `timezone` (String) The timezone of the schedule.
 - `workspace_id` (String) Workspace ID (UUID)
 
