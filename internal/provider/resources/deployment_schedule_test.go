@@ -116,11 +116,6 @@ resource "prefect_deployment_schedule" "test" {
 
 	cron = "* * * * *"
 	day_or = true
-
-	parameters = jsonencode({
-	 	mode = "cron"
-	})
-	slug = "cron-schedule"
 }
 `
 
@@ -148,12 +143,6 @@ resource "prefect_deployment_schedule" "test" {
 	deployment_id = prefect_deployment.test.id
 
 	rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"
-
-	parameters = jsonencode({
-	 	mode = "rrule"
-	 	repeat = "daily"
-	})
-	slug = "rrule-schedule"
 }
 `
 
@@ -182,11 +171,6 @@ resource "prefect_deployment_schedule" "test_cron" {
 
 	cron = "* * * * *"
 	day_or = true
-
-	parameters = jsonencode({
-	 	schedule_type = "cron"
-	})
-	slug = "multi-cron-schedule"
 }
 
 resource "prefect_deployment_schedule" "test_rrule" {
@@ -194,48 +178,6 @@ resource "prefect_deployment_schedule" "test_rrule" {
 	deployment_id = prefect_deployment.test.id
 
 	rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"
-
-	parameters = jsonencode({
-	 	schedule_type = "rrule"
-	})
-	slug = "multi-rrule-schedule"
-}
-`
-
-	return testutils.RenderTemplate(tmpl, cfg)
-}
-
-func fixtureAccDeploymentScheduleWithParameters(cfg fixtureConfig) string {
-	tmpl := `
-{{.WorkspaceResource}}
-
-resource "prefect_flow" "test" {
-	name = "my-flow"
-	{{.WorkspaceIDArg}}
-	tags = ["test"]
-}
-
-resource "prefect_deployment" "test" {
-	name = "my-deployment"
-	{{.WorkspaceIDArg}}
-	flow_id = prefect_flow.test.id
-}
-
-resource "prefect_deployment_schedule" "test" {
-	{{.WorkspaceIDArg}}
-	deployment_id = prefect_deployment.test.id
-
-	active = true
-	timezone = "UTC"
-
-	interval = 60
-	anchor_date = "2024-01-01T00:00:00Z"
-
-	parameters = jsonencode({
-		env = "production"
-		version = "3.0"
-	})
-	slug = "parameters-test-schedule"
 }
 `
 
@@ -245,6 +187,12 @@ resource "prefect_deployment_schedule" "test" {
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_schedule(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
+
+	parameters := `{"env": "test", "version": "1.0"}`
+	parametersExpected := testutils.NormalizedValueForJSON(t, parameters)
+
+	parametersUpdate := `{"env": "staging", "version": "2.0"}`
+	parametersUpdateExpected := testutils.NormalizedValueForJSON(t, parametersUpdate)
 
 	fixtureCfg := fixtureConfig{
 		WorkspaceResource:     workspace.Resource,
@@ -259,12 +207,14 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 		testutils.ExpectKnownValueNumber(resourceName, "interval", 30),
 		testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
 		testutils.ExpectKnownValue(resourceName, "slug", "test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersExpected),
 	}
 
 	stateChecksForIntervalUpdate := []statecheck.StateCheck{
 		testutils.ExpectKnownValueBool(resourceName, "active", false),
 		testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
 		testutils.ExpectKnownValue(resourceName, "slug", "updated-test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersUpdateExpected),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -296,7 +246,6 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "cron", "* * * * *"),
 					testutils.ExpectKnownValueBool(resourceName, "day_or", true),
-					testutils.ExpectKnownValue(resourceName, "slug", "cron-schedule"),
 				},
 			},
 			{
@@ -307,7 +256,6 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "rrule", "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"),
-					testutils.ExpectKnownValue(resourceName, "slug", "rrule-schedule"),
 				},
 			},
 			{
@@ -320,22 +268,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 					// Cron schedule tests
 					testutils.ExpectKnownValue("prefect_deployment_schedule.test_cron", "cron", "* * * * *"),
 					testutils.ExpectKnownValueBool("prefect_deployment_schedule.test_cron", "day_or", true),
-					testutils.ExpectKnownValue("prefect_deployment_schedule.test_cron", "slug", "multi-cron-schedule"),
 					// RRule schedule tests
 					testutils.ExpectKnownValue("prefect_deployment_schedule.test_rrule", "rrule", "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"),
-					testutils.ExpectKnownValue("prefect_deployment_schedule.test_rrule", "slug", "multi-rrule-schedule"),
-				},
-			},
-			{
-				// Test parameters and slug fields
-				Config: fixtureAccDeploymentScheduleWithParameters(fixtureCfg),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
-				),
-				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(resourceName, "slug", "parameters-test-schedule"),
-					testutils.ExpectKnownValueNumber(resourceName, "interval", 60),
-					testutils.ExpectKnownValue(resourceName, "timezone", "UTC"),
 				},
 			},
 		},
