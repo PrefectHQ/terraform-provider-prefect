@@ -430,7 +430,6 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringValue(schedule.Schedule.RRule)
 
-	// Handle parameters
 	if len(schedule.Parameters) > 0 {
 		parametersByteSlice, err := json.Marshal(schedule.Parameters)
 		if err == nil {
