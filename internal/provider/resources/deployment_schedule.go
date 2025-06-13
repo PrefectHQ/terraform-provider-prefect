@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -158,6 +159,8 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Description: "Parameters for flow runs scheduled by the deployment schedule.",
 				Optional:    true,
 				CustomType:  jsontypes.NormalizedType{},
+				Computed:    true,
+				Default:     stringdefault.StaticString("{}"),
 			},
 			"slug": schema.StringAttribute{
 				Description: "An optional unique identifier for the schedule.",
@@ -260,7 +263,7 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	//
 	// Additionally, we couldn't use getResourceByID here because of a race condition:
 	// we'd need an ID in the state to compare against, which doesn't exist yet.
-	copyScheduleModelToResourceModel(schedules[0], &plan)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedules[0], &plan)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -309,7 +312,7 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
 	}
 
-	copyScheduleModelToResourceModel(schedule, &state)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &state)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -377,7 +380,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
 	}
 
-	copyScheduleModelToResourceModel(schedule, &plan)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &plan)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -412,7 +415,7 @@ func (r *DeploymentScheduleResource) Delete(ctx context.Context, req resource.De
 	}
 }
 
-func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel) {
+func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel) diag.Diagnostics {
 	model.ID = customtypes.NewUUIDValue(schedule.ID)
 	model.Created = customtypes.NewTimestampPointerValue(schedule.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(schedule.Updated)
@@ -430,16 +433,22 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringValue(schedule.Schedule.RRule)
 
-	if len(schedule.Parameters) > 0 {
-		parametersByteSlice, err := json.Marshal(schedule.Parameters)
-		if err == nil {
-			model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
-		}
-	} else {
-		model.Parameters = jsontypes.NewNormalizedNull()
+	model.Slug = types.StringValue(schedule.Slug)
+
+	parametersByteSlice, err := json.Marshal(schedule.Parameters)
+	if err != nil {
+		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameters", "Deployment Schedule parameters", err)}
 	}
 
-	model.Slug = types.StringValue(schedule.Slug)
+	// OSS returns "null" for this field if it's empty, rather than an empty map of "{}".
+	// To avoid an "inconsistent result after apply" error, we will only attempt to parse the
+	// response if it is not "null". In this case, the value will fall back to the default
+	// set in the schema.
+	if string(parametersByteSlice) != "null" {
+		model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+	}
+
+	return nil
 }
 
 // validateSchedules ensures that the list of schedules is not empty.
