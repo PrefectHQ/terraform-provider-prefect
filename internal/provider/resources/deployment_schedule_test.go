@@ -44,6 +44,12 @@ resource "prefect_deployment_schedule" "test" {
 
 	interval = 30
 	anchor_date = "2024-01-01T00:00:00Z"
+
+	parameters = jsonencode({
+	 	env = "test"
+	 	version = "1.0"
+	})
+	slug = "test-schedule"
 }
 `
 
@@ -76,6 +82,12 @@ resource "prefect_deployment_schedule" "test" {
 
 	interval = 30
 	anchor_date = "2024-01-01T00:00:00Z"
+
+	parameters = jsonencode({
+	 	env = "staging"
+	 	version = "2.0"
+	})
+	slug = "updated-test-schedule"
 }
 `
 
@@ -176,6 +188,12 @@ resource "prefect_deployment_schedule" "test_rrule" {
 func TestAccResource_deployment_schedule(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 
+	parameters := `{"env": "test", "version": "1.0"}`
+	parametersExpected := testutils.NormalizedValueForJSON(t, parameters)
+
+	parametersUpdate := `{"env": "staging", "version": "2.0"}`
+	parametersUpdateExpected := testutils.NormalizedValueForJSON(t, parametersUpdate)
+
 	fixtureCfg := fixtureConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
@@ -188,11 +206,15 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 		testutils.ExpectKnownValueBool(resourceName, "active", true),
 		testutils.ExpectKnownValueNumber(resourceName, "interval", 30),
 		testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
+		testutils.ExpectKnownValue(resourceName, "slug", "test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersExpected),
 	}
 
 	stateChecksForIntervalUpdate := []statecheck.StateCheck{
 		testutils.ExpectKnownValueBool(resourceName, "active", false),
 		testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
+		testutils.ExpectKnownValue(resourceName, "slug", "updated-test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersUpdateExpected),
 	}
 
 	resource.ParallelTest(t, resource.TestCase{

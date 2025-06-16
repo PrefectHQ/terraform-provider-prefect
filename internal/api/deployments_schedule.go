@@ -31,7 +31,9 @@ type DeploymentSchedulePayload struct {
 	MaxActiveRuns float32 `json:"max_active_runs,omitempty"`
 	Catchup       bool    `json:"catchup,omitempty"`
 
-	Schedule Schedule `json:"schedule,omitempty"`
+	Schedule   Schedule               `json:"schedule,omitempty"`
+	Parameters map[string]interface{} `json:"parameters,omitempty"`
+	Slug       string                 `json:"slug,omitempty"`
 }
 
 type Schedule struct {
