@@ -214,6 +214,7 @@ func (d *ServiceAccountDataSource) Read(ctx context.Context, req datasource.Read
 	model.AccountID = customtypes.NewUUIDValue(serviceAccount.AccountID)
 
 	model.AccountRoleName = types.StringValue(serviceAccount.AccountRoleName)
+	model.ActorID = customtypes.NewUUIDValue(serviceAccount.ActorID)
 	model.APIKeyID = types.StringValue(serviceAccount.APIKey.ID)
 	model.APIKeyName = types.StringValue(serviceAccount.APIKey.Name)
 	model.APIKeyCreated = customtypes.NewTimestampPointerValue(serviceAccount.APIKey.Created)
