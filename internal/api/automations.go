@@ -43,7 +43,7 @@ type Trigger struct {
 
 	// For EventTrigger and MetricTrigger
 	Match        map[string]interface{} `json:"match,omitempty"`
-	MatchRelated map[string]interface{} `json:"match_related,omitempty"`
+	MatchRelated any                    `json:"match_related,omitempty"`
 	Posture      *string                `json:"posture,omitempty"`
 
 	// For EventTrigger
