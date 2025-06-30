@@ -557,8 +557,11 @@ func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTr
 
 		match, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Event.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Event.MatchRelated)
-		diags.Append(diagnostics...)
+
+		var matchRelated any
+		if !tfTriggerModel.Event.MatchRelated.IsNull() {
+			diags.Append(tfTriggerModel.Event.MatchRelated.Unmarshal(&matchRelated)...)
+		}
 
 		if diags.HasError() {
 			return diags
@@ -578,8 +581,11 @@ func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTr
 	case tfTriggerModel.Metric != nil:
 		match, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Metric.Match)
 		diags.Append(diagnostics...)
-		matchRelated, diagnostics := helpers.UnmarshalOptional(tfTriggerModel.Metric.MatchRelated)
-		diags.Append(diagnostics...)
+
+		var matchRelated any
+		if !tfTriggerModel.Metric.MatchRelated.IsNull() {
+			diags.Append(tfTriggerModel.Metric.MatchRelated.Unmarshal(&matchRelated)...)
+		}
 
 		if diags.HasError() {
 			return diags
