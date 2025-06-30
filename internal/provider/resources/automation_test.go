@@ -85,6 +85,75 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 	return testutils.RenderTemplate(tmpl, cfg)
 }
 
+func fixtureAccAutomationResourceEventTriggerMatchRelatedArray(cfg automationFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+{{ .Deployment }}
+
+resource "prefect_automation" "{{ .AutomationResourceName }}" {
+  {{ .WorkspaceIDArg }}
+
+  name         = "test-event-automation"
+  description  = "description for test-event-automation"
+  enabled      = true
+
+  trigger = {
+    event = {
+      posture = "Reactive"
+      match = jsonencode({
+        "prefect.resource.id" : "prefect.flow-run.*"
+      })
+      match_related = jsonencode ([
+        {
+          "prefect.resource.id": "prefect.flow.${prefect_flow.test_flow.id}",
+          "prefect.resource.role" : "flow"
+        },
+        {
+          "prefect.resource.id" : "prefect-cloud.user.*",
+           "prefect.resource.role" : "creator"
+        }
+      ])
+      after     = [
+        "prefect.flow-run.Completed",
+        "prefect.flow-run.Succeeded",
+      ]
+      expect    = [
+        "prefect.flow-run.Failed",
+        "prefect.flow-run.Cancelled",
+        "prefect.flow-run.Crashed",
+      ]
+      for_each  = [
+        "prefect.resource.id",
+        "prefect.resource.role",
+      ]
+      threshold = 1
+      within    = 60
+    }
+  }
+
+  actions = [
+    {
+      type = "run-deployment"
+      source        = "selected"
+      deployment_id = prefect_deployment.test_deployment.id
+      parameters = jsonencode({
+        param1 = "value1"
+        param2 = "value2"
+      })
+      job_variables = jsonencode({
+        string_var = "value1"
+        int_var = 2
+        bool_var = true
+      })
+    }
+  ]
+}
+`
+
+	return testutils.RenderTemplate(tmpl, cfg)
+}
+
 func fixtureAccAutomationResourceMetricTrigger(cfg automationFixtureConfig) string {
 	tmpl := `
 {{ .Workspace }}
@@ -337,6 +406,35 @@ func TestAccResource_automation(t *testing.T) {
 				ResourceName:      eventTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(eventTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
+			},
+			{
+				Config: fixtureAccAutomationResourceEventTriggerMatchRelatedArray(automationFixtureConfig{
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					Deployment:             testutils.FixtureAccAutomationDeployment(ephemeralWorkspace.IDArg),
+					AutomationResourceName: eventTriggerAutomationResourceName,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckAutomationResourceExists(eventTriggerAutomationResourceNameAndPath, &api.Automation{}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "name", "test-event-automation"),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "description", "description for test-event-automation"),
+					testutils.ExpectKnownValueBool(eventTriggerAutomationResourceNameAndPath, "enabled", true),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "trigger.event.posture", "Reactive"),
+					testutils.ExpectKnownValueList(eventTriggerAutomationResourceNameAndPath, "trigger.event.after", []string{"prefect.flow-run.Completed", "prefect.flow-run.Succeeded"}),
+					testutils.ExpectKnownValueList(eventTriggerAutomationResourceNameAndPath, "trigger.event.expect", []string{"prefect.flow-run.Cancelled", "prefect.flow-run.Crashed", "prefect.flow-run.Failed"}),
+					testutils.ExpectKnownValueList(eventTriggerAutomationResourceNameAndPath, "trigger.event.for_each", []string{"prefect.resource.id", "prefect.resource.role"}),
+					testutils.ExpectKnownValueNumber(eventTriggerAutomationResourceNameAndPath, "trigger.event.threshold", 1),
+					testutils.ExpectKnownValueNumber(eventTriggerAutomationResourceNameAndPath, "trigger.event.within", 60),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.type", "run-deployment"),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.source", "selected"),
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationResourceNameAndPath, "actions.0.deployment_id"),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "trigger.event.match", testutils.NormalizedValueForJSON(t, `{"prefect.resource.id":"prefect.flow-run.*"}`)),
+					testutils.ExpectKnownValueNotNull(eventTriggerAutomationResourceNameAndPath, "trigger.event.match_related"),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.parameters", testutils.NormalizedValueForJSON(t, `{"param1":"value1","param2":"value2"}`)),
+					testutils.ExpectKnownValue(eventTriggerAutomationResourceNameAndPath, "actions.0.job_variables", testutils.NormalizedValueForJSON(t, `{"string_var":"value1","int_var":2,"bool_var":true}`)),
+				},
 			},
 			{
 				Config: fixtureAccAutomationResourceMetricTrigger(automationFixtureConfig{
