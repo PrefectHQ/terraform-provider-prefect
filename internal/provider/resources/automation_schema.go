@@ -284,7 +284,7 @@ func ActionsSchema() schema.ListNestedAttribute {
 				"type": schema.StringAttribute{
 					Required: true,
 					Description: fmt.Sprintf(
-						"The type of action to perform. Possible values: %s)",
+						"The type of action to perform. Possible values: %s",
 						strings.Join(utils.AllAutomationActionTypes, ", "),
 					),
 					Validators: []validator.String{
