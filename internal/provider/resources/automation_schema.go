@@ -1,6 +1,9 @@
 package resources
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -279,8 +282,11 @@ func ActionsSchema() schema.ListNestedAttribute {
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
 				"type": schema.StringAttribute{
-					Required:    true,
-					Description: "The type of action to perform",
+					Required: true,
+					Description: fmt.Sprintf(
+						"The type of action to perform. Possible values: %s)",
+						strings.Join(utils.AllAutomationActionTypes, ", "),
+					),
 					Validators: []validator.String{
 						stringvalidator.OneOf(utils.AllAutomationActionTypes...),
 					},
