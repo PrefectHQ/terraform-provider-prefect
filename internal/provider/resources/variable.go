@@ -93,11 +93,17 @@ var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
 	},
 	"workspace_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 		Optional:    true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
 	},
 	"name": schema.StringAttribute{
 		Description: "Name of the variable",

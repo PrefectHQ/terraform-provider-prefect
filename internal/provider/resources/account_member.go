@@ -136,6 +136,9 @@ func (r *AccountMemberResource) Schema(_ context.Context, _ resource.SchemaReque
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}

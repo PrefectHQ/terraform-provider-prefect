@@ -138,6 +138,13 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
+				PlanModifiers: []planmodifier.String{
+					// This field is both Optional and Computed, so if we use the RequiresReplace plan modifier,
+					// we need to also set UseStateForUnknown so Terraform doesn't think the computed value is changing
+					// and trigger a recreation when one isn't needed.
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,

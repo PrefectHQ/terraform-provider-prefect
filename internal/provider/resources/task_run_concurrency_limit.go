@@ -98,11 +98,17 @@ func (r *TaskRunConcurrencyLimitResource) Schema(_ context.Context, _ resource.S
 				Optional:    true,
 				Description: "Account ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Workspace ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"tag": schema.StringAttribute{
 				Required:    true,
