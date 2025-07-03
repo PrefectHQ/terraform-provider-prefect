@@ -139,6 +139,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
