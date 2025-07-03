@@ -64,11 +64,17 @@ func AutomationSchema() map[string]schema.Attribute {
 			Optional:    true,
 			CustomType:  customtypes.UUIDType{},
 			Description: "Account ID (UUID), defaults to the account set in the provider",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"workspace_id": schema.StringAttribute{
 			Optional:    true,
 			CustomType:  customtypes.UUIDType{},
 			Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"trigger":            TriggerSchema(),
 		"actions":            ActionsSchema(),
