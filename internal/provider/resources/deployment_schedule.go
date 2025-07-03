@@ -124,16 +124,25 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Optional:    true,
 				Description: "Account ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Workspace ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Deployment ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"active": schema.BoolAttribute{
 				Description: "Whether or not the schedule is active.",
