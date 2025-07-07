@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   detect-api-drift:
+    if: github.repository == 'prefecthq/terraform-provider-prefect'
     permissions:
       # required to read from repo + write to wiki
       contents: write

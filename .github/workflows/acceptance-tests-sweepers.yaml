@@ -4,7 +4,7 @@ name: Acceptance Tests - Sweepers
 "on":
   # Run at 7 AM UTC every day (2 AM EST)
   schedule:
-    - cron: '0 7 * * *' 
+    - cron: '0 7 * * *'
   # Run manually
   workflow_dispatch: {}
 
@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   sweepers:
+    if: github.repository == 'prefecthq/terraform-provider-prefect'
     permissions:
       contents: read
     name: Run Sweepers
