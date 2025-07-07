@@ -107,11 +107,17 @@ func (r *GlobalConcurrencyLimitResource) Schema(_ context.Context, _ resource.Sc
 				Optional:    true,
 				Description: "Account ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Workspace ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,

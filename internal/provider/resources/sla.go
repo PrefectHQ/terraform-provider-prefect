@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -138,11 +140,17 @@ For more information, see documentation on setting up [Service Level Agreements]
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
