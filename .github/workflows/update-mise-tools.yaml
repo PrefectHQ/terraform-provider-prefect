@@ -11,6 +11,7 @@ permissions: {}
 jobs:
   update_mise_tools:
     runs-on: ubuntu-latest
+    if: github.repository == 'prefecthq/terraform-provider-prefect'
     permissions:
       # required to write to the repo
       contents: write
