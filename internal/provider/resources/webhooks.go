@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -34,7 +33,7 @@ type WebhookResourceModel struct {
 	Name             types.String               `tfsdk:"name"`
 	Description      types.String               `tfsdk:"description"`
 	Enabled          types.Bool                 `tfsdk:"enabled"`
-	Template         jsontypes.Normalized       `tfsdk:"template"`
+	Template         types.String               `tfsdk:"template"`
 	AccountID        customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID      customtypes.UUIDValue      `tfsdk:"workspace_id"`
 	Endpoint         types.String               `tfsdk:"endpoint"`
@@ -102,8 +101,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"template": schema.StringAttribute{
 				Required:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Description: "Template used by the webhook",
+				Description: "Template used by the webhook. Use jsonencode() for static values or template strings for dynamic values.",
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -163,7 +161,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
 
-	tfModel.Template = jsontypes.NewNormalizedValue(webhook.Template)
+	tfModel.Template = types.StringValue(webhook.Template)
 
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)

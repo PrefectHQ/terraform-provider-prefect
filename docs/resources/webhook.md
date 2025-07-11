@@ -82,7 +82,7 @@ output "endpoints" {
 ### Required
 
 - `name` (String) Name of the webhook
-- `template` (String) Template used by the webhook
+- `template` (String) Template used by the webhook. Use jsonencode() for static values or template strings for dynamic values.
 
 ### Optional
 
