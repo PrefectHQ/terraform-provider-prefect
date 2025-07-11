@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -162,7 +163,16 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Name = types.StringValue(webhook.Name)
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
-	tfModel.Template = jsontypes.NewNormalizedValue(webhook.Template)
+
+	// Convert the template map back to JSON string for jsontypes.Normalized
+	templateJSON, err := json.Marshal(webhook.Template)
+	if err != nil {
+		// If marshaling fails, set an empty JSON object
+		tfModel.Template = jsontypes.NewNormalizedValue("{}")
+	} else {
+		tfModel.Template = jsontypes.NewNormalizedValue(string(templateJSON))
+	}
+
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	tfModel.Endpoint = types.StringValue(fmt.Sprintf("%s/hooks/%s", endpointHost, webhook.Slug))
@@ -185,12 +195,18 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	template, diags := helpers.UnmarshalOptional(plan.Template)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createReq := api.WebhookCreateRequest{
 		WebhookCore: api.WebhookCore{
 			Name:             plan.Name.ValueString(),
 			Description:      plan.Description.ValueString(),
 			Enabled:          plan.Enabled.ValueBool(),
-			Template:         plan.Template.ValueString(),
+			Template:         template,
 			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
 		},
 	}
@@ -288,12 +304,18 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	template, diags := helpers.UnmarshalOptional(plan.Template)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	updateReq := api.WebhookUpdateRequest{
 		WebhookCore: api.WebhookCore{
 			Name:             plan.Name.ValueString(),
 			Description:      plan.Description.ValueString(),
 			Enabled:          plan.Enabled.ValueBool(),
-			Template:         plan.Template.ValueString(),
+			Template:         template,
 			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
 		},
 	}

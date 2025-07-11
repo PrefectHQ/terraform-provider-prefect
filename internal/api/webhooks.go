@@ -15,11 +15,11 @@ type WebhooksClient interface {
 }
 
 type WebhookCore struct {
-	Name             string     `json:"name"`
-	Description      string     `json:"description,omitempty"`
-	Enabled          bool       `json:"enabled"`
-	Template         string     `json:"template"`
-	ServiceAccountID *uuid.UUID `json:"service_account_id"`
+	Name             string                 `json:"name"`
+	Description      string                 `json:"description,omitempty"`
+	Enabled          bool                   `json:"enabled"`
+	Template         map[string]interface{} `json:"template"`
+	ServiceAccountID *uuid.UUID             `json:"service_account_id"`
 }
 
 // Request Schemas.

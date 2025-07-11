@@ -2,6 +2,7 @@ package datasources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -205,7 +206,16 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	model.Name = types.StringValue(webhook.Name)
 	model.Description = types.StringValue(webhook.Description)
 	model.Enabled = types.BoolValue(webhook.Enabled)
-	model.Template = types.StringValue(webhook.Template)
+
+	// Convert the template map to JSON string for the datasource
+	templateJSON, err := json.Marshal(webhook.Template)
+	if err != nil {
+		// If marshaling fails, set an empty JSON object
+		model.Template = types.StringValue("{}")
+	} else {
+		model.Template = types.StringValue(string(templateJSON))
+	}
+
 	model.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	model.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	model.Slug = types.StringValue(webhook.Slug)
