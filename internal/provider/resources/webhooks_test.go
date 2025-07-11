@@ -45,20 +45,27 @@ resource "prefect_webhook" "%s" {
 `, workspace, name, name, template, enabled)
 }
 
-func fixtureAccWebhookWithRawTemplate(workspace, name, template string, enabled bool) string {
+func fixtureAccWebhookWithRawTemplate(workspace, name string, enabled bool) string {
 	return fmt.Sprintf(`
 %s
 
 resource "prefect_webhook" "%s" {
-	name = "%s"
+  name = "%s"
   template = <<-EOF
-	  %s
-  EOF
+  {
+    "event": "test.body.passthrough",
+    "resource": {
+      "prefect.resource.id": "test.body-passthrough",
+      "prefect.resource.name": "body-passthrough"
+    },
+    "payload": {{ body | tojson }}
+  }
+	EOF
 
 	enabled = %t
 	workspace_id = prefect_workspace.test.id
 }
-`, workspace, name, name, template, enabled)
+`, workspace, name, name, enabled)
 }
 
 const webhookTemplateDynamic = `
@@ -92,16 +99,6 @@ func TestAccResource_webhook(t *testing.T) {
 
 	randomName := testutils.NewRandomPrefixedString()
 	webhookResourceName := "prefect_webhook." + randomName
-
-	rawTemplateValue := `
-{
-    "event": "test.body.passthrough",
-    "resource": {
-        "prefect.resource.id": "test.body-passthrough",
-        "prefect.resource.name": "body-passthrough"
-    },
-    "payload": {{ body | tojson }}
-}`
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -161,7 +158,7 @@ func TestAccResource_webhook(t *testing.T) {
 			},
 			{
 				// Check that raw template variables work
-				Config: fixtureAccWebhookWithRawTemplate(workspace.Resource, randomName, rawTemplateValue, true),
+				Config: fixtureAccWebhookWithRawTemplate(workspace.Resource, randomName, true),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWebhookExists(webhookResourceName, &webhook),
 					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
