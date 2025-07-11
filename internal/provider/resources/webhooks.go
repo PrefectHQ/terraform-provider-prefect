@@ -2,7 +2,6 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -164,12 +163,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
 
-	templateJSON, err := json.Marshal(webhook.Template)
-	if err != nil {
-		tfModel.Template = jsontypes.NewNormalizedValue("{}")
-	} else {
-		tfModel.Template = jsontypes.NewNormalizedValue(string(templateJSON))
-	}
+	tfModel.Template = jsontypes.NewNormalizedValue(webhook.Template)
 
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
@@ -193,18 +187,12 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	template, diags := helpers.UnmarshalOptional(plan.Template)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	createReq := api.WebhookCreateRequest{
 		WebhookCore: api.WebhookCore{
 			Name:             plan.Name.ValueString(),
 			Description:      plan.Description.ValueString(),
 			Enabled:          plan.Enabled.ValueBool(),
-			Template:         template,
+			Template:         plan.Template.ValueString(),
 			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
 		},
 	}
@@ -302,18 +290,12 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	template, diags := helpers.UnmarshalOptional(plan.Template)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	updateReq := api.WebhookUpdateRequest{
 		WebhookCore: api.WebhookCore{
 			Name:             plan.Name.ValueString(),
 			Description:      plan.Description.ValueString(),
 			Enabled:          plan.Enabled.ValueBool(),
-			Template:         template,
+			Template:         plan.Template.ValueString(),
 			ServiceAccountID: plan.ServiceAccountID.ValueUUIDPointer(),
 		},
 	}
