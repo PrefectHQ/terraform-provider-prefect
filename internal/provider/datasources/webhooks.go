@@ -207,10 +207,8 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	model.Description = types.StringValue(webhook.Description)
 	model.Enabled = types.BoolValue(webhook.Enabled)
 
-	// Convert the template map to JSON string for the datasource
 	templateJSON, err := json.Marshal(webhook.Template)
 	if err != nil {
-		// If marshaling fails, set an empty JSON object
 		model.Template = types.StringValue("{}")
 	} else {
 		model.Template = types.StringValue(string(templateJSON))

@@ -164,10 +164,8 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
 
-	// Convert the template map back to JSON string for jsontypes.Normalized
 	templateJSON, err := json.Marshal(webhook.Template)
 	if err != nil {
-		// If marshaling fails, set an empty JSON object
 		tfModel.Template = jsontypes.NewNormalizedValue("{}")
 	} else {
 		tfModel.Template = jsontypes.NewNormalizedValue(string(templateJSON))
