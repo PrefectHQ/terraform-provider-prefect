@@ -160,9 +160,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Name = types.StringValue(webhook.Name)
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
-
 	tfModel.Template = types.StringValue(webhook.Template)
-
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	tfModel.Endpoint = types.StringValue(fmt.Sprintf("%s/hooks/%s", endpointHost, webhook.Slug))

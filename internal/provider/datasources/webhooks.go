@@ -205,9 +205,7 @@ func (d *WebhookDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	model.Name = types.StringValue(webhook.Name)
 	model.Description = types.StringValue(webhook.Description)
 	model.Enabled = types.BoolValue(webhook.Enabled)
-
 	model.Template = types.StringValue(webhook.Template)
-
 	model.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	model.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	model.Slug = types.StringValue(webhook.Slug)
