@@ -66,6 +66,40 @@ resource "prefect_webhook" "example_with_file_encoded" {
   template    = jsonencode(jsondecode(file("./webhook-template.json")))
 }
 
+# For dynamic webhook templates where the desired payload should be
+# in JSON format, use the heredoc format to ensure the expression
+# is preserved.
+#
+# As an example, this webhook could be called via curl:
+#
+# ```bash
+# curl -X POST "${url}" \
+#   -H "Content-Type: application/json" \
+#   -d '{
+#     "foo": "foo",
+#     "bar": "bar"
+#   }'
+#
+# For more information, see:
+# - https://developer.hashicorp.com/terraform/language/expressions/strings#heredoc-strings
+# - https://docs.prefect.io/v3/concepts/webhooks#dynamic-webhook-events
+resource "prefect_webhook" "example_with_dynamic_template" {
+  name        = "my-webhook"
+  description = "This is a webhook"
+  enabled     = true
+
+  template = <<-EOF
+    {
+      "event": "test.body.passthrough",
+      "resource": {
+          "prefect.resource.id": "test.body-passthrough",
+          "prefect.resource.name": "body-passthrough"
+      },
+      "payload": {{ body | tojson }}
+    }
+  EOF
+}
+
 # Access the endpoint of the webhook.
 output "endpoints" {
   value = {
@@ -82,7 +116,7 @@ output "endpoints" {
 ### Required
 
 - `name` (String) Name of the webhook
-- `template` (String) Template used by the webhook
+- `template` (String) Template used by the webhook. Use jsonencode() for static values or template strings for dynamic values.
 
 ### Optional
 

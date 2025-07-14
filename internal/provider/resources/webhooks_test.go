@@ -45,6 +45,29 @@ resource "prefect_webhook" "%s" {
 `, workspace, name, name, template, enabled)
 }
 
+func fixtureAccWebhookWithRawTemplate(workspace, name string, enabled bool) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_webhook" "%s" {
+  name = "%s"
+  template = <<-EOF
+  {
+    "event": "test.body.passthrough",
+    "resource": {
+      "prefect.resource.id": "test.body-passthrough",
+      "prefect.resource.name": "body-passthrough"
+    },
+    "payload": {{ body | tojson }}
+  }
+	EOF
+
+	enabled = %t
+	workspace_id = prefect_workspace.test.id
+}
+`, workspace, name, name, enabled)
+}
+
 const webhookTemplateDynamic = `
 {
     "event": "model.refreshed",
@@ -131,6 +154,19 @@ func TestAccResource_webhook(t *testing.T) {
 					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
 					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
 					testutils.ExpectKnownValueNotNull(webhookResourceName, "service_account_id"),
+				},
+			},
+			{
+				// Check that raw template variables work
+				Config: fixtureAccWebhookWithRawTemplate(workspace.Resource, randomName, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
+					testutils.ExpectKnownValueNotNull(webhookResourceName, "template"),
 				},
 			},
 			// Import State checks - import by name (dynamic)
