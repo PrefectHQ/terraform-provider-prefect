@@ -59,7 +59,7 @@ resource "prefect_webhook" "example_with_file_encoded" {
 #   -H "Content-Type: application/json" \
 #   -d '{
 #     "foo": "foo",
-#     "bar":"bar"
+#     "bar": "bar"
 #   }'
 #
 # For more information, see:
