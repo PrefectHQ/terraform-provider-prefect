@@ -20,7 +20,9 @@ resource "prefect_block" "secret_write_onlyh" {
   type_slug = "aws-credentials"
 
   # prefect block type inspect aws-credentials
-  data_wo = file("./aws-credentials.json")
+  data_wo = jsonencode({
+    "value" = "bar"
+  })
 
   # provide the version to control when to update the block data
   data_wo_version = 1
