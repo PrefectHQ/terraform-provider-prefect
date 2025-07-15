@@ -105,6 +105,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Unique name of the Block",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"type_slug": schema.StringAttribute{
 				Required:    true,
