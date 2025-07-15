@@ -11,6 +11,20 @@ resource "prefect_block" "secret" {
   # set the workpace_id attribute on the provider OR the resource
   workspace_id = "<workspace UUID>"
 }
+# example:
+# you can also use a write-only attribute for the data field
+resource "prefect_block" "secret_write_onlyh" {
+  name = "foo-write-only"
+
+  # prefect block type ls
+  type_slug = "aws-credentials"
+
+  # prefect block type inspect aws-credentials
+  data_wo = file("./aws-credentials.json")
+
+  # provide the version to control when to update the block data
+  data_wo_version = 1
+}
 
 # example:
 # you can also use file() to import a JSON file
