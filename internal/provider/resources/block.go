@@ -299,7 +299,7 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	if dataWO != nil {
+	if len(dataWO) != 0 {
 		data = dataWO
 	}
 
