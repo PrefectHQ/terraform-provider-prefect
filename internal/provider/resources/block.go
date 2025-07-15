@@ -7,11 +7,15 @@ import (
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -28,9 +32,11 @@ type BlockResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
-	Name     types.String         `tfsdk:"name"`
-	TypeSlug types.String         `tfsdk:"type_slug"`
-	Data     jsontypes.Normalized `tfsdk:"data"`
+	Name          types.String         `tfsdk:"name"`
+	TypeSlug      types.String         `tfsdk:"type_slug"`
+	Data          jsontypes.Normalized `tfsdk:"data"`
+	DataWO        jsontypes.Normalized `tfsdk:"data_wo"`
+	DataWOVersion types.Int32          `tfsdk:"data_wo_version"`
 }
 
 // NewBlockResource returns a new BlockResource.
@@ -117,10 +123,34 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"data": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						path.MatchRoot("data_wo"),
+					),
+				},
+			},
+			"data_wo": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				WriteOnly:   true,
+				CustomType:  jsontypes.NormalizedType{},
+				Description: "The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						path.MatchRoot("data"),
+					),
+				},
+			},
+			"data_wo_version": schema.Int32Attribute{
+				Optional:    true,
+				Description: "The version of the `data_wo` attribute. This is used to track changes to the `data_wo` attribute and trigger updates when the value changes.",
+				Validators: []validator.Int32{
+					int32validator.AlsoRequires(path.MatchRoot("data_wo")),
+				},
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
@@ -248,10 +278,19 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	// Here, we unmarshal the user-provided `data` JSON string to a map[string]interface{}
 	// because we'll later need to re-marshall the entire BlockDocumentCreate payload
 	// when sending it back up to the API
-	var data map[string]interface{}
-	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
+	data, diags := helpers.UnmarshalOptional(plan.Data)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If the user provided a `data_wo` value, we need to use it instead of the `data` value.
+	if !plan.DataWO.IsNull() {
+		data, diags = helpers.UnmarshalOptional(plan.Data)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
@@ -363,6 +402,13 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	// Also retrieve the state to compare the data_wo_version.
+	var state BlockResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -383,10 +429,28 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	var data map[string]interface{}
-	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
+	data, diags := helpers.UnmarshalOptional(plan.Data)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if !plan.DataWO.IsNull() && !plan.DataWOVersion.IsNull() {
+		// If the data_wo_version is the same as the state, we don't need to update.
+		// This prevents unnecessary updates to the Block Document.
+		if plan.DataWOVersion.Equal(state.DataWOVersion) {
+			resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+
+			return
+		}
+
+		// If the data_wo_version is different, we need to update the data payload
+		// using the content of the data_wo attribute.
+		data, diags = helpers.UnmarshalOptional(plan.DataWO)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	err = blockDocumentClient.Update(ctx, blockID, api.BlockDocumentUpdate{
@@ -413,7 +477,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	diags := copyBlockToModel(block, &plan)
+	diags = copyBlockToModel(block, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
