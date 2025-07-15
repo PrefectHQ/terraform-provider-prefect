@@ -260,6 +260,15 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// Also get the config to evaluate write-only attributes that
+	// are only available in the config, not the plan.
+	var config BlockResourceModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -284,13 +293,14 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	// If the user provided a `data_wo` value, we need to use it instead of the `data` value.
-	if !plan.DataWO.IsNull() {
-		data, diags = helpers.UnmarshalOptional(plan.Data)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	dataWO, diags := helpers.UnmarshalOptional(config.DataWO)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if dataWO != nil {
+		data = dataWO
 	}
 
 	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
@@ -402,6 +412,14 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	// Also get the config to evaluate write-only attributes that
+	// are only available in the config, not the plan.
+	var config BlockResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Also retrieve the state to compare the data_wo_version.
 	var state BlockResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -435,18 +453,10 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	if !plan.DataWO.IsNull() && !plan.DataWOVersion.IsNull() {
-		// If the data_wo_version is the same as the state, we don't need to update.
-		// This prevents unnecessary updates to the Block Document.
-		if plan.DataWOVersion.Equal(state.DataWOVersion) {
-			resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
-
-			return
-		}
-
-		// If the data_wo_version is different, we need to update the data payload
-		// using the content of the data_wo attribute.
-		data, diags = helpers.UnmarshalOptional(plan.DataWO)
+	// If the data_wo_version is different, we need to update the data payload
+	// using the content of the data_wo attribute.
+	if !plan.DataWOVersion.Equal(state.DataWOVersion) {
+		data, diags = helpers.UnmarshalOptional(config.DataWO)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
