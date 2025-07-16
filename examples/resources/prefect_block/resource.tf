@@ -13,7 +13,7 @@ resource "prefect_block" "secret" {
 }
 # example:
 # you can also use a write-only attribute for the data field
-resource "prefect_block" "secret_write_onlyh" {
+resource "prefect_block" "secret_write_only" {
   name = "foo-write-only"
 
   # prefect block type ls
