@@ -41,6 +41,22 @@ resource "prefect_block" "secret" {
   # set the workpace_id attribute on the provider OR the resource
   workspace_id = "<workspace UUID>"
 }
+# example:
+# you can also use a write-only attribute for the data field
+resource "prefect_block" "secret_write_only" {
+  name = "foo-write-only"
+
+  # prefect block type ls
+  type_slug = "aws-credentials"
+
+  # prefect block type inspect aws-credentials
+  data_wo = jsonencode({
+    "value" = "bar"
+  })
+
+  # provide the version to control when to update the block data
+  data_wo_version = 1
+}
 
 # example:
 # you can also use file() to import a JSON file
@@ -118,13 +134,17 @@ For more information on the `$ref` syntax definition, see the
 
 ### Required
 
-- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
 - `name` (String) Unique name of the Block
 - `type_slug` (String) Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block type ls` to view all available Block type slugs.
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `account_id` (String) Account ID (UUID) where the Block is located
+- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
+- `data_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
+- `data_wo_version` (Number) The version of the `data_wo` attribute. This is used to track changes to the `data_wo` attribute and trigger updates when the value changes.
 - `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only

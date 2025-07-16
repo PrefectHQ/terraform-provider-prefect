@@ -15,11 +15,12 @@ import (
 )
 
 type blockFixtureConfig struct {
-	Workspace      string
-	WorkspaceIDArg string
-	BlockName      string
-	BlockValue     string
-	RefBlockValue  string
+	Workspace         string
+	WorkspaceIDArg    string
+	BlockName         string
+	BlockValue        string
+	BlockValueVersion int32
+	RefBlockValue     string
 }
 
 func fixtureAccBlock(cfg blockFixtureConfig) string {
@@ -32,6 +33,23 @@ resource "prefect_block" "{{ .BlockName }}" {
 	data = jsonencode({
 		"value" = "{{ .BlockValue }}"
 	})
+	{{ .WorkspaceIDArg }}
+}`
+
+	return testutils.RenderTemplate(tmpl, cfg)
+}
+
+func fixtureAccBlockWithWriteOnlyData(cfg blockFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+resource "prefect_block" "with_write_only_data" {
+	name = "block-with-write-only-data"
+	type_slug = "secret"
+	data_wo = jsonencode({
+		"value" = "{{ .BlockValue }}"
+	})
+	data_wo_version = {{ .BlockValueVersion }}
 	{{ .WorkspaceIDArg }}
 }`
 
@@ -128,6 +146,45 @@ func TestAccResource_block(t *testing.T) {
 					testutils.ExpectKnownValue(blockResourceName, "type_slug", "secret"),
 					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
 				},
+			},
+			// Next, test the write-only data field.
+			{
+				Config: fixtureAccBlockWithWriteOnlyData(blockFixtureConfig{
+					Workspace:         workspace.Resource,
+					WorkspaceIDArg:    workspace.IDArg,
+					BlockValue:        randomValue2,
+					BlockValueVersion: 1,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckBlockExists("prefect_block.with_write_only_data", &blockDocument),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue("prefect_block.with_write_only_data", "name", "block-with-write-only-data"),
+					testutils.ExpectKnownValue("prefect_block.with_write_only_data", "type_slug", "secret"),
+					testutils.ExpectKnownValueNull("prefect_block.with_write_only_data", "data"),
+				},
+			},
+			// For write-only data field, ensure that NOT changing the version does not trigger a non-empty plan.
+			{
+				Config: fixtureAccBlockWithWriteOnlyData(blockFixtureConfig{
+					Workspace:         workspace.Resource,
+					WorkspaceIDArg:    workspace.IDArg,
+					BlockValue:        randomValue2,
+					BlockValueVersion: 1,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+			},
+			// For write-only data field, ensure that changing the version triggers a non-empty plan.
+			{
+				Config: fixtureAccBlockWithWriteOnlyData(blockFixtureConfig{
+					Workspace:         workspace.Resource,
+					WorkspaceIDArg:    workspace.IDArg,
+					BlockValue:        randomValue2,
+					BlockValueVersion: 2,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			// Next two tests using `fixtureAccBlockWithRef` will be used to test
 			// that using the $ref syntax won't result in an Update plan if no changes are made.
