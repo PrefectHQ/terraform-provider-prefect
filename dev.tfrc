@@ -1,0 +1,21 @@
+# https://developer.hashicorp.com/terraform/cli/config/config-file
+
+provider_installation {
+  # This disables the version and checksum verifications for this provider and
+  # forces Terraform to look for the provider plugin in the given directory.
+  dev_overrides {
+    # Retrieve the provider binary from the `build/` directory
+    # in the repository root. This binary is created by running
+    # `make build`.
+    #
+    # This file will be referenced from `./dev/<resource>`, which is
+    # created by running `make dev-new` and providing a resource name.
+    "prefecthq/prefect" = "../../build/"
+    "registry.terraform.io/prefecthq/prefect" = "../../build/"
+  }
+
+  # For all other providers, install them directly from their origin provider
+  # registries as normal. If you omit this, Terraform will _only_ use
+  # the dev_overrides block, and so no other providers will be available.
+  direct {}
+}
