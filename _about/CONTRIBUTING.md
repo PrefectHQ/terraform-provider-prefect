@@ -122,9 +122,9 @@ For more information, see the [Terraform testing patterns documentation](https:/
 
 ### Manual testing
 
-We can also test provider functionality by running `terraform apply` with handcrafted manifests.
+You can also test provider functionality by running `terraform apply` with handcrafted manifests.
 
-To ensure that `terraform` commands use the locally-built binary, we can use [development overrides for Terraform provider configurations](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). These overrides are provided automatically in [dev.tfrc](../dev.tfrc),
+To ensure that `terraform` commands use the locally-built binary, we use [development overrides for Terraform provider configurations](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). These overrides are provided automatically in [dev.tfrc](../dev.tfrc),
 
 First, build the binary:
 
