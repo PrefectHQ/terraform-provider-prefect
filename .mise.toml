@@ -10,6 +10,77 @@ gotestsum = "1.12.3"
 pre-commit = "4.2.0"
 terraform = "1.12.2"
 
+[vars]
+helper_tests_arg='specify tests as an argument: mise run <task> "TestAccResource_flow"'
+
+[tasks.default]
+description = "List available tasks"
+run = [
+  "mise tasks",
+  "printf '\nRun `mise task info <task>` for more information on each task.'"
+]
+quiet = true
+
+[tasks.build]
+description = "Build the provider binary"
+run = [
+  "mkdir -p build/",
+  "go build -o build/terraform-provider-prefect"
+]
+sources = ["internal", "tools", "go.mod", "go.sum", "main.go", ".mise.toml"]
+
+[tasks.clean]
+description = "Clean up built artifacts"
+run = "rm -vrf build/"
+
+[tasks.dev-clean]
+description = "Clean up dev artifacts"
+run = "rm -vrf dev/"
+
+[tasks.lint]
+description = "Run static code analysis"
+run = "golangci-lint run"
+
+[tasks.test]
+description = "Run automated unit tests ({{vars.helper_tests_arg}})"
+run = 'gotestsum --max-fails=50 ./... -run {{arg(name="tests", default="")}}'
+
+[tasks.testacc]
+description = "Run acceptance tests against real infrastructure ({{vars.helper_tests_arg}})"
+run = 'TF_ACC=1 mise run test'
+
+[tasks.testacc-dev]
+description = "Run automated acceptance tests from a local machine ({{vars.helper_tests_arg}})"
+run = 'scripts/testacc-dev {{arg(name="tests", default="")}} {{arg(name="log_level", default="")}} {{arg(name="sweep",default="")}}'
+
+[tasks.testacc-dev-user]
+description = "Run automated acceptance tests for user-related resources from a local machine"
+file = 'scripts/testacc-dev-user'
+
+[tasks.testacc-oss]
+description = "Run automated acceptance tests for Prefect OSS"
+run = [
+  "docker compose up -d",
+  './scripts/testacc-oss {{arg(name="tests", default="")}}',
+  "docker compose down"
+]
+
+[tasks.testacc-sweepers]
+description = "Run automated acceptance test sweepers"
+run = "go test ./internal/sweep -v -sweep=all"
+
+[tasks.docs]
+description = "Build Terraform documentation"
+run = [
+  "rm -rf docs/",
+  "mkdir docs/",
+  "tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect",
+]
+
+[tasks.dev-new]
+description = "Creates a new dev testfile"
+run = 'sh create-dev-testfile.sh {{arg(name="resource")}} {{arg(name="resourcename",default="")}}'
+
 [settings]
 # Enable experimental mode to support installing
 # specific go binaries by URL, for those that are
