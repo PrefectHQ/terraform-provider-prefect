@@ -47,9 +47,9 @@ jobs:
         with:
           install_args: gotestsum
       - name: Build
-        run: make build
+        run: mise run build
       - name: Unit Test
-        run: make test
+        run: mise run test
 
   lint:
     permissions:
