@@ -6,10 +6,10 @@ provider_installation {
   dev_overrides {
     # Retrieve the provider binary from the `build/` directory
     # in the repository root. This binary is created by running
-    # `make build`.
+    # `mise run build`.
     #
     # This file will be referenced from `./dev/<resource>`, which is
-    # created by running `make dev-new` and providing a resource name.
+    # created by running `mise run dev-new <resource name>`.
     "prefecthq/prefect" = "../../build/"
     "registry.terraform.io/prefecthq/prefect" = "../../build/"
   }

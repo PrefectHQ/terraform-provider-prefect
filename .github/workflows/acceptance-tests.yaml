@@ -50,7 +50,7 @@ jobs:
           install_args: gotestsum terraform
 
       - name: Run acceptance tests
-        run: make testacc
+        run: mise run testacc
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           # This is an API key generated as the `All Powerful Acceptance Test Bot`
@@ -59,7 +59,7 @@ jobs:
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
       - name: Run acceptance tests (user resource)
-        run: make testacc
+        run: mise run testacc
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           # This is an API key generated as the Marvin user (marvin@prefect.io).
