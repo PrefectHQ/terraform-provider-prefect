@@ -297,3 +297,11 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 }
+
+// ImportState imports the resource into Terraform state.
+func (r *WorkspaceAccessResource) ImportState(_ context.Context, _ resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resp.Diagnostics.AddError(
+		"Import not supported",
+		"Importing workspace access resources is not supported. Instead, define the resources as usual. If not present, they will be created.",
+	)
+}

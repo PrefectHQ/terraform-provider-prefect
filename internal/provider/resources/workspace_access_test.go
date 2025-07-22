@@ -3,6 +3,7 @@ package resources_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/google/uuid"
@@ -93,6 +94,13 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				},
 			},
+			{
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(accessResourceName),
+				ResourceName:      accessResourceName,
+				ImportStateVerify: true,
+				ExpectError:       regexp.MustCompile(".*Import not supported.*"),
+			},
 		},
 	})
 }
@@ -175,6 +183,12 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				},
+			},
+			{
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(accessResourceName),
+				ResourceName:      accessResourceName,
+				ExpectError:       regexp.MustCompile(".*Import not supported.*"),
 			},
 		},
 	})
