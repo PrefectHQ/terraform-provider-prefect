@@ -20,9 +20,8 @@ This feature is available in the following [product plan(s)](https://www.prefect
 
 ```terraform
 resource "prefect_account" "example" {
-  name          = "My Imported Account"
-  description   = "A cool account"
-  billing_email = "marvin@prefect.io"
+  name        = "My Imported Account"
+  description = "A cool account"
   settings = {
     allow_public_workspaces = true
     ai_log_summaries        = false
