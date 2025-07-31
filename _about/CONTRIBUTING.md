@@ -42,21 +42,21 @@ Be sure to run `pre-commit install` before starting any development. `pre-commit
 
 ### Building the provider
 
-Anytime you want to test a local change, run the build command, which creates the provider binary in the `./build` folder
+Anytime you want to test a local change, run the build command, which creates the provider binary in the `.build/` folder:
 
 ```shell
-make build
+mise run build
 ```
 
-The binary will be stored at the root of the project under `./build/`.
+The binary will be stored at the root of the project under `.build/`.
 
 If you ever want to start fresh, go ahead and run:
 
 ```shell
-make clean
+mise run clean
 ```
 
-though in general, running `make install` will be sufficient in the course of development.
+though in general, running `mise run build` will be sufficient in the course of development.
 
 ## Testing
 
@@ -67,7 +67,7 @@ There are a few options for running tests depending on the type.
 The following command will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
 
 ```shell
-make test
+mise run test
 ```
 
 ### Terraform acceptance tests
@@ -75,10 +75,10 @@ make test
 The following command will run [Terraform acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests) by prefixing the test run with `TF_ACC=1`.
 
 ```shell
-make testacc
+mise run testacc
 ```
 
-Note that this _does not_ require building the provider binary with `make build`.
+Note that this _does not_ require building the provider binary with `mise run build`.
 
 Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account.
 
@@ -91,7 +91,7 @@ export PREFECT_API_URL=https://api.prefect.cloud
 export PREFECT_API_KEY=<secret>
 export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 
-make testacc
+mise run testacc
 ```
 
 All acceptance tests run in an ephemeral Prefect workspace, except tests for Prefect workspaces and accounts.
@@ -129,7 +129,7 @@ To ensure that `terraform` commands use the locally-built binary, we use [develo
 First, build the binary:
 
 ```bash
-make build
+mise run build
 ```
 
 Note: you will need to build the binary each time you change the source code.
@@ -137,7 +137,7 @@ Note: you will need to build the binary each time you change the source code.
 Set up the test directory by running:
 
 ```bash
-make dev-new resource=<resource name>
+mise run dev-new <resource name>
 ```
 
 This will:
@@ -156,7 +156,7 @@ $ terraform plan
 │ Warning: Provider development overrides are in effect
 │
 │ The following provider development overrides are set in the CLI configuration:
-│  - prefecthq/prefect in ../../build
+│  - prefecthq/prefect in ../../.build
 ```
 
 You can then edit the `<resource name>.tf` file with your desired configuration for testing purposes.
@@ -193,7 +193,7 @@ provider against a local instance of Prefect.
 This provider repository uses the [`tfplugindocs`](https://github.com/hashicorp/terraform-plugin-docs) CLI utility to generate markdown documentation.
 
 ```shell
-make docs
+mise run docs
 ```
 
 The `tfplugindocs` CLI will:
@@ -202,7 +202,7 @@ The `tfplugindocs` CLI will:
 2. Create and populate `.md` files for each page of documentation for the objects mentioned in (1)
 3. Crawl and extract all named examples in `examples/**` + add those HCL configurations into the examples section of each `.md`
 
-**NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `make docs` and push any udpates to the working branch
+**NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `mise run docs` and push any udpates to the working branch
 
 Documentation will be rendered into the `docs/` directory. If you need to add additional
 information to a document page, create a template first. To do this, create a new file under either:
