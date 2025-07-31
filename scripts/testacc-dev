@@ -15,7 +15,7 @@ set -e
 # Log levels are listed here:
 #   https://developer.hashicorp.com/terraform/internals/debugging
 
-vault_entry='op://Platform/Terraform provider acceptance test secrets'
+vault_entry='op://Platform/Terraform Provider - Acceptance Test Secrets'
 
 tests=${1:-""}
 log_level=${2:-"INFO"}
