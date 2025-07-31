@@ -144,8 +144,10 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				},
 			},
 			"billing_email": schema.StringAttribute{
-				Description: "Billing email to apply to the account's Stripe customer",
-				Optional:    true,
+				Description:        "Billing email to apply to the account's Stripe customer",
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+				Optional:           true,
+				Computed:           true,
 			},
 			"domain_names": schema.ListAttribute{
 				Description: "The list of domain names for enabling SSO in Prefect Cloud.",
@@ -283,11 +285,10 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
-		Name:         plan.Name.ValueString(),
-		Handle:       plan.Handle.ValueString(),
-		Location:     plan.Location.ValueStringPointer(),
-		Link:         plan.Link.ValueStringPointer(),
-		BillingEmail: plan.BillingEmail.ValueStringPointer(),
+		Name:     plan.Name.ValueString(),
+		Handle:   plan.Handle.ValueString(),
+		Location: plan.Location.ValueStringPointer(),
+		Link:     plan.Link.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Account", "update", err))

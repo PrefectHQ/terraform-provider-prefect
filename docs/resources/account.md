@@ -41,7 +41,7 @@ resource "prefect_account" "example" {
 
 ### Optional
 
-- `billing_email` (String) Billing email to apply to the account's Stripe customer
+- `billing_email` (String, Deprecated) Billing email to apply to the account's Stripe customer
 - `domain_names` (List of String) The list of domain names for enabling SSO in Prefect Cloud.
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
