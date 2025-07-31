@@ -24,14 +24,15 @@ quiet = true
 [tasks.build]
 description = "Build the provider binary"
 run = [
-  "mkdir -p build/",
-  "go build -o build/terraform-provider-prefect"
+  "mkdir -p .build/",
+  "go build -o .build/terraform-provider-prefect",
 ]
-sources = ["internal", "tools", "go.mod", "go.sum", "main.go", ".mise.toml"]
+sources = ["internal/**/*.go", "tools/**/*.go", "main.go", "go.mod", "go.sum", ".mise.toml"]
+outputs = [".build/terraform-provider-prefect"]
 
 [tasks.clean]
 description = "Clean up built artifacts"
-run = "rm -vrf build/"
+run = "rm -vrf .build/"
 
 [tasks.dev-clean]
 description = "Clean up dev artifacts"

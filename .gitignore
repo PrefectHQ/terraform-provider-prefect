@@ -9,6 +9,7 @@ terraform.tfstate.backup
 local.tfvars
 
 # Built artifacts
+.build/*
 build/*
 
 .envrc

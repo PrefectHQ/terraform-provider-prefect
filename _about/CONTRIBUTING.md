@@ -42,13 +42,13 @@ Be sure to run `pre-commit install` before starting any development. `pre-commit
 
 ### Building the provider
 
-Anytime you want to test a local change, run the build command, which creates the provider binary in the `./build` folder
+Anytime you want to test a local change, run the build command, which creates the provider binary in the `.build/` folder:
 
 ```shell
 mise run build
 ```
 
-The binary will be stored at the root of the project under `./build/`.
+The binary will be stored at the root of the project under `.build/`.
 
 If you ever want to start fresh, go ahead and run:
 
@@ -156,7 +156,7 @@ $ terraform plan
 │ Warning: Provider development overrides are in effect
 │
 │ The following provider development overrides are set in the CLI configuration:
-│  - prefecthq/prefect in ../../build
+│  - prefecthq/prefect in ../../.build
 ```
 
 You can then edit the `<resource name>.tf` file with your desired configuration for testing purposes.
