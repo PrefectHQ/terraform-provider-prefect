@@ -29,6 +29,10 @@ run = [
   "mkdir -p .build/",
   "go build -o .build/terraform-provider-prefect",
 ]
+run_windows = [
+  "mkdir -p .build",
+  "go build -o .build\\terraform-provider-prefect",
+] # this will typically only be relevant in CI, where it otherwise reports "incorrect syntax"
 sources = ["internal/**/*.go", "tools/**/*.go", "main.go", "go.mod", "go.sum", ".mise.toml"]
 outputs = [".build/terraform-provider-prefect"]
 
@@ -51,6 +55,7 @@ run = "golangci-lint run"
 alias = "t"
 description = "Run automated unit tests ({{vars.helper_tests_arg}})"
 run = 'gotestsum --max-fails=50 ./... -run {{arg(name="tests", default="")}}'
+run_windows = 'gotestsum --max-fails=50 ./...'
 
 [tasks.testacc]
 alias = "ta"
