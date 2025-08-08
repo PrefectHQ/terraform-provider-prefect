@@ -4,14 +4,14 @@ provider_installation {
   # This disables the version and checksum verifications for this provider and
   # forces Terraform to look for the provider plugin in the given directory.
   dev_overrides {
-    # Retrieve the provider binary from the `build/` directory
+    # Retrieve the provider binary from the `.build/` directory
     # in the repository root. This binary is created by running
-    # `make build`.
+    # `mise run build`.
     #
     # This file will be referenced from `./dev/<resource>`, which is
-    # created by running `make dev-new` and providing a resource name.
-    "prefecthq/prefect" = "../../build/"
-    "registry.terraform.io/prefecthq/prefect" = "../../build/"
+    # created by running `mise run dev-new <resource name>`.
+    "prefecthq/prefect" = "../../.build/"
+    "registry.terraform.io/prefecthq/prefect" = "../../.build/"
   }
 
   # For all other providers, install them directly from their origin provider

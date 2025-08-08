@@ -31,7 +31,7 @@ jobs:
         with:
           install_args: terraform
       - name: Run sweeper tests
-        run: make testacc-sweepers
+        run: mise run testacc-sweepers
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}

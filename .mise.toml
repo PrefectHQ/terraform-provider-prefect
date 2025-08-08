@@ -10,6 +10,96 @@ gotestsum = "1.12.3"
 pre-commit = "4.2.0"
 terraform = "1.12.2"
 
+[vars]
+helper_tests_arg='specify tests as an argument: mise run <task> "TestAccResource_flow"'
+
+[tasks.default]
+description = "List available tasks"
+alias = "h"
+run = [
+  "mise tasks",
+  "printf '\nRun `mise task info <task>` for more information on each task.'"
+]
+quiet = true
+
+[tasks.build]
+description = "Build the provider binary"
+alias = "b"
+run = [
+  "mkdir -p .build/",
+  "go build -o .build/terraform-provider-prefect",
+]
+run_windows = [
+  "mkdir -p .build",
+  "go build -o .build\\terraform-provider-prefect",
+] # this will typically only be relevant in CI, where it otherwise reports "incorrect syntax"
+sources = ["internal/**/*.go", "tools/**/*.go", "main.go", "go.mod", "go.sum", ".mise.toml"]
+outputs = [".build/terraform-provider-prefect"]
+
+[tasks.clean]
+alias = "c"
+description = "Clean up built artifacts"
+run = "rm -vrf .build/"
+
+[tasks.dev-clean]
+alias = "dc"
+description = "Clean up dev artifacts"
+run = "rm -vrf dev/"
+
+[tasks.lint]
+alias = "l"
+description = "Run static code analysis"
+run = "golangci-lint run"
+
+[tasks.test]
+alias = "t"
+description = "Run automated unit tests ({{vars.helper_tests_arg}})"
+run = 'gotestsum --max-fails=50 ./... -run {{arg(name="tests", default="")}}'
+run_windows = 'gotestsum --max-fails=50 ./...'
+
+[tasks.testacc]
+alias = "ta"
+description = "Run acceptance tests against real infrastructure ({{vars.helper_tests_arg}})"
+run = 'TF_ACC=1 mise run test'
+
+[tasks.testacc-dev]
+alias = "tad"
+description = "Run automated acceptance tests from a local machine ({{vars.helper_tests_arg}})"
+run = 'scripts/testacc-dev {{arg(name="tests", default="")}} {{arg(name="log_level", default="")}} {{arg(name="sweep",default="")}}'
+
+[tasks.testacc-dev-user]
+alias = "tadu"
+description = "Run automated acceptance tests for user-related resources from a local machine"
+file = 'scripts/testacc-dev-user'
+
+[tasks.testacc-oss]
+alias = "tao"
+description = "Run automated acceptance tests for Prefect OSS"
+run = [
+  "docker compose up -d",
+  './scripts/testacc-oss {{arg(name="tests", default="")}}',
+  "docker compose down"
+]
+
+[tasks.testacc-sweepers]
+alias = "tas"
+description = "Run automated acceptance test sweepers"
+run = "go test ./internal/sweep -v -sweep=all"
+
+[tasks.docs]
+alias = "d"
+description = "Build Terraform documentation"
+run = [
+  "rm -rf docs/",
+  "mkdir docs/",
+  "tfplugindocs generate --rendered-provider-name Prefect --provider-name prefect",
+]
+
+[tasks.dev-new]
+alias = "dn"
+description = "Creates a new dev testfile"
+run = 'sh create-dev-testfile.sh {{arg(name="resource")}} {{arg(name="resourcename",default="")}}'
+
 [settings]
 # Enable experimental mode to support installing
 # specific go binaries by URL, for those that are
