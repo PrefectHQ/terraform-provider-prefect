@@ -56,6 +56,8 @@ resource "prefect_account_member" "test" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # prefect_account_member resources can be imported by the email address
 terraform import prefect_account_member.my_account_member marvin@prefect.io

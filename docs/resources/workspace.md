@@ -45,6 +45,8 @@ resource "prefect_workspace" "example" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Workspaces can be imported via `handle/workspace-handle`
 terraform import prefect_workspace.example handle/workspace-handle

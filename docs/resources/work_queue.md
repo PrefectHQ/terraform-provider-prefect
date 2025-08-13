@@ -69,6 +69,8 @@ resource "prefect_work_queue" "example" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Work Queues can be imported using work_pool_name,work_queue_name,workspace_id
 terraform import prefect_work_queue.example kubernetes-work-pool,my-work-queue,00000000-0000-0000-0000-000000000000

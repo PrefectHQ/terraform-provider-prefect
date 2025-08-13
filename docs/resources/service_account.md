@@ -106,6 +106,8 @@ resource "prefect_service_account" "example_old_key_expires_later" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Service Accounts can be imported by name in the form `name/my-bot-name`
 terraform import prefect_service_account.example name/my-bot-name

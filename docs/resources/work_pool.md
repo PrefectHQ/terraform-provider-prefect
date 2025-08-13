@@ -107,6 +107,8 @@ resource "prefect_work_pool" "example_with_datasource_prefect_managed" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Work Pools can be imported using the name
 terraform import prefect_work_pool.example kubernetes-work-pool

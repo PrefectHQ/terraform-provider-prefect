@@ -137,6 +137,8 @@ output "endpoints" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Webhooks can be imported using the webhook_id
 terraform import prefect_webhook.example 11111111-1111-1111-1111-111111111111

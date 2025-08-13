@@ -71,6 +71,8 @@ if __name__ == "__main__":
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect task run concurrency limits can be imported via task_run_concurrency_limit_id
 terraform import prefect_task_run_concurrency_limit.example 00000000-0000-0000-0000-000000000000

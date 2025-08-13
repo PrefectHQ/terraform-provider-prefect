@@ -58,6 +58,8 @@ resource "prefect_global_concurrency_limit" "test" {
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect global concurrency limits can be imported via global_concurrency_limit_id
 terraform import prefect_global_concurrency_limit.example 00000000-0000-0000-0000-000000000000
