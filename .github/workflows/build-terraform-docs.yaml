@@ -29,7 +29,7 @@ jobs:
       - name: Install tool dependencies
         uses: jdx/mise-action@v2
       - name: Build Terraform Docs
-        run: make docs
+        run: mise run docs
       - name: Commit changes
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}

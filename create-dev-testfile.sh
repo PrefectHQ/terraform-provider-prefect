@@ -6,7 +6,7 @@ main() {
   name=$2
 
   if [[ -z $resource ]]; then
-    echo "No resource provided. Pass one in through \`make dev-new resource=<resource>\`"
+    echo "No resource provided. Pass one in through \`mise run dev-new <resource name>\`"
     exit 1
   fi
 
