@@ -70,6 +70,8 @@ resource "prefect_user" "marvin" {
 
 Import is supported using the following syntax:
 
+The [` + "`" + `terraform import` + "`" + ` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # Prefect Users can be imported by ID, which can be found in the UI
 # by clicking the dropdown menu in the top left corner and then clicking "My Profile".
