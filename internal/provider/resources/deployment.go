@@ -217,6 +217,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"paused": schema.BoolAttribute{
 				Description: "Whether or not the deployment is paused.",
