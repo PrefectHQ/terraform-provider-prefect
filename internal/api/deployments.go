@@ -147,11 +147,22 @@ type PullStepPullFrom struct {
 	Folder *string `json:"folder,omitempty"`
 }
 
+// PullStepPullFromAzure is a representation of a pull step that pulls from Azure Blob Storage.
+type PullStepPullFromAzure struct {
+	PullStepCommon
+
+	// The name of the container where files are stored.
+	Container *string `json:"container,omitempty"`
+
+	// The folder in the container where files are stored.
+	Folder *string `json:"folder,omitempty"`
+}
+
 // PullStep contains instructions for preparing your flows for a deployment run.
 type PullStep struct {
 	PullStepGitClone                 *PullStepGitClone            `json:"prefect.deployments.steps.git_clone,omitempty"`
 	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory `json:"prefect.deployments.steps.set_working_directory,omitempty"`
-	PullStepPullFromAzureBlobStorage *PullStepPullFrom            `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
+	PullStepPullFromAzureBlobStorage *PullStepPullFromAzure       `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
 	PullStepPullFromGCS              *PullStepPullFrom            `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
 	PullStepPullFromS3               *PullStepPullFrom            `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
 }

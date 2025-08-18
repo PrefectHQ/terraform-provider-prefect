@@ -121,6 +121,9 @@ type PullStepModel struct {
 	// The name of the bucket where files are stored.
 	Bucket types.String `tfsdk:"bucket"`
 
+	// The name of the container where files are stored (Azure only).
+	Container types.String `tfsdk:"container"`
+
 	// The folder in the bucket where files are stored.
 	Folder types.String `tfsdk:"folder"`
 }
@@ -370,6 +373,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							"branch":             types.StringType,
 							"access_token":       types.StringType,
 							"bucket":             types.StringType,
+							"container":          types.StringType,
 							"folder":             types.StringType,
 							"include_submodules": types.BoolType,
 						},
@@ -427,12 +431,17 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Validators:  boolConflictsWithValidators(nonGitCloneAttributes),
 						},
 						"bucket": schema.StringAttribute{
-							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
+							Description: "(For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
+						},
+						"container": schema.StringAttribute{
+							Description: "(For type 'pull_from_azure_blob_storage') The name of the container where files are stored.",
 							Optional:    true,
 							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
 						"folder": schema.StringAttribute{
-							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
+							Description: "(For type 'pull_from_*') The folder in the bucket/container where files are stored.",
 							Optional:    true,
 							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
@@ -481,7 +490,11 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 			}
 
 		case "pull_from_azure_blob_storage":
-			apiPullStep.PullStepPullFromAzureBlobStorage = &pullStepPullFrom
+			apiPullStep.PullStepPullFromAzureBlobStorage = &api.PullStepPullFromAzure{
+				PullStepCommon: pullStepCommon,
+				Container:      tfPullStep.Container.ValueStringPointer(),
+				Folder:         tfPullStep.Folder.ValueStringPointer(),
+			}
 
 		case "pull_from_gcs":
 			apiPullStep.PullStepPullFromGCS = &pullStepPullFrom
@@ -530,7 +543,7 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 		// PullStepPullFromAzureBlobStorage
 		if pullStep.PullStepPullFromAzureBlobStorage != nil {
 			pullStepModel.Type = types.StringValue("pull_from_azure_blob_storage")
-			pullStepModel.Bucket = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Bucket)
+			pullStepModel.Container = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Container)
 			pullStepModel.Folder = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Folder)
 
 			// common fields
@@ -1008,6 +1021,7 @@ var (
 
 	pullFromAttributes = []string{
 		"bucket",
+		"container",
 		"folder",
 	}
 
