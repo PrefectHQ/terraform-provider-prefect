@@ -42,4 +42,4 @@ jobs:
         run: docker compose up -d
 
       - name: Run acceptance tests - OSS
-        run: make testacc-oss
+        run: mise run testacc-oss
