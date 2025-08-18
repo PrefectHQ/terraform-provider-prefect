@@ -157,6 +157,7 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 // Schema defines the schema for the resource.
+// nolint:maintidx,gocyclo // this schema is complex, and we can refactor it later
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
@@ -207,13 +208,19 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Name of the workspace",
+				Description: "Name of the deployment",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"flow_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"paused": schema.BoolAttribute{
 				Description: "Whether or not the deployment is paused.",
