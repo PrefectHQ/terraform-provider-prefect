@@ -105,7 +105,7 @@ resource "prefect_deployment" "deployment" {
 ### Required
 
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
-- `name` (String) Name of the workspace
+- `name` (String) Name of the deployment
 
 ### Optional
 

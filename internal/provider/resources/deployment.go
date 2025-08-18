@@ -207,8 +207,11 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Name of the workspace",
+				Description: "Name of the deployment",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"flow_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
