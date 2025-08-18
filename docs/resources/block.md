@@ -157,6 +157,8 @@ For more information on the `$ref` syntax definition, see the
 
 Import is supported using the following syntax:
 
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
 ```shell
 # prefect_block resources can be imported by the block_id
 terraform import prefect_block.my_block 00000000-0000-0000-0000-000000000000
