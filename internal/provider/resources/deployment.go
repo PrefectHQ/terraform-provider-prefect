@@ -157,6 +157,7 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 // Schema defines the schema for the resource.
+// nolint:maintidx,gocyclo // this schema is complex, and we can refactor it later
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
 
