@@ -86,6 +86,12 @@ resource "prefect_deployment" "deployment" {
       credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
+      type      = "pull_from_azure_blob_storage",
+      requires  = "prefect-azure[blob_storage]"
+      container = "my-container",
+      folder    = "my-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
@@ -154,10 +160,11 @@ Optional:
 
 - `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
-- `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `bucket` (String) (For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.
+- `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
 - `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
-- `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `folder` (String) (For type 'pull_from_*') The folder in the bucket/container where files are stored.
 - `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
 - `requires` (String) A list of Python package dependencies.

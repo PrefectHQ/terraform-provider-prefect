@@ -126,8 +126,8 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 			{{- with .PullStepPullFromAzureBlobStorage }}
 			type = "pull_from_azure_blob_storage"
-			{{-   if .Bucket }}
-			bucket = "{{.Bucket}}"
+			{{-   if .Container }}
+			container = "{{.Container}}"
 			{{-   end}}
 			{{-   if .Folder }}
 			folder = "{{.Folder}}"
@@ -269,6 +269,16 @@ func TestAccResource_deployment(t *testing.T) {
 					Branch:            ptr.To("main"),
 					AccessToken:       ptr.To("123abc"),
 					IncludeSubmodules: ptr.To(true),
+				},
+			},
+			{
+				PullStepPullFromAzureBlobStorage: &api.PullStepPullFromAzure{
+					Container: ptr.To("my-container"),
+					Folder:    ptr.To("my-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("azure-credentials"),
+						Requires:    ptr.To("prefect-azure[blob_storage]"),
+					},
 				},
 			},
 			{

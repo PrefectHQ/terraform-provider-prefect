@@ -66,6 +66,12 @@ resource "prefect_deployment" "deployment" {
       credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
+      type      = "pull_from_azure_blob_storage",
+      requires  = "prefect-azure[blob_storage]"
+      container = "my-container",
+      folder    = "my-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
