@@ -30,12 +30,12 @@ jobs:
     steps:
       - if: |
           github.event_name == 'pull_request_target'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.pull_request.head.sha }}
       - if: |
           github.event_name == 'push'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
@@ -45,7 +45,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Install tool dependencies
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v3
         with:
           install_args: gotestsum terraform
 

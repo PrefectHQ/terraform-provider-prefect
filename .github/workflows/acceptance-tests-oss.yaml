@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
@@ -31,7 +31,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Install tool dependencies
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v3
         with:
           install_args: gotestsum terraform
 
