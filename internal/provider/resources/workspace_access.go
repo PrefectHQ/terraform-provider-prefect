@@ -72,8 +72,8 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 				"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.\n"+
 				"\n"+
 				"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{

@@ -95,8 +95,8 @@ Use this data source read down the pre-defined Roles, to manage User and Service
 <br>
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 `,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Attributes: workspaceRoleAttributes,
 	}
