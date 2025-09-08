@@ -4,7 +4,7 @@ page_title: "prefect_user Resource - prefect"
 subcategory: ""
 description: |-
   The resource user represents a Prefect User.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_user (Resource)
@@ -12,7 +12,7 @@ description: |-
 
 The resource `user` represents a Prefect User.
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 
 A User is an individual user of Prefect Cloud. Use this resource to manage a

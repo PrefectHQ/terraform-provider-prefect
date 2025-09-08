@@ -8,7 +8,7 @@ description: |-
   Use this data source to obtain Workspace IDs
   
   For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_workspace (Data Source)
@@ -20,7 +20,7 @@ Use this data source to obtain Workspace IDs
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces#manage-workspaces).
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 

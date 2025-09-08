@@ -6,7 +6,7 @@ description: |-
   The resource account_member represents a member of an account. It is used to manage the member's account role, such as Member or Admin.
   This resource cannot be created by Terraform because memberships are created when a user accepts an invitation to join an account. Because of this limitation, first import the resource and then the attributes can be updated as needed.
   For more information, see manage users https://docs.prefect.io/v3/manage/cloud/manage-users
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_account_member (Resource)
@@ -15,7 +15,7 @@ The resource `account_member` represents a member of an account. It is used to m
 This resource cannot be created by Terraform because memberships are created when a user accepts an invitation to join an account. Because of this limitation, first import the resource and then the attributes can be updated as needed.
 For more information, see [manage users](https://docs.prefect.io/v3/manage/cloud/manage-users)
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 

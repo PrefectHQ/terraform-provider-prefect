@@ -5,7 +5,7 @@ subcategory: ""
 description: |-
   The resource account represents a Prefect Cloud account. It is used to manage the account's attributes, such as the name, handle, and location.
   Note that this resource can only be imported, as account creation is not currently supported via the API. Additionally, be aware that account deletion is possible once it is imported, so be attentive to any destroy plans or unlink the resource through terraform state rm.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_account (Resource)
@@ -14,7 +14,7 @@ The resource `account` represents a Prefect Cloud account. It is used to manage 
 
 Note that this resource can only be imported, as account creation is not currently supported via the API. Additionally, be aware that account deletion is possible once it is imported, so be attentive to any destroy plans or unlink the resource through `terraform state rm`.
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 
