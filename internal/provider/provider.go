@@ -170,32 +170,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// Load profile authentication as fallback
 	profileAuth, err := LoadProfileAuth(ctx, profileName, profileFilePath)
 	if err != nil {
-		if profileFilePath != "" {
-			if profileName != "" {
-				resp.Diagnostics.AddWarning(
-					"Failed to load specified Prefect profile",
-					fmt.Sprintf("Could not load Prefect profile '%s' from %s: %s", profileName, profileFilePath, err),
-				)
-			} else {
-				resp.Diagnostics.AddWarning(
-					"Failed to load Prefect profile",
-					fmt.Sprintf("Could not load Prefect profile from %s: %s", profileFilePath, err),
-				)
-			}
-		} else {
-			if profileName != "" {
-				resp.Diagnostics.AddWarning(
-					"Failed to load specified Prefect profile",
-					fmt.Sprintf("Could not load Prefect profile '%s' from ~/.prefect/profiles.toml: %s", profileName, err),
-				)
-			} else {
-				resp.Diagnostics.AddWarning(
-					"Failed to load Prefect profile",
-					fmt.Sprintf("Could not load Prefect profile from ~/.prefect/profiles.toml: %s", err),
-				)
-			}
-		}
-
+		helpers.AddProfileWarning(resp, profileName, profileFilePath, err)
 		// Set profileAuth to an empty model if error occurred
 		profileAuth = &PrefectProviderModel{}
 	}

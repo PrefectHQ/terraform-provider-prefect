@@ -1,4 +1,4 @@
-package provider
+package provider_test
 
 import (
 	"context"
@@ -6,18 +6,21 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
 func TestProviderWithProfileIntegration(t *testing.T) {
+	t.Parallel()
+
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	prefectDir := filepath.Join(tempDir, ".prefect")
-	err := os.MkdirAll(prefectDir, 0755)
+	err := os.MkdirAll(prefectDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a test profiles.toml file
@@ -32,7 +35,7 @@ PREFECT_CSRF_ENABLED = "true"
 `
 
 	profilesPath := filepath.Join(prefectDir, "profiles.toml")
-	err = os.WriteFile(profilesPath, []byte(profilesContent), 0644)
+	err = os.WriteFile(profilesPath, []byte(profilesContent), 0o600)
 	require.NoError(t, err)
 
 	// Mock the user home directory
@@ -43,18 +46,20 @@ PREFECT_CSRF_ENABLED = "true"
 	os.Setenv("HOME", tempDir)
 
 	// Test that the provider can be created
-	p := New()
+	p := provider.New()
 	assert.NotNil(t, p)
 
 	// Test that the provider implements the provider.Provider interface
-	var _ provider.Provider = p
+	var _ = p
 }
 
 func TestProviderProfilePrecedence(t *testing.T) {
+	t.Parallel()
+
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 	prefectDir := filepath.Join(tempDir, ".prefect")
-	err := os.MkdirAll(prefectDir, 0755)
+	err := os.MkdirAll(prefectDir, 0o755)
 	require.NoError(t, err)
 
 	// Create a test profiles.toml file
@@ -67,7 +72,7 @@ PREFECT_API_KEY = "profile-api-key"
 `
 
 	profilesPath := filepath.Join(prefectDir, "profiles.toml")
-	err = os.WriteFile(profilesPath, []byte(profilesContent), 0644)
+	err = os.WriteFile(profilesPath, []byte(profilesContent), 0o600)
 	require.NoError(t, err)
 
 	// Mock the user home directory
@@ -80,7 +85,7 @@ PREFECT_API_KEY = "profile-api-key"
 	os.Setenv("HOME", tempDir)
 
 	// Test 1: Profile should be used when no environment variables are set
-	auth, err := LoadProfileAuth(context.Background(), "", "")
+	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
 	require.NoError(t, err)
 	assert.Equal(t, types.StringValue("https://profile-api.prefect.cloud/api"), auth.Endpoint)
 	assert.Equal(t, types.StringValue("profile-api-key"), auth.APIKey)
@@ -91,7 +96,7 @@ PREFECT_API_KEY = "profile-api-key"
 	os.Setenv("PREFECT_API_KEY", "env-api-key")
 
 	// Reload profile (in real usage, this would be handled by the provider)
-	auth, err = LoadProfileAuth(context.Background(), "", "")
+	auth, err = provider.LoadProfileAuth(context.Background(), "", "")
 	require.NoError(t, err)
 
 	// Profile values should still be the same

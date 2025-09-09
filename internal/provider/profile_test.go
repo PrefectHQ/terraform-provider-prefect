@@ -1,4 +1,4 @@
-package provider
+package provider_test
 
 import (
 	"context"
@@ -10,13 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
 
 func TestLoadPrefectProviderModel(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name            string
 		profilesContent string
-		expectedAuth    *PrefectProviderModel
+		expectedAuth    *provider.PrefectProviderModel
 		expectError     bool
 	}{
 		{
@@ -30,7 +34,7 @@ PREFECT_API_KEY = "test-api-key"
 PREFECT_API_AUTH_STRING = "test-basic-auth"
 PREFECT_CSRF_ENABLED = "true"
 `,
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint:     types.StringValue("https://api.prefect.cloud/api/accounts/123e4567-e89b-12d3-a456-426614174000/workspaces/987fcdeb-51a2-43d1-b123-456789abcdef"),
 				APIKey:       types.StringValue("test-api-key"),
 				BasicAuthKey: types.StringValue("test-basic-auth"),
@@ -47,7 +51,7 @@ active = "minimal-profile"
 PREFECT_API_URL = "https://api.prefect.cloud/api"
 PREFECT_API_KEY = "minimal-key"
 `,
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint: types.StringValue("https://api.prefect.cloud/api"),
 				APIKey:   types.StringValue("minimal-key"),
 			},
@@ -59,7 +63,7 @@ PREFECT_API_KEY = "minimal-key"
 [profiles.test-profile]
 PREFECT_API_URL = "https://api.prefect.cloud/api"
 `,
-			expectedAuth: &PrefectProviderModel{},
+			expectedAuth: &provider.PrefectProviderModel{},
 			expectError:  false,
 		},
 		{
@@ -86,15 +90,17 @@ invalid toml content
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a temporary directory for the test
 			tempDir := t.TempDir()
 			prefectDir := filepath.Join(tempDir, ".prefect")
-			err := os.MkdirAll(prefectDir, 0755)
+			err := os.MkdirAll(prefectDir, 0o755)
 			require.NoError(t, err)
 
 			// Write the profiles content to a temporary file
 			profilesPath := filepath.Join(prefectDir, "profiles.toml")
-			err = os.WriteFile(profilesPath, []byte(tt.profilesContent), 0644)
+			err = os.WriteFile(profilesPath, []byte(tt.profilesContent), 0o600)
 			require.NoError(t, err)
 
 			// Mock the user home directory
@@ -105,7 +111,7 @@ invalid toml content
 			os.Setenv("HOME", tempDir)
 
 			// Test the function
-			auth, err := LoadProfileAuth(context.Background(), "", "")
+			auth, err := provider.LoadProfileAuth(context.Background(), "", "")
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -119,6 +125,8 @@ invalid toml content
 }
 
 func TestLoadPrefectProviderModel_NoProfilesFile(t *testing.T) {
+	t.Parallel()
+
 	// Create a temporary directory without a profiles file
 	tempDir := t.TempDir()
 
@@ -130,21 +138,23 @@ func TestLoadPrefectProviderModel_NoProfilesFile(t *testing.T) {
 	os.Setenv("HOME", tempDir)
 
 	// Test the function
-	auth, err := LoadProfileAuth(context.Background(), "", "")
+	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
 
 	assert.NoError(t, err)
-	assert.Equal(t, &PrefectProviderModel{}, auth)
+	assert.Equal(t, &provider.PrefectProviderModel{}, auth)
 }
 
 func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
+	t.Parallel()
+
 	// Create a temporary directory with an empty profiles file
 	tempDir := t.TempDir()
 	prefectDir := filepath.Join(tempDir, ".prefect")
-	err := os.MkdirAll(prefectDir, 0755)
+	err := os.MkdirAll(prefectDir, 0o755)
 	require.NoError(t, err)
 
 	profilesPath := filepath.Join(prefectDir, "profiles.toml")
-	err = os.WriteFile(profilesPath, []byte(""), 0644)
+	err = os.WriteFile(profilesPath, []byte(""), 0o600)
 	require.NoError(t, err)
 
 	// Mock the user home directory
@@ -155,18 +165,20 @@ func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
 	os.Setenv("HOME", tempDir)
 
 	// Test the function
-	auth, err := LoadProfileAuth(context.Background(), "", "")
+	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
 
 	assert.NoError(t, err)
-	assert.Equal(t, &PrefectProviderModel{}, auth)
+	assert.Equal(t, &provider.PrefectProviderModel{}, auth)
 }
 
 func TestLoadPrefectProviderModel_SpecificProfile(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name            string
 		profilesContent string
 		profileName     string
-		expectedAuth    *PrefectProviderModel
+		expectedAuth    *provider.PrefectProviderModel
 		expectError     bool
 	}{
 		{
@@ -183,7 +195,7 @@ PREFECT_API_URL = "https://api.prefect.cloud/api/accounts/123e4567-e89b-12d3-a45
 PREFECT_API_KEY = "prod-key"
 `,
 			profileName: "prod-profile",
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint: types.StringValue("https://api.prefect.cloud/api/accounts/123e4567-e89b-12d3-a456-426614174000/workspaces/987fcdeb-51a2-43d1-b123-456789abcdef"),
 				APIKey:   types.StringValue("prod-key"),
 			},
@@ -211,7 +223,7 @@ PREFECT_API_URL = "https://active-api.prefect.cloud/api"
 PREFECT_API_KEY = "active-key"
 `,
 			profileName: "",
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint: types.StringValue("https://active-api.prefect.cloud/api"),
 				APIKey:   types.StringValue("active-key"),
 			},
@@ -221,15 +233,17 @@ PREFECT_API_KEY = "active-key"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a temporary directory for the test
 			tempDir := t.TempDir()
 			prefectDir := filepath.Join(tempDir, ".prefect")
-			err := os.MkdirAll(prefectDir, 0755)
+			err := os.MkdirAll(prefectDir, 0o755)
 			require.NoError(t, err)
 
 			// Write the profiles content to a temporary file
 			profilesPath := filepath.Join(prefectDir, "profiles.toml")
-			err = os.WriteFile(profilesPath, []byte(tt.profilesContent), 0644)
+			err = os.WriteFile(profilesPath, []byte(tt.profilesContent), 0o600)
 			require.NoError(t, err)
 
 			// Mock the user home directory
@@ -240,7 +254,7 @@ PREFECT_API_KEY = "active-key"
 			os.Setenv("HOME", tempDir)
 
 			// Test the function
-			auth, err := LoadProfileAuth(context.Background(), tt.profileName, "")
+			auth, err := provider.LoadProfileAuth(context.Background(), tt.profileName, "")
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -254,12 +268,14 @@ PREFECT_API_KEY = "active-key"
 }
 
 func TestLoadPrefectProviderModel_CustomProfileFile(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name            string
 		profilesContent string
 		profileName     string
 		profileFilePath string
-		expectedAuth    *PrefectProviderModel
+		expectedAuth    *provider.PrefectProviderModel
 		expectError     bool
 	}{
 		{
@@ -273,7 +289,7 @@ PREFECT_API_KEY = "custom-key"
 `,
 			profileName:     "",
 			profileFilePath: "/tmp/custom-profiles.toml",
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint: types.StringValue("https://custom-api.prefect.cloud/api/accounts/123e4567-e89b-12d3-a456-426614174000/workspaces/987fcdeb-51a2-43d1-b123-456789abcdef"),
 				APIKey:   types.StringValue("custom-key"),
 			},
@@ -293,7 +309,7 @@ PREFECT_API_KEY = "custom-key"
 `,
 			profileName:     "custom-profile",
 			profileFilePath: "/tmp/custom-profiles.toml",
-			expectedAuth: &PrefectProviderModel{
+			expectedAuth: &provider.PrefectProviderModel{
 				Endpoint: types.StringValue("https://custom-api.prefect.cloud/api"),
 				APIKey:   types.StringValue("custom-key"),
 			},
@@ -304,7 +320,7 @@ PREFECT_API_KEY = "custom-key"
 			profilesContent: "",
 			profileName:     "",
 			profileFilePath: "/nonexistent/path/profiles.toml",
-			expectedAuth:    &PrefectProviderModel{},
+			expectedAuth:    &provider.PrefectProviderModel{},
 			expectError:     false,
 		},
 		{
@@ -322,6 +338,8 @@ invalid toml content
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a temporary directory for the test
 			tempDir := t.TempDir()
 
@@ -337,12 +355,12 @@ invalid toml content
 
 			// Write the profiles content to the custom file if it exists
 			if tt.profilesContent != "" && customProfilePath != "" {
-				err := os.WriteFile(customProfilePath, []byte(tt.profilesContent), 0644)
+				err := os.WriteFile(customProfilePath, []byte(tt.profilesContent), 0o600)
 				require.NoError(t, err)
 			}
 
 			// Test the function
-			auth, err := LoadProfileAuth(context.Background(), tt.profileName, customProfilePath)
+			auth, err := provider.LoadProfileAuth(context.Background(), tt.profileName, customProfilePath)
 
 			if tt.expectError {
 				assert.Error(t, err)

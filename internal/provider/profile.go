@@ -10,10 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// ProfileConfig represents the configuration for a single Prefect profile
+// ProfileConfig represents the configuration for a single Prefect profile.
 type ProfileConfig map[string]string
 
-// ProfilesConfig represents the entire profiles.toml file structure
+// ProfilesConfig represents the entire profiles.toml file structure.
 type ProfilesConfig struct {
 	ActiveProfile string                   `toml:"active"`
 	Profiles      map[string]ProfileConfig `toml:"profiles"`
@@ -49,11 +49,12 @@ func LoadProfileAuth(_ context.Context, profileName string, profileFilePath stri
 
 	// Determine which profile to use
 	var targetProfileName string
-	if profileName != "" {
+	switch {
+	case profileName != "":
 		targetProfileName = profileName
-	} else if config.ActiveProfile != "" {
+	case config.ActiveProfile != "":
 		targetProfileName = config.ActiveProfile
-	} else {
+	default:
 		return &PrefectProviderModel{}, nil
 	}
 
@@ -63,6 +64,7 @@ func LoadProfileAuth(_ context.Context, profileName string, profileFilePath stri
 		if profileName != "" {
 			return nil, fmt.Errorf("profile '%s' not found in profiles.toml", profileName)
 		}
+
 		return nil, fmt.Errorf("active profile '%s' not found in profiles.toml", config.ActiveProfile)
 	}
 
@@ -81,7 +83,7 @@ func LoadProfileAuth(_ context.Context, profileName string, profileFilePath stri
 		auth.BasicAuthKey = types.StringValue(basicAuthKey)
 	}
 
-	// TODO: Deprecate PREFECT_BASIC_AUTH_KEY in favor of PREFECT_API_AUTH_STRING
+	// Eventually deprecate PREFECT_BASIC_AUTH_KEY in favor of PREFECT_API_AUTH_STRING.
 	if basicAuthKey, exists := targetProfile["PREFECT_API_AUTH_STRING"]; exists {
 		auth.BasicAuthKey = types.StringValue(basicAuthKey)
 	}
