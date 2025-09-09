@@ -19,6 +19,7 @@ func envFromOS() string {
 	if runtime.GOOS == "windows" {
 		return "USERPROFILE"
 	}
+
 	return "HOME"
 }
 
