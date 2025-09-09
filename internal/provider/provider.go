@@ -88,6 +88,16 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Description: "Default Prefect Cloud Workspace ID.",
 				Optional:    true,
 			},
+			"profile": schema.StringAttribute{
+				Description: "Prefect profile name to use for authentication. If not specified, uses the active profile from `~/.prefect/profiles.toml`." +
+					" This allows you to use a specific profile instead of the active one.",
+				Optional: true,
+			},
+			"profile_file": schema.StringAttribute{
+				Description: "Path to the Prefect profiles file. If not specified, uses the default location `~/.prefect/profiles.toml`." +
+					" This allows you to use a custom profiles file location.",
+				Optional: true,
+			},
 		},
 	}
 }
@@ -146,12 +156,58 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	// Determine which profile and profile file to use
+	var profileName string
+	if !config.Profile.IsNull() {
+		profileName = config.Profile.ValueString()
+	}
+
+	var profileFilePath string
+	if !config.ProfileFile.IsNull() {
+		profileFilePath = config.ProfileFile.ValueString()
+	}
+
+	// Load profile authentication as fallback
+	profileAuth, err := LoadProfileAuth(ctx, profileName, profileFilePath)
+	if err != nil {
+		if profileFilePath != "" {
+			if profileName != "" {
+				resp.Diagnostics.AddWarning(
+					"Failed to load specified Prefect profile",
+					fmt.Sprintf("Could not load Prefect profile '%s' from %s: %s", profileName, profileFilePath, err),
+				)
+			} else {
+				resp.Diagnostics.AddWarning(
+					"Failed to load Prefect profile",
+					fmt.Sprintf("Could not load Prefect profile from %s: %s", profileFilePath, err),
+				)
+			}
+		} else {
+			if profileName != "" {
+				resp.Diagnostics.AddWarning(
+					"Failed to load specified Prefect profile",
+					fmt.Sprintf("Could not load Prefect profile '%s' from ~/.prefect/profiles.toml: %s", profileName, err),
+				)
+			} else {
+				resp.Diagnostics.AddWarning(
+					"Failed to load Prefect profile",
+					fmt.Sprintf("Could not load Prefect profile from ~/.prefect/profiles.toml: %s", err),
+				)
+			}
+		}
+
+		// Set profileAuth to an empty model if error occurred
+		profileAuth = &PrefectProviderModel{}
+	}
+
 	// Extract endpoint from configuration or environment variable.
 	var endpoint string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
 	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
+	} else if !profileAuth.Endpoint.IsNull() {
+		endpoint = profileAuth.Endpoint.ValueString()
 	}
 
 	if endpoint == "" {
@@ -173,6 +229,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiKey = config.APIKey.ValueString()
 	} else if apiKeyEnvVar, ok := os.LookupEnv(envAPIKey); ok {
 		apiKey = apiKeyEnvVar
+	} else if !profileAuth.APIKey.IsNull() {
+		apiKey = profileAuth.APIKey.ValueString()
 	}
 
 	// Extract with basic auth key from configuration or environment variable.
@@ -181,6 +239,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		basicAuthKey = config.BasicAuthKey.ValueString()
 	} else if basicAuthKeyEnvVar, ok := os.LookupEnv(envBasicAuthKey); ok {
 		basicAuthKey = basicAuthKeyEnvVar
+	} else if !profileAuth.BasicAuthKey.IsNull() {
+		basicAuthKey = profileAuth.BasicAuthKey.ValueString()
 	}
 
 	// Extract the Account ID from configuration, the PREFECT_CLOUD_ACCOUNT_ID
@@ -277,8 +337,12 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		csrfEnabled = config.CSRFEnabled.ValueBool()
 	} else if csrfEnabledEnvVar, ok := os.LookupEnv(envCSRFEnabled); ok {
 		csrfEnabled = csrfEnabledEnvVar == "true"
+	} else if !profileAuth.CSRFEnabled.IsNull() {
+		csrfEnabled = profileAuth.CSRFEnabled.ValueBool()
 	}
 
+	ctx = tflog.SetField(ctx, "prefect_profile", profileName)
+	ctx = tflog.SetField(ctx, "prefect_profile_file", profileFilePath)
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
 	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
