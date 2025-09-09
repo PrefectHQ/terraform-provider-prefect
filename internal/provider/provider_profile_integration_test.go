@@ -39,11 +39,12 @@ PREFECT_CSRF_ENABLED = "true"
 	require.NoError(t, err)
 
 	// Mock the user home directory
-	originalHome := os.Getenv("HOME")
+	env := envFromOS()
+	originalHome := os.Getenv(env)
 	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
+		os.Setenv(env, originalHome)
 	})
-	os.Setenv("HOME", tempDir)
+	os.Setenv(env, tempDir)
 
 	// Test that the provider can be created
 	p := provider.New()
@@ -76,13 +77,14 @@ PREFECT_API_KEY = "profile-api-key"
 	require.NoError(t, err)
 
 	// Mock the user home directory
-	originalHome := os.Getenv("HOME")
+	env := envFromOS()
+	originalHome := os.Getenv(env)
 	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
+		os.Setenv(env, originalHome)
 		os.Unsetenv("PREFECT_API_URL")
 		os.Unsetenv("PREFECT_API_KEY")
 	})
-	os.Setenv("HOME", tempDir)
+	os.Setenv(env, tempDir)
 
 	// Test 1: Profile should be used when no environment variables are set
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")

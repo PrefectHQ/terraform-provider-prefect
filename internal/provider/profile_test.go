@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +14,13 @@ import (
 
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider"
 )
+
+func envFromOS() string {
+	if runtime.GOOS == "windows" {
+		return "USERPROFILE"
+	}
+	return "HOME"
+}
 
 func TestLoadPrefectProviderModel(t *testing.T) {
 	t.Parallel()
@@ -104,11 +112,12 @@ invalid toml content
 			require.NoError(t, err)
 
 			// Mock the user home directory
-			originalHome := os.Getenv("HOME")
+			env := envFromOS()
+			originalHome := os.Getenv(env)
 			t.Cleanup(func() {
-				os.Setenv("HOME", originalHome)
+				os.Setenv(env, originalHome)
 			})
-			os.Setenv("HOME", tempDir)
+			os.Setenv(env, tempDir)
 
 			// Test the function
 			auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -131,11 +140,12 @@ func TestLoadPrefectProviderModel_NoProfilesFile(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Mock the user home directory
-	originalHome := os.Getenv("HOME")
+	env := envFromOS()
+	originalHome := os.Getenv(env)
 	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
+		os.Setenv(env, originalHome)
 	})
-	os.Setenv("HOME", tempDir)
+	os.Setenv(env, tempDir)
 
 	// Test the function
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -158,11 +168,12 @@ func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Mock the user home directory
-	originalHome := os.Getenv("HOME")
+	env := envFromOS()
+	originalHome := os.Getenv(env)
 	t.Cleanup(func() {
-		os.Setenv("HOME", originalHome)
+		os.Setenv(env, originalHome)
 	})
-	os.Setenv("HOME", tempDir)
+	os.Setenv(env, tempDir)
 
 	// Test the function
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -247,11 +258,12 @@ PREFECT_API_KEY = "active-key"
 			require.NoError(t, err)
 
 			// Mock the user home directory
-			originalHome := os.Getenv("HOME")
+			env := envFromOS()
+			originalHome := os.Getenv(env)
 			t.Cleanup(func() {
-				os.Setenv("HOME", originalHome)
+				os.Setenv(env, originalHome)
 			})
-			os.Setenv("HOME", tempDir)
+			os.Setenv(env, tempDir)
 
 			// Test the function
 			auth, err := provider.LoadProfileAuth(context.Background(), tt.profileName, "")
