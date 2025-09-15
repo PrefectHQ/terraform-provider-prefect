@@ -4,7 +4,7 @@ fail_fast: false
 repos:
   - repo: local
     hooks:
-      - id: make-docs
+      - id: generate-docs
         name: Terraform Provider Docs
         # only run if these files are modified:
         # - .go files
@@ -12,8 +12,8 @@ repos:
         # - templates/
         # - examples/
         files: ^(.*\.go|docs/.*|templates/.*|examples/.*)$
-        entry: make
-        args: [docs]
+        entry: mise
+        args: [run docs]
         language: system
         pass_filenames: false
 
