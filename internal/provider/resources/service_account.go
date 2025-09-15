@@ -98,6 +98,7 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				"\n"+
 				"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n"+
 				"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
+			helpers.PlanTeam,
 			helpers.PlanPro,
 			helpers.PlanEnterprise,
 		),
