@@ -6,7 +6,7 @@ description: |-
   Get information about multiple Teams.
   
   Use this data source to search for multiple Teams. Defaults to fetching all Teams in the Account.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Enterprise.
 ---
 
 # prefect_teams (Data Source)
@@ -16,7 +16,7 @@ Get information about multiple Teams.
 Use this data source to search for multiple Teams. Defaults to fetching all Teams in the Account.
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Enterprise.
 
 ## Example Usage
 

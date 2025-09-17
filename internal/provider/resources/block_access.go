@@ -69,8 +69,8 @@ All Actors/Teams must first be granted access to the Workspace where the Block r
 
 Leave fields empty to use the default access controls
 `,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{

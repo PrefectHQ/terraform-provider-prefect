@@ -73,8 +73,8 @@ func (r *DeploymentAccessResource) Schema(_ context.Context, _ resource.SchemaRe
 				"(User, Service Account or Team) with a Deployment. This resource specifies an actor's access level "+
 				"to a specific Deployment in the Account. "+
 				"For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{

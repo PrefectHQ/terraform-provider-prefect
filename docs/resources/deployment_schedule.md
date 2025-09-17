@@ -6,7 +6,7 @@ description: |-
   The resource 'deployment_schedule' represents a schedule for a deployment.
   
   For more information, see schedule flow runs https://docs.prefect.io/v3/automate/add-schedules.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_deployment_schedule (Resource)
@@ -16,7 +16,7 @@ The resource 'deployment_schedule' represents a schedule for a deployment.
 For more information, see [schedule flow runs](https://docs.prefect.io/v3/automate/add-schedules).
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 

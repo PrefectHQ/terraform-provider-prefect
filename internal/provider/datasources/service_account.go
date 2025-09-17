@@ -135,8 +135,9 @@ Use this data source to obtain service account-level attributes, such as ID.
 <br>
 For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).
 `,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanTeam,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Attributes: serviceAccountAttributes,
 	}
