@@ -208,6 +208,100 @@ func TestAccResource_service_account(t *testing.T) {
 	})
 }
 
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_service_account_external_rotation_detection(t *testing.T) {
+	// NOTE: This test validates the behavior and state consistency of the external
+	// key rotation detection logic. Due to limitations in the terraform-plugin-testing
+	// framework (https://github.com/hashicorp/terraform-plugin-testing/issues/69),
+	// we cannot directly test warning diagnostics in acceptance tests.
+	// This test focuses on ensuring state remains consistent when the detection
+	// logic executes during Read operations.
+	testutils.SkipTestsIfOSS(t)
+
+	botResourceName := "prefect_service_account.bot"
+	botRandomName := testutils.NewRandomPrefixedString()
+
+	var bot api.ServiceAccount
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountValues(&bot, &api.ServiceAccount{Name: botRandomName, AccountRoleName: "Member"}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+					testutils.ExpectKnownValueNotNull(botResourceName, "api_key_id"),
+					testutils.ExpectKnownValueNotNull(botResourceName, "api_key_name"),
+					testutils.ExpectKnownValueNotNull(botResourceName, "api_key_created"),
+				},
+			},
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountStateConsistency(botResourceName, &bot),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(botResourceName, "name", botRandomName),
+					testutils.ExpectKnownValueNotNull(botResourceName, "api_key_id"),
+				},
+			},
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountAPIKeyMetadataConsistent(botResourceName, &bot),
+				),
+			},
+		},
+	})
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_service_account_read_operation_stability(t *testing.T) {
+	testutils.SkipTestsIfOSS(t)
+
+	botResourceName := "prefect_service_account.bot"
+	botRandomName := testutils.NewRandomPrefixedString()
+
+	var bot api.ServiceAccount
+	var apiKey string
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					textAccCheckServiceAccountAPIKeyStored(botResourceName, &apiKey),
+				),
+			},
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountAPIKeyUnchanged(botResourceName, &apiKey),
+					testAccCheckServiceAccountReadStability(botResourceName, &bot),
+				),
+			},
+			{
+				Config: fixtureAccServiceAccountResource(botRandomName),
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckServiceAccountResourceExists(botResourceName, &bot),
+					testAccCheckServiceAccountAPIKeyUnchanged(botResourceName, &apiKey),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckServiceAccountResourceExists(serviceAccountResourceName string, bot *api.ServiceAccount) resource.TestCheckFunc {
 	return func(state *terraform.State) error {
 		// find the corresponding state object
@@ -297,6 +391,88 @@ func testAccCheckServiceAccountAPIKeyRotated(n string, passedKey *string) resour
 			return fmt.Errorf("key rotation did not occur correctly, as the old key=%s is the same as the new key=%s", *passedKey, key)
 		}
 		*passedKey = key
+
+		return nil
+	}
+}
+
+// testAccCheckServiceAccountStateConsistency verifies that the Terraform state
+// is consistent with the API response for key metadata fields.
+func testAccCheckServiceAccountStateConsistency(resourceName string, fetchedBot *api.ServiceAccount) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Resource not found in state: %s", resourceName)
+		}
+
+		stateAPIKeyID := rs.Primary.Attributes["api_key_id"]
+		stateAPIKeyName := rs.Primary.Attributes["api_key_name"]
+
+		if stateAPIKeyID != fetchedBot.APIKey.ID {
+			return fmt.Errorf("State api_key_id (%s) does not match API response (%s)", stateAPIKeyID, fetchedBot.APIKey.ID)
+		}
+
+		if stateAPIKeyName != fetchedBot.APIKey.Name {
+			return fmt.Errorf("State api_key_name (%s) does not match API response (%s)", stateAPIKeyName, fetchedBot.APIKey.Name)
+		}
+
+		return nil
+	}
+}
+
+// testAccCheckServiceAccountAPIKeyMetadataConsistent verifies that the API key metadata
+// in state matches what was fetched from the API, ensuring the external rotation
+// detection logic properly updates state.
+func testAccCheckServiceAccountAPIKeyMetadataConsistent(resourceName string, fetchedBot *api.ServiceAccount) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Resource not found in state: %s", resourceName)
+		}
+
+		stateAPIKeyID := rs.Primary.Attributes["api_key_id"]
+		stateAPIKeyCreated := rs.Primary.Attributes["api_key_created"]
+
+		if stateAPIKeyID != fetchedBot.APIKey.ID {
+			return fmt.Errorf("API Key ID mismatch - state: %s, API: %s", stateAPIKeyID, fetchedBot.APIKey.ID)
+		}
+
+		if fetchedBot.APIKey.Created != nil {
+			expectedCreated := fetchedBot.APIKey.Created.Format(time.RFC3339)
+			if stateAPIKeyCreated != expectedCreated {
+				return fmt.Errorf("API Key creation time mismatch - state: %s, API: %s", stateAPIKeyCreated, expectedCreated)
+			}
+		}
+
+		return nil
+	}
+}
+
+// testAccCheckServiceAccountReadStability ensures that repeated read operations
+// maintain consistent state and don't introduce false positive external rotation warnings.
+func testAccCheckServiceAccountReadStability(resourceName string, fetchedBot *api.ServiceAccount) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("Resource not found in state: %s", resourceName)
+		}
+
+		stateAPIKeyID := rs.Primary.Attributes["api_key_id"]
+		if stateAPIKeyID == "" {
+			return fmt.Errorf("API Key ID should not be empty in state")
+		}
+
+		if stateAPIKeyID != fetchedBot.APIKey.ID {
+			return fmt.Errorf("Read operation instability detected - state key ID changed unexpectedly")
+		}
+
+		stateUpdated := rs.Primary.Attributes["updated"]
+		if fetchedBot.Updated != nil {
+			expectedUpdated := fetchedBot.Updated.Format(time.RFC3339)
+			if stateUpdated != expectedUpdated {
+				return fmt.Errorf("Service account updated timestamp mismatch - state: %s, API: %s", stateUpdated, expectedUpdated)
+			}
+		}
 
 		return nil
 	}
