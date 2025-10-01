@@ -13,7 +13,7 @@ repos:
         # - examples/
         files: ^(.*\.go|docs/.*|templates/.*|examples/.*)$
         entry: mise
-        args: [run docs]
+        args: [run, docs]
         language: system
         pass_filenames: false
 
