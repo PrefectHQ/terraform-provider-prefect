@@ -52,8 +52,8 @@ type DeploymentCreate struct {
 	FlowID                 uuid.UUID              `json:"flow_id"` // required
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
 	Name                   string                 `json:"name"` // required
-	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema"`
+	Parameters             map[string]interface{} `json:"parameters"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
 	PullSteps              []PullStep             `json:"pull_steps,omitempty"`
@@ -72,8 +72,8 @@ type DeploymentUpdate struct {
 	EnforceParameterSchema *bool                  `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint             string                 `json:"entrypoint,omitempty"`
 	JobVariables           map[string]interface{} `json:"job_variables,omitempty"`
-	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters             map[string]interface{} `json:"parameters,omitempty"`
+	ParameterOpenAPISchema map[string]interface{} `json:"parameter_openapi_schema"`
+	Parameters             map[string]interface{} `json:"parameters"`
 	Path                   string                 `json:"path,omitempty"`
 	Paused                 bool                   `json:"paused,omitempty"`
 	PullSteps              []PullStep             `json:"pull_steps,omitempty"`
