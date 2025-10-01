@@ -57,7 +57,7 @@ func (c *TaskRunConcurrencyLimitsClient) Create(ctx context.Context, data api.Ta
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
-		successCodes:    successCodesStatusOK,
+		successCodes:    successCodesStatusOKOrCreated,
 	}
 
 	var taskRunConcurrencyLimit api.TaskRunConcurrencyLimit
