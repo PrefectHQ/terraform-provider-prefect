@@ -8,6 +8,7 @@ import (
 
 // BlockTypeClient is a client for working with block types.
 type BlockTypeClient interface {
+	Get(ctx context.Context, id uuid.UUID) (*BlockType, error)
 	GetBySlug(ctx context.Context, slug string) (*BlockType, error)
 	Create(ctx context.Context, payload *BlockTypeCreate) (*BlockType, error)
 	Update(ctx context.Context, id uuid.UUID, payload *BlockTypeUpdate) error

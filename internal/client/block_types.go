@@ -46,6 +46,27 @@ func (c *Client) BlockTypes(accountID uuid.UUID, workspaceID uuid.UUID) (api.Blo
 	}, nil
 }
 
+// Get returns details for a block type by ID.
+func (c *BlockTypeClient) Get(ctx context.Context, id uuid.UUID) (*api.BlockType, error) {
+	cfg := requestConfig{
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + id.String(),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		successCodes:    successCodesStatusOK,
+	}
+
+	var blockType api.BlockType
+	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &blockType); err != nil {
+		return nil, fmt.Errorf("failed to get block type: %w", err)
+	}
+
+	return &blockType, nil
+}
+
 // GetBySlug returns details for a block type by slug.
 func (c *BlockTypeClient) GetBySlug(ctx context.Context, slug string) (*api.BlockType, error) {
 	cfg := requestConfig{
