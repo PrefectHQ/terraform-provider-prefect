@@ -203,6 +203,15 @@ func (r *BlockTypeResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if state.ID.IsNull() {
+		resp.Diagnostics.AddError(
+			"ID is unset",
+			"This is a bug in the Terraform provider. Please report it to the maintainers.",
+		)
+
+		return
+	}
+
 	blockTypeClient, err := r.client.BlockTypes(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Type", err))
@@ -210,9 +219,25 @@ func (r *BlockTypeResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	blockType, err := blockTypeClient.GetBySlug(ctx, state.Slug.ValueString())
+	blockTypeID, err := uuid.Parse(state.ID.ValueString())
 	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get by slug", err))
+		resp.Diagnostics.Append(helpers.ParseUUIDErrorDiagnostic("Block Type", err))
+
+		return
+	}
+
+	blockType, err := blockTypeClient.Get(ctx, blockTypeID)
+	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Type", "get", err))
 
 		return
 	}

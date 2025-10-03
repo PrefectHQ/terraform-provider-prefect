@@ -102,6 +102,13 @@ func TestAccResource_block_type(t *testing.T) {
 					testutils.ExpectKnownValueBool(blockTypeResourceName, "is_protected", false),
 				},
 			},
+			{
+				// Import State checks - import by block_type_id,workspace_id
+				ImportState:       true,
+				ResourceName:      blockTypeResourceName,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(blockTypeResourceName),
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
