@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
 )
 
 const (
@@ -66,4 +67,26 @@ func ParseUUIDErrorDiagnostic(resourceName string, err error) diag.Diagnostic {
 		fmt.Sprintf("Error parsing %s ID", resourceName),
 		fmt.Sprintf("Could not parse %s ID to UUID, unexpected error: %s", resourceName, err.Error()),
 	)
+}
+
+// AddProfileWarning Helper function to handle warning messages.
+func AddProfileWarning(resp *provider.ConfigureResponse, profileName, profileFilePath string, err error) {
+	var title, message string
+
+	// Determine the file path to display
+	filePath := profileFilePath
+	if filePath == "" {
+		filePath = "~/.prefect/profiles.toml"
+	}
+
+	// Determine title and message based on whether profile name is specified
+	if profileName != "" {
+		title = "Failed to load specified Prefect profile"
+		message = fmt.Sprintf("Could not load Prefect profile '%s' from %s: %s", profileName, filePath, err)
+	} else {
+		title = "Failed to load Prefect profile"
+		message = fmt.Sprintf("Could not load Prefect profile from %s: %s", filePath, err)
+	}
+
+	resp.Diagnostics.AddWarning(title, message)
 }

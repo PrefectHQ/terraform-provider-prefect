@@ -59,11 +59,41 @@ provider "prefect" {
 }
 ```
 
+If you don't specify any configuration, the provider will attempt to read your Prefect CLI profiles file (typically located at `~/.prefect/profiles.toml`), and use the active profile's values. This is useful if you are already using the Prefect CLI.
+
+```toml
+# ~/.prefect/profiles.toml
+active = "cloud"
+
+[profiles.cloud]
+PREFECT_API_URL = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
+PREFECT_API_KEY = "pnu_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+[profiles.local]
+PREFECT_API_URL = "http://localhost:4200"
+```
+
+```terraform
+# this will implicitly load the "cloud" profile
+provider "prefect" {}
+```
+
+You can also override the profile used by the provider by setting the `profile` attribute:
+
+```terraform
+provider "prefect" {
+  profile = "local"
+  # non-standard profiles location can also be specified
+  # profile_file = "~/my-prefect-profiles.toml" 
+}
+```
+
 The values are evaluated in the following order, from highest to lowest priority:
 
 1. Configuration from attributes in the `provider` block.
 2. Configuration from environment variables.
 3. Configuration from the optional, longer format of the `endpoint` attribute.
+4. Configuration from the Prefect profiles file, if it exists.
 
 ## Finding your Account ID
 

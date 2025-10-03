@@ -20,4 +20,6 @@ type PrefectProviderModel struct {
 	CSRFEnabled  types.Bool            `tfsdk:"csrf_enabled"`
 	AccountID    customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID  customtypes.UUIDValue `tfsdk:"workspace_id"`
+	Profile      types.String          `tfsdk:"profile"`
+	ProfileFile  types.String          `tfsdk:"profile_file"`
 }
