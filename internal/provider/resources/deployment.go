@@ -645,8 +645,10 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// response if it is not "null". In this case, the value will fall back to the default
 	// set in the schema.
 	//
-	// Additionally, if the server returns the normalized empty schema {"properties":{},"type":"object"},
-	// we convert it back to "{}" to match our default and avoid drift.
+	// Additionally, Prefect OSS normalizes empty parameter schemas ({} or null) to a valid
+	// OpenAPI object schema: {"properties":{},"type":"object"}. To avoid drift, we convert
+	// this back to "{}" when reading, matching our default value.
+	// See: https://github.com/PrefectHQ/prefect/pull/19072
 	if string(parameterOpenAPISchemaByteSlice) != "null" {
 		// Check if this is the normalized empty schema that OSS returns
 		if string(parameterOpenAPISchemaByteSlice) == `{"properties":{},"type":"object"}` {
