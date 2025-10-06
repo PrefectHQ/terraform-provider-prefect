@@ -644,8 +644,16 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// To avoid an "inconsistent result after apply" error, we will only attempt to parse the
 	// response if it is not "null". In this case, the value will fall back to the default
 	// set in the schema.
+	//
+	// Additionally, normalize the schema on read to ensure consistency with what we send.
+	// This handles cases where the server returns a normalized schema.
 	if string(parameterOpenAPISchemaByteSlice) != "null" {
-		model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+		normalizedSchema := helpers.NormalizeParameterOpenAPISchema(deployment.ParameterOpenAPISchema)
+		normalizedByteSlice, err := json.Marshal(normalizedSchema)
+		if err != nil {
+			return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err)}
+		}
+		model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(normalizedByteSlice))
 	}
 
 	return nil
@@ -692,6 +700,11 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Normalize the parameter OpenAPI schema to match what Prefect OSS/Cloud expects.
+	// This prevents "inconsistent result after apply" errors when the server normalizes
+	// empty schemas to {"type": "object", "properties": {}}.
+	parameterOpenAPISchema = helpers.NormalizeParameterOpenAPISchema(parameterOpenAPISchema)
 
 	pullSteps, diags := mapPullStepsTerraformToAPI(plan.PullSteps)
 	resp.Diagnostics.Append(diags...)
@@ -865,6 +878,11 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	// Normalize the parameter OpenAPI schema to match what Prefect OSS/Cloud expects.
+	// This prevents "inconsistent result after apply" errors when the server normalizes
+	// empty schemas to {"type": "object", "properties": {}}.
+	parameterOpenAPISchema = helpers.NormalizeParameterOpenAPISchema(parameterOpenAPISchema)
 
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
