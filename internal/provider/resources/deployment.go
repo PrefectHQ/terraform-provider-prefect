@@ -28,6 +28,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/planmodifiers"
 )
 
 var (
@@ -329,6 +330,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
 				Default:     stringdefault.StaticString("{}"),
+				PlanModifiers: []planmodifier.String{
+					planmodifiers.NormalizeOpenAPISchema(),
+				},
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
