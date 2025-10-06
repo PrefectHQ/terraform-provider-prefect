@@ -328,7 +328,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Default:     stringdefault.StaticString("{}"),
+				Default:     stringdefault.StaticString(`{"properties":{},"type":"object"}`),
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
