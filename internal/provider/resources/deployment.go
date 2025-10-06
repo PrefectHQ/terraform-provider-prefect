@@ -705,11 +705,6 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// Normalize the parameter OpenAPI schema to match what Prefect OSS/Cloud expects.
-	// This prevents "inconsistent result after apply" errors when the server normalizes
-	// empty schemas to {"type": "object", "properties": {}}.
-	parameterOpenAPISchema = helpers.NormalizeParameterOpenAPISchema(parameterOpenAPISchema)
-
 	pullSteps, diags := mapPullStepsTerraformToAPI(plan.PullSteps)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -882,11 +877,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	// Normalize the parameter OpenAPI schema to match what Prefect OSS/Cloud expects.
-	// This prevents "inconsistent result after apply" errors when the server normalizes
-	// empty schemas to {"type": "object", "properties": {}}.
-	parameterOpenAPISchema = helpers.NormalizeParameterOpenAPISchema(parameterOpenAPISchema)
 
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
