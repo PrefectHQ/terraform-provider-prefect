@@ -177,17 +177,31 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// Extract endpoint from configuration or environment variable.
 	var endpoint string
+	var endpointSource string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
+		endpointSource = "explicit configuration"
 	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
+		endpointSource = "environment variable PREFECT_API_URL"
 	} else if !profileAuth.Endpoint.IsNull() {
 		endpoint = profileAuth.Endpoint.ValueString()
+		if profileName != "" {
+			endpointSource = fmt.Sprintf("profile '%s'", profileName)
+		} else {
+			endpointSource = "active profile"
+		}
 	}
 
 	if endpoint == "" {
 		endpoint = defaultAPIURL
+		endpointSource = "default value"
 	}
+
+	tflog.Info(ctx, "Using endpoint", map[string]any{
+		"source": endpointSource,
+		"value":  endpoint,
+	})
 
 	endpointURL, err := url.Parse(endpoint)
 	if err != nil {
