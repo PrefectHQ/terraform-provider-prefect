@@ -328,7 +328,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
-				Default:     stringdefault.StaticString(`{"properties":{},"type":"object"}`),
+				Default:     stringdefault.StaticString("{}"),
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
@@ -645,15 +645,15 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// response if it is not "null". In this case, the value will fall back to the default
 	// set in the schema.
 	//
-	// Additionally, normalize the schema on read to ensure consistency with what we send.
-	// This handles cases where the server returns a normalized schema.
+	// Additionally, if the server returns the normalized empty schema {"properties":{},"type":"object"},
+	// we convert it back to "{}" to match our default and avoid drift.
 	if string(parameterOpenAPISchemaByteSlice) != "null" {
-		normalizedSchema := helpers.NormalizeParameterOpenAPISchema(deployment.ParameterOpenAPISchema)
-		normalizedByteSlice, err := json.Marshal(normalizedSchema)
-		if err != nil {
-			return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameter_openapi_schema", "Deployment parameter OpenAPI schema", err)}
+		// Check if this is the normalized empty schema that OSS returns
+		if string(parameterOpenAPISchemaByteSlice) == `{"properties":{},"type":"object"}` {
+			model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue("{}")
+		} else {
+			model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
 		}
-		model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(normalizedByteSlice))
 	}
 
 	return nil
