@@ -98,8 +98,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				"\n"+
 				"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n"+
 				"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanTeam,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 1,
 		Attributes: map[string]schema.Attribute{
@@ -366,7 +367,28 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	// Detect if the API key was rotated externally by comparing key metadata
+	// before updating the state model.
+	var keyWasRotatedExternally bool
+	if !state.APIKeyID.IsNull() && !state.APIKeyID.IsUnknown() {
+		currentKeyID := state.APIKeyID.ValueString()
+		newKeyID := serviceAccount.APIKey.ID
+
+		if currentKeyID != newKeyID {
+			keyWasRotatedExternally = true
+		}
+	}
+
 	copyServiceAccountToModel(serviceAccount, &state)
+
+	if keyWasRotatedExternally {
+		resp.Diagnostics.AddWarning(
+			"Service Account API Key Changed Externally",
+			"The API key for this service account appears to have been rotated outside of Terraform. "+
+				"The stored API key value may no longer be valid. "+
+				"To refresh the key, modify the 'api_key_keepers' or 'api_key_expiration' attribute to trigger a rotation.",
+		)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {

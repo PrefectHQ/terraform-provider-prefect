@@ -8,7 +8,7 @@ description: |-
   Use this data source to obtain Work Queue-specific attributes.
   
   For more information, see work queues https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_work_queue (Data Source)
@@ -20,7 +20,7 @@ Use this data source to obtain Work Queue-specific attributes.
 For more information, see [work queues](https://docs.prefect.io/v3/deploy/infrastructure-concepts/work-pools#work-queues).
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 

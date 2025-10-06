@@ -8,7 +8,7 @@ description: |-
   Use this data source to obtain team IDs to manage Workspace Access.
   
   For more information, see manage teams https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Enterprise.
 ---
 
 # prefect_team (Data Source)
@@ -20,7 +20,7 @@ Use this data source to obtain team IDs to manage Workspace Access.
 For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Enterprise.
 
 ## Example Usage
 

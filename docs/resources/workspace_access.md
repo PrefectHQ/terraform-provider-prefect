@@ -6,7 +6,7 @@ description: |-
   The resource workspace_access represents a connection between an accessor (User, Service Account or Team) with a Workspace Role. This resource specifies an actor's access level to a specific Workspace in the Account.
   Use this resource in conjunction with the workspace_role resource or data source to manage access to Workspaces.
   For more information, see manage workspaces https://docs.prefect.io/v3/manage/cloud/workspaces.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Pro, Enterprise.
 ---
 
 # prefect_workspace_access (Resource)
@@ -18,7 +18,7 @@ Use this resource in conjunction with the `workspace_role` resource or data sour
 
 For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Pro, Enterprise.
 
 
 ## Example Usage

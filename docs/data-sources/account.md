@@ -6,7 +6,7 @@ description: |-
   Get information about an existing Account.
   
   Use this data source to obtain account-level attributes
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_account (Data Source)
@@ -16,7 +16,7 @@ Get information about an existing Account.
 Use this data source to obtain account-level attributes
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 

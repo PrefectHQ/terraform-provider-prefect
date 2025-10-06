@@ -94,7 +94,7 @@ Use this data source to obtain team IDs to manage Workspace Access.
 <br>
 For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).
 `,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanEnterprise,
 		),
 		Attributes: teamAttributes,
 	}

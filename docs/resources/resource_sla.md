@@ -6,7 +6,7 @@ description: |-
   The resource 'resource_sla' represents a Prefect Resource SLA.
   
   For more information, see documentation on setting up Service Level Agreements https://docs.prefect.io/v3/automate/events/slas on Prefect resources.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_resource_sla (Resource)
@@ -16,7 +16,7 @@ The resource 'resource_sla' represents a Prefect Resource SLA.
 For more information, see documentation on setting up [Service Level Agreements](https://docs.prefect.io/v3/automate/events/slas) on Prefect resources.
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Hobby, Starter, Team, Pro, Enterprise.
 
 ## Example Usage
 
