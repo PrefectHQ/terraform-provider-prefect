@@ -88,6 +88,16 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Description: "Default Prefect Cloud Workspace ID.",
 				Optional:    true,
 			},
+			"profile": schema.StringAttribute{
+				Description: "Prefect profile name to use for authentication. If not specified, uses the active profile from `~/.prefect/profiles.toml`." +
+					" This allows you to use a specific profile instead of the active one.",
+				Optional: true,
+			},
+			"profile_file": schema.StringAttribute{
+				Description: "Path to the Prefect profiles file. If not specified, uses the default location `~/.prefect/profiles.toml`." +
+					" This allows you to use a custom profiles file location.",
+				Optional: true,
+			},
 		},
 	}
 }
@@ -146,17 +156,52 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	// Determine which profile and profile file to use
+	var profileName string
+	if !config.Profile.IsNull() {
+		profileName = config.Profile.ValueString()
+	}
+
+	var profileFilePath string
+	if !config.ProfileFile.IsNull() {
+		profileFilePath = config.ProfileFile.ValueString()
+	}
+
+	// Load profile authentication as fallback
+	profileAuth, err := LoadProfileAuth(ctx, profileName, profileFilePath)
+	if err != nil {
+		helpers.AddProfileWarning(resp, profileName, profileFilePath, err)
+		// Set profileAuth to an empty model if error occurred
+		profileAuth = &PrefectProviderModel{}
+	}
+
 	// Extract endpoint from configuration or environment variable.
 	var endpoint string
+	var endpointSource string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
+		endpointSource = "explicit configuration"
 	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
+		endpointSource = "environment variable PREFECT_API_URL"
+	} else if !profileAuth.Endpoint.IsNull() {
+		endpoint = profileAuth.Endpoint.ValueString()
+		if profileName != "" {
+			endpointSource = fmt.Sprintf("profile '%s'", profileName)
+		} else {
+			endpointSource = "active profile"
+		}
 	}
 
 	if endpoint == "" {
 		endpoint = defaultAPIURL
+		endpointSource = "default value"
 	}
+
+	tflog.Info(ctx, "Using endpoint", map[string]any{
+		"source": endpointSource,
+		"value":  endpoint,
+	})
 
 	endpointURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -173,6 +218,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiKey = config.APIKey.ValueString()
 	} else if apiKeyEnvVar, ok := os.LookupEnv(envAPIKey); ok {
 		apiKey = apiKeyEnvVar
+	} else if !profileAuth.APIKey.IsNull() {
+		apiKey = profileAuth.APIKey.ValueString()
 	}
 
 	// Extract with basic auth key from configuration or environment variable.
@@ -181,6 +228,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		basicAuthKey = config.BasicAuthKey.ValueString()
 	} else if basicAuthKeyEnvVar, ok := os.LookupEnv(envBasicAuthKey); ok {
 		basicAuthKey = basicAuthKeyEnvVar
+	} else if !profileAuth.BasicAuthKey.IsNull() {
+		basicAuthKey = profileAuth.BasicAuthKey.ValueString()
 	}
 
 	// Extract the Account ID from configuration, the PREFECT_CLOUD_ACCOUNT_ID
@@ -277,8 +326,12 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		csrfEnabled = config.CSRFEnabled.ValueBool()
 	} else if csrfEnabledEnvVar, ok := os.LookupEnv(envCSRFEnabled); ok {
 		csrfEnabled = csrfEnabledEnvVar == "true"
+	} else if !profileAuth.CSRFEnabled.IsNull() {
+		csrfEnabled = profileAuth.CSRFEnabled.ValueBool()
 	}
 
+	ctx = tflog.SetField(ctx, "prefect_profile", profileName)
+	ctx = tflog.SetField(ctx, "prefect_profile_file", profileFilePath)
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
 	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
