@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -62,7 +63,7 @@ type DeploymentResourceModel struct {
 	Paused                 types.Bool            `tfsdk:"paused"`
 	PullSteps              []PullStepModel       `tfsdk:"pull_steps"`
 	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
-	Tags                   types.List            `tfsdk:"tags"`
+	Tags                   types.Set             `tfsdk:"tags"`
 	Version                types.String          `tfsdk:"version"`
 	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
 	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
@@ -162,7 +163,7 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 // Schema defines the schema for the resource.
 // nolint:maintidx,gocyclo // this schema is complex, and we can refactor it later
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+	defaultEmptyTagSet, _ := basetypes.NewSetValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
 		Description: helpers.DescriptionWithPlans("Deployments are server-side representations of flows. "+
@@ -309,12 +310,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default:     listdefault.StaticValue(defaultEmptyTagList),
+				Default:     setdefault.StaticValue(defaultEmptyTagSet),
 			},
 			"parameters": schema.StringAttribute{
 				Description: "Parameters for flow runs scheduled by the deployment.",
@@ -598,7 +599,7 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
 	model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
 
-	tags, diags := types.ListValueFrom(ctx, types.StringType, deployment.Tags)
+	tags, diags := types.SetValueFrom(ctx, types.StringType, deployment.Tags)
 	if diags.HasError() {
 		return diags
 	}

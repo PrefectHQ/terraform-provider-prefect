@@ -33,7 +33,7 @@ resource "prefect_variable" "example" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `tags` (List of String) Tags associated with the variable
+- `tags` (Set of String) Tags associated with the variable
 - `workspace_id` (String) Workspace ID (UUID), defaults to the workspace set in the provider
 
 ### Read-Only

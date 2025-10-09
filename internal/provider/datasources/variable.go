@@ -34,7 +34,7 @@ type VariableDataSourceModel struct {
 
 	Name  types.String  `tfsdk:"name"`
 	Value types.Dynamic `tfsdk:"value"`
-	Tags  types.List    `tfsdk:"tags"`
+	Tags  types.Set     `tfsdk:"tags"`
 }
 
 // NewVariableDataSource returns a new VariableDataSource.
@@ -101,7 +101,7 @@ var variableAttributes = map[string]schema.Attribute{
 		Computed:    true,
 		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 	},
-	"tags": schema.ListAttribute{
+	"tags": schema.SetAttribute{
 		Computed:    true,
 		Description: "Tags associated with the variable",
 		ElementType: types.StringType,
@@ -185,12 +185,12 @@ func (d *VariableDataSource) Read(ctx context.Context, req datasource.ReadReques
 	}
 	model.Value = value
 
-	list, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
+	set, diags := types.SetValueFrom(ctx, types.StringType, variable.Tags)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	model.Tags = list
+	model.Tags = set
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
 	if resp.Diagnostics.HasError() {

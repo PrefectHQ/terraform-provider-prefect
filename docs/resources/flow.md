@@ -38,7 +38,7 @@ resource "prefect_flow" "flow" {
 ### Optional
 
 - `account_id` (String) Account ID (UUID), defaults to the account set in the provider
-- `tags` (List of String) Tags associated with the flow
+- `tags` (Set of String) Tags associated with the flow
 - `workspace_id` (String) Workspace ID (UUID)
 
 ### Read-Only

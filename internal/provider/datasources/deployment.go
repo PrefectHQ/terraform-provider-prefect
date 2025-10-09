@@ -156,7 +156,7 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 				Computed:    true,
 				Description: "The path to the entrypoint for the workflow, relative to the path.",
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Computed:    true,
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,
