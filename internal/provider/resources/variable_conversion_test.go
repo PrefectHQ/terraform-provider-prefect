@@ -56,6 +56,12 @@ func TestConvertAPIValueToDynamic(t *testing.T) {
 			expectError:  false,
 		},
 		{
+			name:         "array value with quoted strings (from API)",
+			input:        []interface{}{`"foo"`, `"bar"`},
+			expectedType: "types.Tuple",
+			expectError:  false,
+		},
+		{
 			name:         "object value",
 			input:        map[string]interface{}{"key": "value", "number": float64(42)},
 			expectedType: "types.Object",
