@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -241,7 +242,96 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 	}
 	tfModel.Tags = tags
 
+	// Convert the API value to a types.Dynamic value for Terraform state
+	dynamicValue, convDiags := convertAPIValueToDynamic(ctx, variable.Value)
+	if convDiags.HasError() {
+		return convDiags
+	}
+	tfModel.Value = dynamicValue
+
 	return nil
+}
+
+// convertAPIValueToDynamic converts an API value (interface{}) to a types.Dynamic
+// value that can be stored in Terraform state.
+func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dynamic, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if value == nil {
+		return types.DynamicNull(), diags
+	}
+
+	switch v := value.(type) {
+	case string:
+		return types.DynamicValue(types.StringValue(v)), diags
+
+	case float64:
+		bigFloat := big.NewFloat(v)
+
+		return types.DynamicValue(types.NumberValue(bigFloat)), diags
+
+	case bool:
+		return types.DynamicValue(types.BoolValue(v)), diags
+
+	case []interface{}:
+		// Convert to Terraform tuple
+		elements := make([]attr.Value, len(v))
+		elementTypes := make([]attr.Type, len(v))
+		for i, elem := range v {
+			// Recursively convert each element
+			elemDynamic, elemDiags := convertAPIValueToDynamic(ctx, elem)
+			if elemDiags.HasError() {
+				diags.Append(elemDiags...)
+
+				return types.DynamicNull(), diags
+			}
+			underlyingValue := elemDynamic.UnderlyingValue()
+			elements[i] = underlyingValue
+			elementTypes[i] = underlyingValue.Type(ctx)
+		}
+		tupleValue, tupleDiags := types.TupleValue(elementTypes, elements)
+		if tupleDiags.HasError() {
+			diags.Append(tupleDiags...)
+
+			return types.DynamicNull(), diags
+		}
+
+		return types.DynamicValue(tupleValue), diags
+
+	case map[string]interface{}:
+		// Parse JSON into attribute types and values for Terraform object
+		attrTypes := make(map[string]attr.Type)
+		attrValues := make(map[string]attr.Value)
+
+		for key, val := range v {
+			valDynamic, valDiags := convertAPIValueToDynamic(ctx, val)
+			if valDiags.HasError() {
+				diags.Append(valDiags...)
+
+				return types.DynamicNull(), diags
+			}
+			underlyingValue := valDynamic.UnderlyingValue()
+			attrTypes[key] = underlyingValue.Type(ctx)
+			attrValues[key] = underlyingValue
+		}
+
+		objValue, objDiags := types.ObjectValue(attrTypes, attrValues)
+		if objDiags.HasError() {
+			diags.Append(objDiags...)
+
+			return types.DynamicNull(), diags
+		}
+
+		return types.DynamicValue(objValue), diags
+
+	default:
+		diags.Append(diag.NewErrorDiagnostic(
+			"unexpected API value type",
+			fmt.Sprintf("type: %T, value: %v", v, v),
+		))
+
+		return types.DynamicNull(), diags
+	}
 }
 
 // getUnderlyingValue converts the 'value' attribute from a DynamicValue to
