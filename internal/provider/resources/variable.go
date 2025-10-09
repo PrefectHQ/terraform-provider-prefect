@@ -278,6 +278,16 @@ func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dyn
 		elements := make([]attr.Value, len(v))
 		elementTypes := make([]attr.Type, len(v))
 		for i, elem := range v {
+			// The API returns tuple elements as quoted strings (e.g., '"foo"' instead of 'foo')
+			// because getUnderlyingValue uses e.String() which adds quotes.
+			// We need to unquote them when converting back.
+			if strElem, ok := elem.(string); ok {
+				// Try to unquote if it's a quoted string
+				if unquoted, err := strconv.Unquote(strElem); err == nil {
+					elem = unquoted
+				}
+			}
+
 			// Recursively convert each element
 			elemDynamic, elemDiags := convertAPIValueToDynamic(ctx, elem)
 			if elemDiags.HasError() {
