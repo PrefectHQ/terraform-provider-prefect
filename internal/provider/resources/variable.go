@@ -14,8 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -51,7 +51,7 @@ type VariableResourceModelV0 struct {
 
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Tags  types.Set    `tfsdk:"tags"`
 }
 
 // V1: Value is types.Dynamic.
@@ -63,10 +63,10 @@ type VariableResourceModelV1 struct {
 
 	Name  types.String  `tfsdk:"name"`
 	Value types.Dynamic `tfsdk:"value"`
-	Tags  types.List    `tfsdk:"tags"`
+	Tags  types.Set     `tfsdk:"tags"`
 }
 
-var defaultEmptyTagList, _ = basetypes.NewListValue(types.StringType, []attr.Value{})
+var defaultEmptyTagSet, _ = basetypes.NewSetValue(types.StringType, []attr.Value{})
 
 var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
@@ -114,12 +114,12 @@ var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 		Required:    true,
 	},
-	"tags": schema.ListAttribute{
+	"tags": schema.SetAttribute{
 		Description: "Tags associated with the variable",
 		ElementType: types.StringType,
 		Optional:    true,
 		Computed:    true,
-		Default:     listdefault.StaticValue(defaultEmptyTagList),
+		Default:     setdefault.StaticValue(defaultEmptyTagSet),
 	},
 }
 
@@ -236,7 +236,7 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 
 	tfModel.Name = types.StringValue(variable.Name)
 
-	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
+	tags, diags := types.SetValueFrom(ctx, types.StringType, variable.Tags)
 	if diags.HasError() {
 		return diags
 	}

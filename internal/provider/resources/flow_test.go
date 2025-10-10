@@ -36,7 +36,7 @@ func TestAccResource_flow(t *testing.T) {
 				Config: fixtureAccFlowCreate(workspace, randomName, "test1"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
-					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test1"}),
+					testutils.ExpectKnownValueSet(resourceName, "tags", []string{"test1"}),
 				},
 			},
 			{
@@ -44,7 +44,7 @@ func TestAccResource_flow(t *testing.T) {
 				Config: fixtureAccFlowCreate(workspace, randomName, "test2"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
-					testutils.ExpectKnownValueList(resourceName, "tags", []string{"test2"}),
+					testutils.ExpectKnownValueSet(resourceName, "tags", []string{"test2"}),
 				},
 			},
 			{

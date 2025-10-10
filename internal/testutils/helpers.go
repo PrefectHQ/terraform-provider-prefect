@@ -109,6 +109,19 @@ func ExpectKnownValueListSize(resourceName, path string, size int) statecheck.St
 	return expectKnownValue(resourceName, path, knownvalue.ListSizeExact(size))
 }
 
+// ExpectKnownValueSet returns a statecheck.StateCheck that can be used to
+// check the known value of a resource attribute that is a set of strings.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueSet(resourceName, path string, values []string) statecheck.StateCheck {
+	knownValueChecks := []knownvalue.Check{}
+	for _, value := range values {
+		knownValueChecks = append(knownValueChecks, knownvalue.StringExact(value))
+	}
+
+	return expectKnownValue(resourceName, path, knownvalue.SetExact(knownValueChecks))
+}
+
 // ExpectKnownValueBool returns a statecheck.StateCheck that can be used to
 // check the known value of a resource attribute that is a boolean.
 //

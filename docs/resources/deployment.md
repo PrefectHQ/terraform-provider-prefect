@@ -129,7 +129,7 @@ resource "prefect_deployment" "deployment" {
 - `paused` (Boolean) Whether or not the deployment is paused.
 - `pull_steps` (Attributes List) Pull steps to prepare flows for a deployment run. (see [below for nested schema](#nestedatt--pull_steps))
 - `storage_document_id` (String) ID of the associated storage document (UUID)
-- `tags` (List of String) Tags associated with the deployment
+- `tags` (Set of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.
 - `work_queue_name` (String) The work queue for the deployment. If no work queue is set, work will not be scheduled.

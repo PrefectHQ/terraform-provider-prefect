@@ -125,7 +125,7 @@ func TestAccResource_variable(t *testing.T) {
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName2),
-					testutils.ExpectKnownValueList(resourceName, "tags", []string{"foo", "bar"}),
+					testutils.ExpectKnownValueSet(resourceName, "tags", []string{"foo", "bar"}),
 				},
 			},
 			{
