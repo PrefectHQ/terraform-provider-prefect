@@ -226,6 +226,10 @@ func (r *GlobalConcurrencyLimitResource) Delete(ctx context.Context, req resourc
 
 	err = client.Delete(ctx, state.ID.ValueString())
 	if err != nil {
+		// If the resource is already gone (404), that's fine - it's already deleted
+		if helpers.Is404Error(err) {
+			return
+		}
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Global Concurrency Limit", "delete", err))
 
 		return
