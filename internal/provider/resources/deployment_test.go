@@ -185,6 +185,96 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_with_global_concurrency_limit(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	gcl1Name := testutils.NewRandomPrefixedString()
+	gcl2Name := testutils.NewRandomPrefixedString()
+
+	// Configuration for creating deployment with first global concurrency limit
+	cfgCreate := fmt.Sprintf(`
+%s
+
+resource "prefect_flow" "%s" {
+	name = "%s"
+	%s
+}
+
+resource "prefect_global_concurrency_limit" "test1" {
+	name = "%s"
+	limit = 5
+	%s
+}
+
+resource "prefect_global_concurrency_limit" "test2" {
+	name = "%s"
+	limit = 10
+	%s
+}
+
+resource "prefect_deployment" "%s" {
+	name = "%s"
+	flow_id = prefect_flow.%s.id
+	global_concurrency_limit_id = prefect_global_concurrency_limit.test1.id
+	%s
+}
+`, workspace.Resource, flowName, flowName, workspace.IDArg, gcl1Name, workspace.IDArg, gcl2Name, workspace.IDArg, deploymentName, deploymentName, flowName, workspace.IDArg)
+
+	// Configuration for updating deployment to use second global concurrency limit
+	cfgUpdate := fmt.Sprintf(`
+%s
+
+resource "prefect_flow" "%s" {
+	name = "%s"
+	%s
+}
+
+resource "prefect_global_concurrency_limit" "test1" {
+	name = "%s"
+	limit = 5
+	%s
+}
+
+resource "prefect_global_concurrency_limit" "test2" {
+	name = "%s"
+	limit = 10
+	%s
+}
+
+resource "prefect_deployment" "%s" {
+	name = "%s"
+	flow_id = prefect_flow.%s.id
+	global_concurrency_limit_id = prefect_global_concurrency_limit.test2.id
+	%s
+}
+`, workspace.Resource, flowName, flowName, workspace.IDArg, gcl1Name, workspace.IDArg, gcl2Name, workspace.IDArg, deploymentName, deploymentName, flowName, workspace.IDArg)
+
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Check creation with global_concurrency_limit_id
+				Config: cfgCreate,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "global_concurrency_limit_id"),
+				},
+			},
+			{
+				// Check update to different global_concurrency_limit_id
+				Config: cfgUpdate,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "global_concurrency_limit_id"),
+				},
+			},
+		},
+	})
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 	deploymentName := testutils.NewRandomPrefixedString()

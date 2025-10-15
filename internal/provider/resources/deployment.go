@@ -48,25 +48,26 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
-	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
-	ConcurrencyOptions     *ConcurrencyOptions   `tfsdk:"concurrency_options"`
-	Description            types.String          `tfsdk:"description"`
-	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
-	Entrypoint             types.String          `tfsdk:"entrypoint"`
-	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
-	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
-	ManifestPath           types.String          `tfsdk:"manifest_path"`
-	Name                   types.String          `tfsdk:"name"`
-	ParameterOpenAPISchema jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
-	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
-	Path                   types.String          `tfsdk:"path"`
-	Paused                 types.Bool            `tfsdk:"paused"`
-	PullSteps              []PullStepModel       `tfsdk:"pull_steps"`
-	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
-	Tags                   types.Set             `tfsdk:"tags"`
-	Version                types.String          `tfsdk:"version"`
-	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
-	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
+	ConcurrencyLimit         types.Int64           `tfsdk:"concurrency_limit"`
+	ConcurrencyOptions       *ConcurrencyOptions   `tfsdk:"concurrency_options"`
+	Description              types.String          `tfsdk:"description"`
+	EnforceParameterSchema   types.Bool            `tfsdk:"enforce_parameter_schema"`
+	Entrypoint               types.String          `tfsdk:"entrypoint"`
+	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
+	GlobalConcurrencyLimitID customtypes.UUIDValue `tfsdk:"global_concurrency_limit_id"`
+	JobVariables             jsontypes.Normalized  `tfsdk:"job_variables"`
+	ManifestPath             types.String          `tfsdk:"manifest_path"`
+	Name                     types.String          `tfsdk:"name"`
+	ParameterOpenAPISchema   jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
+	Parameters               jsontypes.Normalized  `tfsdk:"parameters"`
+	Path                     types.String          `tfsdk:"path"`
+	Paused                   types.Bool            `tfsdk:"paused"`
+	PullSteps                []PullStepModel       `tfsdk:"pull_steps"`
+	StorageDocumentID        customtypes.UUIDValue `tfsdk:"storage_document_id"`
+	Tags                     types.Set             `tfsdk:"tags"`
+	Version                  types.String          `tfsdk:"version"`
+	WorkPoolName             types.String          `tfsdk:"work_pool_name"`
+	WorkQueueName            types.String          `tfsdk:"work_queue_name"`
 }
 
 // ConcurrentOptions represents the concurrency options for a deployment.
@@ -336,6 +337,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
+					int64validator.ConflictsWith(path.MatchRoot("global_concurrency_limit_id")),
 				},
 			},
 			"concurrency_options": schema.SingleNestedAttribute{
@@ -349,6 +351,15 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							stringvalidator.OneOf("ENQUEUE", "CANCEL_NEW"),
 						},
 					},
+				},
+			},
+			"global_concurrency_limit_id": schema.StringAttribute{
+				Description: "The ID of a global concurrency limit to apply to this deployment. This is the recommended way to set concurrency limits. Mutually exclusive with concurrency_limit.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("concurrency_limit")),
 				},
 			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
@@ -607,8 +618,18 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 
 	// The concurrency_limit field in the response payload is deprecated, and will always be 0
 	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
+	// We need to handle both the old and new ways:
+	// - If the user set concurrency_limit (old way), we populate that field with the limit value
+	// - If the user set global_concurrency_limit_id (new way), we populate that field with the ID
 	if deployment.GlobalConcurrencyLimit != nil {
-		model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+		// Always set the global_concurrency_limit_id from the response
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
+
+		// For backwards compatibility: if concurrency_limit was set in the plan (not null),
+		// also populate it with the limit value from the response
+		if !model.ConcurrencyLimit.IsNull() {
+			model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+		}
 	}
 
 	if deployment.ConcurrencyOptions != nil {
@@ -711,23 +732,24 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createPayload := api.DeploymentCreate{
-		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:            plan.Description.ValueString(),
-		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBoolPointer(),
-		Entrypoint:             plan.Entrypoint.ValueString(),
-		FlowID:                 plan.FlowID.ValueUUID(),
-		JobVariables:           jobVariables,
-		Name:                   plan.Name.ValueString(),
-		Parameters:             parameters,
-		Path:                   plan.Path.ValueString(),
-		Paused:                 plan.Paused.ValueBool(),
-		PullSteps:              pullSteps,
-		StorageDocumentID:      plan.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                plan.Version.ValueString(),
-		WorkPoolName:           plan.WorkPoolName.ValueString(),
-		WorkQueueName:          plan.WorkQueueName.ValueString(),
-		ParameterOpenAPISchema: parameterOpenAPISchema,
+		ConcurrencyLimit:         plan.ConcurrencyLimit.ValueInt64Pointer(),
+		Description:              plan.Description.ValueString(),
+		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBoolPointer(),
+		Entrypoint:               plan.Entrypoint.ValueString(),
+		FlowID:                   plan.FlowID.ValueUUID(),
+		GlobalConcurrencyLimitID: plan.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		Name:                     plan.Name.ValueString(),
+		Parameters:               parameters,
+		Path:                     plan.Path.ValueString(),
+		Paused:                   plan.Paused.ValueBool(),
+		PullSteps:                pullSteps,
+		StorageDocumentID:        plan.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  plan.Version.ValueString(),
+		WorkPoolName:             plan.WorkPoolName.ValueString(),
+		WorkQueueName:            plan.WorkQueueName.ValueString(),
+		ParameterOpenAPISchema:   parameterOpenAPISchema,
 	}
 
 	if plan.ConcurrencyOptions != nil {
@@ -878,20 +900,21 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:            model.Description.ValueString(),
-		EnforceParameterSchema: model.EnforceParameterSchema.ValueBoolPointer(),
-		Entrypoint:             model.Entrypoint.ValueString(),
-		JobVariables:           jobVariables,
-		ParameterOpenAPISchema: parameterOpenAPISchema,
-		Parameters:             parameters,
-		Path:                   model.Path.ValueString(),
-		Paused:                 model.Paused.ValueBool(),
-		StorageDocumentID:      model.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                model.Version.ValueString(),
-		WorkPoolName:           model.WorkPoolName.ValueString(),
-		WorkQueueName:          model.WorkQueueName.ValueString(),
+		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
+		Description:              model.Description.ValueString(),
+		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
+		Entrypoint:               model.Entrypoint.ValueString(),
+		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		ParameterOpenAPISchema:   parameterOpenAPISchema,
+		Parameters:               parameters,
+		Path:                     model.Path.ValueString(),
+		Paused:                   model.Paused.ValueBool(),
+		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  model.Version.ValueString(),
+		WorkPoolName:             model.WorkPoolName.ValueString(),
+		WorkQueueName:            model.WorkQueueName.ValueString(),
 	}
 
 	if model.ConcurrencyOptions != nil {
