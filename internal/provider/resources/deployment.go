@@ -630,6 +630,9 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		if !model.ConcurrencyLimit.IsNull() {
 			model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
 		}
+	} else {
+		// If no global concurrency limit is set, ensure the field is explicitly null (not unknown)
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 	}
 
 	if deployment.ConcurrencyOptions != nil {
