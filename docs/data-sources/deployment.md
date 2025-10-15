@@ -69,6 +69,7 @@ data "prefect_deployment" "existing_by_id_string" {
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
+- `global_concurrency_limit_id` (String) The ID of a global concurrency limit applied to this deployment.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
 - `manifest_path` (String, Deprecated) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
