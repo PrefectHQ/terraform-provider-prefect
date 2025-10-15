@@ -622,16 +622,20 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// - If the user set concurrency_limit (old way), we populate that field with the limit value
 	// - If the user set global_concurrency_limit_id (new way), we populate that field with the ID
 	if deployment.GlobalConcurrencyLimit != nil {
-		// Always set the global_concurrency_limit_id from the response
-		model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
-
-		// For backwards compatibility: if concurrency_limit was set in the plan (not null),
-		// also populate it with the limit value from the response
-		if !model.ConcurrencyLimit.IsNull() {
+		// Determine which field was set in the config:
+		// - If global_concurrency_limit_id is set (not null/unknown), user is using new way
+		// - Otherwise, user is using the old concurrency_limit way
+		if !model.GlobalConcurrencyLimitID.IsNull() && !model.GlobalConcurrencyLimitID.IsUnknown() {
+			// New way: populate the ID
+			model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
+		} else {
+			// Old way: populate the limit value, keep global_concurrency_limit_id null
 			model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+			model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 		}
 	} else {
-		// If no global concurrency limit is set, ensure the field is explicitly null (not unknown)
+		// If no global concurrency limit is set, ensure both fields are explicitly null (not unknown)
+		model.ConcurrencyLimit = types.Int64Null()
 		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 	}
 
