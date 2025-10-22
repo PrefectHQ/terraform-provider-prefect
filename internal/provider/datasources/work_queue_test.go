@@ -20,30 +20,30 @@ func fixtureAccSingleWorkQueue(
 	workQueueName string,
 ) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-  name = "%s"
+  name = "%[2]s"
   type = "kubernetes"
   paused = "false"
-	%s
+	%[3]s
 }
 
 resource "prefect_work_queue" "test" {
-  name = "%s"
+  name = "%[4]s"
   work_pool_name = prefect_work_pool.test.name
   priority = 1
   description = "my work queue"
-	%s
+	%[3]s
 }
 
 data "prefect_work_queue" "test" {
   name = prefect_work_queue.test.name
   work_pool_name = prefect_work_pool.test.name
-	%s
+	%[3]s
 }
 
-`, workspace, workPoolName, workspaceIDArg, workQueueName, workspaceIDArg, workspaceIDArg)
+`, workspace, workPoolName, workspaceIDArg, workQueueName)
 }
 
 func fixtureAccMultipleWorkQueue(
