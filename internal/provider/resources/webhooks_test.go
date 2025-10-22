@@ -15,34 +15,34 @@ import (
 
 func fixtureAccWebhook(workspace, name, template string, enabled bool) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
-resource "prefect_webhook" "%s" {
-	name = "%s"
-	template = jsonencode(%s)
-	enabled = %t
+resource "prefect_webhook" "%[2]s" {
+	name = "%[2]s"
+	template = jsonencode(%[3]s)
+	enabled = %[4]t
 	workspace_id = prefect_workspace.test.id
 }
-`, workspace, name, name, template, enabled)
+`, workspace, name, template, enabled)
 }
 
 func fixtureAccWebhookWithServiceAccount(workspace, name, template string, enabled bool) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_service_account" "service_account" {
   name = "service-account"
   account_role_name = "Member"
 }
 
-resource "prefect_webhook" "%s" {
-	name = "%s"
-	template = jsonencode(%s)
-	enabled = %t
+resource "prefect_webhook" "%[2]s" {
+	name = "%[2]s"
+	template = jsonencode(%[3]s)
+	enabled = %[4]t
 	workspace_id = prefect_workspace.test.id
 	service_account_id = prefect_service_account.service_account.id
 }
-`, workspace, name, name, template, enabled)
+`, workspace, name, template, enabled)
 }
 
 func fixtureAccWebhookWithRawTemplate(workspace, name string, enabled bool) string {

@@ -23,16 +23,16 @@ resource "prefect_work_pool" "invalid_work_pool" {
 
 func fixtureAccWorkPoolCreate(workspace, workspaceIDArg, name, poolType, baseJobTemplate string, paused bool) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
-resource "prefect_work_pool" "%s" {
-	name = "%s"
-	type = "%s"
-	paused = %t
-	base_job_template = jsonencode(%s)
-	%s
+resource "prefect_work_pool" "%[3]s" {
+	name = "%[3]s"
+	type = "%[4]s"
+	paused = %[6]t
+	base_job_template = jsonencode(%[5]s)
+	%[2]s
 }
-`, workspace, name, name, poolType, paused, baseJobTemplate, workspaceIDArg)
+`, workspace, workspaceIDArg, name, poolType, baseJobTemplate, paused)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

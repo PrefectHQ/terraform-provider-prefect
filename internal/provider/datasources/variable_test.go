@@ -11,20 +11,20 @@ import (
 
 func fixtureAccVariableByName(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_variable" "test" {
-	name = "%s"
+	name = "%[3]s"
 	value = "variable value goes here"
-	%s
+	%[2]s
 }
 
 data "prefect_variable" "test" {
-	name = "%s"
-	%s
+	name = "%[3]s"
+	%[2]s
 	depends_on = [prefect_variable.test]
 }
-	`, workspace, name, workspaceIDArg, name, workspaceIDArg)
+	`, workspace, workspaceIDArg, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
