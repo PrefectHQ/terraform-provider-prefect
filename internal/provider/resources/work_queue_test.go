@@ -24,25 +24,25 @@ func fixtureAccWorkQueueCreate(
 	description string,
 ) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
-resource "prefect_work_pool" "%s" {
-  name = "%s"
-  type = "%s"
-  paused = %t
-  base_job_template = jsonencode(%s)
-  %s
+resource "prefect_work_pool" "%[3]s" {
+  name = "%[3]s"
+  type = "%[4]s"
+  paused = %[6]t
+  base_job_template = jsonencode(%[5]s)
+  %[2]s
 }
 
-resource "prefect_work_queue" "%s" {
-  name = "%s"
-  work_pool_name = prefect_work_pool.%s.name
-  priority = %d
-  description = "%s"
-  %s
+resource "prefect_work_queue" "%[7]s" {
+  name = "%[7]s"
+  work_pool_name = prefect_work_pool.%[3]s.name
+  priority = %[8]d
+  description = "%[9]s"
+  %[2]s
 }
 
-`, workspace, workPoolName, workPoolName, poolType, paused, baseJobTemplate, workspaceIDArg, workQueueName, workQueueName, workPoolName, priority, description, workspaceIDArg)
+`, workspace, workspaceIDArg, workPoolName, poolType, baseJobTemplate, paused, workQueueName, priority, description)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead

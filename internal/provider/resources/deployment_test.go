@@ -194,61 +194,61 @@ func TestAccResource_deployment_with_global_concurrency_limit(t *testing.T) {
 
 	// Configuration for creating deployment with first global concurrency limit
 	cfgCreate := fmt.Sprintf(`
-%s
+%[1]s
 
-resource "prefect_flow" "%s" {
-	name = "%s"
-	%s
+resource "prefect_flow" "%[2]s" {
+	name = "%[2]s"
+	%[3]s
 }
 
 resource "prefect_global_concurrency_limit" "test1" {
-	name = "%s"
+	name = "%[4]s"
 	limit = 5
-	%s
+	%[3]s
 }
 
 resource "prefect_global_concurrency_limit" "test2" {
-	name = "%s"
+	name = "%[5]s"
 	limit = 10
-	%s
+	%[3]s
 }
 
-resource "prefect_deployment" "%s" {
-	name = "%s"
-	flow_id = prefect_flow.%s.id
+resource "prefect_deployment" "%[6]s" {
+	name = "%[6]s"
+	flow_id = prefect_flow.%[2]s.id
 	global_concurrency_limit_id = prefect_global_concurrency_limit.test1.id
-	%s
+	%[3]s
 }
-`, workspace.Resource, flowName, flowName, workspace.IDArg, gcl1Name, workspace.IDArg, gcl2Name, workspace.IDArg, deploymentName, deploymentName, flowName, workspace.IDArg)
+`, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
 
 	// Configuration for updating deployment to use second global concurrency limit
 	cfgUpdate := fmt.Sprintf(`
-%s
+%[1]s
 
-resource "prefect_flow" "%s" {
-	name = "%s"
-	%s
+resource "prefect_flow" "%[2]s" {
+	name = "%[2]s"
+	%[3]s
 }
 
 resource "prefect_global_concurrency_limit" "test1" {
-	name = "%s"
+	name = "%[4]s"
 	limit = 5
-	%s
+	%[3]s
 }
 
 resource "prefect_global_concurrency_limit" "test2" {
-	name = "%s"
+	name = "%[5]s"
 	limit = 10
-	%s
+	%[3]s
 }
 
-resource "prefect_deployment" "%s" {
-	name = "%s"
-	flow_id = prefect_flow.%s.id
+resource "prefect_deployment" "%[6]s" {
+	name = "%[6]s"
+	flow_id = prefect_flow.%[2]s.id
 	global_concurrency_limit_id = prefect_global_concurrency_limit.test2.id
-	%s
+	%[3]s
 }
-`, workspace.Resource, flowName, flowName, workspace.IDArg, gcl1Name, workspace.IDArg, gcl2Name, workspace.IDArg, deploymentName, deploymentName, flowName, workspace.IDArg)
+`, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
 
 	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
 

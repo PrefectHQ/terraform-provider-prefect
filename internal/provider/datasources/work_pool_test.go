@@ -11,34 +11,34 @@ import (
 
 func fixtureAccSingleWorkPool(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-	name = "%s"
+	name = "%[3]s"
 	type = "kubernetes"
-	%s
+	%[2]s
 }
 
 data "prefect_work_pool" "test" {
-	name = "%s"
-	%s
+	name = "%[3]s"
+	%[2]s
 	depends_on = [prefect_work_pool.test]
 }
-`, workspace, name, workspaceIDArg, name, workspaceIDArg)
+`, workspace, workspaceIDArg, name)
 }
 
 func fixtureAccMultipleWorkPools(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-	name = "%s"
+	name = "%[3]s"
 	type = "kubernetes"
-	%s
+	%[2]s
 }
 
 data "prefect_work_pools" "test" {
-	%s
+	%[2]s
 
 	filter_any = [
 	  prefect_work_pool.test.id,
@@ -46,7 +46,7 @@ data "prefect_work_pools" "test" {
 
 	depends_on = [prefect_work_pool.test]
 }
-`, workspace, name, workspaceIDArg, workspaceIDArg)
+`, workspace, workspaceIDArg, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
