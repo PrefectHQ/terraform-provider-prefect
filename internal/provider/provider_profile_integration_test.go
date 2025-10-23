@@ -15,7 +15,7 @@ import (
 )
 
 func TestProviderWithProfileIntegration(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -40,11 +40,7 @@ PREFECT_CSRF_ENABLED = "true"
 
 	// Mock the user home directory
 	env := envFromOS()
-	originalHome := os.Getenv(env)
-	t.Cleanup(func() {
-		os.Setenv(env, originalHome)
-	})
-	os.Setenv(env, tempDir)
+	t.Setenv(env, tempDir)
 
 	// Test that the provider can be created
 	p := provider.New()
@@ -55,7 +51,7 @@ PREFECT_CSRF_ENABLED = "true"
 }
 
 func TestProviderProfilePrecedence(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -78,13 +74,7 @@ PREFECT_API_KEY = "profile-api-key"
 
 	// Mock the user home directory
 	env := envFromOS()
-	originalHome := os.Getenv(env)
-	t.Cleanup(func() {
-		os.Setenv(env, originalHome)
-		os.Unsetenv("PREFECT_API_URL")
-		os.Unsetenv("PREFECT_API_KEY")
-	})
-	os.Setenv(env, tempDir)
+	t.Setenv(env, tempDir)
 
 	// Test 1: Profile should be used when no environment variables are set
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -94,8 +84,8 @@ PREFECT_API_KEY = "profile-api-key"
 	assert.Equal(t, customtypes.NewUUIDNull(), auth.AccountID)
 
 	// Test 2: Environment variables should override profile
-	os.Setenv("PREFECT_API_URL", "https://env-api.prefect.cloud/api")
-	os.Setenv("PREFECT_API_KEY", "env-api-key")
+	t.Setenv("PREFECT_API_URL", "https://env-api.prefect.cloud/api")
+	t.Setenv("PREFECT_API_KEY", "env-api-key")
 
 	// Reload profile (in real usage, this would be handled by the provider)
 	auth, err = provider.LoadProfileAuth(context.Background(), "", "")

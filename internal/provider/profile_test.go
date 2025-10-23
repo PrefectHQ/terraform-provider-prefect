@@ -24,7 +24,7 @@ func envFromOS() string {
 }
 
 func TestLoadPrefectProviderModel(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when subtests use t.Setenv() to modify environment variables
 
 	tests := []struct {
 		name            string
@@ -99,7 +99,7 @@ invalid toml content
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 			// Create a temporary directory for the test
 			tempDir := t.TempDir()
@@ -114,11 +114,7 @@ invalid toml content
 
 			// Mock the user home directory
 			env := envFromOS()
-			originalHome := os.Getenv(env)
-			t.Cleanup(func() {
-				os.Setenv(env, originalHome)
-			})
-			os.Setenv(env, tempDir)
+			t.Setenv(env, tempDir)
 
 			// Test the function
 			auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -135,18 +131,14 @@ invalid toml content
 }
 
 func TestLoadPrefectProviderModel_NoProfilesFile(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 	// Create a temporary directory without a profiles file
 	tempDir := t.TempDir()
 
 	// Mock the user home directory
 	env := envFromOS()
-	originalHome := os.Getenv(env)
-	t.Cleanup(func() {
-		os.Setenv(env, originalHome)
-	})
-	os.Setenv(env, tempDir)
+	t.Setenv(env, tempDir)
 
 	// Test the function
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -156,7 +148,7 @@ func TestLoadPrefectProviderModel_NoProfilesFile(t *testing.T) {
 }
 
 func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 	// Create a temporary directory with an empty profiles file
 	tempDir := t.TempDir()
@@ -170,11 +162,7 @@ func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
 
 	// Mock the user home directory
 	env := envFromOS()
-	originalHome := os.Getenv(env)
-	t.Cleanup(func() {
-		os.Setenv(env, originalHome)
-	})
-	os.Setenv(env, tempDir)
+	t.Setenv(env, tempDir)
 
 	// Test the function
 	auth, err := provider.LoadProfileAuth(context.Background(), "", "")
@@ -184,7 +172,7 @@ func TestLoadPrefectProviderModel_EmptyProfilesFile(t *testing.T) {
 }
 
 func TestLoadPrefectProviderModel_SpecificProfile(t *testing.T) {
-	t.Parallel()
+	// Note: Cannot use t.Parallel() when subtests use t.Setenv() to modify environment variables
 
 	tests := []struct {
 		name            string
@@ -245,7 +233,7 @@ PREFECT_API_KEY = "active-key"
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+			// Note: Cannot use t.Parallel() when using t.Setenv() to modify environment variables
 
 			// Create a temporary directory for the test
 			tempDir := t.TempDir()
@@ -260,11 +248,7 @@ PREFECT_API_KEY = "active-key"
 
 			// Mock the user home directory
 			env := envFromOS()
-			originalHome := os.Getenv(env)
-			t.Cleanup(func() {
-				os.Setenv(env, originalHome)
-			})
-			os.Setenv(env, tempDir)
+			t.Setenv(env, tempDir)
 
 			// Test the function
 			auth, err := provider.LoadProfileAuth(context.Background(), tt.profileName, "")
