@@ -49,11 +49,11 @@ jobs:
       - name: Build
         run: mise run build
         env:
-          MISE_AUTO_INSTALL: false
+          MISE_TASK_RUN_AUTO_INSTALL: false
       - name: Unit Test
         run: mise run test
         env:
-          MISE_AUTO_INSTALL: false
+          MISE_TASK_RUN_AUTO_INSTALL: false
 
   lint:
     permissions:

@@ -33,7 +33,7 @@ jobs:
       - name: Build Terraform Docs
         run: mise run docs
         env:
-          MISE_AUTO_INSTALL: false
+          MISE_TASK_RUN_AUTO_INSTALL: false
       - name: Commit changes
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
