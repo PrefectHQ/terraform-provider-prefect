@@ -50,12 +50,8 @@ jobs:
         run: mise settings set task_run_auto_install false
       - name: Build
         run: mise run build
-        env:
-          MISE_TASK_RUN_AUTO_INSTALL: false
       - name: Unit Test
         run: mise run test
-        env:
-          MISE_TASK_RUN_AUTO_INSTALL: false
 
   lint:
     permissions:

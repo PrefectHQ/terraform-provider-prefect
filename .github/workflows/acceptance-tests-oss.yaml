@@ -46,5 +46,3 @@ jobs:
 
       - name: Run acceptance tests - OSS
         run: mise run testacc-oss
-        env:
-          MISE_TASK_RUN_AUTO_INSTALL: false
