@@ -28,8 +28,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Install tool dependencies
         uses: jdx/mise-action@v3
+        with:
+          install_args: tfplugindocs
       - name: Build Terraform Docs
         run: mise run docs
+        env:
+          MISE_AUTO_INSTALL: false
       - name: Commit changes
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}

@@ -33,6 +33,7 @@ jobs:
       - name: Run sweeper tests
         run: mise run testacc-sweepers
         env:
+          MISE_AUTO_INSTALL: false
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}

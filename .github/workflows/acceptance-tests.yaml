@@ -52,6 +52,7 @@ jobs:
       - name: Run acceptance tests
         run: mise run testacc
         env:
+          MISE_AUTO_INSTALL: false
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           # This is an API key generated as the `All Powerful Acceptance Test Bot`
           # service account.
@@ -61,6 +62,7 @@ jobs:
       - name: Run acceptance tests (user resource)
         run: mise run testacc
         env:
+          MISE_AUTO_INSTALL: false
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           # This is an API key generated as the Marvin user (marvin@prefect.io).
           # We do this because the User API requires requests to come from an API
