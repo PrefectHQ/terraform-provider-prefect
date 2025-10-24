@@ -35,6 +35,9 @@ jobs:
         with:
           install_args: gotestsum terraform
 
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
