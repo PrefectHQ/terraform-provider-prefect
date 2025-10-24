@@ -46,6 +46,8 @@ jobs:
         uses: jdx/mise-action@v3
         with:
           install_args: gotestsum
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
       - name: Build
         run: mise run build
         env:
