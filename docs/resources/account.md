@@ -59,6 +59,7 @@ Optional:
 
 - `ai_log_summaries` (Boolean) Whether to use AI to generate log summaries.
 - `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
+- `enforce_webhook_authentication` (Boolean) Whether to enforce webhook authentication
 - `managed_execution` (Boolean) Whether to enable the use of managed work pools
 
 ## Import

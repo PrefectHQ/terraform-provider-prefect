@@ -141,6 +141,11 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 						Optional:    true,
 						Computed:    true,
 					},
+					"enforce_webhook_authentication": schema.BoolAttribute{
+						Description: "Whether to enforce webhook authentication",
+						Optional:    true,
+						Computed:    true,
+					},
 				},
 			},
 			"billing_email": schema.StringAttribute{
@@ -173,14 +178,16 @@ func copyAccountToModel(_ context.Context, account *api.Account, tfModel *Accoun
 
 	settingsObject, diags := types.ObjectValue(
 		map[string]attr.Type{
-			"allow_public_workspaces": types.BoolType,
-			"ai_log_summaries":        types.BoolType,
-			"managed_execution":       types.BoolType,
+			"allow_public_workspaces":        types.BoolType,
+			"ai_log_summaries":               types.BoolType,
+			"managed_execution":              types.BoolType,
+			"enforce_webhook_authentication": types.BoolType,
 		},
 		map[string]attr.Value{
-			"allow_public_workspaces": types.BoolValue(account.Settings.AllowPublicWorkspaces),
-			"ai_log_summaries":        types.BoolValue(account.Settings.AILogSummaries),
-			"managed_execution":       types.BoolValue(account.Settings.ManagedExecution),
+			"allow_public_workspaces":        types.BoolValue(account.Settings.AllowPublicWorkspaces),
+			"ai_log_summaries":               types.BoolValue(account.Settings.AILogSummaries),
+			"managed_execution":              types.BoolValue(account.Settings.ManagedExecution),
+			"enforce_webhook_authentication": types.BoolValue(account.Settings.EnforceWebhookAuthentication),
 		},
 	)
 
@@ -316,7 +323,9 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// If domains have changed, we need to create a separate request to update them.
-	if !plan.DomainNames.Equal(state.DomainNames) {
+	// Skip the update if domain_names is not set in the plan (null), as this means
+	// the user doesn't want to manage domains via Terraform.
+	if !plan.DomainNames.IsNull() && !plan.DomainNames.Equal(state.DomainNames) {
 		var domainNames []string
 		resp.Diagnostics.Append(plan.DomainNames.ElementsAs(ctx, &domainNames, false)...)
 
@@ -391,9 +400,10 @@ func newAccountSettingsFromObject(settings basetypes.ObjectValue) api.AccountSet
 	attrs := settings.Attributes()
 
 	return api.AccountSettings{
-		AllowPublicWorkspaces: valToBool(attrs["allow_public_workspaces"]),
-		AILogSummaries:        valToBool(attrs["ai_log_summaries"]),
-		ManagedExecution:      valToBool(attrs["managed_execution"]),
+		AllowPublicWorkspaces:        valToBool(attrs["allow_public_workspaces"]),
+		AILogSummaries:               valToBool(attrs["ai_log_summaries"]),
+		ManagedExecution:             valToBool(attrs["managed_execution"]),
+		EnforceWebhookAuthentication: valToBool(attrs["enforce_webhook_authentication"]),
 	}
 }
 

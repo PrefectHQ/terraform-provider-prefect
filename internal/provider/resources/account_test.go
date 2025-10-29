@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
@@ -78,6 +79,101 @@ func TestAccResource_account(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportStateVerify: false,
 				ImportStateCheck:  checkFunc,
+			},
+		},
+	})
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_account_settings(t *testing.T) {
+	// Accounts are not compatible OSS.
+	testutils.SkipTestsIfOSS(t)
+
+	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+	resourceName := "prefect_account.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: Import the account - persist state for subsequent steps
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name   = "github-ci-tests"
+	handle = "github-ci-tests"
+}
+`,
+				ImportStateId:      accountID,
+				ImportState:        true,
+				ImportStatePersist: true, // persist the state for subsequent test steps
+				ResourceName:       resourceName,
+				ImportStateVerify:  false,
+			},
+			// Step 2: Enable enforce_webhook_authentication
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name   = "github-ci-tests"
+	handle = "github-ci-tests"
+
+	settings = {
+		enforce_webhook_authentication = true
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", true),
+				},
+			},
+			// Step 3: Disable enforce_webhook_authentication
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name   = "github-ci-tests"
+	handle = "github-ci-tests"
+
+	settings = {
+		enforce_webhook_authentication = false
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", false),
+				},
+			},
+			// Step 4: Re-enable and verify it works with all settings together
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name   = "github-ci-tests"
+	handle = "github-ci-tests"
+
+	settings = {
+		enforce_webhook_authentication = true
+		allow_public_workspaces        = false
+		ai_log_summaries               = true
+		managed_execution              = true
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", true),
+					testutils.ExpectKnownValueBool(resourceName, "settings.allow_public_workspaces", false),
+					testutils.ExpectKnownValueBool(resourceName, "settings.ai_log_summaries", true),
+					testutils.ExpectKnownValueBool(resourceName, "settings.managed_execution", true),
+				},
+			},
+			// Step 5: Unmanage the resource so it's not destroyed
+			{
+				Config: `
+removed {
+	from = prefect_account.test
+	lifecycle {
+		destroy = false
+	}
+}
+`,
 			},
 		},
 	})
