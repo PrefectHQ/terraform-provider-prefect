@@ -84,6 +84,13 @@ func TestAccResource_account(t *testing.T) {
 	})
 }
 
+// This is a helper variable to unmanage the account resource.
+var fixtureAccAccountSettingsUnmanage = `
+removed {
+  from = prefect_account.test
+}
+`
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account_settings(t *testing.T) {
 	// Accounts are not compatible OSS.
@@ -100,8 +107,9 @@ func TestAccResource_account_settings(t *testing.T) {
 			{
 				Config: `
 resource "prefect_account" "test" {
-	name   = "github-ci-tests"
-	handle = "github-ci-tests"
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	domain_names = ["example.com", "foobar.com"]
 }
 `,
 				ImportStateId:      accountID,
@@ -114,8 +122,9 @@ resource "prefect_account" "test" {
 			{
 				Config: `
 resource "prefect_account" "test" {
-	name   = "github-ci-tests"
-	handle = "github-ci-tests"
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	domain_names = ["example.com", "foobar.com"]
 
 	settings = {
 		enforce_webhook_authentication = true
@@ -130,8 +139,9 @@ resource "prefect_account" "test" {
 			{
 				Config: `
 resource "prefect_account" "test" {
-	name   = "github-ci-tests"
-	handle = "github-ci-tests"
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	domain_names = ["example.com", "foobar.com"]
 
 	settings = {
 		enforce_webhook_authentication = false
@@ -146,8 +156,9 @@ resource "prefect_account" "test" {
 			{
 				Config: `
 resource "prefect_account" "test" {
-	name   = "github-ci-tests"
-	handle = "github-ci-tests"
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	domain_names = ["example.com", "foobar.com"]
 
 	settings = {
 		enforce_webhook_authentication = true
@@ -166,14 +177,7 @@ resource "prefect_account" "test" {
 			},
 			// Step 5: Unmanage the resource so it's not destroyed
 			{
-				Config: `
-removed {
-	from = prefect_account.test
-	lifecycle {
-		destroy = false
-	}
-}
-`,
+				Config: fixtureAccAccountSettingsUnmanage,
 			},
 		},
 	})
