@@ -160,7 +160,9 @@ resource "prefect_account" "test" {
 					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", false),
 				},
 			},
-			// Step 4: Re-enable and verify it works with all settings together
+			// Step 4: Verify it works with all settings together.
+			// Important to keep enforce_webhook_authentication set to `false` so it
+			// doesn't break the acceptance tests for webhooks.
 			{
 				Config: `
 resource "prefect_account" "test" {
@@ -170,7 +172,7 @@ resource "prefect_account" "test" {
 	domain_names = ["example.com", "foobar.com"]
 
 	settings = {
-		enforce_webhook_authentication = true
+		enforce_webhook_authentication = false
 		allow_public_workspaces        = false
 		ai_log_summaries               = true
 		managed_execution              = true
@@ -178,7 +180,7 @@ resource "prefect_account" "test" {
 }
 `,
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", true),
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", false),
 					testutils.ExpectKnownValueBool(resourceName, "settings.allow_public_workspaces", false),
 					testutils.ExpectKnownValueBool(resourceName, "settings.ai_log_summaries", true),
 					testutils.ExpectKnownValueBool(resourceName, "settings.managed_execution", true),
