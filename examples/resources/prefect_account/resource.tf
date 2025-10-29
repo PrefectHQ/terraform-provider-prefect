@@ -1,6 +1,6 @@
 resource "prefect_account" "example" {
-  name        = "My Imported Account"
-  description = "A cool account"
+  name   = "My Imported Account"
+  handle = "my-imported-account"
   settings = {
     allow_public_workspaces        = true
     ai_log_summaries               = false
