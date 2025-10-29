@@ -11,6 +11,18 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+// This is a helper variable to unmanage the account resource.
+// Setting `Destroy: false` in the test steps apparently is not enough
+// to prevent the resource from being destroyed.
+var fixtureAccAccountUnmanage = `
+removed {
+  from = prefect_account.test
+  lifecycle {
+    destroy = false
+  }
+}
+`
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account(t *testing.T) {
 	// Accounts are not compatible OSS.
@@ -172,11 +184,9 @@ resource "prefect_account" "test" {
 					testutils.ExpectKnownValueBool(resourceName, "settings.managed_execution", true),
 				},
 			},
-			// Note: We cannot include a final step to unmanage the resource using a
-			// 'removed' block because Terraform will attempt to destroy it during the
-			// apply phase of that step, which fails since accounts cannot be deleted
-			// via the API. The post-test cleanup failure is expected and acceptable
-			// since the test has already verified the core functionality in steps 1-4.
+			{
+				Config: fixtureAccAccountUnmanage,
+			},
 		},
 	})
 }
