@@ -1,3 +1,4 @@
+---
 name: Build Terraform Docs
 
 on:
@@ -29,7 +30,7 @@ jobs:
       - name: Install tool dependencies
         uses: jdx/mise-action@v3
         with:
-          install_args: tfplugindocs
+          install_args: go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Disable mise auto-install for task runs
         run: mise settings set task_run_auto_install false
       - name: Build Terraform Docs

@@ -16,9 +16,10 @@ type AccountsClient interface {
 
 // AccountSettings is a representation of an account's settings.
 type AccountSettings struct {
-	AllowPublicWorkspaces bool `json:"allow_public_workspaces"`
-	AILogSummaries        bool `json:"ai_log_summaries"`
-	ManagedExecution      bool `json:"managed_execution"`
+	AllowPublicWorkspaces        bool `json:"allow_public_workspaces"`
+	AILogSummaries               bool `json:"ai_log_summaries"`
+	ManagedExecution             bool `json:"managed_execution"`
+	EnforceWebhookAuthentication bool `json:"enforce_webhook_authentication"`
 }
 
 // Account is a representation of an account.
@@ -64,5 +65,5 @@ type AccountDomain struct {
 
 // AccountDomainsUpdate is the data sent when updating an account's domain names.
 type AccountDomainsUpdate struct {
-	DomainNames []string `json:"domain_names,omitempty"`
+	DomainNames []string `json:"domain_names"`
 }

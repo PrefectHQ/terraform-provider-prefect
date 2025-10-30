@@ -20,12 +20,13 @@ This feature is available in the following [product plan(s)](https://www.prefect
 
 ```terraform
 resource "prefect_account" "example" {
-  name        = "My Imported Account"
-  description = "A cool account"
+  name   = "My Imported Account"
+  handle = "my-imported-account"
   settings = {
-    allow_public_workspaces = true
-    ai_log_summaries        = false
-    managed_execution       = false
+    allow_public_workspaces        = true
+    ai_log_summaries               = false
+    enforce_webhook_authentication = true
+    managed_execution              = false
   }
 }
 ```
@@ -59,6 +60,7 @@ Optional:
 
 - `ai_log_summaries` (Boolean) Whether to use AI to generate log summaries.
 - `allow_public_workspaces` (Boolean) Whether or not this account allows public workspaces
+- `enforce_webhook_authentication` (Boolean) Whether to enforce webhook authentication
 - `managed_execution` (Boolean) Whether to enable the use of managed work pools
 
 ## Import

@@ -6,9 +6,22 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
+
+// This is a helper variable to unmanage the account resource.
+// Setting `Destroy: false` in the test steps apparently is not enough
+// to prevent the resource from being destroyed.
+var fixtureAccAccountUnmanage = `
+removed {
+  from = prefect_account.test
+  lifecycle {
+    destroy = false
+  }
+}
+`
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account(t *testing.T) {
@@ -78,6 +91,103 @@ func TestAccResource_account(t *testing.T) {
 				ResourceName:      resourceName,
 				ImportStateVerify: false,
 				ImportStateCheck:  checkFunc,
+			},
+		},
+	})
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_account_settings(t *testing.T) {
+	// Accounts are not compatible OSS.
+	testutils.SkipTestsIfOSS(t)
+
+	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+	resourceName := "prefect_account.test"
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			// Step 1: Import the account - persist state for subsequent steps
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	link         = "https://github.com/PrefectHQ/terraform-provider-prefect"
+	domain_names = ["example.com", "foobar.com"]
+}
+`,
+				ImportStateId:      accountID,
+				ImportState:        true,
+				ImportStatePersist: true, // persist the state for subsequent test steps
+				ResourceName:       resourceName,
+				ImportStateVerify:  false,
+			},
+			// Step 2: Enable enforce_webhook_authentication
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	link         = "https://github.com/PrefectHQ/terraform-provider-prefect"
+	domain_names = ["example.com", "foobar.com"]
+
+	settings = {
+		enforce_webhook_authentication = true
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", true),
+				},
+			},
+			// Step 3: Disable enforce_webhook_authentication
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	link         = "https://github.com/PrefectHQ/terraform-provider-prefect"
+	domain_names = ["example.com", "foobar.com"]
+
+	settings = {
+		enforce_webhook_authentication = false
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", false),
+				},
+			},
+			// Step 4: Verify it works with all settings together.
+			// Important to keep enforce_webhook_authentication set to `false` so it
+			// doesn't break the acceptance tests for webhooks.
+			{
+				Config: `
+resource "prefect_account" "test" {
+	name         = "github-ci-tests"
+	handle       = "github-ci-tests"
+	link         = "https://github.com/PrefectHQ/terraform-provider-prefect"
+	domain_names = ["example.com", "foobar.com"]
+
+	settings = {
+		enforce_webhook_authentication = false
+		allow_public_workspaces        = false
+		ai_log_summaries               = true
+		managed_execution              = true
+	}
+}
+`,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueBool(resourceName, "settings.enforce_webhook_authentication", false),
+					testutils.ExpectKnownValueBool(resourceName, "settings.allow_public_workspaces", false),
+					testutils.ExpectKnownValueBool(resourceName, "settings.ai_log_summaries", true),
+					testutils.ExpectKnownValueBool(resourceName, "settings.managed_execution", true),
+				},
+			},
+			{
+				Config: fixtureAccAccountUnmanage,
 			},
 		},
 	})
