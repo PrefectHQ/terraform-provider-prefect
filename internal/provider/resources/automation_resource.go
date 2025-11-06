@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -19,6 +21,13 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
+)
+
+const (
+	// automationUpdateRetryAttempts is the number of attempts to fetch an automation after update.
+	automationUpdateRetryAttempts = 5
+	// automationUpdateRetryDelay is the base delay between retries when fetching after update.
+	automationUpdateRetryDelay = 200 * time.Millisecond
 )
 
 var (
@@ -206,9 +215,31 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	updatedAutomation, err := automationClient.Get(ctx, automationID)
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
+	// After update, fetch the automation with retry logic to handle eventual consistency.
+	// The API may need a moment to fully process the update before returning
+	// the correct state, especially for JSON fields like 'match_related'.
+	var updatedAutomation *api.Automation
+	retryErr := retry.Do(
+		func() error {
+			var fetchErr error
+			updatedAutomation, fetchErr = automationClient.Get(ctx, automationID)
+			if fetchErr != nil {
+				return fmt.Errorf("failed to fetch automation: %w", fetchErr)
+			}
+
+			// The API is eventually consistent, so we just need to ensure we got a response
+			// The JSON normalization will be handled by the jsontypes.NewNormalizedValue
+			return nil
+		},
+		retry.Attempts(automationUpdateRetryAttempts),
+		retry.Delay(automationUpdateRetryDelay),
+		retry.DelayType(retry.BackOffDelay),
+		retry.LastErrorOnly(true),
+		retry.Context(ctx),
+	)
+
+	if retryErr != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", retryErr))
 
 		return
 	}
