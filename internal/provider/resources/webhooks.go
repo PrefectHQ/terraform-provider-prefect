@@ -3,9 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -17,13 +15,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-)
-
-const (
-	// webhookUpdateRetryAttempts is the number of attempts to fetch a webhook after update.
-	webhookUpdateRetryAttempts = 5
-	// webhookUpdateRetryDelay is the base delay between retries when fetching after update.
-	webhookUpdateRetryDelay = 200 * time.Millisecond
 )
 
 var (
@@ -312,40 +303,11 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// After update, fetch the webhook with retry logic to handle eventual consistency.
-	// The API may need a moment to fully process the update before returning
-	// the correct state, especially for the 'enabled' field.
-	var webhook *api.Webhook
-	retryErr := retry.Do(
-		func() error {
-			var fetchErr error
-			webhook, fetchErr = client.Get(ctx, state.ID.ValueString())
-			if fetchErr != nil {
-				return fmt.Errorf("failed to fetch webhook: %w", fetchErr)
-			}
+	webhook, err := client.Get(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
-			// Verify the enabled field matches what we expect
-			if webhook.Enabled != plan.Enabled.ValueBool() {
-				return fmt.Errorf("webhook enabled field not yet updated (expected %v, got %v)", plan.Enabled.ValueBool(), webhook.Enabled)
-			}
-
-			return nil
-		},
-		retry.Attempts(webhookUpdateRetryAttempts),
-		retry.Delay(webhookUpdateRetryDelay),
-		retry.DelayType(retry.BackOffDelay),
-		retry.LastErrorOnly(true),
-		retry.Context(ctx),
-	)
-
-	if retryErr != nil {
-		// If retry failed, try one more time without validation
-		webhook, err = client.Get(ctx, state.ID.ValueString())
-		if err != nil {
-			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
-
-			return
-		}
+		return
 	}
 
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
