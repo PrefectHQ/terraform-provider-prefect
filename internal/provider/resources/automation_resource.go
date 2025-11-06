@@ -179,12 +179,6 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	var state AutomationResourceModel
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	automationClient, err := r.client.Automations(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Automation", err))
@@ -212,16 +206,17 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// After update, use the planned values directly rather than fetching from the API.
-	// This avoids eventual consistency issues and JSON normalization differences where
-	// the API may transform data structures (e.g., match_related format changes).
-	// The next Read/Refresh will fetch the actual state.
-	// Preserve computed fields from the current state.
-	plan.ID = state.ID
-	plan.Created = state.Created
-	plan.AccountID = state.AccountID
-	plan.WorkspaceID = state.WorkspaceID
-	// Updated timestamp will be refreshed on next Read
+	updatedAutomation, err := automationClient.Get(ctx, automationID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
+
+		return
+	}
+
+	resp.Diagnostics.Append(mapAutomationAPIToTerraform(ctx, updatedAutomation, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
