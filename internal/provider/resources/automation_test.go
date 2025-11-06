@@ -111,7 +111,7 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
         },
         {
           "prefect.resource.id" : "prefect-cloud.user.*",
-           "prefect.resource.role" : "creator"
+          "prefect.resource.role" : "creator"
         }
       ])
       after     = [
