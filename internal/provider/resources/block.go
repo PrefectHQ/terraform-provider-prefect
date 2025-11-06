@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
@@ -21,13 +20,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-)
-
-const (
-	// blockSchemaRetryDelay is the base delay for retrying block schema lookups.
-	// This is set to 200ms to maintain v4.6.1 timing behavior after the retry-go v4.7.0 update,
-	// which changed BackOffDelay to count from 0 instead of 1 (effectively halving delays).
-	blockSchemaRetryDelay = 200 * time.Millisecond
 )
 
 type BlockResource struct {
@@ -217,9 +209,6 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 	var latestBlockSchema *api.BlockSchema
 	var diags diag.Diagnostic
 
-	// Configure retry with explicit delay to maintain v4.6.1 timing behavior.
-	// In retry-go v4.7.0, BackOffDelay counting changed from starting at 1 to starting at 0,
-	// effectively halving all delays. We double the base delay (100ms -> 200ms) to compensate.
 	err := retry.Do(func() error {
 		blockSchemas, diags = r.getBlockSchemas(ctx, plan)
 		if diags != nil {
@@ -233,10 +222,7 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 		latestBlockSchema = blockSchemas[0]
 
 		return nil
-	},
-		retry.Delay(blockSchemaRetryDelay),
-		retry.DelayType(retry.CombineDelay(retry.BackOffDelay, retry.RandomDelay)),
-	)
+	})
 
 	if err != nil {
 		diags = diag.NewErrorDiagnostic(
