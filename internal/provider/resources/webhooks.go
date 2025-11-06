@@ -3,7 +3,9 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -152,6 +154,51 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	}
 }
 
+// waitForWebhookStateStabilization waits for the webhook's enabled state to match the expected value.
+// This handles eventual consistency where the webhook may be created with a temporary enabled state
+// that gets updated asynchronously by the API.
+func waitForWebhookStateStabilization(ctx context.Context, client api.WebhooksClient, webhookID string, expectedEnabled bool) (*api.Webhook, error) {
+	const (
+		maxRetryAttempts = 10
+		retryDelay       = 500 * time.Millisecond
+	)
+
+	var webhook *api.Webhook
+
+	err := retry.Do(
+		func() error {
+			var err error
+			webhook, err = client.Get(ctx, webhookID)
+			if err != nil {
+				return fmt.Errorf("failed to get webhook: %w", err)
+			}
+
+			// If enabled state matches expected, we're done
+			if webhook.Enabled == expectedEnabled {
+				return nil
+			}
+
+			// State doesn't match, retry
+			return fmt.Errorf("webhook enabled state does not match expected")
+		},
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(retryDelay),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		// Even if we hit max retries, return the last webhook state
+		// This allows Terraform to proceed and detect any remaining drift
+		if webhook != nil {
+			return webhook, nil
+		}
+
+		return nil, fmt.Errorf("failed to stabilize webhook state: %w", err)
+	}
+
+	return webhook, nil
+}
+
 // copyWebhookResponseToModel maps an API response to a model that is saved in Terraform state.
 func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceModel, endpointHost string) {
 	tfModel.ID = customtypes.NewUUIDValue(webhook.ID)
@@ -194,6 +241,16 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	webhook, err := webhookClient.Create(ctx, createReq)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
+
+		return
+	}
+
+	// Wait for the webhook enabled state to stabilize
+	// The API may update this field asynchronously after creation
+	expectedEnabled := plan.Enabled.ValueBool()
+	webhook, err = waitForWebhookStateStabilization(ctx, webhookClient, webhook.ID.String(), expectedEnabled)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
 
@@ -303,11 +360,24 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	// Wait for the webhook enabled state to stabilize after update
+	// The API may update this field asynchronously
+	expectedEnabled := plan.Enabled.ValueBool()
 	webhook, err := client.Get(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
 		return
+	}
+
+	// Only wait for stabilization if enabled state doesn't match immediately
+	if webhook.Enabled != expectedEnabled {
+		webhook, err = waitForWebhookStateStabilization(ctx, client, state.ID.ValueString(), expectedEnabled)
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
+
+			return
+		}
 	}
 
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
