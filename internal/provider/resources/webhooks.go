@@ -303,14 +303,16 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	webhook, err := client.Get(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
-
-		return
-	}
-
-	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
+	// After update, use the planned values directly rather than fetching from the API.
+	// This avoids eventual consistency issues where the API may return stale data
+	// immediately after an update. The next Read/Refresh will fetch the actual state.
+	// Preserve computed fields from the current state.
+	plan.ID = state.ID
+	plan.Created = state.Created
+	plan.AccountID = state.AccountID
+	plan.WorkspaceID = state.WorkspaceID
+	plan.Endpoint = state.Endpoint
+	// Updated timestamp will be refreshed on next Read
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
