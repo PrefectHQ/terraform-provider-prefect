@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -110,6 +111,27 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	}
 }
 
+// waitForTeamAccessToExist waits for the team access to be available after creation.
+// This handles eventual consistency where the team access may be created but not
+// immediately available for reading.
+func waitForTeamAccessToExist(ctx context.Context, client api.TeamAccessClient, teamID, memberID, memberActorID customtypes.UUIDValue) (*api.TeamAccess, error) {
+	teamAccess, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.TeamAccess, error) {
+			return client.Read(ctx, teamID.ValueUUID(), memberID.ValueUUID(), memberActorID.ValueUUID())
+		},
+		func(_ *api.TeamAccess) error {
+			// If we successfully read the team access, it exists
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for team access to exist: %w", err)
+	}
+
+	return teamAccess, nil
+}
+
 // Create creates a new team access.
 func (r *TeamAccessResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan TeamAccessResourceModel
@@ -132,7 +154,8 @@ func (r *TeamAccessResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	teamAccess, err := client.Read(ctx, plan.TeamID.ValueUUID(), plan.MemberID.ValueUUID(), plan.MemberActorID.ValueUUID())
+	// Wait for the team access to be available after creation
+	teamAccess, err := waitForTeamAccessToExist(ctx, client, plan.TeamID, plan.MemberID, plan.MemberActorID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team Access", "create", err))
 
