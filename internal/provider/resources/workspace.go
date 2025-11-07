@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -131,21 +129,12 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 // This handles eventual consistency where the workspace may be created or updated with values
 // that get updated asynchronously by the API.
 func waitForWorkspaceStateStabilization(ctx context.Context, client api.WorkspacesClient, workspaceID uuid.UUID, expectedName, expectedHandle, expectedDescription string) (*api.Workspace, error) {
-	const (
-		maxRetryAttempts = 10
-		retryDelay       = 500 * time.Millisecond
-	)
-
-	var workspace *api.Workspace
-
-	err := retry.Do(
-		func() error {
-			var err error
-			workspace, err = client.Get(ctx, workspaceID)
-			if err != nil {
-				return fmt.Errorf("failed to get workspace: %w", err)
-			}
-
+	workspace, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.Workspace, error) {
+			return client.Get(ctx, workspaceID)
+		},
+		func(workspace *api.Workspace) error {
 			// Check if all fields match expected values
 			if workspace.Name != expectedName {
 				return fmt.Errorf("workspace name does not match expected: got %q, want %q", workspace.Name, expectedName)
@@ -165,19 +154,9 @@ func waitForWorkspaceStateStabilization(ctx context.Context, client api.Workspac
 			// All fields match, we're done
 			return nil
 		},
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(retryDelay),
-		retry.LastErrorOnly(true),
 	)
-
 	if err != nil {
-		// Even if we hit max retries, return the last workspace state
-		// This allows Terraform to proceed and detect any remaining drift
-		if workspace != nil {
-			return workspace, nil
-		}
-
-		return nil, fmt.Errorf("failed to stabilize workspace state: %w", err)
+		return nil, fmt.Errorf("failed to wait for workspace state stabilization: %w", err)
 	}
 
 	return workspace, nil
