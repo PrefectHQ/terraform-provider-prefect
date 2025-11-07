@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -125,6 +127,62 @@ func (r *WorkspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	}
 }
 
+// waitForWorkspaceStateStabilization waits for the workspace's fields to match the expected values.
+// This handles eventual consistency where the workspace may be created or updated with values
+// that get updated asynchronously by the API.
+func waitForWorkspaceStateStabilization(ctx context.Context, client api.WorkspacesClient, workspaceID uuid.UUID, expectedName, expectedHandle, expectedDescription string) (*api.Workspace, error) {
+	const (
+		maxRetryAttempts = 10
+		retryDelay       = 500 * time.Millisecond
+	)
+
+	var workspace *api.Workspace
+
+	err := retry.Do(
+		func() error {
+			var err error
+			workspace, err = client.Get(ctx, workspaceID)
+			if err != nil {
+				return fmt.Errorf("failed to get workspace: %w", err)
+			}
+
+			// Check if all fields match expected values
+			if workspace.Name != expectedName {
+				return fmt.Errorf("workspace name does not match expected: got %q, want %q", workspace.Name, expectedName)
+			}
+			if workspace.Handle != expectedHandle {
+				return fmt.Errorf("workspace handle does not match expected: got %q, want %q", workspace.Handle, expectedHandle)
+			}
+			// Description can be nil, so we need to handle that case
+			actualDescription := ""
+			if workspace.Description != nil {
+				actualDescription = *workspace.Description
+			}
+			if actualDescription != expectedDescription {
+				return fmt.Errorf("workspace description does not match expected: got %q, want %q", actualDescription, expectedDescription)
+			}
+
+			// All fields match, we're done
+			return nil
+		},
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(retryDelay),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		// Even if we hit max retries, return the last workspace state
+		// This allows Terraform to proceed and detect any remaining drift
+		if workspace != nil {
+			return workspace, nil
+		}
+
+		return nil, fmt.Errorf("failed to stabilize workspace state: %w", err)
+	}
+
+	return workspace, nil
+}
+
 // copyWorkspaceModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyWorkspaceToModel(_ context.Context, workspace *api.Workspace, tfModel *WorkspaceResourceModel) diag.Diagnostics {
@@ -163,6 +221,26 @@ func (r *WorkspaceResource) Create(ctx context.Context, req resource.CreateReque
 			Handle:      plan.Handle.ValueString(),
 			Description: plan.Description.ValueStringPointer(),
 		},
+	)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
+
+		return
+	}
+
+	// Wait for the workspace state to stabilize
+	// The API may update fields asynchronously after creation
+	expectedDescription := ""
+	if plan.Description.ValueStringPointer() != nil {
+		expectedDescription = *plan.Description.ValueStringPointer()
+	}
+	workspace, err = waitForWorkspaceStateStabilization(
+		ctx,
+		client,
+		workspace.ID,
+		plan.Name.ValueString(),
+		plan.Handle.ValueString(),
+		expectedDescription,
 	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "create", err))
@@ -305,7 +383,20 @@ func (r *WorkspaceResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	workspace, err := client.Get(ctx, workspaceID)
+	// Wait for the workspace state to stabilize after update
+	// The API may update fields asynchronously
+	expectedDescription := ""
+	if plan.Description.ValueStringPointer() != nil {
+		expectedDescription = *plan.Description.ValueStringPointer()
+	}
+	workspace, err := waitForWorkspaceStateStabilization(
+		ctx,
+		client,
+		workspaceID,
+		plan.Name.ValueString(),
+		plan.Handle.ValueString(),
+		expectedDescription,
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "get", err))
 
