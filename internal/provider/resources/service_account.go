@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -211,6 +212,11 @@ func waitForServiceAccountStateStabilization(ctx context.Context, client api.Ser
 			// Check if name matches expected value
 			if serviceAccount.Name != expectedName {
 				return fmt.Errorf("service account name does not match expected: got %q, want %q", serviceAccount.Name, expectedName)
+			}
+
+			// Check if actor_id is populated (needed for work_pool_access and other resources)
+			if serviceAccount.ActorID == uuid.Nil {
+				return fmt.Errorf("service account actor_id is not yet populated")
 			}
 
 			return nil
