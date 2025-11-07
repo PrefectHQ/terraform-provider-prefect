@@ -1,11 +1,14 @@
 package resources
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
@@ -102,6 +105,15 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createdAutomation, err := automationClient.Create(ctx, createAutomationRequest)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "create", err))
+
+		return
+	}
+
+	// Wait for the automation state to stabilize
+	// The API may transform fields like match_related asynchronously after creation
+	createdAutomation, err = waitForAutomationStateStabilization(ctx, automationClient, createdAutomation.ID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "create", err))
 
@@ -206,7 +218,9 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	updatedAutomation, err := automationClient.Get(ctx, automationID)
+	// Wait for the automation state to stabilize after update
+	// The API may transform fields like match_related asynchronously
+	updatedAutomation, err := waitForAutomationStateStabilization(ctx, automationClient, automationID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
 
@@ -343,6 +357,61 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 	}
 
 	return diags
+}
+
+// waitForAutomationStateStabilization waits for the automation's state to stabilize after create/update.
+// The API may transform fields like match_related asynchronously, causing inconsistent results
+// if we read too quickly after the write operation.
+func waitForAutomationStateStabilization(ctx context.Context, client api.AutomationsClient, automationID uuid.UUID) (*api.Automation, error) {
+	const (
+		maxRetryAttempts = 10
+		retryDelay       = 500 * time.Millisecond
+	)
+
+	var automation *api.Automation
+	var lastJSON []byte
+
+	err := retry.Do(
+		func() error {
+			var err error
+			automation, err = client.Get(ctx, automationID)
+			if err != nil {
+				return fmt.Errorf("failed to get automation: %w", err)
+			}
+
+			// Marshal the match_related field to check if it's still changing
+			currentJSON, err := json.Marshal(automation.Trigger.MatchRelated)
+			if err != nil {
+				return fmt.Errorf("failed to marshal match_related: %w", err)
+			}
+
+			// If this is not the first attempt, check if state has stabilized
+			if lastJSON != nil && bytes.Equal(lastJSON, currentJSON) {
+				// State has stabilized
+				return nil
+			}
+
+			// State is still changing, save current state and retry
+			lastJSON = currentJSON
+
+			return fmt.Errorf("automation state still changing")
+		},
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(retryDelay),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		// Even if we hit max retries, return the last automation state
+		// This allows Terraform to proceed and detect any remaining drift
+		if automation != nil {
+			return automation, nil
+		}
+
+		return nil, fmt.Errorf("failed to stabilize automation state: %w", err)
+	}
+
+	return automation, nil
 }
 
 // mapTriggerAPIToTerraform maps an `event` or `metric` trigger

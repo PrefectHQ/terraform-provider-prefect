@@ -287,6 +287,12 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 
 	err = client.Delete(ctx, accessorType, accessID, accessorID)
 	if err != nil {
+		// If the resource is already deleted (404), treat as success for idempotent deletion.
+		// This can happen during test cleanup when workspace deletion cascades to delete access records.
+		if helpers.Is404Error(err) {
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "delete", err))
 
 		return
