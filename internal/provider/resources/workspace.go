@@ -418,6 +418,12 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 	err = client.Delete(ctx, workspaceID)
 	if err != nil {
+		// If the resource is already deleted (404), treat as success for idempotent deletion.
+		// This can happen when cleanup processes or cascading deletes have already removed the workspace.
+		if helpers.Is404Error(err) {
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace", "delete", err))
 
 		return

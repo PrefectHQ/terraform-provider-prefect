@@ -3,7 +3,9 @@ package resources
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -113,20 +115,44 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 
 // waitForTeamAccessToExist waits for the team access to be available after creation.
 // This handles eventual consistency where the team access may be created but not
-// immediately available for reading.
+// immediately available for reading. Team access requires additional time because
+// it depends on the member (service account or user) being fully registered in the
+// system before it can be queried.
 func waitForTeamAccessToExist(ctx context.Context, client api.TeamAccessClient, teamID, memberID, memberActorID customtypes.UUIDValue) (*api.TeamAccess, error) {
-	teamAccess, err := helpers.WaitForResourceStabilization(
-		ctx,
-		func(ctx context.Context) (*api.TeamAccess, error) {
-			return client.Read(ctx, teamID.ValueUUID(), memberID.ValueUUID(), memberActorID.ValueUUID())
-		},
-		func(_ *api.TeamAccess) error {
+	// Use longer retry parameters for team access since it depends on member registration
+	const (
+		maxRetryAttempts = 20   // Double the default
+		retryDelay       = 1000 // 1 second between attempts
+	)
+
+	var teamAccess *api.TeamAccess
+	var fetchErr error
+
+	err := retry.Do(
+		func() error {
+			var err error
+			teamAccess, err = client.Read(ctx, teamID.ValueUUID(), memberID.ValueUUID(), memberActorID.ValueUUID())
+			if err != nil {
+				fetchErr = err
+
+				return fmt.Errorf("failed to fetch team access: %w", err)
+			}
+
 			// If we successfully read the team access, it exists
 			return nil
 		},
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(time.Duration(retryDelay)*time.Millisecond),
+		retry.LastErrorOnly(true),
 	)
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to wait for team access to exist: %w", err)
+		// Even if we hit max retries, return the last team access state if we have one
+		if fetchErr == nil && teamAccess != nil {
+			return teamAccess, nil
+		}
+
+		return nil, fmt.Errorf("failed to wait for team access to exist after %d attempts: %w", maxRetryAttempts, err)
 	}
 
 	return teamAccess, nil
