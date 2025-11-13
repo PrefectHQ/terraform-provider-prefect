@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -198,6 +199,36 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 	}
 }
 
+// waitForServiceAccountStateStabilization waits for the service account's fields to match the expected values.
+// This handles eventual consistency where the service account may be created or updated with values
+// that get updated asynchronously by the API.
+func waitForServiceAccountStateStabilization(ctx context.Context, client api.ServiceAccountsClient, serviceAccountID string, expectedName string) (*api.ServiceAccount, error) {
+	serviceAccount, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.ServiceAccount, error) {
+			return client.Get(ctx, serviceAccountID)
+		},
+		func(serviceAccount *api.ServiceAccount) error {
+			// Check if name matches expected value
+			if serviceAccount.Name != expectedName {
+				return fmt.Errorf("service account name does not match expected: got %q, want %q", serviceAccount.Name, expectedName)
+			}
+
+			// Check if actor_id is populated (needed for work_pool_access and other resources)
+			if serviceAccount.ActorID == uuid.Nil {
+				return fmt.Errorf("service account actor_id is not yet populated")
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for service account state stabilization: %w", err)
+	}
+
+	return serviceAccount, nil
+}
+
 // copyServiceAccountToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
 func copyServiceAccountToModel(serviceAccount *api.ServiceAccount, tfModel *ServiceAccountResourceModel) {
@@ -275,6 +306,20 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	}
 
 	serviceAccount, err := serviceAccountClient.Create(ctx, createReq)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "create", err))
+
+		return
+	}
+
+	// Wait for the service account state to stabilize
+	// The API may update fields asynchronously after creation
+	serviceAccount, err = waitForServiceAccountStateStabilization(
+		ctx,
+		serviceAccountClient,
+		serviceAccount.ID.String(),
+		plan.Name.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "create", err))
 
@@ -469,7 +514,14 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	serviceAccount, err := client.Get(ctx, plan.ID.ValueString())
+	// Wait for the service account state to stabilize after update
+	// The API may update fields asynchronously
+	serviceAccount, err := waitForServiceAccountStateStabilization(
+		ctx,
+		client,
+		plan.ID.ValueString(),
+		plan.Name.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "get", err))
 

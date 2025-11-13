@@ -3,9 +3,7 @@ package resources
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -158,42 +156,22 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 // This handles eventual consistency where the webhook may be created with a temporary enabled state
 // that gets updated asynchronously by the API.
 func waitForWebhookStateStabilization(ctx context.Context, client api.WebhooksClient, webhookID string, expectedEnabled bool) (*api.Webhook, error) {
-	const (
-		maxRetryAttempts = 10
-		retryDelay       = 500 * time.Millisecond
-	)
-
-	var webhook *api.Webhook
-
-	err := retry.Do(
-		func() error {
-			var err error
-			webhook, err = client.Get(ctx, webhookID)
-			if err != nil {
-				return fmt.Errorf("failed to get webhook: %w", err)
-			}
-
-			// If enabled state matches expected, we're done
-			if webhook.Enabled == expectedEnabled {
-				return nil
-			}
-
-			// State doesn't match, retry
-			return fmt.Errorf("webhook enabled state does not match expected")
+	webhook, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.Webhook, error) {
+			return client.Get(ctx, webhookID)
 		},
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(retryDelay),
-		retry.LastErrorOnly(true),
+		func(webhook *api.Webhook) error {
+			// Check if enabled state matches expected
+			if webhook.Enabled != expectedEnabled {
+				return fmt.Errorf("webhook enabled state does not match expected: got %v, want %v", webhook.Enabled, expectedEnabled)
+			}
+
+			return nil
+		},
 	)
-
 	if err != nil {
-		// Even if we hit max retries, return the last webhook state
-		// This allows Terraform to proceed and detect any remaining drift
-		if webhook != nil {
-			return webhook, nil
-		}
-
-		return nil, fmt.Errorf("failed to stabilize webhook state: %w", err)
+		return nil, fmt.Errorf("failed to wait for webhook state stabilization: %w", err)
 	}
 
 	return webhook, nil
