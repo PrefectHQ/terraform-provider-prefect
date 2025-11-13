@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -108,6 +109,15 @@ func (r *AutomationResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
+	// Wait for the automation state to stabilize
+	// The API may transform fields like match_related asynchronously after creation
+	createdAutomation, err = waitForAutomationStateStabilization(ctx, automationClient, createdAutomation.ID)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "create", err))
+
+		return
+	}
+
 	resp.Diagnostics.Append(mapAutomationAPIToTerraform(ctx, createdAutomation, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -206,7 +216,9 @@ func (r *AutomationResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	updatedAutomation, err := automationClient.Get(ctx, automationID)
+	// Wait for the automation state to stabilize after update
+	// The API may transform fields like match_related asynchronously
+	updatedAutomation, err := waitForAutomationStateStabilization(ctx, automationClient, automationID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Automation", "get", err))
 
@@ -343,6 +355,36 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 	}
 
 	return diags
+}
+
+// waitForAutomationStateStabilization waits for the automation's state to stabilize after create/update.
+// The API may transform fields like match_related asynchronously, causing inconsistent results
+// if we read too quickly after the write operation.
+func waitForAutomationStateStabilization(ctx context.Context, client api.AutomationsClient, automationID uuid.UUID) (*api.Automation, error) {
+	automation, err := helpers.WaitForResourceStabilizationByComparison(
+		ctx,
+		func(ctx context.Context) (*api.Automation, error) {
+			return client.Get(ctx, automationID)
+		},
+		func(prev, curr *api.Automation) bool {
+			// Compare the match_related field to check if it's still changing
+			prevJSON, err := json.Marshal(prev.Trigger.MatchRelated)
+			if err != nil {
+				return false
+			}
+			currJSON, err := json.Marshal(curr.Trigger.MatchRelated)
+			if err != nil {
+				return false
+			}
+
+			return bytes.Equal(prevJSON, currJSON)
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for automation state stabilization: %w", err)
+	}
+
+	return automation, nil
 }
 
 // mapTriggerAPIToTerraform maps an `event` or `metric` trigger
