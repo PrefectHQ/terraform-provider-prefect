@@ -312,6 +312,11 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	// The API Key is only returned on Create, so we need to save it before calling
+	// the stabilization helper, which will overwrite serviceAccount with a Get() response
+	// that does not include the API key value.
+	apiKey := serviceAccount.APIKey.Key
+
 	// Wait for the service account state to stabilize
 	// The API may update fields asynchronously after creation
 	serviceAccount, err = waitForServiceAccountStateStabilization(
@@ -331,7 +336,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
 	// overwritten in state when this helper is used on Read operations.
-	plan.APIKey = types.StringValue(serviceAccount.APIKey.Key)
+	plan.APIKey = types.StringValue(apiKey)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
