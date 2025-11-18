@@ -349,6 +349,12 @@ func textAccCheckServiceAccountAPIKeyStored(resourceName string, passedKey *stri
 			return fmt.Errorf("Resource not found in state: %s", resourceName)
 		}
 		key := rs.Primary.Attributes["api_key"]
+
+		// Validate that the API key is non-empty to prevent regression of issue #606
+		if key == "" {
+			return fmt.Errorf("API key is empty - this should never happen after resource creation")
+		}
+
 		*passedKey = key
 
 		return nil
@@ -386,6 +392,11 @@ func testAccCheckServiceAccountAPIKeyRotated(n string, passedKey *string) resour
 		}
 
 		key := rs.Primary.Attributes["api_key"]
+
+		// Validate that the rotated API key is non-empty to prevent regression of issue #606
+		if key == "" {
+			return fmt.Errorf("API key is empty after rotation - this should never happen")
+		}
 
 		if *passedKey == key {
 			return fmt.Errorf("key rotation did not occur correctly, as the old key=%s is the same as the new key=%s", *passedKey, key)
