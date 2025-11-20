@@ -210,6 +210,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Invalid Prefect API Endpoint",
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
+		endpointURL = &url.URL{} // set to empty url if error occurred
 	}
 
 	// Extract the API Key from configuration or environment variable.
