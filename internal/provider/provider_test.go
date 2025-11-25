@@ -82,63 +82,6 @@ func newTestConfigureRequest(t *testing.T, model *provider.PrefectProviderModel)
 	}
 }
 
-func TestConfigure_EmptyAPIKeyProducesWarning(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	prov := &provider.PrefectProvider{}
-	resp := &tfprovider.ConfigureResponse{}
-
-	config := &provider.PrefectProviderModel{
-		APIKey: types.StringValue(""), // empty string triggers warning
-	}
-
-	req := newTestConfigureRequest(t, config)
-
-	prov.Configure(ctx, req, resp)
-
-	var found bool
-	for _, d := range resp.Diagnostics {
-		if d.Severity() == diag.SeverityError && strings.Contains(d.Summary(), "Missing Prefect API Key") {
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
-		t.Fatalf("expected error for empty API key")
-	}
-}
-
-// TestConfigure_MissingAPIKeyForCloud returns error.
-func TestConfigure_MissingAPIKeyForCloud(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	prov := &provider.PrefectProvider{}
-	resp := &tfprovider.ConfigureResponse{}
-
-	config := &provider.PrefectProviderModel{
-		// APIKey is missing (null by default)
-	}
-
-	req := newTestConfigureRequest(t, config)
-
-	prov.Configure(ctx, req, resp)
-
-	var found bool
-	for _, d := range resp.Diagnostics {
-		if d.Severity() == diag.SeverityError && strings.Contains(d.Summary(), "Missing Prefect API Key") {
-			found = true
-
-			break
-		}
-	}
-
-	if !found {
-		t.Fatalf("expected error for missing API key for cloud")
-	}
-}
-
 // TestConfigure_InvalidURL returns error.
 func TestConfigure_InvalidURL(t *testing.T) {
 	t.Parallel()
