@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
