@@ -21,8 +21,8 @@ github.com/apparentlymart/go-textseg/v15 v15.0.0 h1:uYvfpb3DyLSCGWnctWKGj857c6ew
 github.com/apparentlymart/go-textseg/v15 v15.0.0/go.mod h1:K8XmNZdhEBkdlyDdvbmmsvpAG721bKi0joRfFdHIWJ4=
 github.com/armon/go-radix v1.0.0 h1:F4z6KzEeeQIMeLFa97iZU6vupzoecKdU5TX24SNppXI=
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/avast/retry-go/v4 v4.6.1 h1:VkOLRubHdisGrHnTu89g08aQEWEgRU7LVEop3GbIcMk=
-github.com/avast/retry-go/v4 v4.6.1/go.mod h1:V6oF8njAwxJ5gRo1Q7Cxab24xs5NCWZBeaHHBklR8mA=
+github.com/avast/retry-go/v4 v4.7.0 h1:yjDs35SlGvKwRNSykujfjdMxMhMQQM0TnIjJaHB+Zio=
+github.com/avast/retry-go/v4 v4.7.0/go.mod h1:ZMPDa3sY2bKgpLtap9JRUgk2yTAba7cgiFhqxY2Sg6Q=
 github.com/bgentry/speakeasy v0.1.0 h1:ByYyxL9InA1OWqxJqqp2A5pYHUrCiAL6K3J+LKSsQkY=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=
 github.com/bmatcuk/doublestar/v4 v4.9.1 h1:X8jg9rRZmJd4yRy7ZeNDRnM+T3ZfHv15JiBJ/avrEXE=
@@ -112,12 +112,12 @@ github.com/hashicorp/terraform-plugin-framework v1.16.1 h1:1+zwFm3MEqd/0K3YBB2v9
 github.com/hashicorp/terraform-plugin-framework v1.16.1/go.mod h1:0xFOxLy5lRzDTayc4dzK/FakIgBhNf/lC4499R9cV4Y=
 github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0 h1:SJXL5FfJJm17554Kpt9jFXngdM6fXbnUnZ6iT2IeiYA=
 github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0/go.mod h1:p0phD0IYhsu9bR4+6OetVvvH59I6LwjXGnTVEr8ox6E=
-github.com/hashicorp/terraform-plugin-framework-validators v0.18.0 h1:OQnlOt98ua//rCw+QhBbSqfW3QbwtVrcdWeQN5gI3Hw=
-github.com/hashicorp/terraform-plugin-framework-validators v0.18.0/go.mod h1:lZvZvagw5hsJwuY7mAY6KUz45/U6fiDR0CzQAwWD0CA=
+github.com/hashicorp/terraform-plugin-framework-validators v0.19.0 h1:Zz3iGgzxe/1XBkooZCewS0nJAaCFPFPHdNJd8FgE4Ow=
+github.com/hashicorp/terraform-plugin-framework-validators v0.19.0/go.mod h1:GBKTNGbGVJohU03dZ7U8wHqc2zYnMUawgCN+gC0itLc=
 github.com/hashicorp/terraform-plugin-go v0.29.0 h1:1nXKl/nSpaYIUBU1IG/EsDOX0vv+9JxAltQyDMpq5mU=
 github.com/hashicorp/terraform-plugin-go v0.29.0/go.mod h1:vYZbIyvxyy0FWSmDHChCqKvI40cFTDGSb3D8D70i9GM=
-github.com/hashicorp/terraform-plugin-log v0.9.0 h1:i7hOA+vdAItN1/7UrfBqBwvYPQ9TFvymaRGZED3FCV0=
-github.com/hashicorp/terraform-plugin-log v0.9.0/go.mod h1:rKL8egZQ/eXSyDqzLUuwUYLVdlYeamldAHSxjUFADow=
+github.com/hashicorp/terraform-plugin-log v0.10.0 h1:eu2kW6/QBVdN4P3Ju2WiB2W3ObjkAsyfBsL3Wh1fj3g=
+github.com/hashicorp/terraform-plugin-log v0.10.0/go.mod h1:/9RR5Cv2aAbrqcTSdNmY1NRHP4E3ekrXRGjqORpXyB0=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0 h1:NFPMacTrY/IdcIcnUB+7hsore1ZaRWU9cnB6jFoBnIM=
 github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0/go.mod h1:QYmYnLfsosrxjCnGY1p9c7Zj6n9thnEE+7RObeYs3fA=
 github.com/hashicorp/terraform-plugin-testing v1.13.3 h1:QLi/khB8Z0a5L54AfPrHukFpnwsGL8cwwswj4RZduCo=

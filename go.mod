@@ -4,15 +4,15 @@ go 1.24.1
 
 require (
 	github.com/BurntSushi/toml v1.5.0
-	github.com/avast/retry-go/v4 v4.6.1
+	github.com/avast/retry-go/v4 v4.7.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/hashicorp/terraform-plugin-docs v0.24.0
 	github.com/hashicorp/terraform-plugin-framework v1.16.1
 	github.com/hashicorp/terraform-plugin-framework-jsontypes v0.2.0
-	github.com/hashicorp/terraform-plugin-framework-validators v0.18.0
+	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
 	github.com/hashicorp/terraform-plugin-go v0.29.0
-	github.com/hashicorp/terraform-plugin-log v0.9.0
+	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/stretchr/testify v1.11.1
 	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
