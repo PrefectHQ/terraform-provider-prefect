@@ -111,6 +111,7 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Description of the team",
 			},
 		},
@@ -135,7 +136,7 @@ func (r *TeamResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	team, err := teamClient.Create(ctx, api.TeamCreate{
 		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Team", err))
@@ -215,7 +216,7 @@ func (r *TeamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	team, err := teamClient.Update(ctx, plan.ID.ValueString(), api.TeamUpdate{
 		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team", "update", err))
@@ -275,7 +276,7 @@ func copyTeamToModel(team *api.Team, tfModel *TeamResourceModel) diag.Diagnostic
 	tfModel.Created = customtypes.NewTimestampPointerValue(team.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(team.Updated)
 	tfModel.Name = types.StringValue(team.Name)
-	tfModel.Description = types.StringValue(team.Description)
+	tfModel.Description = types.StringPointerValue(team.Description)
 
 	return nil
 }

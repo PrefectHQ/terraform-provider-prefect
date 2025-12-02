@@ -16,20 +16,20 @@ type TeamsClient interface {
 // Team is a representation of an team.
 type Team struct {
 	BaseModel
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
 }
 
 // TeamCreate is a payload for creating a team.
 type TeamCreate struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
 }
 
 // TeamUpdate is a payload for updating a team.
 type TeamUpdate struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
 }
 
 // TeamFilter defines the search filter payload
