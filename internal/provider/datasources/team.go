@@ -159,7 +159,7 @@ func (d *TeamDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	config.Created = customtypes.NewTimestampPointerValue(fetchedTeam.Created)
 	config.Updated = customtypes.NewTimestampPointerValue(fetchedTeam.Updated)
 	config.Name = types.StringValue(fetchedTeam.Name)
-	config.Description = types.StringValue(fetchedTeam.Description)
+	config.Description = types.StringPointerValue(fetchedTeam.Description)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 	if resp.Diagnostics.HasError() {

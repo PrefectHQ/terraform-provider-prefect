@@ -123,7 +123,7 @@ func (d *TeamsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			"created":     customtypes.NewTimestampPointerValue(team.Created),
 			"updated":     customtypes.NewTimestampPointerValue(team.Updated),
 			"name":        types.StringValue(team.Name),
-			"description": types.StringValue(team.Description),
+			"description": types.StringPointerValue(team.Description),
 		}
 
 		teamObject, diag := types.ObjectValue(attributeTypes, attributeValues)
