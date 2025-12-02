@@ -166,6 +166,14 @@ func TestAccResource_team_description_updates(t *testing.T) {
 					testutils.ExpectKnownValue(resourceName, "description", randomDescription2),
 				},
 			},
+			{
+				// Update to explicit empty string to clear description
+				Config: fixtureAccTeamResource(randomName, ""),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(resourceName, "name", randomName),
+					testutils.ExpectKnownValue(resourceName, "description", ""),
+				},
+			},
 		},
 	})
 }
