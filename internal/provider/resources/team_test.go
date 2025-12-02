@@ -134,6 +134,7 @@ func TestAccResource_team_description_updates(t *testing.T) {
 
 	randomName := testutils.NewRandomPrefixedString()
 	randomDescription := testutils.NewRandomPrefixedString()
+	randomDescription2 := testutils.NewRandomPrefixedString()
 
 	resourceName := "prefect_team.test"
 
@@ -158,11 +159,11 @@ func TestAccResource_team_description_updates(t *testing.T) {
 				},
 			},
 			{
-				// Update back to no description
-				Config: fixtureAccTeamResourceNoDescription(randomName),
+				// Update to a different description
+				Config: fixtureAccTeamResource(randomName, randomDescription2),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName),
-					testutils.ExpectKnownValue(resourceName, "description", ""),
+					testutils.ExpectKnownValue(resourceName, "description", randomDescription2),
 				},
 			},
 		},
