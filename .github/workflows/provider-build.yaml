@@ -35,7 +35,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
       - name: Set up Golang
@@ -61,9 +61,9 @@ jobs:
     name: Lint
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           only-new-issues: true
