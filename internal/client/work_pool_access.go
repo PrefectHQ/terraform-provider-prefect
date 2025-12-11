@@ -16,6 +16,7 @@ type WorkPoolAccessClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkPoolAccess returns a WorkPoolAccessClient.
@@ -41,6 +42,7 @@ func (c *Client) WorkPoolAccess(accountID uuid.UUID, workspaceID uuid.UUID) (api
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -53,6 +55,7 @@ func (c *WorkPoolAccessClient) Read(ctx context.Context, workPoolName string) (*
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -73,6 +76,7 @@ func (c *WorkPoolAccessClient) Set(ctx context.Context, workPoolName string, acc
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

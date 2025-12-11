@@ -19,6 +19,7 @@ type CollectionsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Collections returns an CollectionsClient.
@@ -44,6 +45,7 @@ func (c *Client) Collections(accountID, workspaceID uuid.UUID) (api.CollectionsC
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "collections"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -65,6 +67,7 @@ func (c *CollectionsClient) GetWorkerMetadataViews(ctx context.Context) (api.Wor
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 

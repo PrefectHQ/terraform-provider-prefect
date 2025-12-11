@@ -16,6 +16,7 @@ type ServiceAccountsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 //nolint:ireturn // required to support PrefectClient mocking
@@ -43,6 +44,7 @@ func (c *Client) ServiceAccounts(accountID uuid.UUID) (api.ServiceAccountsClient
 		routePrefix:     routePrefix,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 

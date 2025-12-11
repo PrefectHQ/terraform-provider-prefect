@@ -20,6 +20,7 @@ type VariablesClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Variables returns a VariablesClient.
@@ -45,6 +46,7 @@ func (c *Client) Variables(accountID uuid.UUID, workspaceID uuid.UUID) (api.Vari
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "variables"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *VariablesClient) Create(ctx context.Context, data api.VariableCreate) (
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -87,6 +90,7 @@ func (c *VariablesClient) Get(ctx context.Context, variableID uuid.UUID) (*api.V
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -108,6 +112,7 @@ func (c *VariablesClient) GetByName(ctx context.Context, name string) (*api.Vari
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -129,6 +134,7 @@ func (c *VariablesClient) Update(ctx context.Context, variableID uuid.UUID, data
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -152,6 +158,7 @@ func (c *VariablesClient) Delete(ctx context.Context, variableID uuid.UUID) erro
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 

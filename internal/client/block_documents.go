@@ -19,6 +19,7 @@ type BlockDocumentClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // BlockDocuments is a factory that initializes and returns a BlockDocumentClient.
@@ -44,6 +45,7 @@ func (c *Client) BlockDocuments(accountID uuid.UUID, workspaceID uuid.UUID) (api
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_documents"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -59,6 +61,7 @@ func (c *BlockDocumentClient) Get(ctx context.Context, id uuid.UUID) (*api.Block
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -84,6 +87,7 @@ func (c *BlockDocumentClient) GetByName(ctx context.Context, typeSlug, name stri
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -104,6 +108,7 @@ func (c *BlockDocumentClient) Create(ctx context.Context, payload api.BlockDocum
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -124,6 +129,7 @@ func (c *BlockDocumentClient) Update(ctx context.Context, id uuid.UUID, payload 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -145,6 +151,7 @@ func (c *BlockDocumentClient) Delete(ctx context.Context, id uuid.UUID) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -168,6 +175,7 @@ func (c *BlockDocumentClient) GetAccess(ctx context.Context, id uuid.UUID) (*api
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -188,6 +196,7 @@ func (c *BlockDocumentClient) UpsertAccess(ctx context.Context, id uuid.UUID, pa
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

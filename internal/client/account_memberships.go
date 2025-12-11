@@ -18,6 +18,7 @@ type AccountMembershipsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // AccountMemberships is a factory that initializes and returns a AccountMembershipsClient.
@@ -35,6 +36,7 @@ func (c *Client) AccountMemberships(accountID uuid.UUID) (api.AccountMemberships
 		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "account_memberships"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -51,6 +53,7 @@ func (c *AccountMembershipsClient) List(ctx context.Context, emails []string) ([
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -72,6 +75,7 @@ func (c *AccountMembershipsClient) Update(ctx context.Context, accountMembership
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -94,6 +98,7 @@ func (c *AccountMembershipsClient) Delete(ctx context.Context, accountMembership
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

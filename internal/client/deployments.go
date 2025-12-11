@@ -20,6 +20,7 @@ type DeploymentsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Deployments returns a DeploymentsClient.
@@ -45,6 +46,7 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrCreated,
 	}
 
@@ -79,6 +82,7 @@ func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*a
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -101,6 +105,7 @@ func (c *DeploymentsClient) GetByName(ctx context.Context, flowName, deploymentN
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -122,6 +127,7 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -144,6 +150,7 @@ func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

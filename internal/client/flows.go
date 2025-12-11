@@ -20,6 +20,7 @@ type FlowsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Flows returns a FlowsClient.
@@ -45,6 +46,7 @@ func (c *Client) Flows(accountID uuid.UUID, workspaceID uuid.UUID) (api.FlowsCli
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrCreated,
 	}
 
@@ -85,6 +88,7 @@ func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Fl
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -106,6 +110,7 @@ func (c *FlowsClient) Get(ctx context.Context, flowID uuid.UUID) (*api.Flow, err
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -127,6 +132,7 @@ func (c *FlowsClient) Update(ctx context.Context, flowID uuid.UUID, data api.Flo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -149,6 +155,7 @@ func (c *FlowsClient) Delete(ctx context.Context, flowID uuid.UUID) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 

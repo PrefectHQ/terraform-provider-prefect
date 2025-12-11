@@ -19,6 +19,7 @@ type WorkPoolsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkPools returns a WorkPoolsClient.
@@ -44,6 +45,7 @@ func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.Work
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pool api.WorkPool
@@ -84,6 +87,7 @@ func (c *WorkPoolsClient) List(ctx context.Context, ids []string) ([]*api.WorkPo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pools []*api.WorkPool
@@ -105,6 +109,7 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pool api.WorkPool
@@ -126,6 +131,7 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -148,6 +154,7 @@ func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -74,6 +75,11 @@ func (c *Client) obtainCsrfToken() error {
 	setAuthorizationHeader(req, c.apiKey, c.basicAuthKey)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Prefect-Csrf-Client", c.csrfClientToken)
+
+	// Apply custom headers to CSRF token request
+	for key, value := range c.customHeaders {
+		req.Header.Set(key, value)
+	}
 
 	resp, err := c.hc.Do(req)
 	if err != nil {
@@ -163,6 +169,45 @@ func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 
 		client.defaultAccountID = accountID
 		client.defaultWorkspaceID = workspaceID
+
+		return nil
+	}
+}
+
+// WithCustomHeaders configures custom HTTP headers to include in all API requests.
+// Protected headers (User-Agent, Prefect-Csrf-Token, Prefect-Csrf-Client) are filtered out
+// and a warning is logged if any are attempted to be overridden.
+//
+// References:
+// - https://docs.prefect.io/v3/advanced/api-client#configure-custom-headers
+// - https://docs.prefect.io/v3/advanced/security-settings#custom-client-headers
+func WithCustomHeaders(headers map[string]string) Option {
+	return func(client *Client) error {
+		if headers == nil {
+			return nil
+		}
+
+		// Define protected headers that cannot be overridden for security reasons
+		protectedHeaders := map[string]bool{
+			"User-Agent":          true,
+			"Prefect-Csrf-Token":  true,
+			"Prefect-Csrf-Client": true,
+		}
+
+		filtered := make(map[string]string)
+		for key, value := range headers {
+			if protectedHeaders[key] {
+				// Log warning when protected header is attempted to be overridden
+				// This matches Prefect Python SDK behavior
+				// Note: Using fmt.Fprintf to stderr instead of Printf for warning output
+				_, _ = fmt.Fprintf(os.Stderr, "WARNING: Cannot override protected header %q, ignoring custom value to maintain security\n", key)
+
+				continue
+			}
+			filtered[key] = value
+		}
+
+		client.customHeaders = filtered
 
 		return nil
 	}

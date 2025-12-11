@@ -19,6 +19,9 @@ type Client struct {
 	// csrfToken is the token obtained from the server and sent via the Prefect-Csrf-Token header.
 	csrfToken string
 
+	// customHeaders are user-defined HTTP headers to include in all API requests.
+	customHeaders map[string]string
+
 	defaultAccountID   uuid.UUID
 	defaultWorkspaceID uuid.UUID
 }

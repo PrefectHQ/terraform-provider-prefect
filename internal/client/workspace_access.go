@@ -20,6 +20,7 @@ type WorkspaceAccessClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkspaceAccess is a factory that initializes and returns a WorkspaceAccessClient.
@@ -45,6 +46,7 @@ func (c *Client) WorkspaceAccess(accountID uuid.UUID, workspaceID uuid.UUID) (ap
 		routePrefix:     fmt.Sprintf("%s/accounts/%s/workspaces/%s", c.endpoint, accountID.String(), workspaceID.String()),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -91,6 +93,7 @@ func (c *WorkspaceAccessClient) Upsert(ctx context.Context, accessorType string,
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -139,6 +142,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -213,6 +217,7 @@ func (c *WorkspaceAccessClient) Delete(ctx context.Context, accessorType string,
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

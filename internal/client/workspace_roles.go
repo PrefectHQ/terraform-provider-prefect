@@ -19,6 +19,7 @@ type WorkspaceRolesClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkspaceRoles is a factory that initializes and returns a WorkspaceRolesClient.
@@ -36,6 +37,7 @@ func (c *Client) WorkspaceRoles(accountID uuid.UUID) (api.WorkspaceRolesClient, 
 		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "workspace_roles"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -49,6 +51,7 @@ func (c *WorkspaceRolesClient) Create(ctx context.Context, data api.WorkspaceRol
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -70,6 +73,7 @@ func (c *WorkspaceRolesClient) Update(ctx context.Context, workspaceRoleID uuid.
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -92,6 +96,7 @@ func (c *WorkspaceRolesClient) Delete(ctx context.Context, id uuid.UUID) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -117,6 +122,7 @@ func (c *WorkspaceRolesClient) List(ctx context.Context, roleNames []string) ([]
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -138,6 +144,7 @@ func (c *WorkspaceRolesClient) Get(ctx context.Context, id uuid.UUID) (*api.Work
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 

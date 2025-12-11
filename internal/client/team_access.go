@@ -19,6 +19,7 @@ type TeamAccessClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // TeamAccess is a factory that initializes and returns a TeamAccessClient.
@@ -36,6 +37,7 @@ func (c *Client) TeamAccess(accountID uuid.UUID, teamID uuid.UUID) (api.TeamAcce
 		routePrefix:     fmt.Sprintf("%s/accounts/%s/teams/%s", c.endpoint, accountID.String(), teamID.String()),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *TeamAccessClient) Upsert(ctx context.Context, memberType string, member
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -79,6 +82,7 @@ func (c *TeamAccessClient) Read(ctx context.Context, teamID, memberID, memberAct
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -119,6 +123,7 @@ func (c *TeamAccessClient) Delete(ctx context.Context, memberID uuid.UUID) error
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

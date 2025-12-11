@@ -18,6 +18,7 @@ type AutomationsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Automations is a factory that initializes and returns a AutomationsClient.
@@ -43,6 +44,7 @@ func (c *Client) Automations(accountID uuid.UUID, workspaceID uuid.UUID) (api.Au
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "automations"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -55,6 +57,7 @@ func (c *AutomationsClient) Get(ctx context.Context, id uuid.UUID) (*api.Automat
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -75,6 +78,7 @@ func (c *AutomationsClient) Create(ctx context.Context, payload api.AutomationUp
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -95,6 +99,7 @@ func (c *AutomationsClient) Update(ctx context.Context, id uuid.UUID, payload ap
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -116,6 +121,7 @@ func (c *AutomationsClient) Delete(ctx context.Context, id uuid.UUID) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

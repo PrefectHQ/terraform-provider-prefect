@@ -19,6 +19,7 @@ type TaskRunConcurrencyLimitsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // TaskRunConcurrencyLimits returns a TaskRunConcurrencyLimitsClient.
@@ -44,6 +45,7 @@ func (c *Client) TaskRunConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -57,6 +59,7 @@ func (c *TaskRunConcurrencyLimitsClient) Create(ctx context.Context, data api.Ta
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrCreated,
 	}
 
@@ -77,6 +80,7 @@ func (c *TaskRunConcurrencyLimitsClient) Read(ctx context.Context, taskRunConcur
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -97,6 +101,7 @@ func (c *TaskRunConcurrencyLimitsClient) Delete(ctx context.Context, taskRunConc
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
