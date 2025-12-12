@@ -70,8 +70,8 @@ func setAuthorizationHeader(request *http.Request, apiKey, basicAuthKey string) 
 }
 
 // setDefaultHeaders will set Authorization, Content-Type, Accept,
-// and CSRF headers that are common to most requests.
-func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientToken, csrfToken string) {
+// CSRF headers, and custom headers that are common to most requests.
+func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientToken, csrfToken string, customHeaders map[string]string) {
 	setAuthorizationHeader(request, apiKey, basicAuthKey)
 
 	request.Header.Set("Content-Type", "application/json")
@@ -84,6 +84,11 @@ func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientTo
 	if csrfToken != "" {
 		// This token is now obtained via client.ObtainCsrfToken()
 		request.Header.Set("Prefect-Csrf-Token", csrfToken)
+	}
+
+	// Apply custom headers
+	for key, value := range customHeaders {
+		request.Header.Set(key, value)
 	}
 }
 
@@ -108,7 +113,8 @@ type requestConfig struct {
 	apiKey          string
 	basicAuthKey    string
 	csrfClientToken string
-	csrfToken       string // Populated by ObtainCsrfToken on client initialization
+	csrfToken       string            // Populated by ObtainCsrfToken on client initialization
+	customHeaders   map[string]string // Custom headers to include in the request
 }
 
 var (
@@ -158,7 +164,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken)
+	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken, cfg.customHeaders)
 
 	// Body will be closed by the caller.
 	resp, err := client.Do(req)

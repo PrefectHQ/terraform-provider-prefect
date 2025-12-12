@@ -19,6 +19,7 @@ type WorkQueuesClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkQueues returns a WorkQueuesClient.
@@ -46,6 +47,7 @@ func (c *Client) WorkQueues(accountID uuid.UUID, workspaceID uuid.UUID, workPool
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, route),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -60,6 +62,7 @@ func (c *WorkQueuesClient) Create(ctx context.Context, data api.WorkQueueCreate)
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var queue api.WorkQueue
@@ -81,6 +84,7 @@ func (c *WorkQueuesClient) List(ctx context.Context, filter api.WorkQueueFilter)
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var queues []*api.WorkQueue
@@ -102,6 +106,7 @@ func (c *WorkQueuesClient) Get(ctx context.Context, name string) (*api.WorkQueue
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var queue api.WorkQueue
@@ -123,6 +128,7 @@ func (c *WorkQueuesClient) Update(ctx context.Context, name string, data api.Wor
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -145,6 +151,7 @@ func (c *WorkQueuesClient) Delete(ctx context.Context, name string) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

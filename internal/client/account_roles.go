@@ -19,6 +19,7 @@ type AccountRolesClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // AccountRoles is a factory that initializes and returns a AccountRolesClient.
@@ -36,6 +37,7 @@ func (c *Client) AccountRoles(accountID uuid.UUID) (api.AccountRolesClient, erro
 		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "account_roles"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -52,6 +54,7 @@ func (c *AccountRolesClient) List(ctx context.Context, roleNames []string) ([]*a
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -74,6 +77,7 @@ func (c *AccountRolesClient) Get(ctx context.Context, roleID uuid.UUID) (*api.Ac
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var accountRole api.AccountRole

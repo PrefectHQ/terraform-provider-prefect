@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -25,11 +26,12 @@ import (
 var _ = provider.Provider(&PrefectProvider{})
 
 const (
-	envAccountID    = "PREFECT_CLOUD_ACCOUNT_ID"
-	envAPIURL       = "PREFECT_API_URL"
-	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
-	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
-	envCSRFEnabled  = "PREFECT_CSRF_ENABLED"
+	envAccountID           = "PREFECT_CLOUD_ACCOUNT_ID"
+	envAPIURL              = "PREFECT_API_URL"
+	envAPIKey              = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
+	envBasicAuthKey        = "PREFECT_BASIC_AUTH_KEY"
+	envCSRFEnabled         = "PREFECT_CSRF_ENABLED"
+	envClientCustomHeaders = "PREFECT_CLIENT_CUSTOM_HEADERS"
 
 	defaultAPIURL = "https://api.prefect.cloud"
 )
@@ -77,6 +79,15 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 					"This should be enabled if your Prefect server instance has CSRF protection active. " +
 					"Can also be set via the `PREFECT_CSRF_ENABLED` environment variable.",
 				Optional: true,
+			},
+			"custom_headers": schema.StringAttribute{
+				Description: "Custom HTTP headers to include in all Prefect API requests as a JSON string. " +
+					"Useful for adding authentication headers required by proxies, CDNs, or security systems like Cloudflare Access. " +
+					"Can also be set via the `PREFECT_CLIENT_CUSTOM_HEADERS` environment variable. " +
+					"Example: `{\"CF-Access-Client-Id\": \"your-id\", \"CF-Access-Client-Secret\": \"your-secret\"}`. " +
+					"Protected headers (User-Agent, Prefect-Csrf-Token, Prefect-Csrf-Client) cannot be overridden.",
+				Optional:  true,
+				Sensitive: true,
 			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
@@ -332,6 +343,30 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		csrfEnabled = profileAuth.CSRFEnabled.ValueBool()
 	}
 
+	// Extract custom headers from configuration or environment variable
+	var customHeaders string
+	if !config.CustomHeaders.IsNull() {
+		customHeaders = config.CustomHeaders.ValueString()
+	} else if customHeadersEnvVar, ok := os.LookupEnv(envClientCustomHeaders); ok {
+		customHeaders = customHeadersEnvVar
+	} else if !profileAuth.CustomHeaders.IsNull() {
+		customHeaders = profileAuth.CustomHeaders.ValueString()
+	}
+
+	// Parse and validate custom headers JSON if provided
+	var customHeadersMap map[string]string
+	if customHeaders != "" {
+		if err := json.Unmarshal([]byte(customHeaders), &customHeadersMap); err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("custom_headers"),
+				"Invalid Custom Headers JSON",
+				fmt.Sprintf("The custom headers value is not valid JSON: %s", err),
+			)
+
+			return
+		}
+	}
+
 	ctx = tflog.SetField(ctx, "prefect_profile", profileName)
 	ctx = tflog.SetField(ctx, "prefect_profile_file", profileFilePath)
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
@@ -358,6 +393,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		client.WithBasicAuthKey(basicAuthKey),
 		client.WithDefaults(accountID, workspaceID),
 		client.WithCsrfEnabled(csrfEnabled),
+		client.WithCustomHeaders(customHeadersMap),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(

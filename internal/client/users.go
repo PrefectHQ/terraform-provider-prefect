@@ -18,6 +18,7 @@ type UsersClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Users is a factory that initializes and returns a UsersClient.
@@ -31,6 +32,7 @@ func (c *Client) Users() (api.UsersClient, error) {
 		routePrefix:     fmt.Sprintf("%s/users", c.endpoint),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -44,6 +46,7 @@ func (c *UsersClient) Read(ctx context.Context, userID string) (*api.User, error
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -65,6 +68,7 @@ func (c *UsersClient) Update(ctx context.Context, userID string, payload api.Use
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -87,6 +91,7 @@ func (c *UsersClient) CreateAPIKey(ctx context.Context, userID string, payload a
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -108,6 +113,7 @@ func (c *UsersClient) ReadAPIKey(ctx context.Context, userID string, apiKeyID st
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -129,6 +135,7 @@ func (c *UsersClient) DeleteAPIKey(ctx context.Context, userID string, apiKeyID 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

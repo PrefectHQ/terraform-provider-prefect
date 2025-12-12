@@ -18,6 +18,7 @@ type DeploymentScheduleClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // DeploymentSchedule returns a DeploymentScheduleClient.
@@ -43,6 +44,7 @@ func (c *Client) DeploymentSchedule(accountID, workspaceID uuid.UUID) (api.Deplo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -55,6 +57,7 @@ func (c *DeploymentScheduleClient) Create(ctx context.Context, deploymentID uuid
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -75,6 +78,7 @@ func (c *DeploymentScheduleClient) Read(ctx context.Context, deploymentID uuid.U
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -95,6 +99,7 @@ func (c *DeploymentScheduleClient) Update(ctx context.Context, deploymentID uuid
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -116,6 +121,7 @@ func (c *DeploymentScheduleClient) Delete(ctx context.Context, deploymentID uuid
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

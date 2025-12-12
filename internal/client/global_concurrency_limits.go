@@ -19,6 +19,7 @@ type GlobalConcurrencyLimitsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // GlobalConcurrencyLimits returns a GlobalConcurrencyLimitsClient.
@@ -44,6 +45,7 @@ func (c *Client) GlobalConcurrencyLimits(accountID uuid.UUID, workspaceID uuid.U
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -57,6 +59,7 @@ func (c *GlobalConcurrencyLimitsClient) Create(ctx context.Context, data api.Glo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -77,6 +80,7 @@ func (c *GlobalConcurrencyLimitsClient) Read(ctx context.Context, globalConcurre
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -98,6 +102,7 @@ func (c *GlobalConcurrencyLimitsClient) Update(ctx context.Context, globalConcur
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -119,6 +124,7 @@ func (c *GlobalConcurrencyLimitsClient) Delete(ctx context.Context, globalConcur
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

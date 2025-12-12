@@ -18,6 +18,7 @@ type DeploymentAccessClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // DeploymentAccess returns a DeploymentAccessClient.
@@ -43,6 +44,7 @@ func (c *Client) DeploymentAccess(accountID uuid.UUID, workspaceID uuid.UUID) (a
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -55,6 +57,7 @@ func (c *DeploymentAccessClient) Read(ctx context.Context, deploymentID uuid.UUI
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -75,6 +78,7 @@ func (c *DeploymentAccessClient) Set(ctx context.Context, deploymentID uuid.UUID
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 

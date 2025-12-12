@@ -19,6 +19,7 @@ type WebhooksClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Webhooks returns a WebhooksClient.
@@ -44,6 +45,7 @@ func (c *Client) Webhooks(accountID, workspaceID uuid.UUID) (api.WebhooksClient,
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *WebhooksClient) Create(ctx context.Context, createPayload api.WebhookCr
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhook api.Webhook
@@ -79,6 +82,7 @@ func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhoo
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhook api.Webhook
@@ -100,6 +104,7 @@ func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePay
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -122,6 +127,7 @@ func (c *WebhooksClient) Delete(ctx context.Context, webhookID string) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -147,6 +153,7 @@ func (c *WebhooksClient) List(ctx context.Context, names []string) ([]*api.Webho
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhooks []*api.Webhook

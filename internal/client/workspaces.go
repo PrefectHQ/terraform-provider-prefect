@@ -20,6 +20,7 @@ type WorkspacesClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Workspaces returns a WorkspacesClient.
@@ -37,6 +38,7 @@ func (c *Client) Workspaces(accountID uuid.UUID) (api.WorkspacesClient, error) {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -50,6 +52,7 @@ func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate)
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -77,6 +80,7 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -98,6 +102,7 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -119,6 +124,7 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -141,6 +147,7 @@ func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) er
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 

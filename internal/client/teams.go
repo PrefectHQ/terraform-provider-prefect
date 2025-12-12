@@ -18,6 +18,7 @@ type TeamsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Teams is a factory that initializes and returns a TeamsClient.
@@ -35,6 +36,7 @@ func (c *Client) Teams(accountID uuid.UUID) (api.TeamsClient, error) {
 		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "teams"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -50,6 +52,7 @@ func (c *TeamsClient) Create(ctx context.Context, payload api.TeamCreate) (*api.
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -72,6 +75,7 @@ func (c *TeamsClient) Read(ctx context.Context, teamID string) (*api.Team, error
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -95,6 +99,7 @@ func (c *TeamsClient) Update(ctx context.Context, teamID string, payload api.Tea
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -117,6 +122,7 @@ func (c *TeamsClient) Delete(ctx context.Context, teamID string) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -142,6 +148,7 @@ func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, er
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 

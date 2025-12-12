@@ -20,6 +20,7 @@ type SLAsClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // SLAs returns a SLAsClient.
@@ -45,6 +46,7 @@ func (c *Client) SLAs(accountID uuid.UUID, workspaceID uuid.UUID) (api.SLAsClien
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "slas"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -58,6 +60,7 @@ func (c *SLAsClient) ApplyResourceSLAs(ctx context.Context, resourceID string, s
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 

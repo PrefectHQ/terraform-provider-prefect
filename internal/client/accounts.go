@@ -19,6 +19,7 @@ type AccountsClient struct {
 	routePrefix     string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Accounts returns an AccountsClient.
@@ -40,6 +41,7 @@ func (c *Client) Accounts(accountID uuid.UUID) (api.AccountsClient, error) {
 		routePrefix:     getAccountScopedURL(c.endpoint, accountID, ""),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -53,6 +55,7 @@ func (c *AccountsClient) Get(ctx context.Context) (*api.Account, error) {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -74,6 +77,7 @@ func (c *AccountsClient) GetDomains(ctx context.Context) ([]*api.AccountDomain, 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -95,6 +99,7 @@ func (c *AccountsClient) Update(ctx context.Context, data api.AccountUpdate) err
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    []int{http.StatusOK, http.StatusNoContent},
 	}
 
@@ -117,6 +122,7 @@ func (c *AccountsClient) UpdateSettings(ctx context.Context, data api.AccountSet
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -139,6 +145,7 @@ func (c *AccountsClient) UpdateDomains(ctx context.Context, data api.AccountDoma
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusNoContent,
 	}
 
@@ -161,6 +168,7 @@ func (c *AccountsClient) Delete(ctx context.Context) error {
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 

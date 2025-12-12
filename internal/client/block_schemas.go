@@ -17,6 +17,7 @@ type BlockSchemaClient struct {
 	basicAuthKey    string
 	csrfClientToken string
 	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // BlockSchemas returns a BlockSchemaClient.
@@ -41,6 +42,7 @@ func (c *Client) BlockSchemas(accountID uuid.UUID, workspaceID uuid.UUID) (api.B
 		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "block_schemas"),
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
@@ -57,6 +59,7 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 		basicAuthKey:    c.basicAuthKey,
 		csrfClientToken: c.csrfClientToken,
 		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
