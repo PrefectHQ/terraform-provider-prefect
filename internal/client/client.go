@@ -22,17 +22,22 @@ var _ = api.PrefectClient(&Client{})
 
 // New creates and returns new client instance.
 func New(opts ...Option) (*Client, error) {
-	// Uses the retryablehttp package for built-in retries
-	// with exponential backoff.
+	// Uses the retryablehttp package for built-in retries.
 	//
 	// Some notable defaults from that package include:
 	// - max retries: 4
 	// - retry wait minimum seconds: 1
 	// - retry wait maximum seconds: 30
 	//
+	// We use RateLimitLinearJitterBackoff as the backoff strategy, which:
+	// - Respects Retry-After headers on 429/503 responses
+	// - Falls back to linear jitter backoff otherwise
+	// - Helps prevent thundering herd problems
+	//
 	// All defaults are defined in
 	// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
 	retryableClient := retryablehttp.NewClient()
+	retryableClient.Backoff = retryablehttp.RateLimitLinearJitterBackoff
 
 	// By default, retryablehttp will only retry requests if there was some kind
 	// of transient server or networking error. We can be more specific with this
