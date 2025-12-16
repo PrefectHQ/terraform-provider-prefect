@@ -893,11 +893,19 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Convert empty map to nil to ensure omitempty works correctly
+	if len(parameters) == 0 {
+		parameters = nil
+	}
 
 	jobVariables, diags := helpers.UnmarshalOptional(model.JobVariables)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	// Convert empty map to nil to ensure omitempty works correctly
+	if len(jobVariables) == 0 {
+		jobVariables = nil
 	}
 
 	parameterOpenAPISchema, diags := helpers.UnmarshalOptional(model.ParameterOpenAPISchema)
@@ -905,23 +913,27 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	// Convert empty map to nil to ensure omitempty works correctly
+	if len(parameterOpenAPISchema) == 0 {
+		parameterOpenAPISchema = nil
+	}
 
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:              model.Description.ValueString(),
+		Description:              model.Description.ValueStringPointer(),
 		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
-		Entrypoint:               model.Entrypoint.ValueString(),
+		Entrypoint:               model.Entrypoint.ValueStringPointer(),
 		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		JobVariables:             jobVariables,
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
-		Path:                     model.Path.ValueString(),
-		Paused:                   model.Paused.ValueBool(),
+		Path:                     model.Path.ValueStringPointer(),
+		Paused:                   model.Paused.ValueBoolPointer(),
 		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                     tags,
-		Version:                  model.Version.ValueString(),
-		WorkPoolName:             model.WorkPoolName.ValueString(),
-		WorkQueueName:            model.WorkQueueName.ValueString(),
+		Version:                  model.Version.ValueStringPointer(),
+		WorkPoolName:             model.WorkPoolName.ValueStringPointer(),
+		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
 
 	if model.ConcurrencyOptions != nil {
