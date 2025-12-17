@@ -893,29 +893,17 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Convert empty map to nil to ensure omitempty works correctly
-	if len(parameters) == 0 {
-		parameters = nil
-	}
 
 	jobVariables, diags := helpers.UnmarshalOptional(model.JobVariables)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// Convert empty map to nil to ensure omitempty works correctly
-	if len(jobVariables) == 0 {
-		jobVariables = nil
-	}
 
 	parameterOpenAPISchema, diags := helpers.UnmarshalOptional(model.ParameterOpenAPISchema)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-	// Convert empty map to nil to ensure omitempty works correctly
-	if len(parameterOpenAPISchema) == 0 {
-		parameterOpenAPISchema = nil
 	}
 
 	payload := api.DeploymentUpdate{

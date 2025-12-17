@@ -66,8 +66,6 @@ type DeploymentCreate struct {
 }
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
-// All fields use pointers or have omitempty to ensure only changed fields
-// are sent in PATCH requests, avoiding 409 Conflict errors from the API.
 type DeploymentUpdate struct {
 	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
