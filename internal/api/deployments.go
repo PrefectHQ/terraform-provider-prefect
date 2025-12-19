@@ -68,22 +68,21 @@ type DeploymentCreate struct {
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
 	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options"`
-	Description              string                 `json:"description,omitempty"`
+	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
+	Description              *string                `json:"description,omitempty"`
 	EnforceParameterSchema   *bool                  `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint               string                 `json:"entrypoint,omitempty"`
+	Entrypoint               *string                `json:"entrypoint,omitempty"`
 	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
 	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
-	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema"`
-	Parameters               map[string]interface{} `json:"parameters"`
-	Path                     string                 `json:"path,omitempty"`
-	Paused                   bool                   `json:"paused,omitempty"`
-	PullSteps                []PullStep             `json:"pull_steps,omitempty"`
+	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]interface{} `json:"parameters,omitempty"`
+	Path                     *string                `json:"path,omitempty"`
+	Paused                   *bool                  `json:"paused,omitempty"`
 	StorageDocumentID        *uuid.UUID             `json:"storage_document_id,omitempty"`
 	Tags                     []string               `json:"tags,omitempty"`
-	Version                  string                 `json:"version,omitempty"`
-	WorkPoolName             string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName            string                 `json:"work_queue_name,omitempty"`
+	Version                  *string                `json:"version,omitempty"`
+	WorkPoolName             *string                `json:"work_pool_name,omitempty"`
+	WorkQueueName            *string                `json:"work_queue_name,omitempty"`
 }
 
 // ConcurrencyOptions is a representation of the deployment concurrency options.

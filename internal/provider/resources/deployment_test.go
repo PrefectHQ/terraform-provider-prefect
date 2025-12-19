@@ -274,6 +274,76 @@ resource "prefect_deployment" "%[6]s" {
 	})
 }
 
+// TestAccResource_deployment_job_variables_update tests updating job_variables
+// with nested env values, which was causing 409 Conflict errors.
+// See: https://github.com/PrefectHQ/terraform-provider-prefect/issues/618
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_job_variables_update(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	workPoolName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	// Initial job_variables with env block (matching issue #618 scenario)
+	jobVariablesCreate := `{"image": "example.registry.com/example-repo/example-image:v1", "env": {"ENV_VAR_1": "value1", "ENV_VAR_2": "value2"}}`
+	expectedJobVariablesCreate := testutils.NormalizedValueForJSON(t, jobVariablesCreate)
+
+	// Updated job_variables - changing env values (this was causing 409 errors)
+	jobVariablesUpdate := `{"image": "example.registry.com/example-repo/example-image:v2", "env": {"ENV_VAR_1": "updated1", "ENV_VAR_2": "updated2", "ENV_VAR_3": "new_value"}}`
+	expectedJobVariablesUpdate := testutils.NormalizedValueForJSON(t, jobVariablesUpdate)
+
+	// Minimal config function for this focused test
+	makeConfig := func(jobVars string) string {
+		return fmt.Sprintf(`
+%[1]s
+
+resource "prefect_work_pool" "%[2]s" {
+  name   = "%[2]s"
+  type   = "kubernetes"
+  paused = false
+  %[3]s
+}
+
+resource "prefect_flow" "%[4]s" {
+  name = "%[4]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[5]s" {
+  name           = "%[5]s"
+  flow_id        = prefect_flow.%[4]s.id
+  work_pool_name = "%[2]s"
+  job_variables  = jsonencode(%[6]s)
+  %[3]s
+  depends_on = [prefect_flow.%[4]s, prefect_work_pool.%[2]s]
+}
+`, workspace.Resource, workPoolName, workspace.IDArg, flowName, deploymentName, jobVars)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create deployment with initial job_variables
+				Config: makeConfig(jobVariablesCreate),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "job_variables", expectedJobVariablesCreate),
+				},
+			},
+			{
+				// Update only job_variables - this was causing 409 Conflict errors
+				Config: makeConfig(jobVariablesUpdate),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "job_variables", expectedJobVariablesUpdate),
+				},
+			},
+		},
+	})
+}
+
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()

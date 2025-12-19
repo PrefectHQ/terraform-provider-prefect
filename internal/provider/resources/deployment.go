@@ -908,20 +908,20 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:              model.Description.ValueString(),
+		Description:              model.Description.ValueStringPointer(),
 		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
-		Entrypoint:               model.Entrypoint.ValueString(),
+		Entrypoint:               model.Entrypoint.ValueStringPointer(),
 		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
 		JobVariables:             jobVariables,
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
-		Path:                     model.Path.ValueString(),
-		Paused:                   model.Paused.ValueBool(),
+		Path:                     model.Path.ValueStringPointer(),
+		Paused:                   model.Paused.ValueBoolPointer(),
 		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                     tags,
-		Version:                  model.Version.ValueString(),
-		WorkPoolName:             model.WorkPoolName.ValueString(),
-		WorkQueueName:            model.WorkQueueName.ValueString(),
+		Version:                  model.Version.ValueStringPointer(),
+		WorkPoolName:             model.WorkPoolName.ValueStringPointer(),
+		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
 
 	if model.ConcurrencyOptions != nil {
