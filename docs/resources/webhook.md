@@ -100,6 +100,16 @@ resource "prefect_webhook" "example_with_dynamic_template" {
   EOF
 }
 
+# Webhook templates don't need to be JSON. You can use a bare Jinja
+# expression as the template string, such as the Cloud Events helper:
+# - https://docs.prefect.io/v3/automate/events/webhook-triggers#webhook-templates
+resource "prefect_webhook" "example_with_string_template" {
+  name        = "my-cloud-events-webhook"
+  description = "Receives CloudEvents-formatted webhooks"
+  enabled     = true
+  template    = "{{ body|from_cloud_event(headers) }}"
+}
+
 # Access the endpoint of the webhook.
 output "endpoints" {
   value = {
