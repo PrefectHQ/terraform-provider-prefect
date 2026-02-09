@@ -93,7 +93,7 @@ func ExpectKnownValue(resourceName, path, value string) statecheck.StateCheck {
 //
 //nolint:ireturn // required for testing
 func ExpectKnownValueList(resourceName, path string, values []string) statecheck.StateCheck {
-	knownValueChecks := []knownvalue.Check{}
+	knownValueChecks := make([]knownvalue.Check, 0, len(values))
 	for _, value := range values {
 		knownValueChecks = append(knownValueChecks, knownvalue.StringExact(value))
 	}
@@ -114,7 +114,7 @@ func ExpectKnownValueListSize(resourceName, path string, size int) statecheck.St
 //
 //nolint:ireturn // required for testing
 func ExpectKnownValueSet(resourceName, path string, values []string) statecheck.StateCheck {
-	knownValueChecks := []knownvalue.Check{}
+	knownValueChecks := make([]knownvalue.Check, 0, len(values))
 	for _, value := range values {
 		knownValueChecks = append(knownValueChecks, knownvalue.StringExact(value))
 	}

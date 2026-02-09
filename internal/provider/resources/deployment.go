@@ -467,7 +467,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	pullSteps := make([]api.PullStep, 0)
+	pullSteps := make([]api.PullStep, 0, len(tfPullSteps))
 
 	for i := range tfPullSteps {
 		tfPullStep := tfPullSteps[i]
@@ -524,7 +524,7 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	tfPullStepsModel := make([]PullStepModel, 0)
+	tfPullStepsModel := make([]PullStepModel, 0, len(pullSteps))
 
 	for i := range pullSteps {
 		pullStep := pullSteps[i]
@@ -1023,7 +1023,7 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 // ConfigValidators instead would be much more verbose, and disconnected from
 // the source of truth.
 func pathExpressionsForAttributes(attributes []string) []path.Expression {
-	pathExpressions := make([]path.Expression, 0)
+	pathExpressions := make([]path.Expression, 0, len(attributes))
 
 	for _, key := range attributes {
 		pathExpressions = append(pathExpressions, path.MatchRelative().AtParent().AtName(key))
