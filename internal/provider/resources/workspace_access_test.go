@@ -15,38 +15,38 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
-func fixtureAccWorkspaceAccessResourceForBot(workspace string) string {
+func fixtureAccWorkspaceAccessResourceForBot(workspace, name string) string {
 	return fmt.Sprintf(`
 %s
 data "prefect_workspace_role" "developer" {
 	name = "Developer"
 }
 resource "prefect_service_account" "bot" {
-	name = "test-bot"
+	name = "%s"
 }
 resource "prefect_workspace_access" "bot_access" {
 	accessor_type = "SERVICE_ACCOUNT"
 	accessor_id = prefect_service_account.bot.id
 	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.developer.id
-}`, workspace)
+}`, workspace, name)
 }
 
-func fixtureAccWorkspaceAccessResourceUpdateForBot(workspace string) string {
+func fixtureAccWorkspaceAccessResourceUpdateForBot(workspace, name string) string {
 	return fmt.Sprintf(`
 %s
 data "prefect_workspace_role" "runner" {
 	name = "Runner"
 }
 resource "prefect_service_account" "bot" {
-	name = "test-bot"
+	name = "%s"
 }
 resource "prefect_workspace_access" "bot_access" {
 	accessor_type = "SERVICE_ACCOUNT"
 	accessor_id = prefect_service_account.bot.id
 	workspace_id = prefect_workspace.test.id
 	workspace_role_id = data.prefect_workspace_role.runner.id
-}`, workspace)
+}`, workspace, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -59,6 +59,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 	developerRoleDatsourceName := "data.prefect_workspace_role.developer"
 	runnerRoleDatsourceName := "data.prefect_workspace_role.runner"
 	workspace := testutils.NewEphemeralWorkspace()
+	randomName := testutils.NewRandomPrefixedString()
 
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
@@ -69,7 +70,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkspaceAccessResourceForBot(workspace.Resource),
+				Config: fixtureAccWorkspaceAccessResourceForBot(workspace.Resource, randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check creation + existence of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),
@@ -82,7 +83,7 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 				},
 			},
 			{
-				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(workspace.Resource),
+				Config: fixtureAccWorkspaceAccessResourceUpdateForBot(workspace.Resource, randomName),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Check updating the role of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.ServiceAccount, accessResourceName, &workspaceAccess),

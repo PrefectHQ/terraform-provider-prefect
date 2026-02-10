@@ -151,3 +151,50 @@ func AddWorkspaceRoleSweeper() {
 		},
 	})
 }
+
+// AddTeamSweeper adds a sweeper that deletes any teams that match
+// the prefix we use for ephemeral teams in acceptance tests.
+//
+// This is designed to run at a given interval when other acceptance tests are
+// not likely running.
+func AddTeamSweeper() {
+	resource.AddTestSweepers("teams", &resource.Sweeper{
+		Name: "teams",
+		F: func(_ string) error {
+			client, err := testutils.NewTestClient()
+			if err != nil {
+				return fmt.Errorf("unable to get prefect client: %w", err)
+			}
+
+			// NOTE: the accountID is inherited by the one set in the test environment
+			teamsClient, err := client.Teams(uuid.Nil)
+			if err != nil {
+				return fmt.Errorf("unable to get teams client: %w", err)
+			}
+
+			teams, err := teamsClient.List(context.Background(), []string{})
+			if err != nil {
+				return fmt.Errorf("unable to list teams: %w", err)
+			}
+
+			if len(teams) == 0 {
+				return fmt.Errorf("no teams found for this account")
+			}
+
+			for _, team := range teams {
+				if strings.HasPrefix(team.Name, testutils.TestAccPrefix) {
+					log.Printf("found acceptance testing team %s, deleting...\n", team.Name)
+
+					err := teamsClient.Delete(context.Background(), team.ID.String())
+					if err != nil {
+						log.Printf("unable to delete team %s during sweep: %s\n", team.Name, err)
+					}
+				} else {
+					log.Printf("team %s does not match acceptance testing prefix, skipping...\n", team.Name)
+				}
+			}
+
+			return nil
+		},
+	})
+}
