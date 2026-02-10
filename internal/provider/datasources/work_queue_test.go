@@ -15,71 +15,71 @@ import (
 
 func fixtureAccSingleWorkQueue(
 	workspace string,
+	workspaceIDArg string,
 	workPoolName string,
 	workQueueName string,
 ) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-  name = "%s"
+  name = "%[2]s"
   type = "kubernetes"
   paused = "false"
-  workspace_id = prefect_workspace.test.id
-  depends_on = [prefect_workspace.test]
+	%[3]s
 }
 
 resource "prefect_work_queue" "test" {
-  name = "%s"
+  name = "%[4]s"
   work_pool_name = prefect_work_pool.test.name
   priority = 1
   description = "my work queue"
-  workspace_id = prefect_workspace.test.id
+	%[3]s
 }
 
 data "prefect_work_queue" "test" {
   name = prefect_work_queue.test.name
   work_pool_name = prefect_work_pool.test.name
-  workspace_id = prefect_workspace.test.id
+	%[3]s
 }
 
-`, workspace, workPoolName, workQueueName)
+`, workspace, workPoolName, workspaceIDArg, workQueueName)
 }
 
 func fixtureAccMultipleWorkQueue(
 	workspace string,
+	workspaceIDArg string,
 	workPoolName string,
 	workQueue1Name string,
 	workQueue2Name string,
 ) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test_multi" {
-  name = "%s"
+  name = "%[3]s"
   type = "kubernetes"
   paused = "false"
-  workspace_id = prefect_workspace.test.id
-  depends_on = [prefect_workspace.test]
+	%[2]s
 }
 
 resource "prefect_work_queue" "test_queue1" {
-  name = "%s"
+  name = "%[4]s"
   work_pool_name = prefect_work_pool.test_multi.name
   priority = 1
   description = "my work queue"
-  workspace_id = prefect_workspace.test.id
+	%[2]s
 }
 
 resource "prefect_work_queue" "test_queue2" {
-  name = "%s"
+  name = "%[5]s"
   work_pool_name = prefect_work_pool.test_multi.name
-  workspace_id = prefect_workspace.test.id
+	%[2]s
 }
 
 data "prefect_work_queues" "test" {
   work_pool_name = prefect_work_pool.test_multi.name
-  workspace_id = prefect_workspace.test.id
+	%[2]s
   depends_on = [
     prefect_work_pool.test_multi,
     prefect_work_queue.test_queue1,
@@ -87,7 +87,7 @@ data "prefect_work_queues" "test" {
   ]
 }
 
-`, workspace, workPoolName, workQueue1Name, workQueue2Name)
+`, workspace, workspaceIDArg, workPoolName, workQueue1Name, workQueue2Name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -96,13 +96,16 @@ func TestAccDatasource_work_queue(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 	workQueues := []*api.WorkQueue{}
 
+	workPoolName := testutils.NewRandomPrefixedString()
+	workPoolMultiName := testutils.NewRandomPrefixedString()
+
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work queue
-				Config: fixtureAccSingleWorkQueue(workspace.Resource, "test-pool", "test-queue"),
+				Config: fixtureAccSingleWorkQueue(workspace.Resource, workspace.IDArg, workPoolName, "test-queue"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(singleWorkQueueDatasourceName, "name", "test-queue"),
 					resource.TestCheckResourceAttrSet(singleWorkQueueDatasourceName, "id"),
@@ -114,7 +117,7 @@ func TestAccDatasource_work_queue(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work queues
-				Config: fixtureAccMultipleWorkQueue(workspace.Resource, "test-pool-multi", "test-queue", "test-queue-2"),
+				Config: fixtureAccMultipleWorkQueue(workspace.Resource, workspace.IDArg, workPoolMultiName, "test-queue", "test-queue-2"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckworkQueueExists("prefect_work_pool.test_multi", &workQueues),
 					testAccCheckWorkQueueValues(&workQueues, expectedWorkQueues),
@@ -135,12 +138,15 @@ func testAccCheckworkQueueExists(workPoolResourceName string, workQueues *[]*api
 
 		workPoolName := workPoolResource.Primary.Attributes["name"]
 
-		workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
-		if !exists {
-			return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
-		}
+		var workspaceID uuid.UUID
+		if !testutils.TestContextOSS() {
+			workspaceResource, exists := s.RootModule().Resources[testutils.WorkspaceResourceName]
+			if !exists {
+				return fmt.Errorf("Resource not found in state: %s", testutils.WorkspaceResourceName)
+			}
 
-		workspaceID, _ := uuid.Parse(workspaceResource.Primary.ID)
+			workspaceID, _ = uuid.Parse(workspaceResource.Primary.ID)
+		}
 
 		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment

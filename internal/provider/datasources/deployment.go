@@ -123,8 +123,9 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 				Description: "ID of the associated storage document (UUID)",
 			},
 			"manifest_path": schema.StringAttribute{
-				Computed:    true,
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
+				Computed:           true,
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
 			},
 			"job_variables": schema.StringAttribute{
 				Computed:    true,
@@ -155,7 +156,7 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 				Computed:    true,
 				Description: "The path to the entrypoint for the workflow, relative to the path.",
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Computed:    true,
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,
@@ -183,6 +184,11 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 						Description: "Enumeration of concurrency collision strategies.",
 					},
 				},
+			},
+			"global_concurrency_limit_id": schema.StringAttribute{
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Description: "The ID of a global concurrency limit applied to this deployment.",
 			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
 			// In the resource schema, we only make `type` required. The other attributes are needed
@@ -289,7 +295,7 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	}
 
 	if getErr != nil {
-		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment", operation, err))
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment", operation, getErr))
 
 		return
 	}
@@ -362,7 +368,6 @@ func copyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		Entrypoint:             model.Entrypoint,
 		FlowID:                 model.FlowID,
 		JobVariables:           model.JobVariables,
-		ManifestPath:           model.ManifestPath,
 		Name:                   model.Name,
 		ParameterOpenAPISchema: model.ParameterOpenAPISchema,
 		Parameters:             model.Parameters,

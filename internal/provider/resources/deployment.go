@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -47,25 +48,26 @@ type DeploymentResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
-	ConcurrencyLimit       types.Int64           `tfsdk:"concurrency_limit"`
-	ConcurrencyOptions     *ConcurrencyOptions   `tfsdk:"concurrency_options"`
-	Description            types.String          `tfsdk:"description"`
-	EnforceParameterSchema types.Bool            `tfsdk:"enforce_parameter_schema"`
-	Entrypoint             types.String          `tfsdk:"entrypoint"`
-	FlowID                 customtypes.UUIDValue `tfsdk:"flow_id"`
-	JobVariables           jsontypes.Normalized  `tfsdk:"job_variables"`
-	ManifestPath           types.String          `tfsdk:"manifest_path"`
-	Name                   types.String          `tfsdk:"name"`
-	ParameterOpenAPISchema jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
-	Parameters             jsontypes.Normalized  `tfsdk:"parameters"`
-	Path                   types.String          `tfsdk:"path"`
-	Paused                 types.Bool            `tfsdk:"paused"`
-	PullSteps              []PullStepModel       `tfsdk:"pull_steps"`
-	StorageDocumentID      customtypes.UUIDValue `tfsdk:"storage_document_id"`
-	Tags                   types.List            `tfsdk:"tags"`
-	Version                types.String          `tfsdk:"version"`
-	WorkPoolName           types.String          `tfsdk:"work_pool_name"`
-	WorkQueueName          types.String          `tfsdk:"work_queue_name"`
+	ConcurrencyLimit         types.Int64           `tfsdk:"concurrency_limit"`
+	ConcurrencyOptions       *ConcurrencyOptions   `tfsdk:"concurrency_options"`
+	Description              types.String          `tfsdk:"description"`
+	EnforceParameterSchema   types.Bool            `tfsdk:"enforce_parameter_schema"`
+	Entrypoint               types.String          `tfsdk:"entrypoint"`
+	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
+	GlobalConcurrencyLimitID customtypes.UUIDValue `tfsdk:"global_concurrency_limit_id"`
+	JobVariables             jsontypes.Normalized  `tfsdk:"job_variables"`
+	ManifestPath             types.String          `tfsdk:"manifest_path"`
+	Name                     types.String          `tfsdk:"name"`
+	ParameterOpenAPISchema   jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
+	Parameters               jsontypes.Normalized  `tfsdk:"parameters"`
+	Path                     types.String          `tfsdk:"path"`
+	Paused                   types.Bool            `tfsdk:"paused"`
+	PullSteps                []PullStepModel       `tfsdk:"pull_steps"`
+	StorageDocumentID        customtypes.UUIDValue `tfsdk:"storage_document_id"`
+	Tags                     types.Set             `tfsdk:"tags"`
+	Version                  types.String          `tfsdk:"version"`
+	WorkPoolName             types.String          `tfsdk:"work_pool_name"`
+	WorkQueueName            types.String          `tfsdk:"work_queue_name"`
 }
 
 // ConcurrentOptions represents the concurrency options for a deployment.
@@ -121,6 +123,9 @@ type PullStepModel struct {
 	// The name of the bucket where files are stored.
 	Bucket types.String `tfsdk:"bucket"`
 
+	// The name of the container where files are stored (Azure only).
+	Container types.String `tfsdk:"container"`
+
 	// The folder in the bucket where files are stored.
 	Folder types.String `tfsdk:"folder"`
 }
@@ -157,8 +162,9 @@ func (r *DeploymentResource) Configure(_ context.Context, req resource.Configure
 }
 
 // Schema defines the schema for the resource.
+// nolint:maintidx,gocyclo // this schema is complex, and we can refactor it later
 func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+	defaultEmptyTagSet, _ := basetypes.NewSetValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
 		Description: helpers.DescriptionWithPlans("Deployments are server-side representations of flows. "+
@@ -194,20 +200,32 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) to associate deployment to",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
-				Description: "Name of the workspace",
+				Description: "Name of the deployment",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"flow_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Flow ID (UUID) to associate deployment to",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"paused": schema.BoolAttribute{
 				Description: "Whether or not the deployment is paused.",
@@ -219,7 +237,10 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Whether or not the deployment should enforce the parameter schema.",
 				Optional:    true,
 				Computed:    true,
-				Default:     booldefault.StaticBool(false),
+				// The Prefect Cloud API defaults this value to `false`, but this is only for backward
+				// compatibility. We intentionally set this to `true` to align with the default value
+				// used in Prefect OSS.
+				Default: booldefault.StaticBool(true),
 			},
 			"storage_document_id": schema.StringAttribute{
 				Optional:    true,
@@ -228,9 +249,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "ID of the associated storage document (UUID)",
 			},
 			"manifest_path": schema.StringAttribute{
-				Description: "The path to the flow's manifest file, relative to the chosen storage.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+				Optional:           true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -290,12 +311,12 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Description: "Tags associated with the deployment",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default:     listdefault.StaticValue(defaultEmptyTagList),
+				Default:     setdefault.StaticValue(defaultEmptyTagSet),
 			},
 			"parameters": schema.StringAttribute{
 				Description: "Parameters for flow runs scheduled by the deployment.",
@@ -316,6 +337,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
+					int64validator.ConflictsWith(path.MatchRoot("global_concurrency_limit_id")),
 				},
 			},
 			"concurrency_options": schema.SingleNestedAttribute{
@@ -329,6 +351,15 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							stringvalidator.OneOf("ENQUEUE", "CANCEL_NEW"),
 						},
 					},
+				},
+			},
+			"global_concurrency_limit_id": schema.StringAttribute{
+				Description: "The ID of a global concurrency limit to apply to this deployment. This is the recommended way to set concurrency limits. Mutually exclusive with concurrency_limit.",
+				Optional:    true,
+				Computed:    true,
+				CustomType:  customtypes.UUIDType{},
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(path.MatchRoot("concurrency_limit")),
 				},
 			},
 			// Pull steps are polymorphic and can have different schemas based on the pull step type.
@@ -354,6 +385,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							"branch":             types.StringType,
 							"access_token":       types.StringType,
 							"bucket":             types.StringType,
+							"container":          types.StringType,
 							"folder":             types.StringType,
 							"include_submodules": types.BoolType,
 						},
@@ -411,12 +443,17 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Validators:  boolConflictsWithValidators(nonGitCloneAttributes),
 						},
 						"bucket": schema.StringAttribute{
-							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
+							Description: "(For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
+						},
+						"container": schema.StringAttribute{
+							Description: "(For type 'pull_from_azure_blob_storage') The name of the container where files are stored.",
 							Optional:    true,
 							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
 						"folder": schema.StringAttribute{
-							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
+							Description: "(For type 'pull_from_*') The folder in the bucket/container where files are stored.",
 							Optional:    true,
 							Validators:  stringConflictsWithValidators(nonPullFromAttributes),
 						},
@@ -430,7 +467,7 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	pullSteps := make([]api.PullStep, 0)
+	pullSteps := make([]api.PullStep, 0, len(tfPullSteps))
 
 	for i := range tfPullSteps {
 		tfPullStep := tfPullSteps[i]
@@ -465,7 +502,11 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 			}
 
 		case "pull_from_azure_blob_storage":
-			apiPullStep.PullStepPullFromAzureBlobStorage = &pullStepPullFrom
+			apiPullStep.PullStepPullFromAzureBlobStorage = &api.PullStepPullFromAzure{
+				PullStepCommon: pullStepCommon,
+				Container:      tfPullStep.Container.ValueStringPointer(),
+				Folder:         tfPullStep.Folder.ValueStringPointer(),
+			}
 
 		case "pull_from_gcs":
 			apiPullStep.PullStepPullFromGCS = &pullStepPullFrom
@@ -483,7 +524,7 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	tfPullStepsModel := make([]PullStepModel, 0)
+	tfPullStepsModel := make([]PullStepModel, 0, len(pullSteps))
 
 	for i := range pullSteps {
 		pullStep := pullSteps[i]
@@ -514,7 +555,7 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 		// PullStepPullFromAzureBlobStorage
 		if pullStep.PullStepPullFromAzureBlobStorage != nil {
 			pullStepModel.Type = types.StringValue("pull_from_azure_blob_storage")
-			pullStepModel.Bucket = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Bucket)
+			pullStepModel.Container = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Container)
 			pullStepModel.Folder = types.StringPointerValue(pullStep.PullStepPullFromAzureBlobStorage.Folder)
 
 			// common fields
@@ -558,10 +599,9 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Updated = customtypes.NewTimestampPointerValue(deployment.Updated)
 
 	model.Description = types.StringValue(deployment.Description)
-	model.EnforceParameterSchema = types.BoolValue(deployment.EnforceParameterSchema)
+	model.EnforceParameterSchema = types.BoolPointerValue(deployment.EnforceParameterSchema)
 	model.Entrypoint = types.StringValue(deployment.Entrypoint)
 	model.FlowID = customtypes.NewUUIDValue(deployment.FlowID)
-	model.ManifestPath = types.StringValue(deployment.ManifestPath)
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
 	model.Paused = types.BoolValue(deployment.Paused)
@@ -570,7 +610,7 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
 	model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
 
-	tags, diags := types.ListValueFrom(ctx, types.StringType, deployment.Tags)
+	tags, diags := types.SetValueFrom(ctx, types.StringType, deployment.Tags)
 	if diags.HasError() {
 		return diags
 	}
@@ -578,8 +618,25 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 
 	// The concurrency_limit field in the response payload is deprecated, and will always be 0
 	// for compatibility. The true value has been moved under `global_concurrency_limit.limit`.
+	// We need to handle both the old and new ways:
+	// - If the user set concurrency_limit (old way), we populate that field with the limit value
+	// - If the user set global_concurrency_limit_id (new way), we populate that field with the ID
 	if deployment.GlobalConcurrencyLimit != nil {
-		model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+		// Determine which field was set in the config:
+		// - If global_concurrency_limit_id is set (not null/unknown), user is using new way
+		// - Otherwise, user is using the old concurrency_limit way
+		if !model.GlobalConcurrencyLimitID.IsNull() && !model.GlobalConcurrencyLimitID.IsUnknown() {
+			// New way: populate the ID
+			model.GlobalConcurrencyLimitID = customtypes.NewUUIDValue(deployment.GlobalConcurrencyLimit.ID)
+		} else {
+			// Old way: populate the limit value, keep global_concurrency_limit_id null
+			model.ConcurrencyLimit = types.Int64Value(deployment.GlobalConcurrencyLimit.Limit)
+			model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
+		}
+	} else {
+		// If no global concurrency limit is set, ensure both fields are explicitly null (not unknown)
+		model.ConcurrencyLimit = types.Int64Null()
+		model.GlobalConcurrencyLimitID = customtypes.NewUUIDNull()
 	}
 
 	if deployment.ConcurrencyOptions != nil {
@@ -616,8 +673,18 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	// To avoid an "inconsistent result after apply" error, we will only attempt to parse the
 	// response if it is not "null". In this case, the value will fall back to the default
 	// set in the schema.
+	//
+	// Additionally, Prefect OSS normalizes empty parameter schemas ({} or null) to a valid
+	// OpenAPI object schema: {"properties":{},"type":"object"}. To avoid drift, we convert
+	// this back to "{}" when reading, matching our default value.
+	// See: https://github.com/PrefectHQ/prefect/pull/19072
 	if string(parameterOpenAPISchemaByteSlice) != "null" {
-		model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+		// Check if this is the normalized empty schema that OSS returns
+		if string(parameterOpenAPISchemaByteSlice) == `{"properties":{},"type":"object"}` {
+			model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue("{}")
+		} else {
+			model.ParameterOpenAPISchema = jsontypes.NewNormalizedValue(string(parameterOpenAPISchemaByteSlice))
+		}
 	}
 
 	return nil
@@ -672,24 +739,24 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createPayload := api.DeploymentCreate{
-		ConcurrencyLimit:       plan.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:            plan.Description.ValueString(),
-		EnforceParameterSchema: plan.EnforceParameterSchema.ValueBool(),
-		Entrypoint:             plan.Entrypoint.ValueString(),
-		FlowID:                 plan.FlowID.ValueUUID(),
-		JobVariables:           jobVariables,
-		ManifestPath:           plan.ManifestPath.ValueString(),
-		Name:                   plan.Name.ValueString(),
-		Parameters:             parameters,
-		Path:                   plan.Path.ValueString(),
-		Paused:                 plan.Paused.ValueBool(),
-		PullSteps:              pullSteps,
-		StorageDocumentID:      plan.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                plan.Version.ValueString(),
-		WorkPoolName:           plan.WorkPoolName.ValueString(),
-		WorkQueueName:          plan.WorkQueueName.ValueString(),
-		ParameterOpenAPISchema: parameterOpenAPISchema,
+		ConcurrencyLimit:         plan.ConcurrencyLimit.ValueInt64Pointer(),
+		Description:              plan.Description.ValueString(),
+		EnforceParameterSchema:   plan.EnforceParameterSchema.ValueBoolPointer(),
+		Entrypoint:               plan.Entrypoint.ValueString(),
+		FlowID:                   plan.FlowID.ValueUUID(),
+		GlobalConcurrencyLimitID: plan.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		Name:                     plan.Name.ValueString(),
+		Parameters:               parameters,
+		Path:                     plan.Path.ValueString(),
+		Paused:                   plan.Paused.ValueBool(),
+		PullSteps:                pullSteps,
+		StorageDocumentID:        plan.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  plan.Version.ValueString(),
+		WorkPoolName:             plan.WorkPoolName.ValueString(),
+		WorkQueueName:            plan.WorkQueueName.ValueString(),
+		ParameterOpenAPISchema:   parameterOpenAPISchema,
 	}
 
 	if plan.ConcurrencyOptions != nil {
@@ -757,6 +824,15 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			"Error refreshing deployment state",
 			fmt.Sprintf("Could not read Deployment, unexpected error: %s", err.Error()),
@@ -831,21 +907,21 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:       model.ConcurrencyLimit.ValueInt64Pointer(),
-		Description:            model.Description.ValueString(),
-		EnforceParameterSchema: model.EnforceParameterSchema.ValueBool(),
-		Entrypoint:             model.Entrypoint.ValueString(),
-		JobVariables:           jobVariables,
-		ManifestPath:           model.ManifestPath.ValueString(),
-		ParameterOpenAPISchema: parameterOpenAPISchema,
-		Parameters:             parameters,
-		Path:                   model.Path.ValueString(),
-		Paused:                 model.Paused.ValueBool(),
-		StorageDocumentID:      model.StorageDocumentID.ValueUUIDPointer(),
-		Tags:                   tags,
-		Version:                model.Version.ValueString(),
-		WorkPoolName:           model.WorkPoolName.ValueString(),
-		WorkQueueName:          model.WorkQueueName.ValueString(),
+		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
+		Description:              model.Description.ValueStringPointer(),
+		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
+		Entrypoint:               model.Entrypoint.ValueStringPointer(),
+		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		JobVariables:             jobVariables,
+		ParameterOpenAPISchema:   parameterOpenAPISchema,
+		Parameters:               parameters,
+		Path:                     model.Path.ValueStringPointer(),
+		Paused:                   model.Paused.ValueBoolPointer(),
+		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
+		Tags:                     tags,
+		Version:                  model.Version.ValueStringPointer(),
+		WorkPoolName:             model.WorkPoolName.ValueStringPointer(),
+		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
 
 	if model.ConcurrencyOptions != nil {
@@ -947,7 +1023,7 @@ func (r *DeploymentResource) ImportState(ctx context.Context, req resource.Impor
 // ConfigValidators instead would be much more verbose, and disconnected from
 // the source of truth.
 func pathExpressionsForAttributes(attributes []string) []path.Expression {
-	pathExpressions := make([]path.Expression, 0)
+	pathExpressions := make([]path.Expression, 0, len(attributes))
 
 	for _, key := range attributes {
 		pathExpressions = append(pathExpressions, path.MatchRelative().AtParent().AtName(key))
@@ -986,6 +1062,7 @@ var (
 
 	pullFromAttributes = []string{
 		"bucket",
+		"container",
 		"folder",
 	}
 

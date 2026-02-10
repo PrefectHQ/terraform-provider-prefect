@@ -12,6 +12,7 @@ permissions: {}
 
 jobs:
   detect-api-drift:
+    if: github.repository == 'prefecthq/terraform-provider-prefect'
     permissions:
       # required to read from repo + write to wiki
       contents: write
@@ -21,12 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0  # We need history to compare with previous schemas
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: "0.6.13"
 

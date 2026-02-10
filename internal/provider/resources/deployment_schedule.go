@@ -2,12 +2,15 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -53,6 +56,10 @@ type DeploymentScheduleResourceModel struct {
 
 	// Schedule kind: rrule
 	RRule types.String `tfsdk:"rrule"`
+
+	// Schedule parameters and metadata
+	Parameters jsontypes.Normalized `tfsdk:"parameters"`
+	Slug       types.String         `tfsdk:"slug"`
 }
 
 // NewDeploymentScheduleResource returns a new DeploymentScheduleResource.
@@ -117,16 +124,25 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Optional:    true,
 				Description: "Account ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Workspace ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"deployment_id": schema.StringAttribute{
 				Required:    true,
 				Description: "Deployment ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"active": schema.BoolAttribute{
 				Description: "Whether or not the schedule is active.",
@@ -139,12 +155,24 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Computed:    true,
 			},
 			"max_active_runs": schema.Float32Attribute{
-				Description: "(Cloud only) The maximum number of active runs for the schedule.",
-				Optional:    true,
-				Computed:    true,
+				Description:        "(Cloud only) The maximum number of active runs for the schedule.",
+				Optional:           true,
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"catchup": schema.BoolAttribute{
-				Description: "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
+				Description:        "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
+				Optional:           true,
+				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
+			},
+			"parameters": schema.StringAttribute{
+				Description: "Parameters for flow runs scheduled by the deployment schedule.",
+				Optional:    true,
+				CustomType:  jsontypes.NormalizedType{},
+				Computed:    true,
+				Default:     stringdefault.StaticString("{}"),
+			},
+			"slug": schema.StringAttribute{
+				Description: "An optional unique identifier for the schedule.",
 				Optional:    true,
 				Computed:    true,
 			},
@@ -203,12 +231,18 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 		return
 	}
 
+	parameters, diags := helpers.UnmarshalOptional(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
 			Active:           plan.Active.ValueBoolPointer(),
-			Catchup:          plan.Catchup.ValueBool(),
-			MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 			MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+			Parameters:       parameters,
+			Slug:             plan.Slug.ValueString(),
 			Schedule: api.Schedule{
 				AnchorDate: plan.AnchorDate.ValueString(),
 				Cron:       plan.Cron.ValueString(),
@@ -238,7 +272,7 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	//
 	// Additionally, we couldn't use getResourceByID here because of a race condition:
 	// we'd need an ID in the state to compare against, which doesn't exist yet.
-	copyScheduleModelToResourceModel(schedules[0], &plan)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedules[0], &plan)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -263,6 +297,15 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 
 	schedules, err := client.Read(ctx, state.DeploymentID.ValueUUID())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Deployment Schedule", "read", err))
 
 		return
@@ -278,7 +321,7 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
 	}
 
-	copyScheduleModelToResourceModel(schedule, &state)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &state)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -301,11 +344,17 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
+	parameters, diags := helpers.UnmarshalOptional(plan.Parameters)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	cfgUpdate := api.DeploymentSchedulePayload{
 		Active:           plan.Active.ValueBoolPointer(),
-		Catchup:          plan.Catchup.ValueBool(),
-		MaxActiveRuns:    plan.MaxActiveRuns.ValueFloat32(),
 		MaxScheduledRuns: plan.MaxScheduledRuns.ValueFloat32(),
+		Parameters:       parameters,
+		Slug:             plan.Slug.ValueString(),
 		Schedule: api.Schedule{
 			AnchorDate: plan.AnchorDate.ValueString(),
 			Cron:       plan.Cron.ValueString(),
@@ -340,7 +389,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
 	}
 
-	copyScheduleModelToResourceModel(schedule, &plan)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &plan)...)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -375,7 +424,7 @@ func (r *DeploymentScheduleResource) Delete(ctx context.Context, req resource.De
 	}
 }
 
-func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel) {
+func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel) diag.Diagnostics {
 	model.ID = customtypes.NewUUIDValue(schedule.ID)
 	model.Created = customtypes.NewTimestampPointerValue(schedule.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(schedule.Updated)
@@ -383,9 +432,7 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.DeploymentID = customtypes.NewUUIDValue(schedule.DeploymentID)
 
 	model.Active = types.BoolPointerValue(schedule.Active)
-	model.MaxActiveRuns = types.Float32Value(schedule.MaxActiveRuns)
 
-	model.Catchup = types.BoolValue(schedule.Catchup)
 	model.MaxScheduledRuns = types.Float32Value(schedule.MaxScheduledRuns)
 
 	model.Timezone = types.StringValue(schedule.Schedule.Timezone)
@@ -394,6 +441,23 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.Cron = types.StringValue(schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringValue(schedule.Schedule.RRule)
+
+	model.Slug = types.StringValue(schedule.Slug)
+
+	parametersByteSlice, err := json.Marshal(schedule.Parameters)
+	if err != nil {
+		return diag.Diagnostics{helpers.SerializeDataErrorDiagnostic("parameters", "Deployment Schedule parameters", err)}
+	}
+
+	// OSS returns "null" for this field if it's empty, rather than an empty map of "{}".
+	// To avoid an "inconsistent result after apply" error, we will only attempt to parse the
+	// response if it is not "null". In this case, the value will fall back to the default
+	// set in the schema.
+	if string(parametersByteSlice) != "null" {
+		model.Parameters = jsontypes.NewNormalizedValue(string(parametersByteSlice))
+	}
+
+	return nil
 }
 
 // validateSchedules ensures that the list of schedules is not empty.

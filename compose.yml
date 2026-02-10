@@ -1,3 +1,4 @@
+---
 # This file is used to run a local instance of
 # Prefect for testing our Terraform Provider.
 #
@@ -9,6 +10,11 @@ services:
       - "4200:4200"
     environment:
       PREFECT_LOGGING_LEVEL: debug
+
+      # https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings
+      # https://docs.prefect.io/v3/api-ref/settings-ref#csrf-protection-enabled
+      # PREFECT_SERVER_CSRF_PROTECTION_ENABLED: "True"
+      # PREFECT_SERVER_API_CSRF_PROTECTION_ENABLED: "True"
     command:
       - prefect
       - server

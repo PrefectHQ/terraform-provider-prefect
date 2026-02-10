@@ -14,6 +14,9 @@ import (
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_service_account(t *testing.T) {
+	// Service accounts are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceNameByID := "data.prefect_service_account.bot_by_id"
 	dataSourceNameByName := "data.prefect_service_account.bot_by_name"
 	randomName := testutils.NewRandomPrefixedString()
@@ -30,11 +33,13 @@ func TestAccDatasource_service_account(t *testing.T) {
 					statecheck.ExpectKnownValue(dataSourceNameByID, tfjsonpath.New("api_key_name"), knownvalue.StringRegexp(regexp.MustCompile(fmt.Sprintf(`^%s`, randomName)))),
 					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "created"),
 					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "updated"),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByID, "actor_id"),
 					// Check the prefect_service_account datasource that queries by name
 					testutils.ExpectKnownValue(dataSourceNameByName, "name", randomName),
 					statecheck.ExpectKnownValue(dataSourceNameByName, tfjsonpath.New("api_key_name"), knownvalue.StringRegexp(regexp.MustCompile(fmt.Sprintf(`^%s`, randomName)))),
 					testutils.ExpectKnownValueNotNull(dataSourceNameByName, "created"),
 					testutils.ExpectKnownValueNotNull(dataSourceNameByName, "updated"),
+					testutils.ExpectKnownValueNotNull(dataSourceNameByName, "actor_id"),
 				},
 			},
 		},

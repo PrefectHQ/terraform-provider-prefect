@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -67,8 +69,8 @@ All Actors/Teams must first be granted access to the Workspace where the Block r
 
 Leave fields empty to use the default access controls
 `,
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
@@ -109,11 +111,17 @@ Leave fields empty to use the default access controls
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID) where the Block is located",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block_access` resource or the provider's `workspace_id` must be set.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
@@ -193,6 +201,15 @@ func (r *BlockAccessResource) Read(ctx context.Context, req resource.ReadRequest
 
 	_, err = client.GetAccess(ctx, state.BlockID.ValueUUID())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Document", "Get Access", err))
 
 		return

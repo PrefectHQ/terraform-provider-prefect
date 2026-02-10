@@ -38,6 +38,9 @@ removed {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_account_member(t *testing.T) {
+	// Account member is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	resourceName := "prefect_account_member.test"
 	resourceEmail := "marvin@prefect.io"
 	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")

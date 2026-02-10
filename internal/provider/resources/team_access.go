@@ -2,10 +2,15 @@ package resources
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -66,7 +71,7 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		Description: helpers.DescriptionWithPlans(
 			"The resource `team_access` grants access to a team for a user or service account. "+
 				"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
-			helpers.AllPlans...,
+			helpers.PlanEnterprise,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -100,9 +105,57 @@ func (r *TeamAccessResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
+}
+
+// waitForTeamAccessToExist waits for the team access to be available after creation.
+// This handles eventual consistency where the team access may be created but not
+// immediately available for reading. Team access requires additional time because
+// it depends on the member (service account or user) being fully registered in the
+// system before it can be queried.
+func waitForTeamAccessToExist(ctx context.Context, client api.TeamAccessClient, teamID, memberID, memberActorID customtypes.UUIDValue) (*api.TeamAccess, error) {
+	// Use longer retry parameters for team access since it depends on member registration
+	const (
+		maxRetryAttempts = 20   // Double the default
+		retryDelay       = 1000 // 1 second between attempts
+	)
+
+	var teamAccess *api.TeamAccess
+	var fetchErr error
+
+	err := retry.Do(
+		func() error {
+			var err error
+			teamAccess, err = client.Read(ctx, teamID.ValueUUID(), memberID.ValueUUID(), memberActorID.ValueUUID())
+			if err != nil {
+				fetchErr = err
+
+				return fmt.Errorf("failed to fetch team access: %w", err)
+			}
+
+			// If we successfully read the team access, it exists
+			return nil
+		},
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(time.Duration(retryDelay)*time.Millisecond),
+		retry.LastErrorOnly(true),
+	)
+
+	if err != nil {
+		// Even if we hit max retries, return the last team access state if we have one
+		if fetchErr == nil && teamAccess != nil {
+			return teamAccess, nil
+		}
+
+		return nil, fmt.Errorf("failed to wait for team access to exist after %d attempts: %w", maxRetryAttempts, err)
+	}
+
+	return teamAccess, nil
 }
 
 // Create creates a new team access.
@@ -127,7 +180,8 @@ func (r *TeamAccessResource) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	teamAccess, err := client.Read(ctx, plan.TeamID.ValueUUID(), plan.MemberID.ValueUUID(), plan.MemberActorID.ValueUUID())
+	// Wait for the team access to be available after creation
+	teamAccess, err := waitForTeamAccessToExist(ctx, client, plan.TeamID, plan.MemberID, plan.MemberActorID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team Access", "create", err))
 
@@ -160,6 +214,15 @@ func (r *TeamAccessResource) Read(ctx context.Context, req resource.ReadRequest,
 
 	teamAccess, err := client.Read(ctx, plan.TeamID.ValueUUID(), plan.MemberID.ValueUUID(), plan.MemberActorID.ValueUUID())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team Access", "read", err))
 
 		return

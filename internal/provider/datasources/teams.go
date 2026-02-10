@@ -63,7 +63,7 @@ Get information about multiple Teams.
 <br>
 Use this data source to search for multiple Teams. Defaults to fetching all Teams in the Account.
 `,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanEnterprise,
 		),
 		Attributes: map[string]schema.Attribute{
 			"account_id": schema.StringAttribute{
@@ -123,7 +123,7 @@ func (d *TeamsDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 			"created":     customtypes.NewTimestampPointerValue(team.Created),
 			"updated":     customtypes.NewTimestampPointerValue(team.Updated),
 			"name":        types.StringValue(team.Name),
-			"description": types.StringValue(team.Description),
+			"description": types.StringPointerValue(team.Description),
 		}
 
 		teamObject, diag := types.ObjectValue(attributeTypes, attributeValues)

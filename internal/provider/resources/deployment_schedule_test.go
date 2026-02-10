@@ -9,9 +9,14 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
+const (
+	resourceName = "prefect_deployment_schedule.test"
+)
+
 type fixtureConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
+	WorkspaceIDArg        string
 }
 
 func fixtureAccDeploymentScheduleInterval(cfg fixtureConfig) string {
@@ -20,27 +25,31 @@ func fixtureAccDeploymentScheduleInterval(cfg fixtureConfig) string {
 
 resource "prefect_flow" "test" {
 	name = "my-flow"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "test" {
 	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	flow_id = prefect_flow.test.id
 }
 
 resource "prefect_deployment_schedule" "test" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	active = true
-	catchup = false
-	max_active_runs = 10
 	timezone = "America/New_York"
 
 	interval = 30
 	anchor_date = "2024-01-01T00:00:00Z"
+
+	parameters = jsonencode({
+	 	env = "test"
+	 	version = "1.0"
+	})
+	slug = "test-schedule"
 }
 `
 
@@ -53,28 +62,32 @@ func fixtureAccDeploymentScheduleIntervalUpdate(cfg fixtureConfig) string {
 
 resource "prefect_flow" "test" {
 	name = "my-flow"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "test" {
 	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	flow_id = prefect_flow.test.id
 }
 
 resource "prefect_deployment_schedule" "test" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	# Update these values
 	active = false
-	catchup = true
-	max_active_runs = 20
 	timezone = "America/Chicago"
 
 	interval = 30
 	anchor_date = "2024-01-01T00:00:00Z"
+
+	parameters = jsonencode({
+	 	env = "staging"
+	 	version = "2.0"
+	})
+	slug = "updated-test-schedule"
 }
 `
 
@@ -87,18 +100,18 @@ func fixtureAccDeploymentScheduleCron(cfg fixtureConfig) string {
 
 resource "prefect_flow" "test" {
 	name = "my-flow"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "test" {
 	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	flow_id = prefect_flow.test.id
 }
 
 resource "prefect_deployment_schedule" "test" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	cron = "* * * * *"
@@ -115,18 +128,18 @@ func fixtureAccDeploymentScheduleRRule(cfg fixtureConfig) string {
 
 resource "prefect_flow" "test" {
 	name = "my-flow"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "test" {
 	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	flow_id = prefect_flow.test.id
 }
 
 resource "prefect_deployment_schedule" "test" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"
@@ -142,18 +155,18 @@ func fixtureAccDeploymentScheduleMultiple(cfg fixtureConfig) string {
 
 resource "prefect_flow" "test" {
 	name = "my-flow"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	tags = ["test"]
 }
 
 resource "prefect_deployment" "test" {
 	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
+	{{.WorkspaceIDArg}}
 	flow_id = prefect_flow.test.id
 }
 
 resource "prefect_deployment_schedule" "test_cron" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	cron = "* * * * *"
@@ -161,7 +174,7 @@ resource "prefect_deployment_schedule" "test_cron" {
 }
 
 resource "prefect_deployment_schedule" "test_rrule" {
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	deployment_id = prefect_deployment.test.id
 
 	rrule = "FREQ=DAILY;BYHOUR=10;BYMINUTE=30"
@@ -175,12 +188,34 @@ resource "prefect_deployment_schedule" "test_rrule" {
 func TestAccResource_deployment_schedule(t *testing.T) {
 	workspace := testutils.NewEphemeralWorkspace()
 
+	parameters := `{"env": "test", "version": "1.0"}`
+	parametersExpected := testutils.NormalizedValueForJSON(t, parameters)
+
+	parametersUpdate := `{"env": "staging", "version": "2.0"}`
+	parametersUpdateExpected := testutils.NormalizedValueForJSON(t, parametersUpdate)
+
 	fixtureCfg := fixtureConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
+		WorkspaceIDArg:        workspace.IDArg,
 	}
 
-	resourceName := "prefect_deployment_schedule.test"
+	fixtureCfgUpdate := fixtureCfg
+
+	stateChecksForInterval := []statecheck.StateCheck{
+		testutils.ExpectKnownValueBool(resourceName, "active", true),
+		testutils.ExpectKnownValueNumber(resourceName, "interval", 30),
+		testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
+		testutils.ExpectKnownValue(resourceName, "slug", "test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersExpected),
+	}
+
+	stateChecksForIntervalUpdate := []statecheck.StateCheck{
+		testutils.ExpectKnownValueBool(resourceName, "active", false),
+		testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
+		testutils.ExpectKnownValue(resourceName, "slug", "updated-test-schedule"),
+		testutils.ExpectKnownValue(resourceName, "parameters", parametersUpdateExpected),
+	}
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -192,25 +227,15 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
 				),
-				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueBool(resourceName, "active", true),
-					testutils.ExpectKnownValueBool(resourceName, "catchup", false),
-					testutils.ExpectKnownValueNumber(resourceName, "interval", 30),
-					testutils.ExpectKnownValue(resourceName, "timezone", "America/New_York"),
-				},
+				ConfigStateChecks: stateChecksForInterval,
 			},
 			{
 				// Test interval schedule update
-				Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfg),
+				Config: fixtureAccDeploymentScheduleIntervalUpdate(fixtureCfgUpdate),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &api.Deployment{}),
 				),
-				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueBool(resourceName, "active", false),
-					testutils.ExpectKnownValueBool(resourceName, "catchup", true),
-					testutils.ExpectKnownValueNumber(resourceName, "max_active_runs", 20),
-					testutils.ExpectKnownValue(resourceName, "timezone", "America/Chicago"),
-				},
+				ConfigStateChecks: stateChecksForIntervalUpdate,
 			},
 			{
 				// Test cron schedule

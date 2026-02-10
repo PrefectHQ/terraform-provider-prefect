@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -39,7 +39,7 @@ type FlowResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 
 	Name types.String `tfsdk:"name"`
-	Tags types.List   `tfsdk:"tags"`
+	Tags types.Set    `tfsdk:"tags"`
 }
 
 // NewFlowResource returns a new FlowResource.
@@ -75,7 +75,7 @@ func (r *FlowResource) Configure(_ context.Context, req resource.ConfigureReques
 
 // Schema defines the schema for the resource.
 func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
-	defaultEmptyTagList, _ := basetypes.NewListValue(types.StringType, []attr.Value{})
+	defaultEmptyTagSet, _ := basetypes.NewSetValue(types.StringType, []attr.Value{})
 
 	resp.Schema = schema.Schema{
 		Description: helpers.DescriptionWithPlans("The resource `flow` represents a Prefect Flow. "+
@@ -109,23 +109,32 @@ func (r *FlowResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the flow",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 
-			"tags": schema.ListAttribute{
+			"tags": schema.SetAttribute{
 				Description: "Tags associated with the flow",
 				ElementType: types.StringType,
 				Optional:    true,
 				Computed:    true,
-				Default:     listdefault.StaticValue(defaultEmptyTagList),
+				Default:     setdefault.StaticValue(defaultEmptyTagSet),
 			},
 		},
 	}
@@ -138,7 +147,7 @@ func copyFlowToModel(ctx context.Context, flow *api.Flow, model *FlowResourceMod
 	model.Updated = customtypes.NewTimestampPointerValue(flow.Updated)
 	model.Name = types.StringValue(flow.Name)
 
-	tags, diags := types.ListValueFrom(ctx, types.StringType, flow.Tags)
+	tags, diags := types.SetValueFrom(ctx, types.StringType, flow.Tags)
 	if diags.HasError() {
 		return diags
 	}
@@ -228,6 +237,15 @@ func (r *FlowResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.AddError(
 			"Error refreshing flow state",
 			fmt.Sprintf("Could not read Flow, unexpected error: %s", err.Error()),

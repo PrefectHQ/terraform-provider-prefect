@@ -16,9 +16,10 @@ type AccountsClient interface {
 
 // AccountSettings is a representation of an account's settings.
 type AccountSettings struct {
-	AllowPublicWorkspaces bool `json:"allow_public_workspaces"`
-	AILogSummaries        bool `json:"ai_log_summaries"`
-	ManagedExecution      bool `json:"managed_execution"`
+	AllowPublicWorkspaces        bool `json:"allow_public_workspaces"`
+	AILogSummaries               bool `json:"ai_log_summaries"`
+	ManagedExecution             bool `json:"managed_execution"`
+	EnforceWebhookAuthentication bool `json:"enforce_webhook_authentication"`
 }
 
 // Account is a representation of an account.
@@ -37,6 +38,7 @@ type Account struct {
 	RunRetentionDays      int64    `json:"run_retention_days"`
 	AuditLogRetentionDays int64    `json:"audit_log_retention_days"`
 	AutomationsLimit      int64    `json:"automations_limit"`
+	BillingEmail          *string  `json:"billing_email"`
 }
 
 // AccountUpdate is the data sent when updating an account.
@@ -46,7 +48,6 @@ type AccountUpdate struct {
 	Location              *string `json:"location"`
 	Link                  *string `json:"link"`
 	AuthExpirationSeconds *int64  `json:"auth_expiration_seconds"`
-	BillingEmail          *string `json:"billing_email"`
 }
 
 // AccountSettingsUpdate is the data sent when updating an account's settings.
@@ -64,5 +65,5 @@ type AccountDomain struct {
 
 // AccountDomainsUpdate is the data sent when updating an account's domain names.
 type AccountDomainsUpdate struct {
-	DomainNames []string `json:"domain_names,omitempty"`
+	DomainNames []string `json:"domain_names"`
 }

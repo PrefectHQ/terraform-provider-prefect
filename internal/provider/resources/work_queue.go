@@ -101,11 +101,17 @@ func (r *WorkQueueResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID), defaults to the workspace set in the provider. In Prefect Cloud, either the `work_pool` resource or the provider's `workspace_id` must be set.",
 				Optional:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"updated": schema.StringAttribute{
 				Computed:    true,
@@ -231,10 +237,7 @@ func (r *WorkQueueResource) Read(ctx context.Context, req resource.ReadRequest, 
 		// If the remote object does not exist, we can remove it from TF state
 		// so that the framework can queue up a new Create.
 		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
-		//
-		// NOTE: as a workaround, we encode + check this status code string on the error object.
-		// See `checkRetryPolicy` in `internal/client/client.go` for more details.
-		if strings.Contains(err.Error(), "status_code=404") {
+		if helpers.Is404Error(err) {
 			resp.State.RemoveResource(ctx)
 
 			return
@@ -339,20 +342,26 @@ func (r *WorkQueueResource) Delete(ctx context.Context, req resource.DeleteReque
 // ImportState imports the resource into Terraform state.
 func (r *WorkQueueResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Allow input values in the form of:
+	// - "work_pool_name,work_queue_name"
 	// - "work_pool_name,work_queue_name,workspace_id"
-	reqInputCount := 3
+	minInputCount := 2
+	maxInputCount := 3
 	inputParts := strings.Split(req.ID, ",")
 
-	if len(inputParts) != reqInputCount {
+	switch inputCount := len(inputParts); inputCount {
+	case minInputCount:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
+	case maxInputCount:
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), inputParts[2])...)
+	default:
 		resp.Diagnostics.AddError(
 			"Unexpected Import Identifier",
-			fmt.Sprintf("Expected 3 import identifiers, in the form of `work_pool_name,work_queue_name,workspace_id`. Got %q", req.ID),
+			fmt.Sprintf("Expected import identifiers, in the form of `work_pool_name,work_queue_name,workspace_id` or `work_pool_name,work_queue_name`. Got %q", req.ID),
 		)
 
 		return
 	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("work_pool_name"), inputParts[0])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), inputParts[1])...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("workspace_id"), inputParts[2])...)
 }

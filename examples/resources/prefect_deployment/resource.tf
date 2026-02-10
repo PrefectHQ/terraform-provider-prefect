@@ -32,7 +32,6 @@ resource "prefect_deployment" "deployment" {
   job_variables = jsonencode({
     "env" : { "some-key" : "some-value" }
   })
-  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
@@ -65,6 +64,12 @@ resource "prefect_deployment" "deployment" {
       access_token = "{{ prefect.blocks.secret.github-token }}"
       # Option 3: using a Credentials block
       credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
+    },
+    {
+      type      = "pull_from_azure_blob_storage",
+      requires  = "prefect-azure[blob_storage]"
+      container = "my-container",
+      folder    = "my-folder",
     },
     {
       type     = "pull_from_s3",

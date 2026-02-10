@@ -72,8 +72,8 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 				"Use this resource in conjunction with the `workspace_role` resource or data source to manage access to Workspaces.\n"+
 				"\n"+
 				"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
@@ -101,11 +101,17 @@ func (r *WorkspaceAccessResource) Schema(_ context.Context, _ resource.SchemaReq
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID) where the workspace is located",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) to grant access to",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_role_id": schema.StringAttribute{
 				Required:    true,
@@ -199,6 +205,15 @@ func (r *WorkspaceAccessResource) Read(ctx context.Context, req resource.ReadReq
 
 	workspaceAccess, err := client.Get(ctx, accessorType, accessID)
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "read", err))
 
 		return
@@ -272,6 +287,12 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 
 	err = client.Delete(ctx, accessorType, accessID, accessorID)
 	if err != nil {
+		// If the resource is already deleted (404), treat as success for idempotent deletion.
+		// This can happen during test cleanup when workspace deletion cascades to delete access records.
+		if helpers.Is404Error(err) {
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Access", "delete", err))
 
 		return
@@ -281,4 +302,12 @@ func (r *WorkspaceAccessResource) Delete(ctx context.Context, req resource.Delet
 	if resp.Diagnostics.HasError() {
 		return
 	}
+}
+
+// ImportState imports the resource into Terraform state.
+func (r *WorkspaceAccessResource) ImportState(_ context.Context, _ resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	resp.Diagnostics.AddError(
+		"Import not supported",
+		"Importing workspace access resources is not supported. Instead, define the resources as usual. If not present, they will be created.",
+	)
 }

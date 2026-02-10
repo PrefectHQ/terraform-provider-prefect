@@ -19,6 +19,9 @@ data "prefect_account_role" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccDatasource_account_role_defaults(t *testing.T) {
+	// Account roles are not available in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	dataSourceName := "data.prefect_account_role.test"
 
 	type defaultAccountRole struct {
@@ -29,7 +32,7 @@ func TestAccDatasource_account_role_defaults(t *testing.T) {
 	// Default account role names - these exist in every account
 	defaultAccountRoles := []defaultAccountRole{{"Admin", 44}, {"Member", 13}, {"Owner", 46}}
 
-	testSteps := []resource.TestStep{}
+	testSteps := make([]resource.TestStep, 0, len(defaultAccountRoles))
 
 	for _, role := range defaultAccountRoles {
 		testSteps = append(testSteps, resource.TestStep{

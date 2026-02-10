@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -98,8 +99,9 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				"\n"+
 				"API Keys for `service_account` resources can be rotated by modifying the `api_key_expiration` attribute.\n"+
 				"For more information, see [manage service accounts](https://docs.prefect.io/v3/manage/cloud/manage-users/service-accounts).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanTeam,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 1,
 		Attributes: map[string]schema.Attribute{
@@ -138,6 +140,13 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
+				PlanModifiers: []planmodifier.String{
+					// This field is both Optional and Computed, so if we use the RequiresReplace plan modifier,
+					// we need to also set UseStateForUnknown so Terraform doesn't think the computed value is changing
+					// and trigger a recreation when one isn't needed.
+					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"account_role_name": schema.StringAttribute{
 				Optional:    true,
@@ -188,6 +197,36 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			},
 		},
 	}
+}
+
+// waitForServiceAccountStateStabilization waits for the service account's fields to match the expected values.
+// This handles eventual consistency where the service account may be created or updated with values
+// that get updated asynchronously by the API.
+func waitForServiceAccountStateStabilization(ctx context.Context, client api.ServiceAccountsClient, serviceAccountID string, expectedName string) (*api.ServiceAccount, error) {
+	serviceAccount, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.ServiceAccount, error) {
+			return client.Get(ctx, serviceAccountID)
+		},
+		func(serviceAccount *api.ServiceAccount) error {
+			// Check if name matches expected value
+			if serviceAccount.Name != expectedName {
+				return fmt.Errorf("service account name does not match expected: got %q, want %q", serviceAccount.Name, expectedName)
+			}
+
+			// Check if actor_id is populated (needed for work_pool_access and other resources)
+			if serviceAccount.ActorID == uuid.Nil {
+				return fmt.Errorf("service account actor_id is not yet populated")
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for service account state stabilization: %w", err)
+	}
+
+	return serviceAccount, nil
 }
 
 // copyServiceAccountToModel maps an API response to a model that is saved in Terraform state.
@@ -273,12 +312,31 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	// The API Key is only returned on Create, so we need to save it before calling
+	// the stabilization helper, which will overwrite serviceAccount with a Get() response
+	// that does not include the API key value.
+	apiKey := serviceAccount.APIKey.Key
+
+	// Wait for the service account state to stabilize
+	// The API may update fields asynchronously after creation
+	serviceAccount, err = waitForServiceAccountStateStabilization(
+		ctx,
+		serviceAccountClient,
+		serviceAccount.ID.String(),
+		plan.Name.ValueString(),
+	)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "create", err))
+
+		return
+	}
+
 	copyServiceAccountToModel(serviceAccount, &plan)
 
 	// The API Key is only returned on Create or when rotating the key, so we'll attach it to
 	// the model outside of the helper function, so that we can prevent the value from being
 	// overwritten in state when this helper is used on Read operations.
-	plan.APIKey = types.StringValue(serviceAccount.APIKey.Key)
+	plan.APIKey = types.StringValue(apiKey)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -345,12 +403,42 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", operation, err))
 
 		return
 	}
 
+	// Detect if the API key was rotated externally by comparing key metadata
+	// before updating the state model.
+	var keyWasRotatedExternally bool
+	if !state.APIKeyID.IsNull() && !state.APIKeyID.IsUnknown() {
+		currentKeyID := state.APIKeyID.ValueString()
+		newKeyID := serviceAccount.APIKey.ID
+
+		if currentKeyID != newKeyID {
+			keyWasRotatedExternally = true
+		}
+	}
+
 	copyServiceAccountToModel(serviceAccount, &state)
+
+	if keyWasRotatedExternally {
+		resp.Diagnostics.AddWarning(
+			"Service Account API Key Changed Externally",
+			"The API key for this service account appears to have been rotated outside of Terraform. "+
+				"The stored API key value may no longer be valid. "+
+				"To refresh the key, modify the 'api_key_keepers' or 'api_key_expiration' attribute to trigger a rotation.",
+		)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -431,7 +519,14 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	serviceAccount, err := client.Get(ctx, plan.ID.ValueString())
+	// Wait for the service account state to stabilize after update
+	// The API may update fields asynchronously
+	serviceAccount, err := waitForServiceAccountStateStabilization(
+		ctx,
+		client,
+		plan.ID.ValueString(),
+		plan.Name.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Service Account", "get", err))
 

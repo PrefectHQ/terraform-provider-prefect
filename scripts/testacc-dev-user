@@ -9,7 +9,7 @@ set -e
 # It collects the required environment variables from 1Password
 # using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
 
-vault_entry='op://Platform/Terraform provider acceptance test secrets'
+vault_entry='op://Platform/Terraform Provider - Acceptance Test Secrets'
 
 # User tests
 TF_ACC=1 \

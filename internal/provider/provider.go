@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -25,10 +26,12 @@ import (
 var _ = provider.Provider(&PrefectProvider{})
 
 const (
-	envAccountID    = "PREFECT_CLOUD_ACCOUNT_ID"
-	envAPIURL       = "PREFECT_API_URL"
-	envAPIKey       = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
-	envBasicAuthKey = "PREFECT_BASIC_AUTH_KEY"
+	envAccountID           = "PREFECT_CLOUD_ACCOUNT_ID"
+	envAPIURL              = "PREFECT_API_URL"
+	envAPIKey              = "PREFECT_API_KEY" //nolint:gosec // this is just the environment variable key, not a credential
+	envBasicAuthKey        = "PREFECT_BASIC_AUTH_KEY"
+	envCSRFEnabled         = "PREFECT_CSRF_ENABLED"
+	envClientCustomHeaders = "PREFECT_CLIENT_CUSTOM_HEADERS"
 
 	defaultAPIURL = "https://api.prefect.cloud"
 )
@@ -70,6 +73,22 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Optional:    true,
 				Sensitive:   true,
 			},
+			"csrf_enabled": schema.BoolAttribute{
+				Description: "Enable CSRF protection for API requests. Defaults to false. " +
+					"If enabled, the provider will fetch a CSRF token from the Prefect API and include it in all requests. " +
+					"This should be enabled if your Prefect server instance has CSRF protection active. " +
+					"Can also be set via the `PREFECT_CSRF_ENABLED` environment variable.",
+				Optional: true,
+			},
+			"custom_headers": schema.StringAttribute{
+				Description: "Custom HTTP headers to include in all Prefect API requests as a JSON string. " +
+					"Useful for adding authentication headers required by proxies, CDNs, or security systems like Cloudflare Access. " +
+					"Can also be set via the `PREFECT_CLIENT_CUSTOM_HEADERS` environment variable. " +
+					"Example: `{\"CF-Access-Client-Id\": \"your-id\", \"CF-Access-Client-Secret\": \"your-secret\"}`. " +
+					"Protected headers (User-Agent, Prefect-Csrf-Token, Prefect-Csrf-Client) cannot be overridden.",
+				Optional:  true,
+				Sensitive: true,
+			},
 			"account_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
 				Description: "Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.",
@@ -80,13 +99,23 @@ func (p *PrefectProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 				Description: "Default Prefect Cloud Workspace ID.",
 				Optional:    true,
 			},
+			"profile": schema.StringAttribute{
+				Description: "Prefect profile name to use for authentication. If not specified, uses the active profile from `~/.prefect/profiles.toml`." +
+					" This allows you to use a specific profile instead of the active one.",
+				Optional: true,
+			},
+			"profile_file": schema.StringAttribute{
+				Description: "Path to the Prefect profiles file. If not specified, uses the default location `~/.prefect/profiles.toml`." +
+					" This allows you to use a custom profiles file location.",
+				Optional: true,
+			},
 		},
 	}
 }
 
 // Configure configures the provider's internal client.
 //
-//nolint:maintidx // this initialization logic is complex, and we can refactor it later
+//nolint:maintidx,gocyclo // this initialization logic is complex, and we can refactor it later
 func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	config := &PrefectProviderModel{}
 
@@ -99,7 +128,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// Ensure that all configuration values passed in to provider are known
 	// https://developer.hashicorp.com/terraform/plugin/framework/handling-data/terraform-concepts#unknown-values
 	if config.Endpoint.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("endpoint"),
 			"Unknown Prefect API Endpoint",
 			"The Prefect API Endpoint is not known at configuration time. "+
@@ -108,7 +137,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.APIKey.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("api_key"),
 			"Unknown Prefect API Key",
 			"The Prefect API Key is not known at configuration time. "+
@@ -117,7 +146,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.AccountID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("account_id"),
 			"Unknown Prefect Account ID",
 			"The Prefect Account ID is not known at configuration time. "+
@@ -126,7 +155,7 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	if config.WorkspaceID.IsUnknown() {
-		resp.Diagnostics.AddAttributeError(
+		resp.Diagnostics.AddAttributeWarning(
 			path.Root("workspace_id"),
 			"Unknown Prefect Workspace ID",
 			"The Prefect Workspace ID is not known at configuration time. "+
@@ -138,17 +167,52 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	// Determine which profile and profile file to use
+	var profileName string
+	if !config.Profile.IsNull() {
+		profileName = config.Profile.ValueString()
+	}
+
+	var profileFilePath string
+	if !config.ProfileFile.IsNull() {
+		profileFilePath = config.ProfileFile.ValueString()
+	}
+
+	// Load profile authentication as fallback
+	profileAuth, err := LoadProfileAuth(ctx, profileName, profileFilePath)
+	if err != nil {
+		helpers.AddProfileWarning(resp, profileName, profileFilePath, err)
+		// Set profileAuth to an empty model if error occurred
+		profileAuth = &PrefectProviderModel{}
+	}
+
 	// Extract endpoint from configuration or environment variable.
 	var endpoint string
+	var endpointSource string
 	if !config.Endpoint.IsNull() {
 		endpoint = config.Endpoint.ValueString()
+		endpointSource = "explicit configuration"
 	} else if apiURLEnvVar, ok := os.LookupEnv(envAPIURL); ok {
 		endpoint = apiURLEnvVar
+		endpointSource = "environment variable PREFECT_API_URL"
+	} else if !profileAuth.Endpoint.IsNull() {
+		endpoint = profileAuth.Endpoint.ValueString()
+		if profileName != "" {
+			endpointSource = fmt.Sprintf("profile '%s'", profileName)
+		} else {
+			endpointSource = "active profile"
+		}
 	}
 
 	if endpoint == "" {
 		endpoint = defaultAPIURL
+		endpointSource = "default value"
 	}
+
+	tflog.Info(ctx, "Using endpoint", map[string]any{
+		"source": endpointSource,
+		"value":  endpoint,
+	})
 
 	endpointURL, err := url.Parse(endpoint)
 	if err != nil {
@@ -157,6 +221,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 			"Invalid Prefect API Endpoint",
 			fmt.Sprintf("The Prefect API Endpoint %q is not a valid URL: %s", endpoint, err),
 		)
+
+		return
 	}
 
 	// Extract the API Key from configuration or environment variable.
@@ -165,6 +231,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		apiKey = config.APIKey.ValueString()
 	} else if apiKeyEnvVar, ok := os.LookupEnv(envAPIKey); ok {
 		apiKey = apiKeyEnvVar
+	} else if !profileAuth.APIKey.IsNull() {
+		apiKey = profileAuth.APIKey.ValueString()
 	}
 
 	// Extract with basic auth key from configuration or environment variable.
@@ -173,6 +241,8 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		basicAuthKey = config.BasicAuthKey.ValueString()
 	} else if basicAuthKeyEnvVar, ok := os.LookupEnv(envBasicAuthKey); ok {
 		basicAuthKey = basicAuthKeyEnvVar
+	} else if !profileAuth.BasicAuthKey.IsNull() {
+		basicAuthKey = profileAuth.BasicAuthKey.ValueString()
 	}
 
 	// Extract the Account ID from configuration, the PREFECT_CLOUD_ACCOUNT_ID
@@ -263,11 +333,48 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 		endpoint = fmt.Sprintf("%s/api", endpoint)
 	}
 
+	// Extract the CSRF enabled flag from configuration or environment variable.
+	csrfEnabled := false
+	if !config.CSRFEnabled.IsNull() {
+		csrfEnabled = config.CSRFEnabled.ValueBool()
+	} else if csrfEnabledEnvVar, ok := os.LookupEnv(envCSRFEnabled); ok {
+		csrfEnabled = csrfEnabledEnvVar == "true"
+	} else if !profileAuth.CSRFEnabled.IsNull() {
+		csrfEnabled = profileAuth.CSRFEnabled.ValueBool()
+	}
+
+	// Extract custom headers from configuration or environment variable
+	var customHeaders string
+	if !config.CustomHeaders.IsNull() {
+		customHeaders = config.CustomHeaders.ValueString()
+	} else if customHeadersEnvVar, ok := os.LookupEnv(envClientCustomHeaders); ok {
+		customHeaders = customHeadersEnvVar
+	} else if !profileAuth.CustomHeaders.IsNull() {
+		customHeaders = profileAuth.CustomHeaders.ValueString()
+	}
+
+	// Parse and validate custom headers JSON if provided
+	var customHeadersMap map[string]string
+	if customHeaders != "" {
+		if err := json.Unmarshal([]byte(customHeaders), &customHeadersMap); err != nil {
+			resp.Diagnostics.AddAttributeError(
+				path.Root("custom_headers"),
+				"Invalid Custom Headers JSON",
+				fmt.Sprintf("The custom headers value is not valid JSON: %s", err),
+			)
+
+			return
+		}
+	}
+
+	ctx = tflog.SetField(ctx, "prefect_profile", profileName)
+	ctx = tflog.SetField(ctx, "prefect_profile_file", profileFilePath)
 	ctx = tflog.SetField(ctx, "prefect_endpoint", endpoint)
 	ctx = tflog.SetField(ctx, "prefect_api_key", apiKey)
 	ctx = tflog.SetField(ctx, "prefect_basic_auth_key", apiKey)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_api_key")
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "prefect_basic_auth_key")
+	ctx = tflog.SetField(ctx, "prefect_csrf_enabled", csrfEnabled)
 	ctx = tflog.SetField(ctx, "prefect_account_id", accountID)
 	ctx = tflog.SetField(ctx, "prefect_workspace_id", workspaceID)
 	tflog.Debug(ctx, "Creating Prefect client")
@@ -279,11 +386,14 @@ func (p *PrefectProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// endpoint host to construct custom URLs as a resource attribute.
 	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
+	//nolint:contextcheck // no context is used here
 	prefectClient, err := client.New(
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
 		client.WithBasicAuthKey(basicAuthKey),
 		client.WithDefaults(accountID, workspaceID),
+		client.WithCsrfEnabled(csrfEnabled),
+		client.WithCustomHeaders(customHeadersMap),
 	)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -337,6 +447,8 @@ func (p *PrefectProvider) Resources(_ context.Context) []func() resource.Resourc
 		resources.NewAutomationResource,
 		resources.NewBlockAccessResource,
 		resources.NewBlockResource,
+		resources.NewBlockSchemaResource,
+		resources.NewBlockTypeResource,
 		resources.NewDeploymentAccessResource,
 		resources.NewDeploymentResource,
 		resources.NewDeploymentScheduleResource,

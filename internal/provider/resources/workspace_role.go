@@ -77,8 +77,8 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				"[API](https://app.prefect.cloud/api/docs#tag/Workspace-Scopes/operation/get_workspace_scopes_api_workspace_scopes_get).\n"+
 				"\n"+
 				"For more information, see [manage workspaces](https://docs.prefect.io/v3/manage/cloud/workspaces).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
@@ -122,6 +122,9 @@ func (r *WorkspaceRoleResource) Schema(_ context.Context, _ resource.SchemaReque
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"inherited_role_id": schema.StringAttribute{
 				CustomType:  customtypes.UUIDType{},
@@ -233,6 +236,15 @@ func (r *WorkspaceRoleResource) Read(ctx context.Context, req resource.ReadReque
 
 	role, err := client.Get(ctx, roleID)
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Workspace Role", "get", err))
 
 		return

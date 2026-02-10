@@ -4,7 +4,7 @@ name: Acceptance Tests - Sweepers
 "on":
   # Run at 7 AM UTC every day (2 AM EST)
   schedule:
-    - cron: '0 7 * * *' 
+    - cron: '0 7 * * *'
   # Run manually
   workflow_dispatch: {}
 
@@ -12,18 +12,28 @@ permissions: {}
 
 jobs:
   sweepers:
+    if: github.repository == 'prefecthq/terraform-provider-prefect'
     permissions:
       contents: read
     name: Run Sweepers
     environment: 'Acceptance Tests (main)'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      # This action installs go and caches downloaded modules, so we favor
+      # this over using the `mise-action` to install Go.
+      - name: Set up Golang
+        uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v3
+        with:
+          install_args: terraform
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
       - name: Run sweeper tests
-        run: make testacc-sweepers
+        run: mise run testacc-sweepers
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}

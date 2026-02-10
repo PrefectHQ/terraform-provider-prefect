@@ -9,22 +9,22 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccVariableByName(workspace, name string) string {
+func fixtureAccVariableByName(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-	%s
+%[1]s
 
-	resource "prefect_variable" "test" {
-		name = "%s"
-		value = "variable value goes here"
-		workspace_id = prefect_workspace.test.id
-		depends_on = [prefect_workspace.test]
-	}
+resource "prefect_variable" "test" {
+	name = "%[3]s"
+	value = "variable value goes here"
+	%[2]s
+}
 
-	data "prefect_variable" "test" {
-		name = "%s"
-		workspace_id = prefect_workspace.test.id
-	}
-	`, workspace, name, name)
+data "prefect_variable" "test" {
+	name = "%[3]s"
+	%[2]s
+	depends_on = [prefect_variable.test]
+}
+	`, workspace, workspaceIDArg, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -39,7 +39,7 @@ func TestAccDatasource_variable(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccVariableByName(workspace.Resource, variableName),
+				Config: fixtureAccVariableByName(workspace.Resource, workspace.IDArg, variableName),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(datasourceName, "id"),
 					testutils.ExpectKnownValue(datasourceName, "name", variableName),

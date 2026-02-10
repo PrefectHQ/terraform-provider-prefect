@@ -10,10 +10,13 @@ import (
 )
 
 type WorkPoolAccessClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkPoolAccess returns a WorkPoolAccessClient.
@@ -33,21 +36,27 @@ func (c *Client) WorkPoolAccess(accountID uuid.UUID, workspaceID uuid.UUID) (api
 	}
 
 	return &WorkPoolAccessClient{
-		hc:           c.hc,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
 func (c *WorkPoolAccessClient) Read(ctx context.Context, workPoolName string) (*api.WorkPoolAccessControl, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, workPoolName),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s/access", c.routePrefix, workPoolName),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var accessControl api.WorkPoolAccessControl
@@ -60,12 +69,15 @@ func (c *WorkPoolAccessClient) Read(ctx context.Context, workPoolName string) (*
 
 func (c *WorkPoolAccessClient) Set(ctx context.Context, workPoolName string, accessControl api.WorkPoolAccessSet) error {
 	cfg := requestConfig{
-		method:       http.MethodPut,
-		url:          fmt.Sprintf("%s/%s/access", c.routePrefix, workPoolName),
-		body:         &accessControl,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodPut,
+		url:             fmt.Sprintf("%s/%s/access", c.routePrefix, workPoolName),
+		body:            &accessControl,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

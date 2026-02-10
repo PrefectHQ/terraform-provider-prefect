@@ -9,39 +9,44 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccSingleWorkPool(workspace, name string) string {
+func fixtureAccSingleWorkPool(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-	name = "%s"
+	name = "%[3]s"
 	type = "kubernetes"
-	workspace_id = prefect_workspace.test.id
-	depends_on = [prefect_workspace.test]
+	%[2]s
 }
 
 data "prefect_work_pool" "test" {
-	name = "%s"
-	workspace_id = prefect_workspace.test.id
+	name = "%[3]s"
+	%[2]s
+	depends_on = [prefect_work_pool.test]
 }
-`, workspace, name, name)
+`, workspace, workspaceIDArg, name)
 }
 
-func fixtureAccMultipleWorkPools(workspace, name string) string {
+func fixtureAccMultipleWorkPools(workspace, workspaceIDArg, name string) string {
 	return fmt.Sprintf(`
-%s
+%[1]s
 
 resource "prefect_work_pool" "test" {
-	name = "%s"
+	name = "%[3]s"
 	type = "kubernetes"
-	workspace_id = prefect_workspace.test.id
-	depends_on = [prefect_workspace.test]
+	%[2]s
 }
 
 data "prefect_work_pools" "test" {
-	workspace_id = prefect_workspace.test.id
+	%[2]s
+
+	filter_any = [
+	  prefect_work_pool.test.id,
+	]
+
+	depends_on = [prefect_work_pool.test]
 }
-`, workspace, name)
+`, workspace, workspaceIDArg, name)
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -49,6 +54,7 @@ func TestAccDatasource_work_pool(t *testing.T) {
 	singleWorkPoolDatasourceName := "data.prefect_work_pool.test"
 	multipleWorkPoolDatasourceName := "data.prefect_work_pools.test"
 	workspace := testutils.NewEphemeralWorkspace()
+	workPoolName := testutils.NewRandomPrefixedString()
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -56,9 +62,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				// Check that we can query a single work pool
-				Config: fixtureAccSingleWorkPool(workspace.Resource, "test-pool"),
+				Config: fixtureAccSingleWorkPool(workspace.Resource, workspace.IDArg, workPoolName),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(singleWorkPoolDatasourceName, "name", "test-pool"),
+					testutils.ExpectKnownValue(singleWorkPoolDatasourceName, "name", workPoolName),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "id"),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "created"),
 					testutils.ExpectKnownValueNotNull(singleWorkPoolDatasourceName, "updated"),
@@ -70,9 +76,9 @@ func TestAccDatasource_work_pool(t *testing.T) {
 			},
 			{
 				// Check that we can query multiple work pools
-				Config: fixtureAccMultipleWorkPools(workspace.Resource, "test-pool"),
+				Config: fixtureAccMultipleWorkPools(workspace.Resource, workspace.IDArg, workPoolName),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(multipleWorkPoolDatasourceName, "work_pools.0.name", "test-pool"),
+					testutils.ExpectKnownValue(multipleWorkPoolDatasourceName, "work_pools.0.name", workPoolName),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.id"),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.created"),
 					testutils.ExpectKnownValueNotNull(multipleWorkPoolDatasourceName, "work_pools.0.updated"),

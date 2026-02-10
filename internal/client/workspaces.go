@@ -14,10 +14,13 @@ var _ = api.WorkspacesClient(&WorkspacesClient{})
 
 // WorkspacesClient is a client for working with Workspaces.
 type WorkspacesClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Workspaces returns a WorkspacesClient.
@@ -29,22 +32,28 @@ func (c *Client) Workspaces(accountID uuid.UUID) (api.WorkspacesClient, error) {
 	}
 
 	return &WorkspacesClient{
-		hc:           c.hc,
-		routePrefix:  getAccountScopedURL(c.endpoint, accountID, "workspaces"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getAccountScopedURL(c.endpoint, accountID, "workspaces"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
 // Create returns details for a new Workspace.
 func (c *WorkspacesClient) Create(ctx context.Context, data api.WorkspaceCreate) (*api.Workspace, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusCreated,
 	}
 
 	var workspace api.Workspace
@@ -64,12 +73,15 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 	}
 
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          fmt.Sprintf("%s/filter", c.routePrefix),
-		body:         &filterQuery,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodPost,
+		url:             fmt.Sprintf("%s/filter", c.routePrefix),
+		body:            &filterQuery,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var workspaces []*api.Workspace
@@ -83,12 +95,15 @@ func (c *WorkspacesClient) List(ctx context.Context, handleNames []string) ([]*a
 // Get returns details for a Workspace by ID.
 func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api.Workspace, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/" + workspaceID.String(),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + workspaceID.String(),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var workspace api.Workspace
@@ -102,12 +117,15 @@ func (c *WorkspacesClient) Get(ctx context.Context, workspaceID uuid.UUID) (*api
 // Update modifies an existing Workspace by ID.
 func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, data api.WorkspaceUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          c.routePrefix + "/" + workspaceID.String(),
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodPatch,
+		url:             c.routePrefix + "/" + workspaceID.String(),
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -122,12 +140,15 @@ func (c *WorkspacesClient) Update(ctx context.Context, workspaceID uuid.UUID, da
 // Delete removes a Workspace by ID.
 func (c *WorkspacesClient) Delete(ctx context.Context, workspaceID uuid.UUID) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          c.routePrefix + "/" + workspaceID.String(),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodDelete,
+		url:             c.routePrefix + "/" + workspaceID.String(),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

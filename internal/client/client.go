@@ -2,10 +2,13 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/google/uuid"
@@ -19,17 +22,22 @@ var _ = api.PrefectClient(&Client{})
 
 // New creates and returns new client instance.
 func New(opts ...Option) (*Client, error) {
-	// Uses the retryablehttp package for built-in retries
-	// with exponential backoff.
+	// Uses the retryablehttp package for built-in retries.
 	//
 	// Some notable defaults from that package include:
 	// - max retries: 4
 	// - retry wait minimum seconds: 1
 	// - retry wait maximum seconds: 30
 	//
+	// We use RateLimitLinearJitterBackoff as the backoff strategy, which:
+	// - Respects Retry-After headers on 429/503 responses
+	// - Falls back to linear jitter backoff otherwise
+	// - Helps prevent thundering herd problems
+	//
 	// All defaults are defined in
 	// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L48-L51.
 	retryableClient := retryablehttp.NewClient()
+	retryableClient.Backoff = retryablehttp.RateLimitLinearJitterBackoff
 
 	// By default, retryablehttp will only retry requests if there was some kind
 	// of transient server or networking error. We can be more specific with this
@@ -41,9 +49,7 @@ func New(opts ...Option) (*Client, error) {
 	// the `retryablehttp.Client` interface in our client methods.
 	httpClient := retryableClient.StandardClient()
 
-	client := &Client{
-		hc: httpClient,
-	}
+	client := &Client{hc: httpClient}
 
 	var errs []error
 	for _, opt := range opts {
@@ -59,6 +65,51 @@ func New(opts ...Option) (*Client, error) {
 	}
 
 	return client, nil
+}
+
+// obtainCsrfToken fetches the CSRF token from the Prefect server.
+// It should be called after the client's endpoint and auth are configured.
+func (c *Client) obtainCsrfToken() error {
+	tokenURL := fmt.Sprintf("%s/csrf-token?client=%s", c.endpoint, c.csrfClientToken)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, tokenURL, http.NoBody)
+	if err != nil {
+		return fmt.Errorf("error creating CSRF token request: %w", err)
+	}
+
+	// Set necessary headers. Note: Prefect-Csrf-Token is NOT sent for this request.
+	setAuthorizationHeader(req, c.apiKey, c.basicAuthKey)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Prefect-Csrf-Client", c.csrfClientToken)
+
+	// Apply custom headers to CSRF token request
+	for key, value := range c.customHeaders {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := c.hc.Do(req)
+	if err != nil {
+		return fmt.Errorf("http error on CSRF token request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+
+		return fmt.Errorf("failed to fetch CSRF token, status: %s, body: %s", resp.Status, string(bodyBytes))
+	}
+
+	var tokenResponse api.CSRFTokenResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResponse); err != nil {
+		return fmt.Errorf("failed to decode CSRF token response: %w", err)
+	}
+
+	if tokenResponse.Token == "" {
+		return fmt.Errorf("CSRF token not found in response")
+	}
+
+	c.csrfToken = tokenResponse.Token
+
+	return nil
 }
 
 // WithEndpoint configures the client to communicate with a self-hosted
@@ -99,6 +150,21 @@ func WithBasicAuthKey(basicAuthKey string) Option {
 	}
 }
 
+// WithCsrfEnabled configures the client to enable CSRF protection.
+func WithCsrfEnabled(csrfEnabled bool) Option {
+	return func(client *Client) error {
+		if csrfEnabled {
+			client.csrfClientToken = uuid.NewString()
+
+			if err := client.obtainCsrfToken(); err != nil {
+				return fmt.Errorf("failed to obtain CSRF token: %w", err)
+			}
+		}
+
+		return nil
+	}
+}
+
 // WithDefaults configures the default account and workspace ID.
 func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 	return func(client *Client) error {
@@ -108,6 +174,45 @@ func WithDefaults(accountID uuid.UUID, workspaceID uuid.UUID) Option {
 
 		client.defaultAccountID = accountID
 		client.defaultWorkspaceID = workspaceID
+
+		return nil
+	}
+}
+
+// WithCustomHeaders configures custom HTTP headers to include in all API requests.
+// Protected headers (User-Agent, Prefect-Csrf-Token, Prefect-Csrf-Client) are filtered out
+// and a warning is logged if any are attempted to be overridden.
+//
+// References:
+// - https://docs.prefect.io/v3/advanced/api-client#configure-custom-headers
+// - https://docs.prefect.io/v3/advanced/security-settings#custom-client-headers
+func WithCustomHeaders(headers map[string]string) Option {
+	return func(client *Client) error {
+		if headers == nil {
+			return nil
+		}
+
+		// Define protected headers that cannot be overridden for security reasons
+		protectedHeaders := map[string]bool{
+			"User-Agent":          true,
+			"Prefect-Csrf-Token":  true,
+			"Prefect-Csrf-Client": true,
+		}
+
+		filtered := make(map[string]string)
+		for key, value := range headers {
+			if protectedHeaders[key] {
+				// Log warning when protected header is attempted to be overridden
+				// This matches Prefect Python SDK behavior
+				// Note: Using fmt.Fprintf to stderr instead of Printf for warning output
+				_, _ = fmt.Fprintf(os.Stderr, "WARNING: Cannot override protected header %q, ignoring custom value to maintain security\n", key)
+
+				continue
+			}
+			filtered[key] = value
+		}
+
+		client.customHeaders = filtered
 
 		return nil
 	}
@@ -126,18 +231,38 @@ func checkRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool
 		return false, nil
 	}
 
-	// If the response is a 404 (NotFound), try again. This is particularly
-	// relevant for block-related objects that are created asynchronously.
+	// If the request is forbidden, no need to retry the request. Print
+	// out the error and stop retrying.
+	if resp.StatusCode == http.StatusForbidden {
+		body, _ := io.ReadAll(resp.Body)
+
+		return false, fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
+	}
+
+	// Context-aware 404 handling: Skip retries for DELETE operations.
+	// This prevents timing issues in acceptance tests during post-destroy plans.
+	//
+	// For non-DELETE operations (GET, POST, PUT, PATCH), retry 404s.
+	// This is particularly relevant for block-related objects that are created asynchronously.
 	if resp.StatusCode == http.StatusNotFound {
 		// NOTE: we encode the status code in the error object as a workaround
 		// in cases where we want access to the status code on a failed client.Do() call
 		// due to exhausted retries.
+		//
 		// go-retryablehttp does not return the response object on exhausted retries.
+		//
 		// https://github.com/hashicorp/go-retryablehttp/blob/main/client.go#L811-L825
-		return true, fmt.Errorf("status_code=%d, error=%w", resp.StatusCode, err)
+		body, _ := io.ReadAll(resp.Body)
+		errResult := fmt.Errorf("status_code=%d, error=%w, body=%s", resp.StatusCode, err, body)
+
+		if httpMethod, ok := ctx.Value(httpMethodContextKey).(string); ok && httpMethod == http.MethodDelete {
+			return false, errResult
+		}
+
+		return true, errResult
 	}
 
 	// Fall back to the default retry policy for any other status codes.
 	//nolint:wrapcheck // we've extended this method, no need to wrap error
-	return retryablehttp.DefaultRetryPolicy(ctx, resp, err)
+	return retryablehttp.ErrorPropagatedRetryPolicy(ctx, resp, err)
 }

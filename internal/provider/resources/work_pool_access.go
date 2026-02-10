@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
@@ -72,8 +74,8 @@ func (r *WorkPoolAccessResource) Schema(_ context.Context, _ resource.SchemaRequ
 				"(User, Service Account or Team) with a Work Pool. This resource specifies an actor's access level "+
 				"to a specific Work Pool in the Account. "+
 				"For more information, see [object access control lists](https://docs.prefect.io/v3/manage/cloud/manage-users/object-access-control-lists).",
-			helpers.PlanPrefectCloudPro,
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanPro,
+			helpers.PlanEnterprise,
 		),
 		Version: 0,
 		Attributes: map[string]schema.Attribute{
@@ -81,11 +83,17 @@ func (r *WorkPoolAccessResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:    true,
 				Description: "Account ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				Description: "Workspace ID (UUID)",
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"work_pool_name": schema.StringAttribute{
 				Required:    true,
@@ -227,6 +235,15 @@ func (r *WorkPoolAccessResource) Read(ctx context.Context, req resource.ReadRequ
 
 	_, err = client.Read(ctx, state.WorkPoolName.ValueString())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Work Pool Access", "read", err))
 
 		return

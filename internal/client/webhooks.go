@@ -13,10 +13,13 @@ var _ = api.WebhooksClient(&WebhooksClient{})
 
 // WebhooksClient is a client for working with webhooks.
 type WebhooksClient struct {
-	hc           *http.Client
-	apiKey       string
-	basicAuthKey string
-	routePrefix  string
+	hc              *http.Client
+	apiKey          string
+	basicAuthKey    string
+	routePrefix     string
+	csrfClientToken string
+	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Webhooks returns a WebhooksClient.
@@ -36,22 +39,28 @@ func (c *Client) Webhooks(accountID, workspaceID uuid.UUID) (api.WebhooksClient,
 	}
 
 	return &WebhooksClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "webhooks"),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
 // Create creates a new webhook.
 func (c *WebhooksClient) Create(ctx context.Context, createPayload api.WebhookCreateRequest) (*api.Webhook, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &createPayload,
-		successCodes: successCodesStatusCreated,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &createPayload,
+		successCodes:    successCodesStatusCreated,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhook api.Webhook
@@ -65,12 +74,15 @@ func (c *WebhooksClient) Create(ctx context.Context, createPayload api.WebhookCr
 // Get returns details for a webhook by ID.
 func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhook, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/" + webhookID,
-		successCodes: successCodesStatusOK,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + webhookID,
+		successCodes:    successCodesStatusOK,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhook api.Webhook
@@ -84,12 +96,15 @@ func (c *WebhooksClient) Get(ctx context.Context, webhookID string) (*api.Webhoo
 // Update modifies an existing webhook by ID.
 func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePayload api.WebhookUpdateRequest) error {
 	cfg := requestConfig{
-		method:       http.MethodPut,
-		url:          c.routePrefix + "/" + webhookID,
-		body:         &updatePayload,
-		successCodes: successCodesStatusOKOrNoContent,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPut,
+		url:             c.routePrefix + "/" + webhookID,
+		body:            &updatePayload,
+		successCodes:    successCodesStatusOKOrNoContent,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -104,12 +119,15 @@ func (c *WebhooksClient) Update(ctx context.Context, webhookID string, updatePay
 // Delete removes a webhook by ID.
 func (c *WebhooksClient) Delete(ctx context.Context, webhookID string) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          c.routePrefix + "/" + webhookID,
-		successCodes: successCodesStatusOKOrNoContent,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodDelete,
+		url:             c.routePrefix + "/" + webhookID,
+		successCodes:    successCodesStatusOKOrNoContent,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -127,12 +145,15 @@ func (c *WebhooksClient) List(ctx context.Context, names []string) ([]*api.Webho
 	filter.Webhooks.Name.Any = names
 
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/",
-		body:         http.NoBody,
-		successCodes: successCodesStatusOK,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/",
+		body:            http.NoBody,
+		successCodes:    successCodesStatusOK,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var webhooks []*api.Webhook

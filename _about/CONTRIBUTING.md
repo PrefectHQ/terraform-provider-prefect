@@ -42,43 +42,21 @@ Be sure to run `pre-commit install` before starting any development. `pre-commit
 
 ### Building the provider
 
-Anytime you want to test a local change, run the build command, which creates the provider binary in the `./build` folder
+Anytime you want to test a local change, run the build command, which creates the provider binary in the `.build/` folder:
 
 ```shell
-make build
+mise run build
 ```
 
-The binary will be stored at the root of the project - obtain the absolute path of the project's `./build` directory, as you will need it in the next step
-
-```shell
-echo $(pwd)/build
-/Users/johnsmith/code/terraform-provider-prefect/build
-```
-
-To aid local development, we can use [development overrides for Terraform provider configurations](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers) - place this into your `~/.terraformrc` file
-
-```terraform
-# ~/.terraformrc
-provider_installation {
-  dev_overrides {
-    "hashicorp/prefect" = "/Users/johnsmith/code/terraform-provider-prefect/build"
-  }
-
-  direct {}
-}
-```
-
-With development overrides, `terraform init` will still initialize the dependency lock, but `terraform apply` commands will disregard the lockfile + use the executable located in the path you specify here (which is keyed off by the provider name).
-
-Note that with `dev_overrides`, you do not need a `required_providers` block
+The binary will be stored at the root of the project under `.build/`.
 
 If you ever want to start fresh, go ahead and run:
 
 ```shell
-make clean
+mise run clean
 ```
 
-though in general, running `make install` will be sufficient in the course of development.
+though in general, running `mise run build` will be sufficient in the course of development.
 
 ## Testing
 
@@ -89,7 +67,7 @@ There are a few options for running tests depending on the type.
 The following command will run any regular unit tests. These are typically for helper or utility logic, such as data flatteners or equality checks.
 
 ```shell
-make test
+mise run test
 ```
 
 ### Terraform acceptance tests
@@ -97,8 +75,10 @@ make test
 The following command will run [Terraform acceptance tests](https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests) by prefixing the test run with `TF_ACC=1`.
 
 ```shell
-make testacc
+mise run testacc
 ```
+
+Note that this _does not_ require building the provider binary with `mise run build`.
 
 Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account.
 
@@ -111,7 +91,7 @@ export PREFECT_API_URL=https://api.prefect.cloud
 export PREFECT_API_KEY=<secret>
 export PREFECT_CLOUD_ACCOUNT_ID=<uuid>
 
-make testacc
+mise run testacc
 ```
 
 All acceptance tests run in an ephemeral Prefect workspace, except tests for Prefect workspaces and accounts.
@@ -142,26 +122,50 @@ For more information, see the [Terraform testing patterns documentation](https:/
 
 ### Manual testing
 
-You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
+You can also test provider functionality by running `terraform apply` with handcrafted manifests.
 
-First, you'll need to create or modify `~/.terraformrc` on your machine:
+To ensure that `terraform` commands use the locally-built binary, we use [development overrides for Terraform provider configurations](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers). These overrides are provided automatically in [dev.tfrc](../dev.tfrc),
 
-```terraform
-provider_installation {
-  dev_overrides {
-    "registry.terraform.io/prefecthq/prefect" = "/Users/<username>/go/bin/"
-  }
+First, build the binary:
 
-  # For all other providers, install them directly from their origin provider
-  # registries as normal. If you omit this, Terraform will _only_ use
-  # the dev_overrides block, and so no other providers will be available.
-  direct {}
-}
+```bash
+mise run build
 ```
 
-You only need to do this once, but if you will need to comment this out any time you want to use the provider from the official Terraform registry instead.
+Note: you will need to build the binary each time you change the source code.
 
-Next, start the Prefect server:
+Set up the test directory by running:
+
+```bash
+mise run dev-new <resource name>
+```
+
+This will:
+- Create a new directory: `./dev/<resource name>`
+- Create a file for environment variables: `./dev/.envrc`
+- Create a file for Terraform configuration: `./dev/<resource name>.tf`
+
+The command to change to this directory will automatically be added to your clipboard.
+Use this, or manually change directories, to enter the testing directory.
+
+When you run `terraform` commands, you'll notice a message that the locally-built binary is in use:
+
+```plaintext
+$ terraform plan
+╷
+│ Warning: Provider development overrides are in effect
+│
+│ The following provider development overrides are set in the CLI configuration:
+│  - prefecthq/prefect in ../../.build
+```
+
+You can then edit the `<resource name>.tf` file with your desired configuration for testing purposes.
+
+### Local testing
+
+You can also test against a local instance of Prefect. An example of this setup using Docker Compose is available in the [Terraform Provider tutorial](https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework/providers-plugin-framework-provider).
+
+Start the Prefect server:
 
 ```shell
 docker-compose up -d
@@ -172,20 +176,24 @@ You can confirm the server is running by either:
 1. Checking the logs with `docker-compose logs -f`, or
 2. Navigating to the UI in your browser at [localhost:4200](http://localhost:4200).
 
-When you're ready to test your changes, compile the provider and install it to your path:
+Set up the test directory by following the [manual testing instructions](#manual-testing).
+Open `<resource name>.tf` and modify the `provider` block with the following:
 
-```shell
-go install .
-```
+```terraform
+provider "prefect" {
+ endpoint = "http://localhost:4200"
+}
+ ```
 
-You can now run `terraform plan` and `terraform apply` to test features in the provider.
+You can now run `terraform plan` and `terraform apply` to test features in the
+provider against a local instance of Prefect.
 
 ## Build Documentation
 
 This provider repository uses the [`tfplugindocs`](https://github.com/hashicorp/terraform-plugin-docs) CLI utility to generate markdown documentation.
 
 ```shell
-make docs
+mise run docs
 ```
 
 The `tfplugindocs` CLI will:
@@ -194,7 +202,7 @@ The `tfplugindocs` CLI will:
 2. Create and populate `.md` files for each page of documentation for the objects mentioned in (1)
 3. Crawl and extract all named examples in `examples/**` + add those HCL configurations into the examples section of each `.md`
 
-**NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `make docs` and push any udpates to the working branch
+**NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `mise run docs` and push any udpates to the working branch
 
 Documentation will be rendered into the `docs/` directory. If you need to add additional
 information to a document page, create a template first. To do this, create a new file under either:
@@ -276,3 +284,31 @@ using `fmt.Sprintf`.
 - If the fixture is longer, or has more than 3-5 variables, `RenderTemplate` is a better choice.
 
 For examples for both approaches, see `internal/provider/{resources,datasources}/*_test.go` files.
+
+### Writing tests for Prefect Cloud and Prefect OSS
+
+The [Prefect Cloud API][Prefect Cloud API] and [Prefect OSS API][Prefect OSS API]
+have slight difference that we need to account for in the Terraform provider.
+
+To ensure compatibility with both options, we run Terraform acceptance tests against both.
+
+For features that are known to be Prefect Cloud-only, skip the entire feature. For example:
+
+```go
+func TestAccResource_automation(t *testing.T) {
+	// Automations are not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+}
+```
+
+For features that work with both Prefect Cloud and Prefect OSS, you will usually need additional
+logic to account for Cloud-only resources like workspaces. For example, see the
+[`prefect_block` tests](https://github.com/PrefectHQ/terraform-provider-prefect/blob/main/internal/provider/resources/block_test.go):
+
+- The fixture config struct includes fields for `Workspace` and `WorkspaceIDArg`.
+- The fixture config function uses these fields in the string.
+- Using the `testutils.TestContextOSS` method, the workspace value is excluded if the context is Prefect OSS.
+- That same method can be used elsewhere in the testing logic to account for differences between Cloud and OSS.
+
+[Prefect Cloud API]: https://app.prefect.cloud/api/docs
+[Prefect OSS API]: https://docs.prefect.io/3.0/api-ref/rest-api

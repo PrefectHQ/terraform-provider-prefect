@@ -7,11 +7,15 @@ import (
 	"github.com/avast/retry-go/v4"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
@@ -28,9 +32,11 @@ type BlockResourceModel struct {
 	AccountID   customtypes.UUIDValue `tfsdk:"account_id"`
 	WorkspaceID customtypes.UUIDValue `tfsdk:"workspace_id"`
 
-	Name     types.String         `tfsdk:"name"`
-	TypeSlug types.String         `tfsdk:"type_slug"`
-	Data     jsontypes.Normalized `tfsdk:"data"`
+	Name          types.String         `tfsdk:"name"`
+	TypeSlug      types.String         `tfsdk:"type_slug"`
+	Data          jsontypes.Normalized `tfsdk:"data"`
+	DataWO        jsontypes.Normalized `tfsdk:"data_wo"`
+	DataWOVersion types.Int32          `tfsdk:"data_wo_version"`
 }
 
 // NewBlockResource returns a new BlockResource.
@@ -105,6 +111,9 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 			"name": schema.StringAttribute{
 				Required:    true,
 				Description: "Unique name of the Block",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"type_slug": schema.StringAttribute{
 				Required:    true,
@@ -114,20 +123,50 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				},
 			},
 			"data": schema.StringAttribute{
-				Required:    true,
+				Optional:    true,
 				Sensitive:   true,
 				CustomType:  jsontypes.NormalizedType{},
 				Description: "The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						path.MatchRoot("data_wo"),
+					),
+				},
+			},
+			"data_wo": schema.StringAttribute{
+				Optional:    true,
+				Sensitive:   true,
+				WriteOnly:   true,
+				CustomType:  jsontypes.NormalizedType{},
+				Description: "The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.",
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
+						path.MatchRoot("data"),
+					),
+				},
+			},
+			"data_wo_version": schema.Int32Attribute{
+				Optional:    true,
+				Description: "The version of the `data_wo` attribute. This is used to track changes to the `data_wo` attribute and trigger updates when the value changes.",
+				Validators: []validator.Int32{
+					int32validator.AlsoRequires(path.MatchRoot("data_wo")),
+				},
 			},
 			"account_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID) where the Block is located",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"workspace_id": schema.StringAttribute{
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block` resource or the provider's `workspace_id` must be set.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
@@ -221,6 +260,15 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
+	// Also get the config to evaluate write-only attributes that
+	// are only available in the config, not the plan.
+	var config BlockResourceModel
+	diags = req.Config.Get(ctx, &config)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -239,10 +287,20 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 	// Here, we unmarshal the user-provided `data` JSON string to a map[string]interface{}
 	// because we'll later need to re-marshall the entire BlockDocumentCreate payload
 	// when sending it back up to the API
-	var data map[string]interface{}
-	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
+	data, diags := helpers.UnmarshalOptional(plan.Data)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	dataWO, diags := helpers.UnmarshalOptional(config.DataWO)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if len(dataWO) != 0 {
+		data = dataWO
 	}
 
 	createdBlockDocument, err := blockDocumentClient.Create(ctx, api.BlockDocumentCreate{
@@ -311,6 +369,15 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	block, err := client.Get(ctx, blockID)
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
 
 		return
@@ -345,6 +412,21 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	// Also get the config to evaluate write-only attributes that
+	// are only available in the config, not the plan.
+	var config BlockResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Also retrieve the state to compare the data_wo_version.
+	var state BlockResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	blockDocumentClient, err := r.client.BlockDocuments(plan.AccountID.ValueUUID(), plan.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Block Document", err))
@@ -365,10 +447,20 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	var data map[string]interface{}
-	resp.Diagnostics.Append(plan.Data.Unmarshal(&data)...)
+	data, diags := helpers.UnmarshalOptional(plan.Data)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If the data_wo_version is different, we need to update the data payload
+	// using the content of the data_wo attribute.
+	if !plan.DataWOVersion.Equal(state.DataWOVersion) {
+		data, diags = helpers.UnmarshalOptional(config.DataWO)
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	err = blockDocumentClient.Update(ctx, blockID, api.BlockDocumentUpdate{
@@ -395,7 +487,7 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	diags := copyBlockToModel(block, &plan)
+	diags = copyBlockToModel(block, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

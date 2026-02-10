@@ -142,6 +142,11 @@ linters:
         - yodaStyleExpr
   exclusions:
     generated: lax
+    rules:
+      - linters:
+          - revive
+        path: internal/api/
+        text: "var-naming: avoid meaningless package names"
     presets:
       - comments
       - common-false-positives

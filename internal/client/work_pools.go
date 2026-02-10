@@ -13,10 +13,13 @@ var _ = api.WorkPoolsClient(&WorkPoolsClient{})
 
 // WorkPoolsClient is a client for working with work pools.
 type WorkPoolsClient struct {
-	hc           *http.Client
-	apiKey       string
-	basicAuthKey string
-	routePrefix  string
+	hc              *http.Client
+	apiKey          string
+	basicAuthKey    string
+	routePrefix     string
+	csrfClientToken string
+	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // WorkPools returns a WorkPoolsClient.
@@ -36,22 +39,28 @@ func (c *Client) WorkPools(accountID uuid.UUID, workspaceID uuid.UUID) (api.Work
 	}
 
 	return &WorkPoolsClient{
-		hc:           c.hc,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
+		hc:              c.hc,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "work_pools"),
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
 // Create returns details for a new work pool.
 func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (*api.WorkPool, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		successCodes: successCodesStatusCreated,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		successCodes:    successCodesStatusCreated,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pool api.WorkPool
@@ -63,14 +72,22 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 }
 
 // List returns a list of work pools matching filter criteria.
-func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) ([]*api.WorkPool, error) {
+func (c *WorkPoolsClient) List(ctx context.Context, ids []string) ([]*api.WorkPool, error) {
+	filter := &api.WorkPoolFilter{}
+	if len(ids) > 0 {
+		filter.WorkPools.ID.Any = ids
+	}
+
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/filter",
-		body:         &filter,
-		successCodes: successCodesStatusOK,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/filter",
+		body:            &filter,
+		successCodes:    successCodesStatusOK,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pools []*api.WorkPool
@@ -84,12 +101,15 @@ func (c *WorkPoolsClient) List(ctx context.Context, filter api.WorkPoolFilter) (
 // Get returns details for a work pool by name.
 func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/" + name,
-		successCodes: successCodesStatusOK,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + name,
+		successCodes:    successCodesStatusOK,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	var pool api.WorkPool
@@ -103,12 +123,15 @@ func (c *WorkPoolsClient) Get(ctx context.Context, name string) (*api.WorkPool, 
 // Update modifies an existing work pool by name.
 func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.WorkPoolUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          c.routePrefix + "/" + name,
-		body:         &data,
-		successCodes: successCodesStatusOKOrNoContent,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodPatch,
+		url:             c.routePrefix + "/" + name,
+		body:            &data,
+		successCodes:    successCodesStatusOKOrNoContent,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -123,12 +146,15 @@ func (c *WorkPoolsClient) Update(ctx context.Context, name string, data api.Work
 // Delete removes a work pool by name.
 func (c *WorkPoolsClient) Delete(ctx context.Context, name string) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          c.routePrefix + "/" + name,
-		successCodes: successCodesStatusOKOrNoContent,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		method:          http.MethodDelete,
+		url:             c.routePrefix + "/" + name,
+		successCodes:    successCodesStatusOKOrNoContent,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

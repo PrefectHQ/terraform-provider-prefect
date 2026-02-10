@@ -3,6 +3,7 @@ package resources_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/google/uuid"
@@ -50,6 +51,9 @@ resource "prefect_workspace_access" "bot_access" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_bot_workspace_access(t *testing.T) {
+	// Workspace access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	accessResourceName := "prefect_workspace_access.bot_access"
 	botResourceName := "prefect_service_account.bot"
 	developerRoleDatsourceName := "data.prefect_workspace_role.developer"
@@ -89,6 +93,13 @@ func TestAccResource_bot_workspace_access(t *testing.T) {
 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				},
+			},
+			{
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(accessResourceName),
+				ResourceName:      accessResourceName,
+				ImportStateVerify: true,
+				ExpectError:       regexp.MustCompile(".*Import not supported.*"),
 			},
 		},
 	})
@@ -130,6 +141,9 @@ resource "prefect_workspace_access" "team_access" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_team_workspace_access(t *testing.T) {
+	// Workspace access is not supported in OSS.
+	testutils.SkipTestsIfOSS(t)
+
 	accessResourceName := "prefect_workspace_access.team_access"
 	teamResourceName := "data.prefect_team.my_team"
 	viewerRoleDatsourceName := "data.prefect_workspace_role.viewer"
@@ -169,6 +183,12 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				},
+			},
+			{
+				ImportState:       true,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(accessResourceName),
+				ResourceName:      accessResourceName,
+				ExpectError:       regexp.MustCompile(".*Import not supported.*"),
 			},
 		},
 	})

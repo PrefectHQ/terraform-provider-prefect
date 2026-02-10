@@ -1,3 +1,4 @@
+//nolint:revive // we can rename this in a future change
 package utils
 
 // Workspace Accessor Types.
@@ -12,6 +13,7 @@ const TriggerTypeCompound string = "compound"
 const TriggerTypeSequence string = "sequence"
 
 // Automation Action Types.
+// Source: https://docs.prefect.io/v3/api-ref/rest-api/server/automations/create-automation#body-actions
 var AllAutomationActionTypes = []string{
 	"do-nothing",
 	"run-deployment",

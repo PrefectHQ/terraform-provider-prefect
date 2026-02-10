@@ -73,7 +73,7 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"The resource `team` represents a Prefect Team. "+
 				"Teams are used to organize users and their permissions. "+
 				"For more information, see [manage teams](https://docs.prefect.io/v3/manage/cloud/manage-users/manage-teams).",
-			helpers.PlanPrefectCloudEnterprise,
+			helpers.PlanEnterprise,
 		),
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -101,6 +101,9 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID)",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 			"name": schema.StringAttribute{
 				Required:    true,
@@ -108,6 +111,7 @@ func (r *TeamResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			},
 			"description": schema.StringAttribute{
 				Optional:    true,
+				Computed:    true,
 				Description: "Description of the team",
 			},
 		},
@@ -132,7 +136,7 @@ func (r *TeamResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	team, err := teamClient.Create(ctx, api.TeamCreate{
 		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Team", err))
@@ -169,6 +173,15 @@ func (r *TeamResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	team, err := teamClient.Read(ctx, plan.ID.ValueString())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team", "read", err))
 
 		return
@@ -203,7 +216,7 @@ func (r *TeamResource) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	team, err := teamClient.Update(ctx, plan.ID.ValueString(), api.TeamUpdate{
 		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
+		Description: plan.Description.ValueStringPointer(),
 	})
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Team", "update", err))
@@ -263,7 +276,7 @@ func copyTeamToModel(team *api.Team, tfModel *TeamResourceModel) diag.Diagnostic
 	tfModel.Created = customtypes.NewTimestampPointerValue(team.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(team.Updated)
 	tfModel.Name = types.StringValue(team.Name)
-	tfModel.Description = types.StringValue(team.Description)
+	tfModel.Description = types.StringPointerValue(team.Description)
 
 	return nil
 }

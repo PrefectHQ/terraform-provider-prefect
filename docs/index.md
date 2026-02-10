@@ -10,6 +10,11 @@ description: |-
 
 Use the [Prefect](https://prefect.io) provider to configure your Prefect infrastructure.
 
+The provider supports both [Prefect Cloud](https://app.prefect.cloud) and
+[Prefect OSS](https://github.com/prefecthq/prefect).
+
+The provider is tested against Prefect 3 and later. There is no compatibility guarantee for Prefect 2.
+
 See [getting started](./docs/guides/getting-started.md) for more information on setting up the provider.
 
 See [troubleshoting](./docs/guides/troubleshooting.md) for resources to address potential errors.
@@ -24,6 +29,14 @@ terraform {
     }
   }
 }
+
+# Authentication configuration precedence:
+# 1. Provider block attributes (highest priority)
+# 2. Environment variables
+# 3. Prefect profile file (lowest priority)
+#
+# The provider will attempt to automatically load authentication from your Prefect profile
+# located at ~/.prefect/profiles.toml if no explicit configuration is provided.
 
 # By default, the provider points to Prefect Cloud
 # and you can pass in your API key and account ID
@@ -44,6 +57,34 @@ provider "prefect" {
   api_key      = var.prefect_api_key
   account_id   = var.prefect_account_id
   workspace_id = var.prefect_workspace_id
+}
+
+# Use a specific profile instead of the active one
+provider "prefect" {
+  profile = "prod-profile"
+  # All authentication will be loaded from the "prod-profile"
+}
+
+# Use a custom profile file location
+provider "prefect" {
+  profile_file = "/path/to/custom/profiles.toml"
+  # All authentication will be loaded from the custom profiles file
+}
+
+# Use a specific profile from a custom file
+provider "prefect" {
+  profile      = "dev-profile"
+  profile_file = "/path/to/dev/profiles.toml"
+  # Load "dev-profile" from the custom profiles file
+}
+
+# You can still override specific settings from the profile
+provider "prefect" {
+  profile = "my-profile"
+  # This will override the API URL from the profile
+  endpoint = "https://custom-api.prefect.cloud/api"
+
+  # Other settings will still be loaded from the profile
 }
 
 # You also have the option to specify the account and workspace
@@ -69,5 +110,9 @@ provider "prefect" {
 - `account_id` (String) Default Prefect Cloud Account ID. Can also be set via the `PREFECT_CLOUD_ACCOUNT_ID` environment variable.
 - `api_key` (String, Sensitive) Prefect Cloud API key. Can also be set via the `PREFECT_API_KEY` environment variable.
 - `basic_auth_key` (String, Sensitive) Prefect basic auth key. Can also be set via the `PREFECT_BASIC_AUTH_KEY` environment variable.
+- `csrf_enabled` (Boolean) Enable CSRF protection for API requests. Defaults to false. If enabled, the provider will fetch a CSRF token from the Prefect API and include it in all requests. This should be enabled if your Prefect server instance has CSRF protection active. Can also be set via the `PREFECT_CSRF_ENABLED` environment variable.
+- `custom_headers` (String, Sensitive) Custom HTTP headers to include in all Prefect API requests as a JSON string. Useful for adding authentication headers required by proxies, CDNs, or security systems like Cloudflare Access. Can also be set via the `PREFECT_CLIENT_CUSTOM_HEADERS` environment variable. Example: `{"CF-Access-Client-Id": "your-id", "CF-Access-Client-Secret": "your-secret"}`. Protected headers (User-Agent, Prefect-Csrf-Token, Prefect-Csrf-Client) cannot be overridden.
 - `endpoint` (String) The Prefect API URL. Can also be set via the `PREFECT_API_URL` environment variable. Defaults to `https://api.prefect.cloud` if not configured. Can optionally include the default account ID and workspace ID in the following format: `https://api.prefect.cloud/api/accounts/<accountID>/workspaces/<workspaceID>`. This is the same format used for the `PREFECT_API_URL` value in the Prefect CLI configuration file. The `account_id` and `workspace_id` attributes and their matching environment variables will take priority over any account and workspace ID values provided in the `endpoint` attribute.
+- `profile` (String) Prefect profile name to use for authentication. If not specified, uses the active profile from `~/.prefect/profiles.toml`. This allows you to use a specific profile instead of the active one.
+- `profile_file` (String) Path to the Prefect profiles file. If not specified, uses the default location `~/.prefect/profiles.toml`. This allows you to use a custom profiles file location.
 - `workspace_id` (String) Default Prefect Cloud Workspace ID.

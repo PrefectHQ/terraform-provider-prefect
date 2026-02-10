@@ -14,10 +14,13 @@ var _ = api.DeploymentsClient(&DeploymentsClient{})
 
 // DeploymentsClient is a client for working with Deployments.
 type DeploymentsClient struct {
-	hc           *http.Client
-	routePrefix  string
-	apiKey       string
-	basicAuthKey string
+	hc              *http.Client
+	routePrefix     string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string
+	customHeaders   map[string]string
 }
 
 // Deployments returns a DeploymentsClient.
@@ -37,22 +40,28 @@ func (c *Client) Deployments(accountID uuid.UUID, workspaceID uuid.UUID) (api.De
 	}
 
 	return &DeploymentsClient{
-		hc:           c.hc,
-		routePrefix:  getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
+		hc:              c.hc,
+		routePrefix:     getWorkspaceScopedURL(c.endpoint, accountID, workspaceID, "deployments"),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
 	}, nil
 }
 
 // Create returns details for a new Deployment.
 func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreate) (*api.Deployment, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix + "/",
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix + "/",
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOKOrCreated,
 	}
 
 	var deployment api.Deployment
@@ -66,12 +75,15 @@ func (c *DeploymentsClient) Create(ctx context.Context, data api.DeploymentCreat
 // Get returns details for a Deployment by ID.
 func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*api.Deployment, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var deployment api.Deployment
@@ -86,12 +98,15 @@ func (c *DeploymentsClient) Get(ctx context.Context, deploymentID uuid.UUID) (*a
 func (c *DeploymentsClient) GetByName(ctx context.Context, flowName, deploymentName string) (*api.Deployment, error) {
 	url := fmt.Sprintf("%s/name/%s/%s", c.routePrefix, flowName, deploymentName)
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          url,
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             url,
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var deployment api.Deployment
@@ -105,12 +120,15 @@ func (c *DeploymentsClient) GetByName(ctx context.Context, flowName, deploymentN
 // Update modifies an existing Deployment by ID.
 func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.DeploymentUpdate) error {
 	cfg := requestConfig{
-		method:       http.MethodPatch,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
-		body:         &data,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodPatch,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, id.String()),
+		body:            &data,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
@@ -125,12 +143,15 @@ func (c *DeploymentsClient) Update(ctx context.Context, id uuid.UUID, data api.D
 // Delete removes a Deployment by ID.
 func (c *DeploymentsClient) Delete(ctx context.Context, deploymentID uuid.UUID) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
-		body:         http.NoBody,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOKOrNoContent,
+		method:          http.MethodDelete,
+		url:             fmt.Sprintf("%s/%s", c.routePrefix, deploymentID.String()),
+		body:            http.NoBody,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)

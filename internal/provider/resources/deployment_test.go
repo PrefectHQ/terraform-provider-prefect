@@ -16,7 +16,8 @@ import (
 )
 
 type deploymentConfig struct {
-	Workspace string
+	Workspace      string
+	WorkspaceIDArg string
 
 	DeploymentName         string
 	DeploymentResourceName string
@@ -27,7 +28,6 @@ type deploymentConfig struct {
 	EnforceParameterSchema bool
 	Entrypoint             string
 	JobVariables           string
-	ManifestPath           string
 	Parameters             string
 	Path                   string
 	Paused                 bool
@@ -56,21 +56,21 @@ resource "prefect_block" "test_gh_repository" {
 		"reference": "main"
 	})
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_work_pool" "{{.WorkPoolName}}" {
   name         = "{{.WorkPoolName}}"
   type         = "kubernetes"
   paused       = false
-  workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_flow" "{{.FlowName}}" {
 	name = "{{.FlowName}}"
 	tags = [{{range .Tags}}"{{.}}", {{end}}]
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 }
 
 resource "prefect_deployment" "{{.DeploymentName}}" {
@@ -86,7 +86,6 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	job_variables = jsonencode(
 		{{.JobVariables}}
 	)
-	manifest_path = "{{.ManifestPath}}"
 	parameters = jsonencode({
 		"some-parameter": "{{.Parameters}}"
 	})
@@ -127,8 +126,8 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 			{{- with .PullStepPullFromAzureBlobStorage }}
 			type = "pull_from_azure_blob_storage"
-			{{-   if .Bucket }}
-			bucket = "{{.Bucket}}"
+			{{-   if .Container }}
+			container = "{{.Container}}"
 			{{-   end}}
 			{{-   if .Folder }}
 			folder = "{{.Folder}}"
@@ -177,12 +176,172 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 	]
 	storage_document_id = prefect_block.test_gh_repository.id
 
-	workspace_id = prefect_workspace.test.id
+	{{.WorkspaceIDArg}}
 	depends_on = [prefect_flow.{{.FlowName}}]
 }
 `
 
 	return testutils.RenderTemplate(tmpl, cfg)
+}
+
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_with_global_concurrency_limit(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	gcl1Name := testutils.NewRandomPrefixedString()
+	gcl2Name := testutils.NewRandomPrefixedString()
+
+	// Configuration for creating deployment with first global concurrency limit
+	cfgCreate := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+	name = "%[2]s"
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test1" {
+	name = "%[4]s"
+	limit = 5
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test2" {
+	name = "%[5]s"
+	limit = 10
+	%[3]s
+}
+
+resource "prefect_deployment" "%[6]s" {
+	name = "%[6]s"
+	flow_id = prefect_flow.%[2]s.id
+	global_concurrency_limit_id = prefect_global_concurrency_limit.test1.id
+	%[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
+
+	// Configuration for updating deployment to use second global concurrency limit
+	cfgUpdate := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+	name = "%[2]s"
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test1" {
+	name = "%[4]s"
+	limit = 5
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test2" {
+	name = "%[5]s"
+	limit = 10
+	%[3]s
+}
+
+resource "prefect_deployment" "%[6]s" {
+	name = "%[6]s"
+	flow_id = prefect_flow.%[2]s.id
+	global_concurrency_limit_id = prefect_global_concurrency_limit.test2.id
+	%[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
+
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Check creation with global_concurrency_limit_id
+				Config: cfgCreate,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "global_concurrency_limit_id"),
+				},
+			},
+			{
+				// Check update to different global_concurrency_limit_id
+				Config: cfgUpdate,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "global_concurrency_limit_id"),
+				},
+			},
+		},
+	})
+}
+
+// TestAccResource_deployment_job_variables_update tests updating job_variables
+// with nested env values, which was causing 409 Conflict errors.
+// See: https://github.com/PrefectHQ/terraform-provider-prefect/issues/618
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_job_variables_update(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	workPoolName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	// Initial job_variables with env block (matching issue #618 scenario)
+	jobVariablesCreate := `{"image": "example.registry.com/example-repo/example-image:v1", "env": {"ENV_VAR_1": "value1", "ENV_VAR_2": "value2"}}`
+	expectedJobVariablesCreate := testutils.NormalizedValueForJSON(t, jobVariablesCreate)
+
+	// Updated job_variables - changing env values (this was causing 409 errors)
+	jobVariablesUpdate := `{"image": "example.registry.com/example-repo/example-image:v2", "env": {"ENV_VAR_1": "updated1", "ENV_VAR_2": "updated2", "ENV_VAR_3": "new_value"}}`
+	expectedJobVariablesUpdate := testutils.NormalizedValueForJSON(t, jobVariablesUpdate)
+
+	// Minimal config function for this focused test
+	makeConfig := func(jobVars string) string {
+		return fmt.Sprintf(`
+%[1]s
+
+resource "prefect_work_pool" "%[2]s" {
+  name   = "%[2]s"
+  type   = "kubernetes"
+  paused = false
+  %[3]s
+}
+
+resource "prefect_flow" "%[4]s" {
+  name = "%[4]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[5]s" {
+  name           = "%[5]s"
+  flow_id        = prefect_flow.%[4]s.id
+  work_pool_name = "%[2]s"
+  job_variables  = jsonencode(%[6]s)
+  %[3]s
+  depends_on = [prefect_flow.%[4]s, prefect_work_pool.%[2]s]
+}
+`, workspace.Resource, workPoolName, workspace.IDArg, flowName, deploymentName, jobVars)
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create deployment with initial job_variables
+				Config: makeConfig(jobVariablesCreate),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "job_variables", expectedJobVariablesCreate),
+				},
+			},
+			{
+				// Update only job_variables - this was causing 409 Conflict errors
+				Config: makeConfig(jobVariablesUpdate),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "job_variables", expectedJobVariablesUpdate),
+				},
+			},
+		},
+	})
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
@@ -202,14 +361,14 @@ func TestAccResource_deployment(t *testing.T) {
 		FlowName:               flowName,
 		DeploymentResourceName: fmt.Sprintf("prefect_deployment.%s", deploymentName),
 		Workspace:              workspace.Resource,
+		WorkspaceIDArg:         workspace.IDArg,
 
 		ConcurrencyLimit:       1,
 		CollisionStrategy:      "ENQUEUE",
 		Description:            "My deployment description",
-		EnforceParameterSchema: false,
+		EnforceParameterSchema: true,
 		Entrypoint:             "hello_world.py:hello_world",
 		JobVariables:           `{"env":{"some-key":"some-value"}}`,
-		ManifestPath:           "some-manifest-path",
 		Parameters:             "some-value1",
 		Path:                   "some-path",
 		Paused:                 false,
@@ -234,33 +393,22 @@ func TestAccResource_deployment(t *testing.T) {
 		FlowName:               cfgCreate.FlowName,
 		DeploymentResourceName: cfgCreate.DeploymentResourceName,
 		Workspace:              cfgCreate.Workspace,
+		WorkspaceIDArg:         cfgCreate.WorkspaceIDArg,
 		WorkPoolName:           cfgCreate.WorkPoolName,
 
 		// Configure new values to test the update.
 		ConcurrencyLimit:       2,
 		CollisionStrategy:      "CANCEL_NEW",
 		Description:            "My deployment description v2",
+		EnforceParameterSchema: false,
 		Entrypoint:             "hello_world.py:hello_world2",
 		JobVariables:           `{"env":{"some-key":"some-value2"}}`,
-		ManifestPath:           "some-manifest-path2",
 		ParameterOpenAPISchema: parameterOpenAPISchemaUpdate,
 		Parameters:             "some-value2",
 		Path:                   "some-path2",
 		Paused:                 true,
 		Version:                "v1.1.2",
 		WorkQueueName:          "default",
-
-		// Enforcing parameter schema  returns the following error:
-		//
-		//   Could not update deployment, unexpected error: status code 409 Conflict,
-		//   error={"detail":"Error updating deployment: Cannot update parameters because
-		//   parameter schema enforcement is enabledand the deployment does not have a
-		//   valid parameter schema."}
-		//
-		// Will avoid testing this for now until a schema is configurable in the provider.
-		//
-		// EnforceParameterSchema: true
-		EnforceParameterSchema: cfgCreate.EnforceParameterSchema,
 
 		// Changing the tags results in a "404 Deployment not found" error.
 		// Will avoid testing this until a solution is found.
@@ -281,6 +429,16 @@ func TestAccResource_deployment(t *testing.T) {
 					Branch:            ptr.To("main"),
 					AccessToken:       ptr.To("123abc"),
 					IncludeSubmodules: ptr.To(true),
+				},
+			},
+			{
+				PullStepPullFromAzureBlobStorage: &api.PullStepPullFromAzure{
+					Container: ptr.To("my-container"),
+					Folder:    ptr.To("my-folder"),
+					PullStepCommon: api.PullStepCommon{
+						Credentials: ptr.To("azure-credentials"),
+						Requires:    ptr.To("prefect-azure[blob_storage]"),
+					},
 				},
 			},
 			{
@@ -323,12 +481,11 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "enforce_parameter_schema", cfgCreate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "entrypoint", cfgCreate.Entrypoint),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "job_variables", cfgCreate.JobVariables),
-					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "manifest_path", cfgCreate.ManifestPath),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value1"}`),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchema),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "path", cfgCreate.Path),
 					testutils.ExpectKnownValueBool(cfgCreate.DeploymentResourceName, "paused", cfgCreate.Paused),
-					testutils.ExpectKnownValueList(cfgCreate.DeploymentResourceName, "tags", cfgCreate.Tags),
+					testutils.ExpectKnownValueSet(cfgCreate.DeploymentResourceName, "tags", cfgCreate.Tags),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "version", cfgCreate.Version),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_pool_name", cfgCreate.WorkPoolName),
 					testutils.ExpectKnownValue(cfgCreate.DeploymentResourceName, "work_queue_name", cfgCreate.WorkQueueName),
@@ -354,12 +511,11 @@ func TestAccResource_deployment(t *testing.T) {
 					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "enforce_parameter_schema", cfgUpdate.EnforceParameterSchema),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "entrypoint", cfgUpdate.Entrypoint),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "job_variables", cfgUpdate.JobVariables),
-					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "manifest_path", cfgUpdate.ManifestPath),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameters", `{"some-parameter":"some-value2"}`),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "parameter_openapi_schema", expectedParameterOpenAPISchemaUpdate),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "path", cfgUpdate.Path),
 					testutils.ExpectKnownValueBool(cfgUpdate.DeploymentResourceName, "paused", cfgUpdate.Paused),
-					testutils.ExpectKnownValueList(cfgUpdate.DeploymentResourceName, "tags", cfgUpdate.Tags),
+					testutils.ExpectKnownValueSet(cfgUpdate.DeploymentResourceName, "tags", cfgUpdate.Tags),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "version", cfgUpdate.Version),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_pool_name", cfgUpdate.WorkPoolName),
 					testutils.ExpectKnownValue(cfgUpdate.DeploymentResourceName, "work_queue_name", cfgUpdate.WorkQueueName),
@@ -387,10 +543,14 @@ func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api
 			return fmt.Errorf("error fetching deployment ID: %w", err)
 		}
 
-		// Get the workspace resource we just created from the state
-		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
-		if err != nil {
-			return fmt.Errorf("error fetching workspace ID: %w", err)
+		var workspaceID uuid.UUID
+
+		if !testutils.TestContextOSS() {
+			// Get the workspace resource we just created from the state
+			workspaceID, err = testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+			if err != nil {
+				return fmt.Errorf("error fetching workspace ID: %w", err)
+			}
 		}
 
 		// Initialize the client with the associated workspaceID

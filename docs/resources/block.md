@@ -9,7 +9,7 @@ description: |-
   Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
   Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
   NOTE: if a Block is managed in Terraform, the .data attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_block (Resource)
@@ -22,7 +22,7 @@ Use `prefect block type ls` to view all available Block type slugs, which is use
 Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
 *NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 
 ## Example Usage
@@ -40,6 +40,22 @@ resource "prefect_block" "secret" {
 
   # set the workpace_id attribute on the provider OR the resource
   workspace_id = "<workspace UUID>"
+}
+# example:
+# you can also use a write-only attribute for the data field
+resource "prefect_block" "secret_write_only" {
+  name = "foo-write-only"
+
+  # prefect block type ls
+  type_slug = "aws-credentials"
+
+  # prefect block type inspect aws-credentials
+  data_wo = jsonencode({
+    "value" = "bar"
+  })
+
+  # provide the version to control when to update the block data
+  data_wo_version = 1
 }
 
 # example:
@@ -118,13 +134,17 @@ For more information on the `$ref` syntax definition, see the
 
 ### Required
 
-- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
 - `name` (String) Unique name of the Block
 - `type_slug` (String) Block Type slug, which determines the schema of the `data` JSON attribute. Use `prefect block type ls` to view all available Block type slugs.
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `account_id` (String) Account ID (UUID) where the Block is located
+- `data` (String, Sensitive) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
+- `data_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) The user-inputted Block payload, as a JSON string. Use `jsonencode` on the provided value to satisfy the underlying JSON type. The value's schema will depend on the selected `type` slug. Use `prefect block type inspect <slug>` to view the data schema for a given Block type.
+- `data_wo_version` (Number) The version of the `data_wo` attribute. This is used to track changes to the `data_wo` attribute and trigger updates when the value changes.
 - `workspace_id` (String) Workspace ID (UUID) where the Block is located. In Prefect Cloud, either the `prefect_block` resource or the provider's `workspace_id` must be set.
 
 ### Read-Only
@@ -136,6 +156,8 @@ For more information on the `$ref` syntax definition, see the
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # prefect_block resources can be imported by the block_id

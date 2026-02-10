@@ -79,14 +79,18 @@ func GetResourceWorkspaceIDFromState(state *terraform.State) (uuid.UUID, error) 
 // for use in import tests.
 func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
-		workspaceID, err := GetResourceWorkspaceIDFromState(state)
-		if err != nil {
-			return "", fmt.Errorf("unable to get workspaceID from state: %w", err)
-		}
-
 		fetchedResourceID, err := GetResourceIDFromState(state, resourceName)
 		if err != nil {
 			return "", fmt.Errorf("unable to get resource from state: %w", err)
+		}
+
+		if TestContextOSS() {
+			return fetchedResourceID.String(), nil
+		}
+
+		workspaceID, err := GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return "", fmt.Errorf("unable to get workspaceID from state: %w", err)
 		}
 
 		return fmt.Sprintf("%s,%s", fetchedResourceID, workspaceID), nil
@@ -97,16 +101,20 @@ func GetResourceWorkspaceImportStateID(resourceName string) resource.ImportState
 // "name" attribute for use in import tests.
 func GetResourceWorkspaceImportStateIDByName(resourceName string) resource.ImportStateIdFunc {
 	return func(state *terraform.State) (string, error) {
+		fetchedResourceName, err := GetResourceAttributeFromStateByAttribute(state, resourceName, "name")
+		if err != nil {
+			return "", fmt.Errorf("unable to get resource from state: %w", err)
+		}
+
+		if TestContextOSS() {
+			return fetchedResourceName, nil
+		}
+
 		workspaceID, err := GetResourceWorkspaceIDFromState(state)
 		if err != nil {
 			return "", fmt.Errorf("unable to get workspaceID from state: %w", err)
 		}
 
-		fetchedResourceID, err := GetResourceAttributeFromStateByAttribute(state, resourceName, "name")
-		if err != nil {
-			return "", fmt.Errorf("unable to get resource from state: %w", err)
-		}
-
-		return fmt.Sprintf("%s,%s", fetchedResourceID, workspaceID), nil
+		return fmt.Sprintf("%s,%s", fetchedResourceName, workspaceID), nil
 	}
 }

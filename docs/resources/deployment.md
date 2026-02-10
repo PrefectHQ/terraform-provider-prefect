@@ -4,7 +4,7 @@ page_title: "prefect_deployment Resource - prefect"
 subcategory: ""
 description: |-
   Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see deploy overview https://docs.prefect.io/v3/deploy/index.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_deployment (Resource)
@@ -12,7 +12,7 @@ description: |-
 
 Deployments are server-side representations of flows. They store the crucial metadata needed for remote orchestration including when, where, and how a workflow should run. Deployments elevate workflows from functions that you must call manually to API-managed entities that can be triggered remotely. For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/index).
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 
 ## Example Usage
@@ -52,7 +52,6 @@ resource "prefect_deployment" "deployment" {
   job_variables = jsonencode({
     "env" : { "some-key" : "some-value" }
   })
-  manifest_path = "./bar/foo"
   parameters = jsonencode({
     "some-parameter" : "some-value",
     "some-parameter2" : "some-value2"
@@ -87,6 +86,12 @@ resource "prefect_deployment" "deployment" {
       credentials = "{{ prefect.blocks.github-credentials.private-repo-creds }}"
     },
     {
+      type      = "pull_from_azure_blob_storage",
+      requires  = "prefect-azure[blob_storage]"
+      container = "my-container",
+      folder    = "my-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
@@ -106,7 +111,7 @@ resource "prefect_deployment" "deployment" {
 ### Required
 
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
-- `name` (String) Name of the workspace
+- `name` (String) Name of the deployment
 
 ### Optional
 
@@ -116,15 +121,16 @@ resource "prefect_deployment" "deployment" {
 - `description` (String) A description for the deployment.
 - `enforce_parameter_schema` (Boolean) Whether or not the deployment should enforce the parameter schema.
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
+- `global_concurrency_limit_id` (String) The ID of a global concurrency limit to apply to this deployment. This is the recommended way to set concurrency limits. Mutually exclusive with concurrency_limit.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
-- `manifest_path` (String) The path to the flow's manifest file, relative to the chosen storage.
+- `manifest_path` (String, Deprecated) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
 - `paused` (Boolean) Whether or not the deployment is paused.
 - `pull_steps` (Attributes List) Pull steps to prepare flows for a deployment run. (see [below for nested schema](#nestedatt--pull_steps))
 - `storage_document_id` (String) ID of the associated storage document (UUID)
-- `tags` (List of String) Tags associated with the deployment
+- `tags` (Set of String) Tags associated with the deployment
 - `version` (String) An optional version for the deployment.
 - `work_pool_name` (String) The name of the deployment's work pool.
 - `work_queue_name` (String) The work queue for the deployment. If no work queue is set, work will not be scheduled.
@@ -155,10 +161,11 @@ Optional:
 
 - `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
-- `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `bucket` (String) (For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.
+- `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
 - `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
-- `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
+- `folder` (String) (For type 'pull_from_*') The folder in the bucket/container where files are stored.
 - `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
 - `requires` (String) A list of Python package dependencies.
@@ -166,6 +173,8 @@ Optional:
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # Prefect Deployments can be imported via deployment_id

@@ -6,7 +6,7 @@ main() {
   name=$2
 
   if [[ -z $resource ]]; then
-    echo "No resource provided. Pass one in through \`make dev-new resource=<resource>\`"
+    echo "No resource provided. Pass one in through \`mise run dev-new <resource name>\`"
     exit 1
   fi
 
@@ -20,9 +20,10 @@ main() {
 
   dev_file_target="${PWD}/dev/${name}"
 
-  mkdir -p $dev_file_target
+  mkdir -p "$dev_file_target"
 
-  cat <<EOF > $dev_file_target/${resource}.tf
+  # Create the Terraform configuration file.
+  cat <<EOF > "$dev_file_target"/"${resource}".tf
 terraform {
   required_providers {
     prefect = {
@@ -32,12 +33,20 @@ terraform {
 }
 
 provider "prefect" {
-$([ -n "$PREFECT_API_URL" ] && echo '  endpoint = "'$PREFECT_API_URL'"')
-$([ -n "$PREFECT_API_KEY" ] && echo '  api_key = "'$PREFECT_API_KEY'"')
-$([ -n "$PREFECT_CLOUD_ACCOUNT_ID" ] && echo '  account_id = "'$PREFECT_CLOUD_ACCOUNT_ID'"')
+$([ -n "$PREFECT_API_URL" ] && echo '  endpoint = "'"$PREFECT_API_URL"'"')
+$([ -n "$PREFECT_API_KEY" ] && echo '  api_key = "'"$PREFECT_API_KEY"'"')
+$([ -n "$PREFECT_CLOUD_ACCOUNT_ID" ] && echo '  account_id = "'"$PREFECT_CLOUD_ACCOUNT_ID"'"')
 }
 
 resource "${resource}" "${name}" {}
+EOF
+
+
+  # Create the direnv file that will tell Terraform where to find the provider.
+  # configuration file.
+  cat <<EOF > "$dev_file_target"/.envrc
+#!/bin/bash
+export TF_CLI_CONFIG_FILE=../../dev.tfrc
 EOF
 
   cmd="cd ${dev_file_target} && terraform plan"

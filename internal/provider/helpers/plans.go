@@ -6,10 +6,12 @@ import (
 )
 
 const (
-	PlanPrefectCloudFree       = "Prefect Cloud (Free)"
-	PlanPrefectCloudPro        = "Prefect Cloud (Pro)"
-	PlanPrefectCloudEnterprise = "Prefect Cloud (Enterprise)"
-	PlanPrefectOSS             = "Prefect OSS"
+	PlanHobby      = "Hobby"
+	PlanStarter    = "Starter"
+	PlanTeam       = "Team"
+	PlanPro        = "Pro"
+	PlanEnterprise = "Enterprise"
+	PlanPrefectOSS = "Prefect OSS"
 
 	descriptionTemplate = `
 %s
@@ -21,15 +23,19 @@ This feature is available in the following [product plan(s)](https://www.prefect
 var (
 	AllPlans = []string{
 		PlanPrefectOSS,
-		PlanPrefectCloudFree,
-		PlanPrefectCloudPro,
-		PlanPrefectCloudEnterprise,
+		PlanHobby,
+		PlanStarter,
+		PlanTeam,
+		PlanPro,
+		PlanEnterprise,
 	}
 
 	AllCloudPlans = []string{
-		PlanPrefectCloudFree,
-		PlanPrefectCloudPro,
-		PlanPrefectCloudEnterprise,
+		PlanHobby,
+		PlanStarter,
+		PlanTeam,
+		PlanPro,
+		PlanEnterprise,
 	}
 )
 

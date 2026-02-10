@@ -6,7 +6,7 @@ description: |-
   The resource 'automations' represents a Prefect Automation.
   
   For more information, see automate overview https://docs.prefect.io/v3/automate/index.
-  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+  This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
 # prefect_automation (Resource)
@@ -18,7 +18,7 @@ The resource 'automations' represents a Prefect Automation.
 For more information, see [automate overview](https://docs.prefect.io/v3/automate/index).
 
 
-This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Prefect Cloud (Free), Prefect Cloud (Pro), Prefect Cloud (Enterprise).
+This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 
 
 ## Example Usage
@@ -529,7 +529,7 @@ Required:
 
 Required:
 
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool
 
 Optional:
 
@@ -554,7 +554,7 @@ Optional:
 
 Required:
 
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool
 
 Optional:
 
@@ -579,7 +579,7 @@ Optional:
 
 Required:
 
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool
 
 Optional:
 
@@ -601,6 +601,8 @@ Optional:
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # prefect_automation resources can be imported by the automation_id

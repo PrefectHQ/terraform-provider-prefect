@@ -28,6 +28,9 @@ const (
 
 	// WorkspaceResourceName is the name of the workspace resource.
 	WorkspaceResourceName = "prefect_workspace.test"
+
+	// WorkspaceIDArg is the argument used to set the workspace ID in the resource configuration.
+	WorkspaceIDArg = "workspace_id = prefect_workspace.test.id"
 )
 
 // TestAccProvider defines the actual Provider, which is used during acceptance testing.
@@ -43,12 +46,39 @@ var TestAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"prefect": providerserver.NewProtocol6WithError(TestAccProvider),
 }
 
+// TestContextOSS checks an environment variable to determine if the tests are running
+// against Prefect OSS.
+func TestContextOSS() bool {
+	return os.Getenv("TEST_CONTEXT") == "OSS"
+}
+
+// SkipTestsIfCloud skips the test if running against Prefect OSS.
+func SkipTestsIfOSS(t *testing.T) {
+	t.Helper()
+
+	if TestContextOSS() {
+		t.Skip("skipping test in OSS mode")
+	}
+}
+
+// SkipFuncOSS implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against Prefect OSS.
+func SkipFuncOSS() (bool, error) {
+	return TestContextOSS(), nil
+}
+
 // AccTestPreCheck is a utility hook, which every test suite will call
 // in order to verify if the necessary provider configurations are passed
 // through the environment variables.
 // https://developer.hashicorp.com/terraform/plugin/testing/acceptance-tests/testcase#precheck
 func AccTestPreCheck(t *testing.T) {
 	t.Helper()
+
+	// Exit early if we're testing against Prefect OSS.
+	if TestContextOSS() {
+		return
+	}
+
 	neededVars := []string{"PREFECT_API_URL", "PREFECT_API_KEY", "PREFECT_CLOUD_ACCOUNT_ID"}
 	for _, key := range neededVars {
 		if v := os.Getenv(key); v == "" {
@@ -68,8 +98,6 @@ func AccTestPreCheck(t *testing.T) {
 func NewTestClient() (api.PrefectClient, error) {
 	endpoint := os.Getenv("PREFECT_API_URL")
 	apiKey := os.Getenv("PREFECT_API_KEY")
-	aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
-	accountID, _ := uuid.Parse(aID)
 
 	if !strings.HasSuffix(endpoint, "/api") {
 		endpoint = fmt.Sprintf("%s/api", endpoint)
@@ -78,11 +106,20 @@ func NewTestClient() (api.PrefectClient, error) {
 	endpointURL, _ := url.Parse(endpoint)
 	endpointHost := fmt.Sprintf("%s://%s", endpointURL.Scheme, endpointURL.Host)
 
-	prefectClient, _ := client.New(
+	var prefectClient *client.Client
+
+	opts := []client.Option{
 		client.WithEndpoint(endpoint, endpointHost),
 		client.WithAPIKey(apiKey),
-		client.WithDefaults(accountID, uuid.Nil),
-	)
+	}
+
+	if !TestContextOSS() {
+		aID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
+		accountID, _ := uuid.Parse(aID)
+		opts = append(opts, client.WithDefaults(accountID, uuid.Nil))
+	}
+
+	prefectClient, _ = client.New(opts...)
 
 	return prefectClient, nil
 }
@@ -95,6 +132,7 @@ func NewRandomPrefixedString() string {
 // Workspace is a struct that represents a workspace for acceptance tests.
 type Workspace struct {
 	Resource    string
+	IDArg       string
 	Name        string
 	Description string
 }
@@ -103,9 +141,15 @@ type Workspace struct {
 func NewEphemeralWorkspace() Workspace {
 	workspace := Workspace{}
 
+	// When testing against Prefect OSS, there are no workspaces.
+	if TestContextOSS() {
+		return workspace
+	}
+
 	randomName := NewRandomPrefixedString()
 	workspace.Name = randomName
 	workspace.Description = randomName
+	workspace.IDArg = WorkspaceIDArg
 
 	workspace.Resource = fmt.Sprintf(`
 resource "prefect_workspace" "test" {

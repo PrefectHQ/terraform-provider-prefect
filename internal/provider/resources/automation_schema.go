@@ -1,6 +1,9 @@
 package resources
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -64,11 +67,17 @@ func AutomationSchema() map[string]schema.Attribute {
 			Optional:    true,
 			CustomType:  customtypes.UUIDType{},
 			Description: "Account ID (UUID), defaults to the account set in the provider",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"workspace_id": schema.StringAttribute{
 			Optional:    true,
 			CustomType:  customtypes.UUIDType{},
 			Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
 		},
 		"trigger":            TriggerSchema(),
 		"actions":            ActionsSchema(),
@@ -279,8 +288,11 @@ func ActionsSchema() schema.ListNestedAttribute {
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
 				"type": schema.StringAttribute{
-					Required:    true,
-					Description: "The type of action to perform",
+					Required: true,
+					Description: fmt.Sprintf(
+						"The type of action to perform. Possible values: %s",
+						strings.Join(utils.AllAutomationActionTypes, ", "),
+					),
 					Validators: []validator.String{
 						stringvalidator.OneOf(utils.AllAutomationActionTypes...),
 					},

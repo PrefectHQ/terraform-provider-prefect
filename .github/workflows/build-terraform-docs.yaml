@@ -1,3 +1,4 @@
+---
 name: Build Terraform Docs
 
 on:
@@ -22,14 +23,18 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Install tool dependencies
-        uses: jdx/mise-action@v2
+        uses: jdx/mise-action@v3
+        with:
+          install_args: go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
       - name: Build Terraform Docs
-        run: make docs
+        run: mise run docs
       - name: Commit changes
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}

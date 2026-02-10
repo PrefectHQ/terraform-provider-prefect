@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 
@@ -13,8 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -50,7 +51,7 @@ type VariableResourceModelV0 struct {
 
 	Name  types.String `tfsdk:"name"`
 	Value types.String `tfsdk:"value"`
-	Tags  types.List   `tfsdk:"tags"`
+	Tags  types.Set    `tfsdk:"tags"`
 }
 
 // V1: Value is types.Dynamic.
@@ -62,10 +63,10 @@ type VariableResourceModelV1 struct {
 
 	Name  types.String  `tfsdk:"name"`
 	Value types.Dynamic `tfsdk:"value"`
-	Tags  types.List    `tfsdk:"tags"`
+	Tags  types.Set     `tfsdk:"tags"`
 }
 
-var defaultEmptyTagList, _ = basetypes.NewListValue(types.StringType, []attr.Value{})
+var defaultEmptyTagSet, _ = basetypes.NewSetValue(types.StringType, []attr.Value{})
 
 var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
@@ -93,11 +94,17 @@ var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Account ID (UUID), defaults to the account set in the provider",
 		Optional:    true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
 	},
 	"workspace_id": schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
 		Optional:    true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
 	},
 	"name": schema.StringAttribute{
 		Description: "Name of the variable",
@@ -107,12 +114,12 @@ var VariableResourceSchemaAttributes = map[string]schema.Attribute{
 		Description: "Value of the variable, supported Terraform value types: string, number, bool, tuple, object",
 		Required:    true,
 	},
-	"tags": schema.ListAttribute{
+	"tags": schema.SetAttribute{
 		Description: "Tags associated with the variable",
 		ElementType: types.StringType,
 		Optional:    true,
 		Computed:    true,
-		Default:     listdefault.StaticValue(defaultEmptyTagList),
+		Default:     setdefault.StaticValue(defaultEmptyTagSet),
 	},
 }
 
@@ -229,13 +236,112 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 
 	tfModel.Name = types.StringValue(variable.Name)
 
-	tags, diags := types.ListValueFrom(ctx, types.StringType, variable.Tags)
+	tags, diags := types.SetValueFrom(ctx, types.StringType, variable.Tags)
 	if diags.HasError() {
 		return diags
 	}
 	tfModel.Tags = tags
 
+	// Convert the API value to a types.Dynamic value for Terraform state
+	dynamicValue, convDiags := convertAPIValueToDynamic(ctx, variable.Value)
+	if convDiags.HasError() {
+		return convDiags
+	}
+	tfModel.Value = dynamicValue
+
 	return nil
+}
+
+// convertAPIValueToDynamic converts an API value (interface{}) to a types.Dynamic
+// value that can be stored in Terraform state.
+func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dynamic, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if value == nil {
+		return types.DynamicNull(), diags
+	}
+
+	switch v := value.(type) {
+	case string:
+		return types.DynamicValue(types.StringValue(v)), diags
+
+	case float64:
+		bigFloat := big.NewFloat(v)
+
+		return types.DynamicValue(types.NumberValue(bigFloat)), diags
+
+	case bool:
+		return types.DynamicValue(types.BoolValue(v)), diags
+
+	case []interface{}:
+		// Convert to Terraform tuple
+		elements := make([]attr.Value, len(v))
+		elementTypes := make([]attr.Type, len(v))
+		for i, elem := range v {
+			// The API returns tuple elements as quoted strings (e.g., '"foo"' instead of 'foo')
+			// because getUnderlyingValue uses e.String() which adds quotes.
+			// We need to unquote them when converting back.
+			if strElem, ok := elem.(string); ok {
+				// Try to unquote if it's a quoted string
+				if unquoted, err := strconv.Unquote(strElem); err == nil {
+					elem = unquoted
+				}
+			}
+
+			// Recursively convert each element
+			elemDynamic, elemDiags := convertAPIValueToDynamic(ctx, elem)
+			if elemDiags.HasError() {
+				diags.Append(elemDiags...)
+
+				return types.DynamicNull(), diags
+			}
+			underlyingValue := elemDynamic.UnderlyingValue()
+			elements[i] = underlyingValue
+			elementTypes[i] = underlyingValue.Type(ctx)
+		}
+		tupleValue, tupleDiags := types.TupleValue(elementTypes, elements)
+		if tupleDiags.HasError() {
+			diags.Append(tupleDiags...)
+
+			return types.DynamicNull(), diags
+		}
+
+		return types.DynamicValue(tupleValue), diags
+
+	case map[string]interface{}:
+		// Parse JSON into attribute types and values for Terraform object
+		attrTypes := make(map[string]attr.Type)
+		attrValues := make(map[string]attr.Value)
+
+		for key, val := range v {
+			valDynamic, valDiags := convertAPIValueToDynamic(ctx, val)
+			if valDiags.HasError() {
+				diags.Append(valDiags...)
+
+				return types.DynamicNull(), diags
+			}
+			underlyingValue := valDynamic.UnderlyingValue()
+			attrTypes[key] = underlyingValue.Type(ctx)
+			attrValues[key] = underlyingValue
+		}
+
+		objValue, objDiags := types.ObjectValue(attrTypes, attrValues)
+		if objDiags.HasError() {
+			diags.Append(objDiags...)
+
+			return types.DynamicNull(), diags
+		}
+
+		return types.DynamicValue(objValue), diags
+
+	default:
+		diags.Append(diag.NewErrorDiagnostic(
+			"unexpected API value type",
+			fmt.Sprintf("type: %T, value: %v", v, v),
+		))
+
+		return types.DynamicNull(), diags
+	}
 }
 
 // getUnderlyingValue converts the 'value' attribute from a DynamicValue to
@@ -385,6 +491,15 @@ func (r *VariableResource) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Variable", "get", err))
 
 		return

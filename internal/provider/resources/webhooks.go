@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -34,7 +33,7 @@ type WebhookResourceModel struct {
 	Name             types.String               `tfsdk:"name"`
 	Description      types.String               `tfsdk:"description"`
 	Enabled          types.Bool                 `tfsdk:"enabled"`
-	Template         jsontypes.Normalized       `tfsdk:"template"`
+	Template         types.String               `tfsdk:"template"`
 	AccountID        customtypes.UUIDValue      `tfsdk:"account_id"`
 	WorkspaceID      customtypes.UUIDValue      `tfsdk:"workspace_id"`
 	Endpoint         types.String               `tfsdk:"endpoint"`
@@ -102,8 +101,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"template": schema.StringAttribute{
 				Required:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Description: "Template used by the webhook",
+				Description: "Template used by the webhook. Use jsonencode() for static values or template strings for dynamic values.",
 			},
 			"created": schema.StringAttribute{
 				Computed:    true,
@@ -123,6 +121,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 				CustomType:  customtypes.UUIDType{},
 				Description: "Account ID (UUID), defaults to the account set in the provider",
@@ -132,6 +131,7 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Computed: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					stringplanmodifier.RequiresReplace(),
 				},
 				CustomType:  customtypes.UUIDType{},
 				Description: "Workspace ID (UUID), defaults to the workspace set in the provider",
@@ -144,9 +144,37 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 				Optional:    true,
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the Service Account to which this webhook belongs. `Pro` and `Enterprise` customers can assign a Service Account to a webhook to enhance security. If set, the webhook request will be authorized with the Service Account's API key.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
 			},
 		},
 	}
+}
+
+// waitForWebhookStateStabilization waits for the webhook's enabled state to match the expected value.
+// This handles eventual consistency where the webhook may be created with a temporary enabled state
+// that gets updated asynchronously by the API.
+func waitForWebhookStateStabilization(ctx context.Context, client api.WebhooksClient, webhookID string, expectedEnabled bool) (*api.Webhook, error) {
+	webhook, err := helpers.WaitForResourceStabilization(
+		ctx,
+		func(ctx context.Context) (*api.Webhook, error) {
+			return client.Get(ctx, webhookID)
+		},
+		func(webhook *api.Webhook) error {
+			// Check if enabled state matches expected
+			if webhook.Enabled != expectedEnabled {
+				return fmt.Errorf("webhook enabled state does not match expected: got %v, want %v", webhook.Enabled, expectedEnabled)
+			}
+
+			return nil
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for webhook state stabilization: %w", err)
+	}
+
+	return webhook, nil
 }
 
 // copyWebhookResponseToModel maps an API response to a model that is saved in Terraform state.
@@ -157,7 +185,7 @@ func copyWebhookResponseToModel(webhook *api.Webhook, tfModel *WebhookResourceMo
 	tfModel.Name = types.StringValue(webhook.Name)
 	tfModel.Description = types.StringValue(webhook.Description)
 	tfModel.Enabled = types.BoolValue(webhook.Enabled)
-	tfModel.Template = jsontypes.NewNormalizedValue(webhook.Template)
+	tfModel.Template = types.StringValue(webhook.Template)
 	tfModel.AccountID = customtypes.NewUUIDValue(webhook.AccountID)
 	tfModel.WorkspaceID = customtypes.NewUUIDValue(webhook.WorkspaceID)
 	tfModel.Endpoint = types.StringValue(fmt.Sprintf("%s/hooks/%s", endpointHost, webhook.Slug))
@@ -191,6 +219,16 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	webhook, err := webhookClient.Create(ctx, createReq)
+	if err != nil {
+		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
+
+		return
+	}
+
+	// Wait for the webhook enabled state to stabilize
+	// The API may update this field asynchronously after creation
+	expectedEnabled := plan.Enabled.ValueBool()
+	webhook, err = waitForWebhookStateStabilization(ctx, webhookClient, webhook.ID.String(), expectedEnabled)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
 
@@ -243,6 +281,15 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		// https://discuss.hashicorp.com/t/recreate-a-resource-in-a-case-of-manual-deletion/66375/3
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
 		return
@@ -291,11 +338,24 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
+	// Wait for the webhook enabled state to stabilize after update
+	// The API may update this field asynchronously
+	expectedEnabled := plan.Enabled.ValueBool()
 	webhook, err := client.Get(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
 		return
+	}
+
+	// Only wait for stabilization if enabled state doesn't match immediately
+	if webhook.Enabled != expectedEnabled {
+		webhook, err = waitForWebhookStateStabilization(ctx, client, state.ID.ValueString(), expectedEnabled)
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
+
+			return
+		}
 	}
 
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())

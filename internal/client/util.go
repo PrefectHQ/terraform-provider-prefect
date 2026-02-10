@@ -8,11 +8,18 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
+
+// contextKey is a type for context keys to avoid collisions.
+type contextKey string
+
+// httpMethodContextKey is used to pass the HTTP method through context to the retry policy.
+const httpMethodContextKey contextKey = "http_method"
 
 // getAccountScopedURL constructs a URL for an account-scoped route.
 func getAccountScopedURL(endpoint string, accountID uuid.UUID, route string) string {
@@ -62,13 +69,27 @@ func setAuthorizationHeader(request *http.Request, apiKey, basicAuthKey string) 
 	}
 }
 
-// setDefaultHeaders will set Authorization, Content-Type, and Accept
-// headers that are common to most requests.
-func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey string) {
+// setDefaultHeaders will set Authorization, Content-Type, Accept,
+// CSRF headers, and custom headers that are common to most requests.
+func setDefaultHeaders(request *http.Request, apiKey, basicAuthKey, csrfClientToken, csrfToken string, customHeaders map[string]string) {
 	setAuthorizationHeader(request, apiKey, basicAuthKey)
 
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
+
+	// Set CSRF headers if tokens are provided
+	if csrfClientToken != "" {
+		request.Header.Set("Prefect-Csrf-Client", csrfClientToken)
+	}
+	if csrfToken != "" {
+		// This token is now obtained via client.ObtainCsrfToken()
+		request.Header.Set("Prefect-Csrf-Token", csrfToken)
+	}
+
+	// Apply custom headers
+	for key, value := range customHeaders {
+		request.Header.Set(key, value)
+	}
 }
 
 // validateCloudEndpoint validates that proper configuration is provided
@@ -89,8 +110,11 @@ type requestConfig struct {
 
 	successCodes []int
 
-	apiKey       string
-	basicAuthKey string
+	apiKey          string
+	basicAuthKey    string
+	csrfClientToken string
+	csrfToken       string            // Populated by ObtainCsrfToken on client initialization
+	customHeaders   map[string]string // Custom headers to include in the request
 }
 
 var (
@@ -132,12 +156,15 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		body = http.NoBody
 	}
 
+	// Add HTTP method to context for retry policy to make context-aware decisions
+	ctx = context.WithValue(ctx, httpMethodContextKey, cfg.method)
+
 	req, err := http.NewRequestWithContext(ctx, cfg.method, cfg.url, body)
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
-	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey)
+	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken, cfg.customHeaders)
 
 	// Body will be closed by the caller.
 	resp, err := client.Do(req)
@@ -145,16 +172,7 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 		return nil, fmt.Errorf("http error: %w", err)
 	}
 
-	success := false
-	for _, successCode := range cfg.successCodes {
-		if resp.StatusCode == successCode {
-			success = true
-
-			break
-		}
-	}
-
-	if !success {
+	if !slices.Contains(cfg.successCodes, resp.StatusCode) {
 		body, _ := io.ReadAll(resp.Body)
 
 		return nil, fmt.Errorf("status code=%s, error=%s", resp.Status, body)

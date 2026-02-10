@@ -59,11 +59,41 @@ provider "prefect" {
 }
 ```
 
+If you don't specify any configuration, the provider will attempt to read your Prefect CLI profiles file (typically located at `~/.prefect/profiles.toml`), and use the active profile's values. This is useful if you are already using the Prefect CLI.
+
+```toml
+# ~/.prefect/profiles.toml
+active = "cloud"
+
+[profiles.cloud]
+PREFECT_API_URL = "https://api.prefect.cloud/api/accounts/<account_id>/workspaces/<workspace_id>"
+PREFECT_API_KEY = "pnu_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+[profiles.local]
+PREFECT_API_URL = "http://localhost:4200"
+```
+
+```terraform
+# this will implicitly load the "cloud" profile
+provider "prefect" {}
+```
+
+You can also override the profile used by the provider by setting the `profile` attribute:
+
+```terraform
+provider "prefect" {
+  profile = "local"
+  # non-standard profiles location can also be specified
+  # profile_file = "~/my-prefect-profiles.toml" 
+}
+```
+
 The values are evaluated in the following order, from highest to lowest priority:
 
 1. Configuration from attributes in the `provider` block.
 2. Configuration from environment variables.
 3. Configuration from the optional, longer format of the `endpoint` attribute.
+4. Configuration from the Prefect profiles file, if it exists.
 
 ## Finding your Account ID
 
@@ -116,6 +146,26 @@ provider "prefect" {
 ```
 
 The provider will automatically base64 encode the value you provide for `basic_auth_key`.
+
+### Enabling CSRF support
+
+When using an endpoint that references Prefect server running with CSRF protection enabled, apply the following configuration:
+
+```terraform
+provider "prefect" {
+  endpoint     = "http://localhost:4200"
+  csrf_enabled = true
+}
+```
+
+This will instruct the provider to:
+
+- Generate a client ID (UUID)
+- Pass the client ID to the [CSRF token endpoint](https://docs.prefect.io/v3/api-ref/rest-api/server/create-csrf-token) to retrieve a token
+- Pass the client in the `Prefect-Csrf-Client` header, and the token in the `Prefect-Csrf-Token` header for all requests
+
+See the [security settings](https://docs.prefect.io/v3/develop/settings-and-profiles#security-settings) documentation for more information
+on CSRF protection settings for Prefect server.
 
 ## RBAC + Permissions
 

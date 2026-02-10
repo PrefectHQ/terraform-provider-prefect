@@ -1,7 +1,6 @@
 package datasources_test
 
 import (
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -10,9 +9,9 @@ import (
 )
 
 type blockFixtureConfig struct {
-	AccountID string
-	Workspace string
-	BlockName string
+	Workspace      string
+	WorkspaceIDArg string
+	BlockName      string
 }
 
 func fixtureAccBlock(cfg blockFixtureConfig) string {
@@ -27,15 +26,13 @@ resource "prefect_block" "{{ .BlockName }}" {
     "someKey" = "someValue"
   })
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{ .WorkspaceIDArg }}
 }
 
 data "prefect_block" "my_existing_secret_by_id" {
   id = prefect_block.{{ .BlockName }}.id
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{ .WorkspaceIDArg }}
 
   depends_on = [prefect_block.{{ .BlockName }}]
 }
@@ -44,8 +41,7 @@ data "prefect_block" "my_existing_secret_by_name" {
   name      = "{{ .BlockName }}"
   type_slug = "secret"
 
-  account_id = "{{ .AccountID }}"
-  workspace_id = prefect_workspace.test.id
+	{{ .WorkspaceIDArg }}
 
   depends_on = [prefect_block.{{ .BlockName }}]
 }
@@ -65,9 +61,9 @@ func TestAccDatasource_block(t *testing.T) {
 	blockValue := "{\"someKey\":\"someValue\"}"
 
 	cfg := blockFixtureConfig{
-		Workspace: workspace.Resource,
-		BlockName: blockName,
-		AccountID: os.Getenv("PREFECT_CLOUD_ACCOUNT_ID"),
+		Workspace:      workspace.Resource,
+		WorkspaceIDArg: workspace.IDArg,
+		BlockName:      blockName,
 	}
 
 	resource.ParallelTest(t, resource.TestCase{
