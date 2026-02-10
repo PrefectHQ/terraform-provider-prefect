@@ -15,6 +15,7 @@ import (
 type workPoolAccessConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
+	ServiceAccountName    string
 }
 
 func fixtureAccWorkPoolAccess(cfg workPoolAccessConfig) string {
@@ -26,7 +27,7 @@ data "prefect_workspace_role" "developer" {
 }
 
 resource "prefect_service_account" "test" {
-	name = "my-service-account"
+	name = "{{.ServiceAccountName}}"
 }
 
 resource "prefect_workspace_access" "test" {
@@ -81,12 +82,13 @@ func TestAccResource_work_pool_access(t *testing.T) {
 	testutils.SkipTestsIfOSS(t)
 
 	workspace := testutils.NewEphemeralWorkspace()
-	serviceAccountName := "my-service-account"
+	serviceAccountName := testutils.NewRandomPrefixedString()
 	teamName := "my-team"
 
 	cfgSet := workPoolAccessConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
+		ServiceAccountName:    serviceAccountName,
 	}
 
 	var workPool api.WorkPool
