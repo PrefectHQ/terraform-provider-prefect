@@ -138,7 +138,10 @@ func (c *TeamsClient) Delete(ctx context.Context, teamID string) error {
 // List returns a list of teams, based on the provided filter.
 func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, error) {
 	filterQuery := api.TeamFilter{}
-	filterQuery.Teams.Name.Any = names
+
+	if len(names) != 0 {
+		filterQuery.Teams.Name.Any = names
+	}
 
 	cfg := requestConfig{
 		method:          http.MethodPost,

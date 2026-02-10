@@ -178,7 +178,9 @@ func AddTeamSweeper() {
 			}
 
 			if len(teams) == 0 {
-				return fmt.Errorf("no teams found for this account")
+				log.Println("no teams found for this account, nothing to sweep")
+
+				return nil
 			}
 
 			for _, team := range teams {
