@@ -63,7 +63,7 @@ jobs:
           PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
       - name: Run acceptance tests (user resource)
-        run: mise run testacc
+        run: mise run testacc "TestAccResource_user*"
         env:
           PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
           # This is an API key generated as the Marvin user (marvin@prefect.io).
@@ -75,9 +75,3 @@ jobs:
           # This is the user ID retrieved by logging in as the Marvin user
           # and copying the ID on the "Profile" page.
           ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
-          # This ensures only the User resource tests run, instead of running
-          # all the tests again because that was completed in the last step.
-          # Regex ensures that the following tests are included:
-          # - TestAccResource_user
-          # - TestAccResourcE_user_api_key
-          TESTS: "TestAccResource_user*"

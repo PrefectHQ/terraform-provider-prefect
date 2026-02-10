@@ -60,7 +60,7 @@ run_windows = 'gotestsum --max-fails=50 ./...'
 [tasks.testacc]
 alias = "ta"
 description = "Run acceptance tests against real infrastructure ({{vars.helper_tests_arg}})"
-run = 'TF_ACC=1 mise run test'
+run = 'TF_ACC=1 mise run test {{arg(name="tests", default="")}}'
 
 [tasks.testacc-dev]
 alias = "tad"
