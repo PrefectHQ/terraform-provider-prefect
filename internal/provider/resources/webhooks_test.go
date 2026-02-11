@@ -45,6 +45,19 @@ resource "prefect_webhook" "%[2]s" {
 `, workspace, name, template, enabled)
 }
 
+func fixtureAccWebhookWithStringTemplate(workspace, name, template string, enabled bool) string {
+	return fmt.Sprintf(`
+%s
+
+resource "prefect_webhook" "%s" {
+  name     = "%s"
+  template = "%s"
+  enabled  = %t
+  workspace_id = prefect_workspace.test.id
+}
+`, workspace, name, name, template, enabled)
+}
+
 func fixtureAccWebhookWithRawTemplate(workspace, name string, enabled bool) string {
 	return fmt.Sprintf(`
 %s
@@ -167,6 +180,19 @@ func TestAccResource_webhook(t *testing.T) {
 					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
 					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
 					testutils.ExpectKnownValueNotNull(webhookResourceName, "template"),
+				},
+			},
+			{
+				// Check that non-JSON string templates (bare Jinja expressions) work
+				Config: fixtureAccWebhookWithStringTemplate(workspace.Resource, randomName, "{{ body|from_cloud_event(headers) }}", true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckWebhookExists(webhookResourceName, &webhook),
+					testAccCheckWebhookEndpoint(webhookResourceName, &webhook),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(webhookResourceName, "name", randomName),
+					testutils.ExpectKnownValueBool(webhookResourceName, "enabled", true),
+					testutils.ExpectKnownValue(webhookResourceName, "template", "{{ body|from_cloud_event(headers) }}"),
 				},
 			},
 			// Import State checks - import by name (dynamic)
