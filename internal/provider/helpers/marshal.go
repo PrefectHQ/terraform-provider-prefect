@@ -5,16 +5,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-// UnmarshalOptional attempts to unmarshal an optional attribute. If it is null, it returns an empty
-// map[string]interface{} and no diagnostics. If it is not null, it attempts to unmarshal it and returns
-// any diagnostics.
+// UnmarshalOptional attempts to unmarshal an optional attribute. If it is null or unknown, it returns
+// nil and no diagnostics. If it is set, it attempts to unmarshal it and returns any diagnostics.
+// Returning nil (rather than an empty map) ensures that struct fields tagged with `omitempty` are
+// omitted from JSON serialization, which avoids sending empty `{}` values in PATCH payloads.
 func UnmarshalOptional(attribute jsontypes.Normalized) (map[string]interface{}, diag.Diagnostics) {
 	var diags diag.Diagnostics
-
-	result := map[string]interface{}{}
-	if !attribute.IsNull() {
-		diags = attribute.Unmarshal(&result)
+	if attribute.IsNull() || attribute.IsUnknown() {
+		return nil, diags
 	}
+	var result map[string]interface{}
+	diags = attribute.Unmarshal(&result)
 
 	return result, diags
 }

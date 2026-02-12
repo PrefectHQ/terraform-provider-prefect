@@ -53,8 +53,8 @@ type DeploymentCreate struct {
 	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
 	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
 	Name                     string                 `json:"name"` // required
-	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema"`
-	Parameters               map[string]interface{} `json:"parameters"`
+	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]interface{} `json:"parameters,omitempty"`
 	Path                     string                 `json:"path,omitempty"`
 	Paused                   bool                   `json:"paused,omitempty"`
 	PullSteps                []PullStep             `json:"pull_steps,omitempty"`
