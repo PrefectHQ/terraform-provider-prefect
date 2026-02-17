@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
-	"k8s.io/utils/ptr"
 )
 
 func fixtureAccSingleWorkQueue(
@@ -178,19 +177,19 @@ func testAccCheckworkQueueExists(workPoolResourceName string, workQueues *[]*api
 var expectedWorkQueues = []*api.WorkQueue{
 	{
 		Name:        "default",
-		Priority:    ptr.To(int64(2)),
-		Description: ptr.To("The work pool's default queue."),
+		Priority:    new(int64(2)),
+		Description: new("The work pool's default queue."),
 		IsPaused:    false,
 	},
 	{
 		Name:        "test-queue",
-		Priority:    ptr.To(int64(1)),
-		Description: ptr.To("my work queue"),
+		Priority:    new(int64(1)),
+		Description: new("my work queue"),
 		IsPaused:    false,
 	},
 	{
 		Name:        "test-queue-2",
-		Description: ptr.To(""),
+		Description: new(""),
 		IsPaused:    false,
 		// Intentionally not setting Priority.
 	},

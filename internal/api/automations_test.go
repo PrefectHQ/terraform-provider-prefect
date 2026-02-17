@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/stretchr/testify/assert"
-	"k8s.io/utils/ptr"
 )
 
 func TestActionModel(t *testing.T) {
@@ -33,10 +32,10 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:         "run-deployment",
-				Source:       ptr.To("selected"),
-				DeploymentID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
-				Parameters:   map[string]interface{}{"foo": "bar"},
-				JobVariables: map[string]interface{}{"env": "prod"},
+				Source:       new("selected"),
+				DeploymentID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Parameters:   map[string]any{"foo": "bar"},
+				JobVariables: map[string]any{"env": "prod"},
 			},
 		},
 		{
@@ -48,8 +47,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:         "pause-deployment",
-				Source:       ptr.To("selected"),
-				DeploymentID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:       new("selected"),
+				DeploymentID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -61,8 +60,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:         "resume-deployment",
-				Source:       ptr.To("selected"),
-				DeploymentID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:       new("selected"),
+				DeploymentID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -80,9 +79,9 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:    "change-flow-run-state",
-				Name:    ptr.To("Failed"),
-				State:   ptr.To("FAILED"),
-				Message: ptr.To("Flow run failed"),
+				Name:    new("Failed"),
+				State:   new("FAILED"),
+				Message: new("Flow run failed"),
 			},
 		},
 		{
@@ -94,8 +93,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:        "pause-work-queue",
-				Source:      ptr.To("selected"),
-				WorkQueueID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:      new("selected"),
+				WorkQueueID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -107,8 +106,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:        "resume-work-queue",
-				Source:      ptr.To("selected"),
-				WorkQueueID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:      new("selected"),
+				WorkQueueID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -121,9 +120,9 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:            "send-notification",
-				BlockDocumentID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
-				Subject:         ptr.To("Alert"),
-				Body:            ptr.To("Something happened"),
+				BlockDocumentID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Subject:         new("Alert"),
+				Body:            new("Something happened"),
 			},
 		},
 		{
@@ -135,8 +134,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:            "call-webhook",
-				BlockDocumentID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
-				Payload:         ptr.To("{\"message\": \"test\"}"),
+				BlockDocumentID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Payload:         new("{\"message\": \"test\"}"),
 			},
 		},
 		{
@@ -148,8 +147,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:         "pause-automation",
-				Source:       ptr.To("selected"),
-				AutomationID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:       new("selected"),
+				AutomationID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -161,8 +160,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:         "resume-automation",
-				Source:       ptr.To("selected"),
-				AutomationID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:       new("selected"),
+				AutomationID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -189,8 +188,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:       "pause-work-pool",
-				Source:     ptr.To("selected"),
-				WorkPoolID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:     new("selected"),
+				WorkPoolID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 		{
@@ -202,8 +201,8 @@ func TestActionModel(t *testing.T) {
 					}`,
 			want: api.Action{
 				Type:       "resume-work-pool",
-				Source:     ptr.To("selected"),
-				WorkPoolID: ptr.To(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
+				Source:     new("selected"),
+				WorkPoolID: new(uuid.MustParse("123e4567-e89b-12d3-a456-426614174000")),
 			},
 		},
 	}
