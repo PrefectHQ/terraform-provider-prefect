@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -128,9 +129,7 @@ func (d *WorkPoolDataSource) Schema(_ context.Context, _ datasource.SchemaReques
 	// and add the account/workspace ID overrides here
 	// as they are not needed in the work_pools (plural) list
 	workPoolAttributes := make(map[string]schema.Attribute)
-	for k, v := range workPoolAttributesBase {
-		workPoolAttributes[k] = v
-	}
+	maps.Copy(workPoolAttributes, workPoolAttributesBase)
 	workPoolAttributes["account_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Account ID (UUID), defaults to the account set in the provider",
