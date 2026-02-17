@@ -635,8 +635,8 @@ func (r *VariableResource) ImportState(ctx context.Context, req resource.ImportS
 
 	variableIdentifier := parts[0]
 
-	if strings.HasPrefix(variableIdentifier, "name/") {
-		name := strings.TrimPrefix(variableIdentifier, "name/")
+	if after, ok := strings.CutPrefix(variableIdentifier, "name/"); ok {
+		name := after
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), variableIdentifier)...)
