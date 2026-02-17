@@ -55,6 +55,6 @@ type WebhookFilter struct {
 	Webhooks struct {
 		Name struct {
 			Any []string `json:"any_"`
-		} `json:"name,omitempty"`
+		} `json:"name"`
 	} `json:"webhooks"`
 }
