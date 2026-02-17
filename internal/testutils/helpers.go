@@ -17,7 +17,7 @@ import (
 // convertToNormalizedJSON converts an interface to a jsontypes.Normalized.
 // This is useful in tests, where we need to mimic the normalization
 // that Terraform does to attributes of type jsontypes.Normalized.
-func convertToNormalizedJSON(i interface{}) (jsontypes.Normalized, error) {
+func convertToNormalizedJSON(i any) (jsontypes.Normalized, error) {
 	jsonByteSlice, err := json.Marshal(i)
 	if err != nil {
 		return jsontypes.Normalized{}, fmt.Errorf("error marshalling interface to JSON: %w", err)
@@ -38,7 +38,7 @@ func convertToNormalizedJSON(i interface{}) (jsontypes.Normalized, error) {
 func NormalizedValueForJSON(t *testing.T, jsonValue string) string {
 	t.Helper()
 
-	var jsonObj interface{}
+	var jsonObj any
 	if err := json.Unmarshal([]byte(jsonValue), &jsonObj); err != nil {
 		t.Fatalf("error unmarshalling JSON value %s: %s", jsonValue, err.Error())
 	}

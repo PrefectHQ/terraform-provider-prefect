@@ -14,7 +14,7 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-func fixtureAccVariableResource(workspace, workspaceIDArg, name string, value interface{}) string {
+func fixtureAccVariableResource(workspace, workspaceIDArg, name string, value any) string {
 	return fmt.Sprintf(`
 %s
 
@@ -26,7 +26,7 @@ resource "prefect_variable" "test" {
 	`, workspace, name, value, workspaceIDArg)
 }
 
-func fixtureAccVariableResourceWithTags(workspace, workspaceIDARg, name string, value interface{}) string {
+func fixtureAccVariableResourceWithTags(workspace, workspaceIDARg, name string, value any) string {
 	return fmt.Sprintf(`
 %s
 
@@ -51,9 +51,9 @@ func TestAccResource_variable(t *testing.T) {
 	valueNumber := float64(123)
 	valueBool := true
 	valueTuple := `["foo", "bar"]`
-	valueTupleExpected := []interface{}{`"foo"`, `"bar"`}
+	valueTupleExpected := []any{`"foo"`, `"bar"`}
 	valueObject := `{"foo" = "bar"}`
-	valueObjectExpected := map[string]interface{}{"foo": "bar"}
+	valueObjectExpected := map[string]any{"foo": "bar"}
 
 	workspace := testutils.NewEphemeralWorkspace()
 

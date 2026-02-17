@@ -41,6 +41,6 @@ type SLAUpsert struct {
 	Within *float64 `json:"within,omitempty"`
 
 	// For FreshnessSLA
-	ExpectedEvent *string                 `json:"expected_event,omitempty"`
-	ResourceMatch *map[string]interface{} `json:"resource_match,omitempty"`
+	ExpectedEvent *string         `json:"expected_event,omitempty"`
+	ResourceMatch *map[string]any `json:"resource_match,omitempty"`
 }

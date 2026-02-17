@@ -254,7 +254,7 @@ func copyVariableToModel(ctx context.Context, variable *api.Variable, tfModel *V
 
 // convertAPIValueToDynamic converts an API value (interface{}) to a types.Dynamic
 // value that can be stored in Terraform state.
-func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dynamic, diag.Diagnostics) {
+func convertAPIValueToDynamic(ctx context.Context, value any) (types.Dynamic, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	if value == nil {
@@ -273,7 +273,7 @@ func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dyn
 	case bool:
 		return types.DynamicValue(types.BoolValue(v)), diags
 
-	case []interface{}:
+	case []any:
 		// Convert to Terraform tuple
 		elements := make([]attr.Value, len(v))
 		elementTypes := make([]attr.Type, len(v))
@@ -308,7 +308,7 @@ func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dyn
 
 		return types.DynamicValue(tupleValue), diags
 
-	case map[string]interface{}:
+	case map[string]any:
 		// Parse JSON into attribute types and values for Terraform object
 		attrTypes := make(map[string]attr.Type)
 		attrValues := make(map[string]attr.Value)
@@ -346,9 +346,9 @@ func convertAPIValueToDynamic(ctx context.Context, value interface{}) (types.Dyn
 
 // getUnderlyingValue converts the 'value' attribute from a DynamicValue to
 // a native Go type that can be sent to the Prefect API.
-func getUnderlyingValue(plan VariableResourceModelV1) (interface{}, diag.Diagnostics) {
+func getUnderlyingValue(plan VariableResourceModelV1) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var value interface{}
+	var value any
 
 	switch underlyingValue := plan.Value.UnderlyingValue().(type) {
 	case types.String:
@@ -376,7 +376,7 @@ func getUnderlyingValue(plan VariableResourceModelV1) (interface{}, diag.Diagnos
 		value = result
 
 	case types.Object:
-		result := map[string]interface{}{}
+		result := map[string]any{}
 		if err := json.Unmarshal([]byte(underlyingValue.String()), &result); err != nil {
 			diags.Append(diag.NewErrorDiagnostic(
 				"unable to convert object to map[string]interface",

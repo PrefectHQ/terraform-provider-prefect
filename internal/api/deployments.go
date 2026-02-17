@@ -28,10 +28,10 @@ type Deployment struct {
 	Entrypoint             string                         `json:"entrypoint"`
 	FlowID                 uuid.UUID                      `json:"flow_id"`
 	GlobalConcurrencyLimit *CurrentGlobalConcurrencyLimit `json:"global_concurrency_limit"`
-	JobVariables           map[string]interface{}         `json:"job_variables"`
+	JobVariables           map[string]any                 `json:"job_variables"`
 	Name                   string                         `json:"name"`
-	ParameterOpenAPISchema map[string]interface{}         `json:"parameter_openapi_schema"`
-	Parameters             map[string]interface{}         `json:"parameters"`
+	ParameterOpenAPISchema map[string]any                 `json:"parameter_openapi_schema"`
+	Parameters             map[string]any                 `json:"parameters"`
 	Path                   string                         `json:"path"`
 	Paused                 bool                           `json:"paused"`
 	PullSteps              []PullStep                     `json:"pull_steps"`
@@ -44,45 +44,45 @@ type Deployment struct {
 
 // DeploymentCreate is a subset of Deployment used when creating deployments.
 type DeploymentCreate struct {
-	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
-	Description              string                 `json:"description,omitempty"`
-	EnforceParameterSchema   *bool                  `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint               string                 `json:"entrypoint,omitempty"`
-	FlowID                   uuid.UUID              `json:"flow_id"` // required
-	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
-	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
-	Name                     string                 `json:"name"` // required
-	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters               map[string]interface{} `json:"parameters,omitempty"`
-	Path                     string                 `json:"path,omitempty"`
-	Paused                   bool                   `json:"paused,omitempty"`
-	PullSteps                []PullStep             `json:"pull_steps,omitempty"`
-	StorageDocumentID        *uuid.UUID             `json:"storage_document_id,omitempty"`
-	Tags                     []string               `json:"tags,omitempty"`
-	Version                  string                 `json:"version,omitempty"`
-	WorkPoolName             string                 `json:"work_pool_name,omitempty"`
-	WorkQueueName            string                 `json:"work_queue_name,omitempty"`
+	ConcurrencyLimit         *int64              `json:"concurrency_limit,omitempty"`
+	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options,omitempty"`
+	Description              string              `json:"description,omitempty"`
+	EnforceParameterSchema   *bool               `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               string              `json:"entrypoint,omitempty"`
+	FlowID                   uuid.UUID           `json:"flow_id"` // required
+	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id,omitempty"`
+	JobVariables             map[string]any      `json:"job_variables,omitempty"`
+	Name                     string              `json:"name"` // required
+	ParameterOpenAPISchema   map[string]any      `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]any      `json:"parameters,omitempty"`
+	Path                     string              `json:"path,omitempty"`
+	Paused                   bool                `json:"paused,omitempty"`
+	PullSteps                []PullStep          `json:"pull_steps,omitempty"`
+	StorageDocumentID        *uuid.UUID          `json:"storage_document_id,omitempty"`
+	Tags                     []string            `json:"tags,omitempty"`
+	Version                  string              `json:"version,omitempty"`
+	WorkPoolName             string              `json:"work_pool_name,omitempty"`
+	WorkQueueName            string              `json:"work_queue_name,omitempty"`
 }
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	ConcurrencyLimit         *int64                 `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions    `json:"concurrency_options,omitempty"`
-	Description              *string                `json:"description,omitempty"`
-	EnforceParameterSchema   *bool                  `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint               *string                `json:"entrypoint,omitempty"`
-	GlobalConcurrencyLimitID *uuid.UUID             `json:"global_concurrency_limit_id,omitempty"`
-	JobVariables             map[string]interface{} `json:"job_variables,omitempty"`
-	ParameterOpenAPISchema   map[string]interface{} `json:"parameter_openapi_schema,omitempty"`
-	Parameters               map[string]interface{} `json:"parameters,omitempty"`
-	Path                     *string                `json:"path,omitempty"`
-	Paused                   *bool                  `json:"paused,omitempty"`
-	StorageDocumentID        *uuid.UUID             `json:"storage_document_id,omitempty"`
-	Tags                     []string               `json:"tags,omitempty"`
-	Version                  *string                `json:"version,omitempty"`
-	WorkPoolName             *string                `json:"work_pool_name,omitempty"`
-	WorkQueueName            *string                `json:"work_queue_name,omitempty"`
+	ConcurrencyLimit         *int64              `json:"concurrency_limit,omitempty"`
+	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options,omitempty"`
+	Description              *string             `json:"description,omitempty"`
+	EnforceParameterSchema   *bool               `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               *string             `json:"entrypoint,omitempty"`
+	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id,omitempty"`
+	JobVariables             map[string]any      `json:"job_variables,omitempty"`
+	ParameterOpenAPISchema   map[string]any      `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]any      `json:"parameters,omitempty"`
+	Path                     *string             `json:"path,omitempty"`
+	Paused                   *bool               `json:"paused,omitempty"`
+	StorageDocumentID        *uuid.UUID          `json:"storage_document_id,omitempty"`
+	Tags                     []string            `json:"tags,omitempty"`
+	Version                  *string             `json:"version,omitempty"`
+	WorkPoolName             *string             `json:"work_pool_name,omitempty"`
+	WorkQueueName            *string             `json:"work_queue_name,omitempty"`
 }
 
 // ConcurrencyOptions is a representation of the deployment concurrency options.

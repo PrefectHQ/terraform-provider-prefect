@@ -16,9 +16,9 @@ func TestConvertAPIValueToDynamic(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		input         interface{}
+		input         any
 		expectedType  string
-		expectedValue interface{}
+		expectedValue any
 		expectError   bool
 	}{
 		{
@@ -51,19 +51,19 @@ func TestConvertAPIValueToDynamic(t *testing.T) {
 		},
 		{
 			name:         "array value",
-			input:        []interface{}{"foo", "bar"},
+			input:        []any{"foo", "bar"},
 			expectedType: "types.Tuple",
 			expectError:  false,
 		},
 		{
 			name:         "array value with quoted strings (from API)",
-			input:        []interface{}{`"foo"`, `"bar"`},
+			input:        []any{`"foo"`, `"bar"`},
 			expectedType: "types.Tuple",
 			expectError:  false,
 		},
 		{
 			name:         "object value",
-			input:        map[string]interface{}{"key": "value", "number": float64(42)},
+			input:        map[string]any{"key": "value", "number": float64(42)},
 			expectedType: "types.Object",
 			expectError:  false,
 		},

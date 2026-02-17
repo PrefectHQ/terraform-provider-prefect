@@ -42,9 +42,9 @@ type Trigger struct {
 	Type string `json:"type"`
 
 	// For EventTrigger and MetricTrigger
-	Match        map[string]interface{} `json:"match,omitempty"`
-	MatchRelated any                    `json:"match_related,omitempty"`
-	Posture      *string                `json:"posture,omitempty"`
+	Match        map[string]any `json:"match,omitempty"`
+	MatchRelated any            `json:"match_related,omitempty"`
+	Posture      *string        `json:"posture,omitempty"`
 
 	// For EventTrigger
 	After     []string `json:"after,omitempty"`
@@ -57,8 +57,8 @@ type Trigger struct {
 	Metric *MetricTriggerQuery `json:"metric,omitempty"`
 
 	// For CompoundTrigger and SequenceTrigger
-	Triggers []Trigger    `json:"triggers,omitempty"`
-	Require  *interface{} `json:"require,omitempty"` // int or string ("any"/"all")
+	Triggers []Trigger `json:"triggers,omitempty"`
+	Require  *any      `json:"require,omitempty"` // int or string ("any"/"all")
 }
 
 type MetricTriggerQuery struct {
@@ -97,8 +97,8 @@ type Action struct {
 	WorkQueueID *uuid.UUID `json:"work_queue_id,omitempty"`
 
 	// On Run Deployment action
-	Parameters   map[string]interface{} `json:"parameters,omitempty"`
-	JobVariables map[string]interface{} `json:"job_variables,omitempty"`
+	Parameters   map[string]any `json:"parameters,omitempty"`
+	JobVariables map[string]any `json:"job_variables,omitempty"`
 
 	// On Send Notification action
 	Subject *string `json:"subject,omitempty"`

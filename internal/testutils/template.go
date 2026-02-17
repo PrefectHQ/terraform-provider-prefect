@@ -11,7 +11,7 @@ import (
 // Where:
 //   - tpl is a string like "Hello, {{.Name}}"
 //   - data is a struct like `mydata{Name: "World"}`
-func RenderTemplate(tpl string, data interface{}) string {
+func RenderTemplate(tpl string, data any) string {
 	var result bytes.Buffer
 
 	tmpl, err := template.New("template").Parse(tpl)

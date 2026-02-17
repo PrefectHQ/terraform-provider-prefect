@@ -701,9 +701,9 @@ func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagn
 // getUnderlyingRequireValue extracts the underlying value from a CompositeTriggerAttributesModel's Require field.
 // This helper is used when constructing the overall AutomationUpsert request payload
 // from a given Terraform model, as the .Require attribute is a types.DynamicValue.
-func getUnderlyingRequireValue(plan CompoundTriggerAttributesModel) (interface{}, diag.Diagnostics) {
+func getUnderlyingRequireValue(plan CompoundTriggerAttributesModel) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var value interface{}
+	var value any
 
 	switch underlyingValue := plan.Require.UnderlyingValue().(type) {
 	case types.String:

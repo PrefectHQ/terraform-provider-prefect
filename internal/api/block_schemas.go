@@ -18,20 +18,20 @@ type BlockSchemaClient interface {
 type BlockSchema struct {
 	BaseModel
 
-	BlockType    BlockType   `json:"block_type"`
-	Checksum     string      `json:"checksum"`
-	BlockTypeID  uuid.UUID   `json:"block_type_id"`
-	Capabilities []string    `json:"capabilities"`
-	Version      string      `json:"version"`
-	Fields       interface{} `json:"fields"`
+	BlockType    BlockType `json:"block_type"`
+	Checksum     string    `json:"checksum"`
+	BlockTypeID  uuid.UUID `json:"block_type_id"`
+	Capabilities []string  `json:"capabilities"`
+	Version      string    `json:"version"`
+	Fields       any       `json:"fields"`
 }
 
 // BlockSchemaCreate is the create request payload.
 type BlockSchemaCreate struct {
-	BlockTypeID  uuid.UUID   `json:"block_type_id"`
-	Capabilities []string    `json:"capabilities"`
-	Version      string      `json:"version"`
-	Fields       interface{} `json:"fields"`
+	BlockTypeID  uuid.UUID `json:"block_type_id"`
+	Capabilities []string  `json:"capabilities"`
+	Version      string    `json:"version"`
+	Fields       any       `json:"fields"`
 }
 
 // BlockSchemaFilter defines the search filter payload
