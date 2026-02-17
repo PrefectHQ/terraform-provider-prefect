@@ -1,6 +1,6 @@
 module github.com/prefecthq/terraform-provider-prefect
 
-go 1.24.1
+go 1.26
 
 require (
 	github.com/BurntSushi/toml v1.5.0
