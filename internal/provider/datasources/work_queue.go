@@ -2,6 +2,7 @@ package datasources
 
 import (
 	"context"
+	"maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -116,9 +117,7 @@ func (d *WorkQueueDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 	// as they are not needed in the work_queues (plural) list
 
 	workQueueAttributes := make(map[string]schema.Attribute)
-	for k, v := range workQueueAttributesBase {
-		workQueueAttributes[k] = v
-	}
+	maps.Copy(workQueueAttributes, workQueueAttributesBase)
 
 	workQueueAttributes["account_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},

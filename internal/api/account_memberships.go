@@ -34,7 +34,7 @@ type AccountMembershipFilter struct {
 	AccountMemberships struct {
 		Email struct {
 			Any []string `json:"any_"`
-		} `json:"email,omitempty"`
+		} `json:"email"`
 	} `json:"account_memberships"`
 }
 

@@ -17,7 +17,6 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/customtypes"
 	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
-	"k8s.io/utils/ptr"
 )
 
 var (
@@ -279,7 +278,7 @@ func (r *WorkQueueResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	if plan.Description.IsNull() {
-		updateRequest.Description = ptr.To("")
+		updateRequest.Description = new("")
 	} else {
 		updateRequest.Description = plan.Description.ValueStringPointer()
 	}

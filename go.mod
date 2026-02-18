@@ -1,6 +1,6 @@
 module github.com/prefecthq/terraform-provider-prefect
 
-go 1.24.1
+go 1.26
 
 require (
 	github.com/BurntSushi/toml v1.5.0
@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/terraform-plugin-log v0.10.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/stretchr/testify v1.11.1
-	k8s.io/utils v0.0.0-20241104163129-6fe5fd82f078
 )
 
 require (

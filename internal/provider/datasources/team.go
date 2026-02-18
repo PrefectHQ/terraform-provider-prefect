@@ -3,6 +3,7 @@ package datasources
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -77,9 +78,7 @@ func (d *TeamDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, r
 	// and add the account ID overrides here
 	// as they are not needed in the teams (plural) list
 	teamAttributes := make(map[string]schema.Attribute)
-	for k, v := range teamAttributesBase {
-		teamAttributes[k] = v
-	}
+	maps.Copy(teamAttributes, teamAttributesBase)
 	teamAttributes["account_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Account ID (UUID), defaults to the account set in the provider",

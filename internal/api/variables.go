@@ -19,23 +19,23 @@ type VariablesClient interface {
 // Variable is a representation of a variable.
 type Variable struct {
 	BaseModel
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-	Tags  []string    `json:"tags"`
+	Name  string   `json:"name"`
+	Value any      `json:"value"`
+	Tags  []string `json:"tags"`
 }
 
 // VariableCreate is a subset of Variable used when creating variables.
 type VariableCreate struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-	Tags  []string    `json:"tags"`
+	Name  string   `json:"name"`
+	Value any      `json:"value"`
+	Tags  []string `json:"tags"`
 }
 
 // VariableUpdate is a subset of Variable used when updating variables.
 type VariableUpdate struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-	Tags  []string    `json:"tags"`
+	Name  string   `json:"name"`
+	Value any      `json:"value"`
+	Tags  []string `json:"tags"`
 }
 
 // VariableFilterSettings defines settings when searching for variables.

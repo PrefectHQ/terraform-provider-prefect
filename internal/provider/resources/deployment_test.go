@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
-	"k8s.io/utils/ptr"
 )
 
 type deploymentConfig struct {
@@ -375,7 +374,7 @@ func TestAccResource_deployment(t *testing.T) {
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
-					Directory: ptr.To("/some/directory"),
+					Directory: new("/some/directory"),
 				},
 			},
 		},
@@ -420,34 +419,34 @@ func TestAccResource_deployment(t *testing.T) {
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
-					Directory: ptr.To("/some/other/directory"),
+					Directory: new("/some/other/directory"),
 				},
 			},
 			{
 				PullStepGitClone: &api.PullStepGitClone{
-					Repository:        ptr.To("https://github.com/prefecthq/prefect"),
-					Branch:            ptr.To("main"),
-					AccessToken:       ptr.To("123abc"),
-					IncludeSubmodules: ptr.To(true),
+					Repository:        new("https://github.com/prefecthq/prefect"),
+					Branch:            new("main"),
+					AccessToken:       new("123abc"),
+					IncludeSubmodules: new(true),
 				},
 			},
 			{
 				PullStepPullFromAzureBlobStorage: &api.PullStepPullFromAzure{
-					Container: ptr.To("my-container"),
-					Folder:    ptr.To("my-folder"),
+					Container: new("my-container"),
+					Folder:    new("my-folder"),
 					PullStepCommon: api.PullStepCommon{
-						Credentials: ptr.To("azure-credentials"),
-						Requires:    ptr.To("prefect-azure[blob_storage]"),
+						Credentials: new("azure-credentials"),
+						Requires:    new("prefect-azure[blob_storage]"),
 					},
 				},
 			},
 			{
 				PullStepPullFromS3: &api.PullStepPullFrom{
-					Bucket: ptr.To("some-bucket"),
-					Folder: ptr.To("some-folder"),
+					Bucket: new("some-bucket"),
+					Folder: new("some-folder"),
 					PullStepCommon: api.PullStepCommon{
-						Credentials: ptr.To("some-credentials"),
-						Requires:    ptr.To("prefect-aws>=0.3.4"),
+						Credentials: new("some-credentials"),
+						Requires:    new("prefect-aws>=0.3.4"),
 					},
 				},
 			},

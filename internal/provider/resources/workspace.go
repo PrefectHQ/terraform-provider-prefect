@@ -437,8 +437,8 @@ func (r *WorkspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 // ImportState imports the resource into Terraform state.
 func (r *WorkspaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "handle/") {
-		handle := strings.TrimPrefix(req.ID, "handle/")
+	if after, ok := strings.CutPrefix(req.ID, "handle/"); ok {
+		handle := after
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("handle"), handle)...)
 	} else {
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)

@@ -213,7 +213,7 @@ func getDynamicValue(model VariableDataSourceModel, variable *api.Variable) (bas
 	case bool:
 		result = types.DynamicValue(types.BoolValue(value))
 
-	case map[string]interface{}:
+	case map[string]any:
 		byteSlice, err := json.Marshal(value)
 		if err != nil {
 			diags = append(diags, helpers.SerializeDataErrorDiagnostic("data", "Variable Value", err))
@@ -221,7 +221,7 @@ func getDynamicValue(model VariableDataSourceModel, variable *api.Variable) (bas
 
 		model.Value = types.DynamicValue(jsontypes.NewNormalizedValue(string(byteSlice)))
 
-	case []interface{}:
+	case []any:
 		tupleTypes := make([]attr.Type, len(value))
 		tupleValues := make([]attr.Value, len(value))
 

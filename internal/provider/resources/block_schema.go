@@ -207,7 +207,7 @@ func (r *BlockSchemaResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	var fields interface{}
+	var fields any
 	if err := json.Unmarshal([]byte(plan.Fields.ValueString()), &fields); err != nil {
 		resp.Diagnostics.Append(helpers.SerializeDataErrorDiagnostic("fields", "Block Schema", err))
 

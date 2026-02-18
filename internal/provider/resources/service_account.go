@@ -606,8 +606,8 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 
 // ImportState imports the resource into Terraform state.
 func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	if strings.HasPrefix(req.ID, "name/") {
-		name := strings.TrimPrefix(req.ID, "name/")
+	if after, ok := strings.CutPrefix(req.ID, "name/"); ok {
+		name := after
 		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("name"), name)...)
 	} else {
 		resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)

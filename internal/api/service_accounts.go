@@ -42,7 +42,7 @@ type ServiceAccountFilter struct {
 	ServiceAccounts struct {
 		Name struct {
 			Any []string `json:"any_"`
-		} `json:"name,omitempty"`
+		} `json:"name"`
 	} `json:"service_accounts"`
 }
 

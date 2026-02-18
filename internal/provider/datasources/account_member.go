@@ -3,6 +3,7 @@ package datasources
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -97,9 +98,7 @@ func (d *AccountMemberDataSource) Schema(_ context.Context, _ datasource.SchemaR
 	// Create a copy of the base attributes
 	// and add the account ID overrides here
 	accountMemberAttributes := make(map[string]schema.Attribute)
-	for k, v := range accountMemberAttributesBase {
-		accountMemberAttributes[k] = v
-	}
+	maps.Copy(accountMemberAttributes, accountMemberAttributesBase)
 	accountMemberAttributes["account_id"] = schema.StringAttribute{
 		CustomType:  customtypes.UUIDType{},
 		Description: "Account ID (UUID) where the member resides",

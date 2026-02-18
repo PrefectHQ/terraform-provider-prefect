@@ -1,10 +1,10 @@
 [tools]
 1password = "2.32.0"
 # Should match go.mod
-go = "1.25"
+go = "1.26"
 "go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs" = "0.24.0"
 "go:github.com/BurntSushi/toml/cmd/tomlv" = "1.6.0"
-golangci-lint = "2.8.0"
+golangci-lint = "2.9.0"
 goreleaser = "2.13.3"
 gotestsum = "1.13.0"
 pre-commit = "4.5.1"
