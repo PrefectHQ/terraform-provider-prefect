@@ -53,3 +53,11 @@ type WorkPoolFilter struct {
 		} `json:"id"`
 	} `json:"work_pools"`
 }
+
+// WorkPoolFilterRequest wraps WorkPoolFilter with pagination parameters
+// for the POST /work_pools/filter endpoint.
+type WorkPoolFilterRequest struct {
+	WorkPoolFilter
+	Limit  *int64 `json:"limit,omitempty"`
+	Offset *int64 `json:"offset,omitempty"`
+}
