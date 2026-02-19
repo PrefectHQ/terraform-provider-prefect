@@ -43,3 +43,11 @@ type TeamFilter struct {
 		} `json:"name"`
 	} `json:"teams"`
 }
+
+// TeamFilterRequest wraps TeamFilter with pagination parameters
+// for the POST /teams/filter endpoint.
+type TeamFilterRequest struct {
+	TeamFilter
+	Limit  *int64 `json:"limit,omitempty"`
+	Offset *int64 `json:"offset,omitempty"`
+}

@@ -135,30 +135,50 @@ func (c *TeamsClient) Delete(ctx context.Context, teamID string) error {
 	return nil
 }
 
+const teamsDefaultPageSize int64 = 200
+
 // List returns a list of teams, based on the provided filter.
+// It paginates through all results automatically using offset/limit.
 func (c *TeamsClient) List(ctx context.Context, names []string) ([]*api.Team, error) {
-	filterQuery := api.TeamFilter{}
+	var filterQuery api.TeamFilterRequest
 
 	if len(names) != 0 {
 		filterQuery.Teams.Name.Any = names
 	}
 
-	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             fmt.Sprintf("%s/filter", c.routePrefix),
-		body:            &filterQuery,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		customHeaders:   c.customHeaders,
-		successCodes:    successCodesStatusOK,
+	var allTeams []*api.Team
+	offset := int64(0)
+	limit := teamsDefaultPageSize
+
+	for {
+		filterQuery.Offset = &offset
+		filterQuery.Limit = &limit
+
+		cfg := requestConfig{
+			method:          http.MethodPost,
+			url:             fmt.Sprintf("%s/filter", c.routePrefix),
+			body:            &filterQuery,
+			apiKey:          c.apiKey,
+			basicAuthKey:    c.basicAuthKey,
+			csrfClientToken: c.csrfClientToken,
+			csrfToken:       c.csrfToken,
+			customHeaders:   c.customHeaders,
+			successCodes:    successCodesStatusOK,
+		}
+
+		var page []*api.Team
+		if err := requestWithDecodeResponse(ctx, c.hc, cfg, &page); err != nil {
+			return nil, fmt.Errorf("failed to list teams: %w", err)
+		}
+
+		allTeams = append(allTeams, page...)
+
+		if int64(len(page)) < limit {
+			break
+		}
+
+		offset += limit
 	}
 
-	var teams []*api.Team
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &teams); err != nil {
-		return nil, fmt.Errorf("failed to list teams: %w", err)
-	}
-
-	return teams, nil
+	return allTeams, nil
 }
