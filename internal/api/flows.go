@@ -10,7 +10,7 @@ import (
 type FlowsClient interface {
 	Create(ctx context.Context, data FlowCreate) (*Flow, error)
 	Get(ctx context.Context, flowID uuid.UUID) (*Flow, error)
-	List(ctx context.Context, handleNames []string) ([]*Flow, error)
+	List(ctx context.Context, names []string) ([]*Flow, error)
 	Update(ctx context.Context, flowID uuid.UUID, data FlowUpdate) error
 	Delete(ctx context.Context, flowID uuid.UUID) error
 }
@@ -38,11 +38,11 @@ type FlowUpdate struct {
 // FlowFilter defines the search filter payload
 // when searching for flows by name.
 // example request payload:
-// {"flows": {"handle": {"any_": ["test"]}}}.
+// {"flows": {"name": {"any_": ["test"]}}}.
 type FlowFilter struct {
 	Flows struct {
-		Handle struct {
+		Name struct {
 			Any []string `json:"any_"`
-		} `json:"handle"`
+		} `json:"name"`
 	} `json:"flows"`
 }
