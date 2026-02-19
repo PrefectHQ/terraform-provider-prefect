@@ -71,31 +71,51 @@ func (c *WorkPoolsClient) Create(ctx context.Context, data api.WorkPoolCreate) (
 	return &pool, nil
 }
 
+const workPoolsDefaultPageSize int64 = 200
+
 // List returns a list of work pools matching filter criteria.
+// It paginates through all results automatically using offset/limit.
 func (c *WorkPoolsClient) List(ctx context.Context, ids []string) ([]*api.WorkPool, error) {
-	filter := &api.WorkPoolFilter{}
+	var filterQuery api.WorkPoolFilterRequest
 	if len(ids) > 0 {
-		filter.WorkPools.ID.Any = ids
+		filterQuery.WorkPools.ID.Any = ids
 	}
 
-	cfg := requestConfig{
-		method:          http.MethodPost,
-		url:             c.routePrefix + "/filter",
-		body:            &filter,
-		successCodes:    successCodesStatusOK,
-		apiKey:          c.apiKey,
-		basicAuthKey:    c.basicAuthKey,
-		csrfClientToken: c.csrfClientToken,
-		csrfToken:       c.csrfToken,
-		customHeaders:   c.customHeaders,
+	var allPools []*api.WorkPool
+	offset := int64(0)
+	limit := workPoolsDefaultPageSize
+
+	for {
+		filterQuery.Offset = &offset
+		filterQuery.Limit = &limit
+
+		cfg := requestConfig{
+			method:          http.MethodPost,
+			url:             c.routePrefix + "/filter",
+			body:            &filterQuery,
+			successCodes:    successCodesStatusOK,
+			apiKey:          c.apiKey,
+			basicAuthKey:    c.basicAuthKey,
+			csrfClientToken: c.csrfClientToken,
+			csrfToken:       c.csrfToken,
+			customHeaders:   c.customHeaders,
+		}
+
+		var page []*api.WorkPool
+		if err := requestWithDecodeResponse(ctx, c.hc, cfg, &page); err != nil {
+			return nil, fmt.Errorf("failed to list work pools: %w", err)
+		}
+
+		allPools = append(allPools, page...)
+
+		if int64(len(page)) < limit {
+			break
+		}
+
+		offset += limit
 	}
 
-	var pools []*api.WorkPool
-	if err := requestWithDecodeResponse(ctx, c.hc, cfg, &pools); err != nil {
-		return nil, fmt.Errorf("failed to list work pools: %w", err)
-	}
-
-	return pools, nil
+	return allPools, nil
 }
 
 // Get returns details for a work pool by name.
