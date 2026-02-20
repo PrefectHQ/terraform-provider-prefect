@@ -72,12 +72,12 @@ func (c *FlowsClient) Create(ctx context.Context, data api.FlowCreate) (*api.Flo
 	return &flow, nil
 }
 
-// List returns a list of Flows, based on the provided list of handle names.
-func (c *FlowsClient) List(ctx context.Context, handleNames []string) ([]*api.Flow, error) {
-	filterQuery := api.WorkspaceFilter{}
+// List returns a list of Flows, based on the provided list of flow names.
+func (c *FlowsClient) List(ctx context.Context, names []string) ([]*api.Flow, error) {
+	filterQuery := api.FlowFilter{}
 
-	if len(handleNames) != 0 {
-		filterQuery.Workspaces.Handle.Any = handleNames
+	if len(names) != 0 {
+		filterQuery.Flows.Name.Any = names
 	}
 
 	cfg := requestConfig{
