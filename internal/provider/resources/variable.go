@@ -2,10 +2,8 @@ package resources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -278,16 +276,6 @@ func convertAPIValueToDynamic(ctx context.Context, value any) (types.Dynamic, di
 		elements := make([]attr.Value, len(v))
 		elementTypes := make([]attr.Type, len(v))
 		for i, elem := range v {
-			// The API returns tuple elements as quoted strings (e.g., '"foo"' instead of 'foo')
-			// because getUnderlyingValue uses e.String() which adds quotes.
-			// We need to unquote them when converting back.
-			if strElem, ok := elem.(string); ok {
-				// Try to unquote if it's a quoted string
-				if unquoted, err := strconv.Unquote(strElem); err == nil {
-					elem = unquoted
-				}
-			}
-
 			// Recursively convert each element
 			elemDynamic, elemDiags := convertAPIValueToDynamic(ctx, elem)
 			if elemDiags.HasError() {
@@ -344,56 +332,63 @@ func convertAPIValueToDynamic(ctx context.Context, value any) (types.Dynamic, di
 	}
 }
 
-// getUnderlyingValue converts the 'value' attribute from a DynamicValue to
-// a native Go type that can be sent to the Prefect API.
-func getUnderlyingValue(plan VariableResourceModelV1) (any, diag.Diagnostics) {
+// convertAttrValueToNative converts a Terraform attr.Value to a native Go type
+// that can be JSON-serialized and sent to the Prefect API.
+func convertAttrValueToNative(v attr.Value) (any, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var value any
 
-	switch underlyingValue := plan.Value.UnderlyingValue().(type) {
+	switch val := v.(type) {
 	case types.String:
-		value = underlyingValue.ValueString()
+		return val.ValueString(), diags
 
 	case types.Number:
-		var err error
-		value, err = strconv.ParseFloat(underlyingValue.String(), 64)
-		if err != nil {
-			diags.Append(diag.NewErrorDiagnostic(
-				"unable to convert number to float64",
-				fmt.Sprintf("number: %v, error: %v", value, err),
-			))
-		}
+		f, _ := val.ValueBigFloat().Float64()
+
+		return f, diags
 
 	case types.Bool:
-		value = underlyingValue.ValueBool()
+		return val.ValueBool(), diags
 
 	case types.Tuple:
-		result := make([]string, len(underlyingValue.Elements()))
-		for i, e := range underlyingValue.Elements() {
-			result[i] = e.String()
+		result := make([]any, len(val.Elements()))
+		for i, elem := range val.Elements() {
+			elemVal, elemDiags := convertAttrValueToNative(elem)
+			diags.Append(elemDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			result[i] = elemVal
 		}
 
-		value = result
+		return result, diags
 
 	case types.Object:
-		result := map[string]any{}
-		if err := json.Unmarshal([]byte(underlyingValue.String()), &result); err != nil {
-			diags.Append(diag.NewErrorDiagnostic(
-				"unable to convert object to map[string]interface",
-				fmt.Sprintf("object: %v, error: %v", value, err),
-			))
+		result := make(map[string]any, len(val.Attributes()))
+		for key, attrVal := range val.Attributes() {
+			elemVal, elemDiags := convertAttrValueToNative(attrVal)
+			diags.Append(elemDiags...)
+			if diags.HasError() {
+				return nil, diags
+			}
+			result[key] = elemVal
 		}
 
-		value = result
+		return result, diags
 
 	default:
 		diags.Append(diag.NewErrorDiagnostic(
 			"unexpected value type",
-			fmt.Sprintf("type: %T", underlyingValue),
+			fmt.Sprintf("type: %T", v),
 		))
-	}
 
-	return value, diags
+		return nil, diags
+	}
+}
+
+// getUnderlyingValue converts the 'value' attribute from a DynamicValue to
+// a native Go type that can be sent to the Prefect API.
+func getUnderlyingValue(plan VariableResourceModelV1) (any, diag.Diagnostics) {
+	return convertAttrValueToNative(plan.Value.UnderlyingValue())
 }
 
 // Create creates the resource and sets the initial Terraform state.

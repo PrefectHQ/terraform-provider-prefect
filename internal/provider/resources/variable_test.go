@@ -51,7 +51,7 @@ func TestAccResource_variable(t *testing.T) {
 	valueNumber := float64(123)
 	valueBool := true
 	valueTuple := `["foo", "bar"]`
-	valueTupleExpected := []any{`"foo"`, `"bar"`}
+	valueTupleExpected := []any{"foo", "bar"}
 	valueObject := `{"foo" = "bar"}`
 	valueObjectExpected := map[string]any{"foo": "bar"}
 

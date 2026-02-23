@@ -2,8 +2,10 @@ package resources // nolint:testpackage // need access to private convertAPIValu
 
 import (
 	"context"
+	"math/big"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,12 +54,6 @@ func TestConvertAPIValueToDynamic(t *testing.T) {
 		{
 			name:         "array value",
 			input:        []any{"foo", "bar"},
-			expectedType: "types.Tuple",
-			expectError:  false,
-		},
-		{
-			name:         "array value with quoted strings (from API)",
-			input:        []any{`"foo"`, `"bar"`},
 			expectedType: "types.Tuple",
 			expectError:  false,
 		},
@@ -119,4 +115,110 @@ func TestConvertAPIValueToDynamic(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertAttrValueToNative(t *testing.T) {
+	t.Parallel()
+
+	t.Run("string value", func(t *testing.T) {
+		t.Parallel()
+		result, diags := convertAttrValueToNative(types.StringValue("hello"))
+		require.False(t, diags.HasError())
+		assert.Equal(t, "hello", result)
+	})
+
+	t.Run("JSON string value is preserved as-is", func(t *testing.T) {
+		t.Parallel()
+		result, diags := convertAttrValueToNative(types.StringValue(`{"name":"dev"}`))
+		require.False(t, diags.HasError())
+		assert.Equal(t, `{"name":"dev"}`, result)
+	})
+
+	t.Run("number value", func(t *testing.T) {
+		t.Parallel()
+		result, diags := convertAttrValueToNative(types.NumberValue(big.NewFloat(42)))
+		require.False(t, diags.HasError())
+		assert.Equal(t, float64(42), result)
+	})
+
+	t.Run("boolean value", func(t *testing.T) {
+		t.Parallel()
+		result, diags := convertAttrValueToNative(types.BoolValue(true))
+		require.False(t, diags.HasError())
+		assert.Equal(t, true, result)
+	})
+
+	t.Run("tuple of strings", func(t *testing.T) {
+		t.Parallel()
+		tupleVal, tupleDiags := types.TupleValue(
+			[]attr.Type{types.StringType, types.StringType},
+			[]attr.Value{types.StringValue("foo"), types.StringValue("bar")},
+		)
+		require.False(t, tupleDiags.HasError())
+
+		result, diags := convertAttrValueToNative(tupleVal)
+		require.False(t, diags.HasError())
+		assert.Equal(t, []any{"foo", "bar"}, result)
+	})
+
+	t.Run("tuple of mixed types", func(t *testing.T) {
+		t.Parallel()
+		tupleVal, tupleDiags := types.TupleValue(
+			[]attr.Type{types.StringType, types.NumberType, types.BoolType},
+			[]attr.Value{
+				types.StringValue("foo"),
+				types.NumberValue(big.NewFloat(123)),
+				types.BoolValue(true),
+			},
+		)
+		require.False(t, tupleDiags.HasError())
+
+		result, diags := convertAttrValueToNative(tupleVal)
+		require.False(t, diags.HasError())
+		assert.Equal(t, []any{"foo", float64(123), true}, result)
+	})
+
+	t.Run("object value", func(t *testing.T) {
+		t.Parallel()
+		objVal, objDiags := types.ObjectValue(
+			map[string]attr.Type{"key": types.StringType, "number": types.NumberType},
+			map[string]attr.Value{
+				"key":    types.StringValue("value"),
+				"number": types.NumberValue(big.NewFloat(42)),
+			},
+		)
+		require.False(t, objDiags.HasError())
+
+		result, diags := convertAttrValueToNative(objVal)
+		require.False(t, diags.HasError())
+		assert.Equal(t, map[string]any{"key": "value", "number": float64(42)}, result)
+	})
+
+	t.Run("nested object containing tuple", func(t *testing.T) {
+		t.Parallel()
+		tupleVal, tupleDiags := types.TupleValue(
+			[]attr.Type{types.StringType, types.StringType},
+			[]attr.Value{types.StringValue("a"), types.StringValue("b")},
+		)
+		require.False(t, tupleDiags.HasError())
+
+		objVal, objDiags := types.ObjectValue(
+			map[string]attr.Type{
+				"name": types.StringType,
+				"list": tupleVal.Type(context.Background()),
+			},
+			map[string]attr.Value{
+				"name": types.StringValue("test"),
+				"list": tupleVal,
+			},
+		)
+		require.False(t, objDiags.HasError())
+
+		result, diags := convertAttrValueToNative(objVal)
+		require.False(t, diags.HasError())
+		assert.Equal(t, map[string]any{
+			"name": "test",
+			"list": []any{"a", "b"},
+		}, result)
+	})
 }
