@@ -273,6 +273,9 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	// Additionally, we couldn't use getResourceByID here because of a race condition:
 	// we'd need an ID in the state to compare against, which doesn't exist yet.
 	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedules[0], &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -324,6 +327,9 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 	}
 
 	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -394,6 +400,9 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 	}
 
 	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
