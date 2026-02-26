@@ -318,9 +318,7 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 
 	schedule, err := getScheduleByID(state, schedules)
 	if err != nil {
-		// If the specific schedule is not found in the list, it was likely
-		// deleted externally. Remove it from state so Terraform can recreate it.
-		resp.State.RemoveResource(ctx)
+		resp.Diagnostics.AddError("Unable to get schedule by ID", err.Error())
 
 		return
 	}
