@@ -350,6 +350,8 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 			"ID is unset",
 			"This is a bug in the Terraform provider. Please report it to the maintainers.",
 		)
+
+		return
 	}
 
 	client, err := r.client.BlockDocuments(state.AccountID.ValueUUID(), state.WorkspaceID.ValueUUID())

@@ -706,6 +706,8 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 			"Error creating deployment client",
 			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	var tags []string
@@ -802,6 +804,8 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 			"Error creating deployment client",
 			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	// A deployment can be imported + read by either ID or Handle
@@ -977,6 +981,8 @@ func (r *DeploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 			"Error creating deployment client",
 			fmt.Sprintf("Could not create deployment client, unexpected error: %s. This is a bug in the provider, please report this to the maintainers.", err.Error()),
 		)
+
+		return
 	}
 
 	deploymentID, err := uuid.Parse(state.ID.ValueString())
