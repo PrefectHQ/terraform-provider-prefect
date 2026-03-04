@@ -1,14 +1,14 @@
 [tools]
-1password = "2.32.0"
+1password = "2.32.1"
 # Should match go.mod
 go = "1.26"
 "go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs" = "0.24.0"
 "go:github.com/BurntSushi/toml/cmd/tomlv" = "1.6.0"
-golangci-lint = "2.9.0"
-goreleaser = "2.13.3"
+golangci-lint = "2.10.1"
+goreleaser = "2.14.1"
 gotestsum = "1.13.0"
 pre-commit = "4.5.1"
-terraform = "1.14.4"
+terraform = "1.14.6"
 
 [vars]
 helper_tests_arg='specify tests as an argument: mise run <task> "TestAccResource_flow"'
