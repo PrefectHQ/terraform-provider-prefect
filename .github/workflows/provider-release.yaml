@@ -25,13 +25,13 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v6
+        uses: crazy-max/ghaction-import-gpg@v7
         id: import_gpg
         with:
           gpg_private_key: ${{ secrets.GPG_KEYRING_BASE64 }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@v7
         with:
           args: release --clean
         env:
