@@ -326,11 +326,15 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Default:     stringdefault.StaticString("{}"),
 			},
 			"parameter_openapi_schema": schema.StringAttribute{
-				Description: "The parameter schema of the flow, including defaults.",
-				Optional:    true,
-				Computed:    true,
-				CustomType:  jsontypes.NormalizedType{},
-				Default:     stringdefault.StaticString("{}"),
+				Description: "The parameter schema of the flow, including defaults. " +
+					"When not set or set to an empty JSON object, the server populates " +
+					"this field based on the flow's typed parameters.",
+				Optional:   true,
+				Computed:   true,
+				CustomType: jsontypes.NormalizedType{},
+				PlanModifiers: []planmodifier.String{
+					UseServerValueIfEmpty(),
+				},
 			},
 			"concurrency_limit": schema.Int64Attribute{
 				Description: "The deployment's concurrency limit.",
