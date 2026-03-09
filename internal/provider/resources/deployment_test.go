@@ -579,14 +579,14 @@ resource "prefect_deployment" "%[4]s" {
 				// Create with parameter_openapi_schema = jsonencode({})
 				Config: makeConfig(`parameter_openapi_schema = jsonencode({})`),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNotNull(deploymentResourceName, "parameter_openapi_schema"),
+					testutils.ExpectKnownValue(deploymentResourceName, "parameter_openapi_schema", "{}"),
 				},
 			},
 			{
 				// Re-apply the same config — should be a no-op, not a taint.
 				Config: makeConfig(`parameter_openapi_schema = jsonencode({})`),
 				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValueNotNull(deploymentResourceName, "parameter_openapi_schema"),
+					testutils.ExpectKnownValue(deploymentResourceName, "parameter_openapi_schema", "{}"),
 				},
 			},
 			{
