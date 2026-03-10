@@ -532,6 +532,122 @@ func TestAccResource_deployment(t *testing.T) {
 	})
 }
 
+// TestAccResource_deployment_empty_parameter_openapi_schema tests that creating
+// a deployment with parameter_openapi_schema = jsonencode({}) does not cause a
+// taint loop. The server may populate this field with a richer schema, and the
+// provider should accept that without raising "inconsistent result after apply."
+// See: https://github.com/PrefectHQ/terraform-provider-prefect/issues/650
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_empty_parameter_openapi_schema(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	makeConfig := func(parameterOpenAPISchema string) string {
+		return fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name     = "%[4]s"
+  flow_id  = prefect_flow.%[2]s.id
+  %[5]s
+  %[3]s
+  depends_on = [prefect_flow.%[2]s]
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName, parameterOpenAPISchema)
+	}
+
+	// Step 1: Create with explicit empty object (the problematic case from #650).
+	// Step 2: Re-apply the same config. If the taint loop bug exists, this step
+	// would fail with "inconsistent result after apply."
+	// Step 3: Update to an explicit non-empty schema and verify it sticks.
+	explicitSchema := `{"type":"object","properties":{"name":{"type":"string"}}}`
+	expectedExplicitSchema := testutils.NormalizedValueForJSON(t, explicitSchema)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create with parameter_openapi_schema = jsonencode({})
+				Config: makeConfig(`parameter_openapi_schema = jsonencode({})`),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "parameter_openapi_schema", "{}"),
+				},
+			},
+			{
+				// Re-apply the same config — should be a no-op, not a taint.
+				Config: makeConfig(`parameter_openapi_schema = jsonencode({})`),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "parameter_openapi_schema", "{}"),
+				},
+			},
+			{
+				// Update to an explicit non-empty schema.
+				Config: makeConfig(fmt.Sprintf(`parameter_openapi_schema = jsonencode(%s)`, explicitSchema)),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(deploymentResourceName, "parameter_openapi_schema", expectedExplicitSchema),
+				},
+			},
+		},
+	})
+}
+
+// TestAccResource_deployment_omitted_parameter_openapi_schema tests that
+// omitting parameter_openapi_schema entirely works without a taint loop.
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_omitted_parameter_openapi_schema(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	config := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name     = "%[4]s"
+  flow_id  = prefect_flow.%[2]s.id
+  %[3]s
+  depends_on = [prefect_flow.%[2]s]
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName)
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create without parameter_openapi_schema at all.
+				Config: config,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "parameter_openapi_schema"),
+				},
+			},
+			{
+				// Re-apply — should be a no-op.
+				Config: config,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNotNull(deploymentResourceName, "parameter_openapi_schema"),
+				},
+			},
+		},
+	})
+}
+
 // testAccCheckDeploymentExists is a Custom Check Function that
 // verifies that the API object was created correctly.
 func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api.Deployment) resource.TestCheckFunc {

@@ -1,6 +1,8 @@
 package helpers
 
 import (
+	"encoding/json"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -18,4 +20,15 @@ func UnmarshalOptional(attribute jsontypes.Normalized) (map[string]any, diag.Dia
 	diags = attribute.Unmarshal(&result)
 
 	return result, diags
+}
+
+// IsEmptyJSONObject returns true if s parses as a JSON object with no keys.
+func IsEmptyJSONObject(s string) bool {
+	var obj map[string]interface{}
+	if err := json.Unmarshal([]byte(s), &obj); err != nil {
+		return false
+	}
+
+	// obj is nil when s is "null"; we only want actual empty objects.
+	return obj != nil && len(obj) == 0
 }

@@ -767,6 +767,12 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 		}
 	}
 
+	// Capture the planned parameter_openapi_schema before the API call
+	// overwrites it. The server may enrich an empty schema with the flow's
+	// typed parameters, which would cause "inconsistent result after apply"
+	// if we stored the server's value when the plan said "{}".
+	plannedOpenAPISchema := plan.ParameterOpenAPISchema
+
 	deployment, err := client.Create(ctx, createPayload)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -780,6 +786,13 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	resp.Diagnostics.Append(CopyDeploymentToModel(ctx, deployment, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// If the user's planned value was an empty JSON object, preserve it
+	// rather than storing the server-enriched schema. This prevents a
+	// taint loop when the server auto-populates the schema from the flow.
+	if helpers.IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
+		plan.ParameterOpenAPISchema = plannedOpenAPISchema
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
@@ -934,6 +947,10 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
+	// Capture the planned parameter_openapi_schema before the API call
+	// overwrites it (same reason as in Create).
+	plannedOpenAPISchema := model.ParameterOpenAPISchema
+
 	err = client.Update(ctx, deploymentID, payload)
 
 	if err != nil {
@@ -958,6 +975,10 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	resp.Diagnostics.Append(CopyDeploymentToModel(ctx, deployment, &model)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if helpers.IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
+		model.ParameterOpenAPISchema = plannedOpenAPISchema
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &model)...)
