@@ -791,7 +791,7 @@ func (r *DeploymentResource) Create(ctx context.Context, req resource.CreateRequ
 	// If the user's planned value was an empty JSON object, preserve it
 	// rather than storing the server-enriched schema. This prevents a
 	// taint loop when the server auto-populates the schema from the flow.
-	if IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
+	if helpers.IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
 		plan.ParameterOpenAPISchema = plannedOpenAPISchema
 	}
 
@@ -977,7 +977,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	if IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
+	if helpers.IsEmptyJSONObject(plannedOpenAPISchema.ValueString()) {
 		model.ParameterOpenAPISchema = plannedOpenAPISchema
 	}
 

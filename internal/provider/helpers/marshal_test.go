@@ -1,9 +1,9 @@
-package resources_test
+package helpers_test
 
 import (
 	"testing"
 
-	"github.com/prefecthq/terraform-provider-prefect/internal/provider/resources"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 func TestIsEmptyJSONObject(t *testing.T) {
@@ -28,7 +28,7 @@ func TestIsEmptyJSONObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := resources.IsEmptyJSONObject(tt.input)
+			got := helpers.IsEmptyJSONObject(tt.input)
 			if got != tt.expected {
 				t.Errorf("IsEmptyJSONObject(%q) = %v, want %v", tt.input, got, tt.expected)
 			}
