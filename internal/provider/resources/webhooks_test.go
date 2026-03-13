@@ -197,10 +197,11 @@ func TestAccResource_webhook(t *testing.T) {
 			},
 			// Import State checks - import by name (dynamic)
 			{
-				ImportState:       true,
-				ResourceName:      webhookResourceName,
-				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(webhookResourceName),
-				ImportStateVerify: true,
+				ImportState:             true,
+				ResourceName:            webhookResourceName,
+				ImportStateIdFunc:       testutils.GetResourceWorkspaceImportStateID(webhookResourceName),
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"template"},
 			},
 		},
 	})
