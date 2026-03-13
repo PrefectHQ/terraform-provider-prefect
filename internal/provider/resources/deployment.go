@@ -82,6 +82,8 @@ type PullStepModel struct {
 	// One of:
 	// - set_working_directory
 	// - git_clone
+	// - run_shell_script
+	// - pip_install_requirements
 	// - pull_from_azure_blob_storage
 	// - pull_from_gcs
 	// - pull_from_s3
@@ -99,6 +101,21 @@ type PullStepModel struct {
 	//
 
 	Directory types.String `tfsdk:"directory"`
+
+	//
+	// Fields for run_shell_script
+	//
+
+	Script        types.String `tfsdk:"script"`
+	Env           types.Map    `tfsdk:"env"`
+	StreamOutput  types.Bool   `tfsdk:"stream_output"`
+	ExpandEnvVars types.Bool   `tfsdk:"expand_env_vars"`
+
+	//
+	// Fields for pip_install_requirements
+	//
+
+	RequirementsFile types.String `tfsdk:"requirements_file"`
 
 	//
 	// Fields for git_clone
@@ -381,6 +398,11 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							"credentials":        types.StringType,
 							"requires":           types.StringType,
 							"directory":          types.StringType,
+							"script":             types.StringType,
+							"env":                types.MapType{ElemType: types.StringType},
+							"stream_output":      types.BoolType,
+							"expand_env_vars":    types.BoolType,
+							"requirements_file":  types.StringType,
 							"repository":         types.StringType,
 							"branch":             types.StringType,
 							"access_token":       types.StringType,
@@ -401,6 +423,8 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 								stringvalidator.OneOf(
 									"set_working_directory",
 									"git_clone",
+									"run_shell_script",
+									"pip_install_requirements",
 									"pull_from_azure_blob_storage",
 									"pull_from_gcs",
 									"pull_from_s3",
@@ -416,11 +440,35 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Optional:    true,
 						},
 						"directory": schema.StringAttribute{
-							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
+							Description: "(For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.",
 							Optional:    true,
 							Validators: []validator.String{
 								stringvalidator.ConflictsWith(pathExpressionsForAttributes(nonDirectoryAttributes)...),
 							},
+						},
+						"script": schema.StringAttribute{
+							Description: "(For type 'run_shell_script') The shell script to execute.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonRunShellScriptAttributes),
+						},
+						"env": schema.MapAttribute{
+							Description: "(For type 'run_shell_script') Environment variables to set when running the script.",
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+						"stream_output": schema.BoolAttribute{
+							Description: "(For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.",
+							Optional:    true,
+						},
+						"expand_env_vars": schema.BoolAttribute{
+							Description: "(For type 'run_shell_script') Whether to expand environment variables in the script before running.",
+							Optional:    true,
+							Validators:  boolConflictsWithValidators(nonRunShellScriptBoolAttributes),
+						},
+						"requirements_file": schema.StringAttribute{
+							Description: "(For type 'pip_install_requirements') The requirements file to install from.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonPipInstallRequirementsAttributes),
 						},
 						"repository": schema.StringAttribute{
 							Description: "(For type 'git_clone') The URL of the repository to clone.",
@@ -501,6 +549,32 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 				Directory: tfPullStep.Directory.ValueStringPointer(),
 			}
 
+		case "run_shell_script":
+			var env map[string]string
+			if !tfPullStep.Env.IsNull() && !tfPullStep.Env.IsUnknown() {
+				env = make(map[string]string)
+				for key, value := range tfPullStep.Env.Elements() {
+					env[key] = value.(basetypes.StringValue).ValueString()
+				}
+			}
+
+			apiPullStep.PullStepRunShellScript = &api.PullStepRunShellScript{
+				PullStepCommon: pullStepCommon,
+				Script:         tfPullStep.Script.ValueStringPointer(),
+				Directory:      tfPullStep.Directory.ValueStringPointer(),
+				Env:            env,
+				StreamOutput:   tfPullStep.StreamOutput.ValueBoolPointer(),
+				ExpandEnvVars:  tfPullStep.ExpandEnvVars.ValueBoolPointer(),
+			}
+
+		case "pip_install_requirements":
+			apiPullStep.PullStepPipInstallRequirements = &api.PullStepPipInstallRequirements{
+				PullStepCommon:   pullStepCommon,
+				Directory:        tfPullStep.Directory.ValueStringPointer(),
+				RequirementsFile: tfPullStep.RequirementsFile.ValueStringPointer(),
+				StreamOutput:     tfPullStep.StreamOutput.ValueBoolPointer(),
+			}
+
 		case "pull_from_azure_blob_storage":
 			apiPullStep.PullStepPullFromAzureBlobStorage = &api.PullStepPullFromAzure{
 				PullStepCommon: pullStepCommon,
@@ -550,6 +624,45 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 			pullStepModel.Directory = types.StringValue(*pullStep.PullStepSetWorkingDirectory.Directory)
 
 			// common fields not used on this pull step type
+		}
+
+		// PullStepRunShellScript
+		if pullStep.PullStepRunShellScript != nil {
+			pullStepModel.Type = types.StringValue("run_shell_script")
+			pullStepModel.Script = types.StringPointerValue(pullStep.PullStepRunShellScript.Script)
+			pullStepModel.Directory = types.StringPointerValue(pullStep.PullStepRunShellScript.Directory)
+			pullStepModel.StreamOutput = types.BoolPointerValue(pullStep.PullStepRunShellScript.StreamOutput)
+			pullStepModel.ExpandEnvVars = types.BoolPointerValue(pullStep.PullStepRunShellScript.ExpandEnvVars)
+
+			envElements := make(map[string]attr.Value, len(pullStep.PullStepRunShellScript.Env))
+			for key, value := range pullStep.PullStepRunShellScript.Env {
+				envElements[key] = types.StringValue(value)
+			}
+			if len(envElements) > 0 {
+				env, mapDiags := types.MapValue(types.StringType, envElements)
+				diags.Append(mapDiags...)
+				if !mapDiags.HasError() {
+					pullStepModel.Env = env
+				}
+			} else {
+				pullStepModel.Env = types.MapNull(types.StringType)
+			}
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepRunShellScript.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepRunShellScript.Requires)
+		}
+
+		// PullStepPipInstallRequirements
+		if pullStep.PullStepPipInstallRequirements != nil {
+			pullStepModel.Type = types.StringValue("pip_install_requirements")
+			pullStepModel.Directory = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Directory)
+			pullStepModel.RequirementsFile = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.RequirementsFile)
+			pullStepModel.StreamOutput = types.BoolPointerValue(pullStep.PullStepPipInstallRequirements.StreamOutput)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Requires)
 		}
 
 		// PullStepPullFromAzureBlobStorage
@@ -1075,9 +1188,28 @@ func boolConflictsWithValidators(attributes []string) []validator.Bool {
 	}
 }
 
+func combineAttributes(groups ...[]string) []string {
+	combined := make([]string, 0)
+	for _, group := range groups {
+		combined = append(combined, group...)
+	}
+
+	return combined
+}
+
 var (
 	directoryAttributes = []string{
 		"directory",
+	}
+
+	runShellScriptAttributes = []string{
+		"script",
+		"env",
+		"expand_env_vars",
+	}
+
+	pipInstallRequirementsAttributes = []string{
+		"requirements_file",
 	}
 
 	gitCloneAttributes = []string{
@@ -1093,7 +1225,11 @@ var (
 		"folder",
 	}
 
-	nonDirectoryAttributes = append(gitCloneAttributes, pullFromAttributes...)
-	nonGitCloneAttributes  = append(directoryAttributes, pullFromAttributes...)
-	nonPullFromAttributes  = append(directoryAttributes, gitCloneAttributes...)
+	nonDirectoryAttributes = combineAttributes(gitCloneAttributes, pullFromAttributes)
+	nonGitCloneAttributes  = combineAttributes(directoryAttributes, pullFromAttributes, runShellScriptAttributes, pipInstallRequirementsAttributes)
+	nonPullFromAttributes  = combineAttributes(directoryAttributes, gitCloneAttributes, runShellScriptAttributes, pipInstallRequirementsAttributes)
+
+	nonRunShellScriptAttributes         = combineAttributes(gitCloneAttributes, pullFromAttributes, pipInstallRequirementsAttributes)
+	nonRunShellScriptBoolAttributes     = combineAttributes(gitCloneAttributes, pullFromAttributes)
+	nonPipInstallRequirementsAttributes = combineAttributes(gitCloneAttributes, pullFromAttributes, runShellScriptAttributes)
 )

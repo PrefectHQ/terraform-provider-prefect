@@ -160,11 +160,47 @@ type PullStepPullFromAzure struct {
 	Folder *string `json:"folder,omitempty"`
 }
 
+// PullStepRunShellScript is a representation of a pull step that runs a shell script.
+type PullStepRunShellScript struct {
+	PullStepCommon
+
+	// The script to run.
+	Script *string `json:"script,omitempty"`
+
+	// The directory to run the script in.
+	Directory *string `json:"directory,omitempty"`
+
+	// Environment variables to set for the script.
+	Env map[string]string `json:"env,omitempty"`
+
+	// Whether to stream script output to stdout/stderr.
+	StreamOutput *bool `json:"stream_output,omitempty"`
+
+	// Whether to expand environment variables in the script before running.
+	ExpandEnvVars *bool `json:"expand_env_vars,omitempty"`
+}
+
+// PullStepPipInstallRequirements is a representation of a pull step that installs dependencies from a requirements file.
+type PullStepPipInstallRequirements struct {
+	PullStepCommon
+
+	// The directory containing the requirements file.
+	Directory *string `json:"directory,omitempty"`
+
+	// The requirements file to install from.
+	RequirementsFile *string `json:"requirements_file,omitempty"`
+
+	// Whether to stream pip install output to stdout/stderr.
+	StreamOutput *bool `json:"stream_output,omitempty"`
+}
+
 // PullStep contains instructions for preparing your flows for a deployment run.
 type PullStep struct {
-	PullStepGitClone                 *PullStepGitClone            `json:"prefect.deployments.steps.git_clone,omitempty"`
-	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory `json:"prefect.deployments.steps.set_working_directory,omitempty"`
-	PullStepPullFromAzureBlobStorage *PullStepPullFromAzure       `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
-	PullStepPullFromGCS              *PullStepPullFrom            `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
-	PullStepPullFromS3               *PullStepPullFrom            `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
+	PullStepGitClone                 *PullStepGitClone               `json:"prefect.deployments.steps.git_clone,omitempty"`
+	PullStepRunShellScript           *PullStepRunShellScript         `json:"prefect.deployments.steps.run_shell_script,omitempty"`
+	PullStepPipInstallRequirements   *PullStepPipInstallRequirements `json:"prefect.deployments.steps.pip_install_requirements,omitempty"`
+	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory    `json:"prefect.deployments.steps.set_working_directory,omitempty"`
+	PullStepPullFromAzureBlobStorage *PullStepPullFromAzure          `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
+	PullStepPullFromGCS              *PullStepPullFrom               `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
+	PullStepPullFromS3               *PullStepPullFrom               `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
 }
