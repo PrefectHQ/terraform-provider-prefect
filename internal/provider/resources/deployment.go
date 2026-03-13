@@ -606,7 +606,10 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 	for i := range pullSteps {
 		pullStep := pullSteps[i]
 
-		var pullStepModel PullStepModel
+		pullStepModel := PullStepModel{
+			// Ensure map type metadata is always present, even on non-run_shell_script pull steps.
+			Env: types.MapNull(types.StringType),
+		}
 
 		// PullStepGitClone
 		if pullStep.PullStepGitClone != nil {
@@ -647,8 +650,6 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 				if !mapDiags.HasError() {
 					pullStepModel.Env = env
 				}
-			} else {
-				pullStepModel.Env = types.MapNull(types.StringType)
 			}
 
 			// common fields
