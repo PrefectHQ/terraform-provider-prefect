@@ -123,6 +123,54 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   end }}
 			{{- end }}
 
+			{{- with .PullStepRunShellScript }}
+			type = "run_shell_script"
+			{{-   if .Script }}
+			script = "{{.Script}}"
+			{{-   end }}
+			{{-   if .Directory }}
+			directory = "{{.Directory}}"
+			{{-   end }}
+			{{-   if .ExpandEnvVars }}
+			expand_env_vars = {{.ExpandEnvVars}}
+			{{-   end }}
+			{{-   if .StreamOutput }}
+			stream_output = {{.StreamOutput}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{-   if .Env }}
+			env = {
+				{{- range $key, $value := .Env }}
+				"{{$key}}" = "{{$value}}"
+				{{- end }}
+			}
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPipInstallRequirements }}
+			type = "pip_install_requirements"
+			{{-   if .Directory }}
+			directory = "{{.Directory}}"
+			{{-   end }}
+			{{-   if .RequirementsFile }}
+			requirements_file = "{{.RequirementsFile}}"
+			{{-   end }}
+			{{-   if .StreamOutput }}
+			stream_output = {{.StreamOutput}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
 			{{- with .PullStepPullFromAzureBlobStorage }}
 			type = "pull_from_azure_blob_storage"
 			{{-   if .Container }}
@@ -428,6 +476,24 @@ func TestAccResource_deployment(t *testing.T) {
 					Branch:            new("main"),
 					AccessToken:       new("123abc"),
 					IncludeSubmodules: new(true),
+				},
+			},
+			{
+				PullStepRunShellScript: &api.PullStepRunShellScript{
+					Script:        new("echo hello"),
+					Directory:     new("/some/script/directory"),
+					StreamOutput:  new(true),
+					ExpandEnvVars: new(true),
+					Env: map[string]string{
+						"NAME": "world",
+					},
+				},
+			},
+			{
+				PullStepPipInstallRequirements: &api.PullStepPipInstallRequirements{
+					Directory:        new("/some/script/directory"),
+					RequirementsFile: new("requirements.txt"),
+					StreamOutput:     new(false),
 				},
 			},
 			{

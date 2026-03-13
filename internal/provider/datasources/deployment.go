@@ -212,7 +212,28 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 						},
 						"directory": schema.StringAttribute{
 							Computed:    true,
-							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
+							Description: "(For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.",
+						},
+						"script": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') The shell script to execute.",
+						},
+						"env": schema.MapAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') Environment variables to set when running the script.",
+							ElementType: types.StringType,
+						},
+						"stream_output": schema.BoolAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.",
+						},
+						"expand_env_vars": schema.BoolAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') Whether to expand environment variables in the script before running.",
+						},
+						"requirements_file": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'pip_install_requirements') The requirements file to install from.",
 						},
 						"repository": schema.StringAttribute{
 							Computed:    true,

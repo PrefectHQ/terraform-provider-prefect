@@ -92,10 +92,32 @@ resource "prefect_deployment" "deployment" {
       folder    = "my-folder",
     },
     {
+      type     = "pull_from_gcs",
+      requires = "prefect-gcp>=0.6.0"
+      bucket   = "some-gcs-bucket",
+      folder   = "some-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
       folder   = "some-folder",
+    },
+    {
+      type              = "pip_install_requirements"
+      directory         = "/some/directory"
+      requirements_file = "requirements.txt"
+      stream_output     = true
+    },
+    {
+      type            = "run_shell_script"
+      script          = "python --version"
+      directory       = "/some/directory"
+      expand_env_vars = true
+      stream_output   = true
+      env = {
+        "EXAMPLE_ENV_KEY" = "example-value"
+      }
     }
   ]
   storage_document_id = prefect_block.test_gh_repository.id
@@ -164,11 +186,16 @@ Optional:
 - `bucket` (String) (For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.
 - `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
-- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `directory` (String) (For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.
+- `env` (Map of String) (For type 'run_shell_script') Environment variables to set when running the script.
+- `expand_env_vars` (Boolean) (For type 'run_shell_script') Whether to expand environment variables in the script before running.
 - `folder` (String) (For type 'pull_from_*') The folder in the bucket/container where files are stored.
 - `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
+- `requirements_file` (String) (For type 'pip_install_requirements') The requirements file to install from.
 - `requires` (String) A list of Python package dependencies.
+- `script` (String) (For type 'run_shell_script') The shell script to execute.
+- `stream_output` (Boolean) (For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.
 
 ## Import
 
