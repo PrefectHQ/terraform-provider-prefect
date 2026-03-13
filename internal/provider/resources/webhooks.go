@@ -235,7 +235,15 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
+	// Capture the user's configured template before copying the API response,
+	// which may contain an expanded form of Jinja macros (e.g. from_cloud_event).
+	plannedTemplate := plan.Template
+
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
+
+	// Restore the user's configured template to avoid "inconsistent result
+	// after apply" when the API expands Jinja macros server-side.
+	plan.Template = plannedTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -295,7 +303,13 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	// Preserve the user's configured template from state to avoid phantom
+	// diffs when the API returns an expanded form of Jinja macros.
+	stateTemplate := state.Template
+
 	copyWebhookResponseToModel(webhook, &state, r.client.GetEndpointHost())
+
+	state.Template = stateTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -358,7 +372,14 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		}
 	}
 
+	// Capture the user's configured template before copying the API response.
+	plannedTemplate := plan.Template
+
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
+
+	// Restore the user's configured template to avoid "inconsistent result
+	// after apply" when the API expands Jinja macros server-side.
+	plan.Template = plannedTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
