@@ -347,7 +347,6 @@ func (r *WorkPoolAccessResource) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-
 	payload := api.WorkPoolAccessSet{}
 	payload.AccessControl.ManageActorIDs = []string{"*"}
 	payload.AccessControl.ViewActorIDs = []string{"*"}
@@ -355,7 +354,6 @@ func (r *WorkPoolAccessResource) Delete(ctx context.Context, req resource.Delete
 	payload.AccessControl.ViewTeamIDs = []string{}
 	payload.AccessControl.RunActorIDs = []string{"*"}
 	payload.AccessControl.RunTeamIDs = []string{}
-
 
 	err = client.Set(ctx, state.WorkPoolName.ValueString(), payload)
 	if err != nil {
