@@ -72,10 +72,32 @@ resource "prefect_deployment" "deployment" {
       folder    = "my-folder",
     },
     {
+      type     = "pull_from_gcs",
+      requires = "prefect-gcp>=0.6.0"
+      bucket   = "some-gcs-bucket",
+      folder   = "some-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
       folder   = "some-folder",
+    },
+    {
+      type              = "pip_install_requirements"
+      directory         = "/some/directory"
+      requirements_file = "requirements.txt"
+      stream_output     = true
+    },
+    {
+      type            = "run_shell_script"
+      script          = "python --version"
+      directory       = "/some/directory"
+      expand_env_vars = true
+      stream_output   = true
+      env = {
+        "EXAMPLE_ENV_KEY" = "example-value"
+      }
     }
   ]
   storage_document_id = prefect_block.test_gh_repository.id
