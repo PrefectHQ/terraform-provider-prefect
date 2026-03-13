@@ -181,6 +181,7 @@ func request() result {
 		log.Printf("Error creating request: %v", err)
 	}
 
+	// #nosec G704 -- using a fixed public URL.
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("Error getting openapi.json: %v", err)

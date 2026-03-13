@@ -126,6 +126,7 @@ type PullStepGitClone struct {
 	Branch *string `json:"branch,omitempty"`
 
 	// Access token for the repository.
+	//nolint:gosec // This is an API model field name required by Prefect's schema.
 	AccessToken *string `json:"access_token,omitempty"`
 
 	// IncludeSubmodules determines whether to include submodules when cloning the repository.

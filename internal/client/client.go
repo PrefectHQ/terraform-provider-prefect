@@ -86,6 +86,7 @@ func (c *Client) obtainCsrfToken() error {
 		req.Header.Set(key, value)
 	}
 
+	// #nosec G704 -- request target is built from provider endpoint configuration.
 	resp, err := c.hc.Do(req)
 	if err != nil {
 		return fmt.Errorf("http error on CSRF token request: %w", err)
