@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -554,7 +555,9 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 			if !tfPullStep.Env.IsNull() && !tfPullStep.Env.IsUnknown() {
 				env = make(map[string]string)
 				for key, value := range tfPullStep.Env.Elements() {
-					env[key] = value.(basetypes.StringValue).ValueString()
+					if strVal, ok := value.(basetypes.StringValue); ok {
+						env[key] = strVal.ValueString()
+					}
 				}
 			}
 
@@ -1189,12 +1192,7 @@ func boolConflictsWithValidators(attributes []string) []validator.Bool {
 }
 
 func combineAttributes(groups ...[]string) []string {
-	combined := make([]string, 0)
-	for _, group := range groups {
-		combined = append(combined, group...)
-	}
-
-	return combined
+	return slices.Concat(groups...)
 }
 
 var (
