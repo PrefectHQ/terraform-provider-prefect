@@ -181,7 +181,7 @@ func request() result {
 		log.Printf("Error creating request: %v", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req) //nolint:gosec // URL is a known API endpoint from command-line args
 	if err != nil {
 		log.Printf("Error getting openapi.json: %v", err)
 	}

@@ -126,7 +126,7 @@ type PullStepGitClone struct {
 	Branch *string `json:"branch,omitempty"`
 
 	// Access token for the repository.
-	AccessToken *string `json:"access_token,omitempty"`
+	AccessToken *string `json:"access_token,omitempty"` //nolint:gosec // this is a JSON field name, not a credential
 
 	// IncludeSubmodules determines whether to include submodules when cloning the repository.
 	IncludeSubmodules *bool `json:"include_submodules,omitempty"`
