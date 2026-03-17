@@ -12,14 +12,15 @@ import (
 	"github.com/prefecthq/terraform-provider-prefect/internal/testutils"
 )
 
-type deploymentAccessConfig struct {
+type blockAccessConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
 	ServiceAccountName    string
+	BlockName             string
 	IncludeAccess         bool
 }
 
-func fixtureAccDeploymentAccess(cfg deploymentAccessConfig) string {
+func fixtureAccBlockAccess(cfg blockAccessConfig) string {
 	tmpl := `
 {{.WorkspaceResource}}
 
@@ -49,29 +50,24 @@ resource "prefect_workspace_access" "test_team" {
 	workspace_id = {{.WorkspaceResourceName}}.id
 }
 
-resource "prefect_flow" "test" {
-	name = "my-flow"
+resource "prefect_block" "test" {
+	name = "{{.BlockName}}"
+	type_slug = "secret"
+	data = jsonencode({
+		"value" = "test-value"
+	})
 	workspace_id = {{.WorkspaceResourceName}}.id
-	tags = ["test"]
-}
-
-resource "prefect_deployment" "test" {
-	name = "my-deployment"
-	workspace_id = {{.WorkspaceResourceName}}.id
-	flow_id = prefect_flow.test.id
 }
 
 {{if .IncludeAccess}}
-resource "prefect_deployment_access" "test" {
+resource "prefect_block_access" "test" {
 	workspace_id = {{.WorkspaceResourceName}}.id
-	deployment_id = prefect_deployment.test.id
+	block_id = prefect_block.test.id
 
 	manage_actor_ids = [prefect_service_account.test.actor_id]
-	run_actor_ids = [prefect_service_account.test.actor_id]
 	view_actor_ids = [prefect_service_account.test.actor_id]
 
 	manage_team_ids = [data.prefect_team.test.id]
-	run_team_ids = [data.prefect_team.test.id]
 	view_team_ids = [data.prefect_team.test.id]
 }
 {{end}}
@@ -81,43 +77,40 @@ resource "prefect_deployment_access" "test" {
 }
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
-func TestAccResource_deployment_access(t *testing.T) {
-	// Deployment access is not supported in OSS.
+func TestAccResource_block_access(t *testing.T) {
+	// Block access is not supported in OSS.
 	testutils.SkipTestsIfOSS(t)
 
 	workspace := testutils.NewEphemeralWorkspace()
 	serviceAccountName := testutils.NewRandomPrefixedString()
+	blockName := testutils.NewRandomPrefixedString()
 	teamName := "my-team"
 
-	baseCfg := deploymentAccessConfig{
+	baseCfg := blockAccessConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
 		ServiceAccountName:    serviceAccountName,
+		BlockName:             blockName,
 	}
 
-	var deployment api.Deployment
-	var deploymentAccess api.DeploymentAccessControl
+	var blockAccess api.BlockDocumentAccess
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccDeploymentAccess(deploymentAccessConfig{
+				Config: fixtureAccBlockAccess(blockAccessConfig{
 					WorkspaceResource:     baseCfg.WorkspaceResource,
 					WorkspaceResourceName: baseCfg.WorkspaceResourceName,
 					ServiceAccountName:    baseCfg.ServiceAccountName,
+					BlockName:             baseCfg.BlockName,
 					IncludeAccess:         true,
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentExists("prefect_deployment.test", &deployment),
-					testAccCheckDeploymentAccessExists("prefect_deployment_access.test", &deploymentAccess),
-					testAccCheckDeploymentAccessValues(&deploymentAccess, expectedDeploymentAccessValues{
+					testAccCheckBlockAccessExists("prefect_block_access.test", &blockAccess),
+					testAccCheckBlockAccessValues(&blockAccess, expectedBlockAccessValues{
 						manageActors: []api.ObjectActorAccess{
-							{Name: serviceAccountName, Type: api.ServiceAccountAccessor},
-							{Name: teamName, Type: api.TeamAccessor},
-						},
-						runActors: []api.ObjectActorAccess{
 							{Name: serviceAccountName, Type: api.ServiceAccountAccessor},
 							{Name: teamName, Type: api.TeamAccessor},
 						},
@@ -129,66 +122,59 @@ func TestAccResource_deployment_access(t *testing.T) {
 				),
 			},
 			{
-				Config: fixtureAccDeploymentAccess(baseCfg),
+				Config: fixtureAccBlockAccess(baseCfg),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					testAccCheckDeploymentAccessDestroy("prefect_deployment.test"),
+					testAccCheckBlockAccessDestroy("prefect_block.test"),
 				),
 			},
 		},
 	})
 }
 
-// testAccCheckDeploymentAccessExists is a Custom Check Function that
+// testAccCheckBlockAccessExists is a Custom Check Function that
 // verifies that the API object was created correctly.
-func testAccCheckDeploymentAccessExists(deploymentAccessResourceName string, deploymentAccess *api.DeploymentAccessControl) resource.TestCheckFunc {
+func testAccCheckBlockAccessExists(blockAccessResourceName string, blockAccess *api.BlockDocumentAccess) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		// Get the deployment access resource we just created from the state
-		deploymentAccessID, err := testutils.GetResourceIDFromStateByAttribute(s, deploymentAccessResourceName, "deployment_id")
+		blockID, err := testutils.GetResourceIDFromStateByAttribute(s, blockAccessResourceName, "block_id")
 		if err != nil {
-			return fmt.Errorf("error fetching deployment access ID: %w", err)
+			return fmt.Errorf("error fetching block ID: %w", err)
 		}
 
-		// Get the workspace resource we just created from the state
 		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
 		if err != nil {
 			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
 
-		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment
 		c, _ := testutils.NewTestClient()
-		deploymentAccessClient, _ := c.DeploymentAccess(uuid.Nil, workspaceID)
+		blockClient, _ := c.BlockDocuments(uuid.Nil, workspaceID)
 
-		fetchedDeploymentAccess, err := deploymentAccessClient.Read(context.Background(), deploymentAccessID)
+		fetchedBlockAccess, err := blockClient.GetAccess(context.Background(), blockID)
 		if err != nil {
-			return fmt.Errorf("error fetching deployment access: %w", err)
+			return fmt.Errorf("error fetching block access: %w", err)
 		}
 
-		// Assign the fetched deployment to the passed pointer
-		// so we can use it in the next test assertion
-		*deploymentAccess = *fetchedDeploymentAccess
+		*blockAccess = *fetchedBlockAccess
 
 		return nil
 	}
 }
 
-type expectedDeploymentAccessValues struct {
+type expectedBlockAccessValues struct {
 	manageActors []api.ObjectActorAccess
-	runActors    []api.ObjectActorAccess
 	viewActors   []api.ObjectActorAccess
 }
 
-// testAccCheckDeploymentValues is a Custom Check Function that
+// testAccCheckBlockAccessValues is a Custom Check Function that
 // verifies that the API object matches the expected values.
-func testAccCheckDeploymentAccessValues(fetchedDeploymentAccess *api.DeploymentAccessControl, expectedValues expectedDeploymentAccessValues) resource.TestCheckFunc {
+func testAccCheckBlockAccessValues(fetchedBlockAccess *api.BlockDocumentAccess, expectedValues expectedBlockAccessValues) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		tests := map[string]struct {
 			fetched  []api.ObjectActorAccess
 			expected []api.ObjectActorAccess
 		}{
-			"manageActors": {fetchedDeploymentAccess.ManageActors, expectedValues.manageActors},
-			"runActors":    {fetchedDeploymentAccess.RunActors, expectedValues.runActors},
-			"viewActors":   {fetchedDeploymentAccess.ViewActors, expectedValues.viewActors},
+			"manageActors": {fetchedBlockAccess.ManageActors, expectedValues.manageActors},
+			"viewActors":   {fetchedBlockAccess.ViewActors, expectedValues.viewActors},
 		}
 
 		for name, test := range tests {
@@ -202,29 +188,27 @@ func testAccCheckDeploymentAccessValues(fetchedDeploymentAccess *api.DeploymentA
 	}
 }
 
-// testAccCheckDeploymentAccessDestroy is a Custom Check Function that
+// testAccCheckBlockAccessDestroy is a Custom Check Function that
 // verifies that the access control was reset to wildcard on deletion.
-func testAccCheckDeploymentAccessDestroy(deploymentResourceName string) resource.TestCheckFunc {
+func testAccCheckBlockAccessDestroy(blockResourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		// Get the workspace resource we just created from the state
 		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
 		if err != nil {
 			return fmt.Errorf("error fetching workspace ID: %w", err)
 		}
 
-		deploymentID, err := testutils.GetResourceIDFromState(s, deploymentResourceName)
+		blockID, err := testutils.GetResourceIDFromState(s, blockResourceName)
 		if err != nil {
-			return fmt.Errorf("error fetching deployment ID: %w", err)
+			return fmt.Errorf("error fetching block ID: %w", err)
 		}
 
-		// Initialize the client with the associated workspaceID
 		// NOTE: the accountID is inherited by the one set in the test environment
 		c, _ := testutils.NewTestClient()
-		deploymentAccessClient, _ := c.DeploymentAccess(uuid.Nil, workspaceID)
+		blockClient, _ := c.BlockDocuments(uuid.Nil, workspaceID)
 
-		fetchedDeploymentAccess, err := deploymentAccessClient.Read(context.Background(), deploymentID)
+		fetchedBlockAccess, err := blockClient.GetAccess(context.Background(), blockID)
 		if err != nil {
-			return fmt.Errorf("error fetching deployment access: %w", err)
+			return fmt.Errorf("error fetching block access: %w", err)
 		}
 
 		expectedActors := []api.ObjectActorAccess{
@@ -232,9 +216,8 @@ func testAccCheckDeploymentAccessDestroy(deploymentResourceName string) resource
 		}
 
 		checks := map[string][]api.ObjectActorAccess{
-			"manage_actors": fetchedDeploymentAccess.ManageActors,
-			"run_actors":    fetchedDeploymentAccess.RunActors,
-			"view_actors":   fetchedDeploymentAccess.ViewActors,
+			"manage_actors": fetchedBlockAccess.ManageActors,
+			"view_actors":   fetchedBlockAccess.ViewActors,
 		}
 		for name, actors := range checks {
 			if len(actors) != len(expectedActors) {
@@ -247,27 +230,4 @@ func testAccCheckDeploymentAccessDestroy(deploymentResourceName string) resource
 
 		return nil
 	}
-}
-
-func actorFound(fetched []api.ObjectActorAccess, expected []api.ObjectActorAccess) error {
-	if len(fetched) != len(expected) {
-		return fmt.Errorf("got %d actors, expected %d", len(fetched), len(expected))
-	}
-
-	for i := range expected {
-		found := false
-		for j := range fetched {
-			if fetched[j].Name == expected[i].Name && fetched[j].Type == expected[i].Type {
-				found = true
-
-				break
-			}
-		}
-
-		if !found {
-			return fmt.Errorf("actor %s of type %s not found", expected[i].Name, expected[i].Type)
-		}
-	}
-
-	return nil
 }

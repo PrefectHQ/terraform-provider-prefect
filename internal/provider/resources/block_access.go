@@ -298,8 +298,8 @@ func (r *BlockAccessResource) Delete(ctx context.Context, req resource.DeleteReq
 	}
 
 	payload := api.BlockDocumentAccessUpsert{}
-	payload.AccessControl.ManageActorIDs = []string{}
-	payload.AccessControl.ViewActorIDs = []string{}
+	payload.AccessControl.ManageActorIDs = []string{"*"}
+	payload.AccessControl.ViewActorIDs = []string{"*"}
 	payload.AccessControl.ManageTeamIDs = []string{}
 	payload.AccessControl.ViewTeamIDs = []string{}
 	err = client.UpsertAccess(ctx, state.BlockID.ValueUUID(), payload)
