@@ -463,7 +463,7 @@ func TestAccResource_deployment(t *testing.T) {
 		// Tags: []string{"test1", "test3"}
 		Tags: cfgCreate.Tags,
 
-		// PullSteps require a replacement of the resource.
+		// PullSteps are updateable in-place.
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
@@ -521,7 +521,10 @@ func TestAccResource_deployment(t *testing.T) {
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
-	var deployment api.Deployment
+	var (
+		deployment   api.Deployment
+		deploymentID string
+	)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -537,6 +540,7 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgCreate.Description,
 						pullSteps:   cfgCreate.PullSteps,
 					}),
+					testAccCaptureResourceID(cfgCreate.DeploymentResourceName, &deploymentID),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", cfgCreate.ConcurrencyLimit),
@@ -567,6 +571,7 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgUpdate.Description,
 						pullSteps:   cfgUpdate.PullSteps,
 					}),
+					testAccCheckResourceIDUnchanged(cfgUpdate.DeploymentResourceName, &deploymentID),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", cfgUpdate.ConcurrencyLimit),
@@ -771,6 +776,46 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 
 		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
 			return fmt.Errorf("Expected pull steps to be: \n%v\n got \n%v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
+		}
+
+		return nil
+	}
+}
+
+func testAccCaptureResourceID(resourceName string, resourceID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		*resourceID = resourceState.Primary.ID
+		if *resourceID == "" {
+			return fmt.Errorf("resource %q ID is empty", resourceName)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckResourceIDUnchanged(resourceName string, expectedID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		if *expectedID == "" {
+			return fmt.Errorf("expected resource ID is empty for %q", resourceName)
+		}
+
+		if resourceState.Primary.ID != *expectedID {
+			return fmt.Errorf(
+				"expected resource %q to keep ID %q, got %q",
+				resourceName,
+				*expectedID,
+				resourceState.Primary.ID,
+			)
 		}
 
 		return nil
