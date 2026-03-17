@@ -39,10 +39,6 @@ type DeploymentScheduleResourceModel struct {
 	Active           types.Bool    `tfsdk:"active"`
 	MaxScheduledRuns types.Float32 `tfsdk:"max_scheduled_runs"`
 
-	// Cloud-only
-	MaxActiveRuns types.Float32 `tfsdk:"max_active_runs"`
-	Catchup       types.Bool    `tfsdk:"catchup"`
-
 	// All schedule kinds specify an interval.
 	Timezone types.String `tfsdk:"timezone"`
 
@@ -153,16 +149,6 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Description: "The maximum number of scheduled runs for the schedule.",
 				Optional:    true,
 				Computed:    true,
-			},
-			"max_active_runs": schema.Float32Attribute{
-				Description:        "(Cloud only) The maximum number of active runs for the schedule.",
-				Optional:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-			},
-			"catchup": schema.BoolAttribute{
-				Description:        "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
-				Optional:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"parameters": schema.StringAttribute{
 				Description: "Parameters for flow runs scheduled by the deployment schedule.",

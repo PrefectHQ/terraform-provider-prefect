@@ -34,13 +34,12 @@ type AccountResource struct {
 type AccountResourceModel struct {
 	BaseModel
 
-	Name         types.String `tfsdk:"name"`
-	Handle       types.String `tfsdk:"handle"`
-	Location     types.String `tfsdk:"location"`
-	Link         types.String `tfsdk:"link"`
-	Settings     types.Object `tfsdk:"settings"`
-	BillingEmail types.String `tfsdk:"billing_email"`
-	DomainNames  types.List   `tfsdk:"domain_names"`
+	Name        types.String `tfsdk:"name"`
+	Handle      types.String `tfsdk:"handle"`
+	Location    types.String `tfsdk:"location"`
+	Link        types.String `tfsdk:"link"`
+	Settings    types.Object `tfsdk:"settings"`
+	DomainNames types.List   `tfsdk:"domain_names"`
 }
 
 // NewAccountResource returns a new AccountResource.
@@ -148,12 +147,6 @@ func (r *AccountResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 					},
 				},
 			},
-			"billing_email": schema.StringAttribute{
-				Description:        "Billing email to apply to the account's Stripe customer",
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-				Optional:           true,
-				Computed:           true,
-			},
 			"domain_names": schema.ListAttribute{
 				Description: "The list of domain names for enabling SSO in Prefect Cloud.",
 				ElementType: types.StringType,
@@ -170,7 +163,6 @@ func copyAccountToModel(_ context.Context, account *api.Account, tfModel *Accoun
 	tfModel.Created = customtypes.NewTimestampPointerValue(account.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(account.Updated)
 
-	tfModel.BillingEmail = types.StringPointerValue(account.BillingEmail)
 	tfModel.Handle = types.StringValue(account.Handle)
 	tfModel.Link = types.StringPointerValue(account.Link)
 	tfModel.Location = types.StringPointerValue(account.Location)

@@ -24,13 +24,12 @@ type AccountDataSource struct {
 type AccountDataSourceModel struct {
 	BaseModel
 
-	Name         types.String `tfsdk:"name"`
-	Handle       types.String `tfsdk:"handle"`
-	Location     types.String `tfsdk:"location"`
-	Link         types.String `tfsdk:"link"`
-	Settings     types.Object `tfsdk:"settings"`
-	BillingEmail types.String `tfsdk:"billing_email"`
-	DomainNames  types.List   `tfsdk:"domain_names"`
+	Name        types.String `tfsdk:"name"`
+	Handle      types.String `tfsdk:"handle"`
+	Location    types.String `tfsdk:"location"`
+	Link        types.String `tfsdk:"link"`
+	Settings    types.Object `tfsdk:"settings"`
+	DomainNames types.List   `tfsdk:"domain_names"`
 }
 
 // NewAccountDataSource returns a new AccountDataSource.
@@ -124,10 +123,6 @@ Use this data source to obtain account-level attributes
 					},
 				},
 			},
-			"billing_email": schema.StringAttribute{
-				Computed:    true,
-				Description: "Billing email to apply to the account's Stripe customer",
-			},
 			"domain_names": schema.ListAttribute{
 				Description: "The list of domain names for enabling SSO in Prefect Cloud.",
 				ElementType: types.StringType,
@@ -209,7 +204,6 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	}
 	model.DomainNames = domainNames
 
-	model.BillingEmail = types.StringPointerValue(account.BillingEmail)
 	model.Handle = types.StringValue(account.Handle)
 	model.Link = types.StringPointerValue(account.Link)
 	model.Location = types.StringPointerValue(account.Location)

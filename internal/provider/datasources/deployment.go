@@ -122,11 +122,6 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the associated storage document (UUID)",
 			},
-			"manifest_path": schema.StringAttribute{
-				Computed:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
-			},
 			"job_variables": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
