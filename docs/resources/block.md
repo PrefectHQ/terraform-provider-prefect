@@ -157,6 +157,18 @@ For more information on the `$ref` syntax definition, see the
 
 Import is supported using the following syntax:
 
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = prefect_block.example
+  id = "00000000-0000-0000-0000-000000000000"
+}
+
+resource "prefect_block" "example" {
+}
+```
+
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
