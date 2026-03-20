@@ -145,7 +145,6 @@ resource "prefect_deployment" "deployment" {
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `global_concurrency_limit_id` (String) The ID of a global concurrency limit to apply to this deployment. This is the recommended way to set concurrency limits. Mutually exclusive with concurrency_limit.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
-- `manifest_path` (String, Deprecated) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.

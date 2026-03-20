@@ -78,6 +78,7 @@ type DeploymentUpdate struct {
 	Parameters               map[string]any      `json:"parameters,omitempty"`
 	Path                     *string             `json:"path,omitempty"`
 	Paused                   *bool               `json:"paused,omitempty"`
+	PullSteps                []PullStep          `json:"pull_steps,omitempty"`
 	StorageDocumentID        *uuid.UUID          `json:"storage_document_id,omitempty"`
 	Tags                     []string            `json:"tags,omitempty"`
 	Version                  *string             `json:"version,omitempty"`

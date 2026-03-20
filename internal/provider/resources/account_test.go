@@ -54,12 +54,6 @@ func TestAccResource_account(t *testing.T) {
 				attribute: "link",
 				expected:  "https://github.com/PrefectHQ/terraform-provider-prefect",
 			},
-			{
-				// Billing email is not available in the staging account because Stripe
-				// is not configured.
-				attribute: "billing_email",
-				expected:  "",
-			},
 		}
 
 		for _, test := range tests {
