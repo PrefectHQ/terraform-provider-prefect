@@ -69,7 +69,7 @@ Read-Only:
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
 - `subject` (String) (Notification / Email Notification) Subject of the notification
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
 
@@ -93,7 +93,7 @@ Read-Only:
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
 - `subject` (String) (Notification / Email Notification) Subject of the notification
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
 
@@ -117,7 +117,7 @@ Read-Only:
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
 - `subject` (String) (Notification / Email Notification) Subject of the notification
-- `type` (String) The type of action to perform
+- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
 

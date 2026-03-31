@@ -37,6 +37,13 @@ var AllAutomationActionTypes = []string{
 	"resume-schedule-for-flow-run",
 }
 
+// CloudOnlyAutomationActionTypes lists action types that are only available on Prefect Cloud.
+var CloudOnlyAutomationActionTypes = []string{
+	"send-email-notification",
+	"pause-schedule-for-flow-run",
+	"resume-schedule-for-flow-run",
+}
+
 var AllMetricOperators = []string{
 	"<",
 	">",

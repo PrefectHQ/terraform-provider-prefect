@@ -292,8 +292,9 @@ func ActionsSchema() schema.ListNestedAttribute {
 				"type": schema.StringAttribute{
 					Required: true,
 					Description: fmt.Sprintf(
-						"The type of action to perform. Possible values: %s",
+						"The type of action to perform. Possible values: %s. The following types are available on Prefect Cloud only: %s",
 						strings.Join(utils.AllAutomationActionTypes, ", "),
+						strings.Join(utils.CloudOnlyAutomationActionTypes, ", "),
 					),
 					Validators: []validator.String{
 						stringvalidator.OneOf(utils.AllAutomationActionTypes...),
