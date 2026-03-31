@@ -56,17 +56,19 @@ data "prefect_automation" "test" {
 Read-Only:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification) ID of the block to use
-- `body` (String) (Notification) Body of the notification
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
+- `emails` (List of String) (Email Notification) List of email addresses to send the notification to
 - `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
 - `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
+- `schedule_id` (String) (Pause/Resume Schedule) ID of the schedule to apply this action to
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
-- `subject` (String) (Notification) Subject of the notification
+- `subject` (String) (Notification / Email Notification) Subject of the notification
 - `type` (String) The type of action to perform
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
@@ -78,17 +80,19 @@ Read-Only:
 Read-Only:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification) ID of the block to use
-- `body` (String) (Notification) Body of the notification
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
+- `emails` (List of String) (Email Notification) List of email addresses to send the notification to
 - `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
 - `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
+- `schedule_id` (String) (Pause/Resume Schedule) ID of the schedule to apply this action to
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
-- `subject` (String) (Notification) Subject of the notification
+- `subject` (String) (Notification / Email Notification) Subject of the notification
 - `type` (String) The type of action to perform
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to
@@ -100,17 +104,19 @@ Read-Only:
 Read-Only:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification) ID of the block to use
-- `body` (String) (Notification) Body of the notification
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
+- `emails` (List of String) (Email Notification) List of email addresses to send the notification to
 - `job_variables` (String) (Deployment) (JSON) Job variables to pass to the created flow run. Use `jsonencode()`.
 - `message` (String) (Flow Run State Change) Message to associate with the state change
 - `name` (String) (Flow Run State Change) Name of the state to change the flow run to
 - `parameters` (String) (Deployment) (JSON) Parameters to pass to the deployment. Use `jsonencode()`.
 - `payload` (String) (Webhook) Payload to send when calling the webhook
+- `schedule_id` (String) (Pause/Resume Schedule) ID of the schedule to apply this action to
 - `source` (String) (Deployment / Work Pool / Work Queue / Automation) Whether this action applies to a specific selected resource or to a specific resource by ID - 'selected' or 'inferred'
 - `state` (String) (Flow Run State Change) Type of state to change the flow run to
-- `subject` (String) (Notification) Subject of the notification
+- `subject` (String) (Notification / Email Notification) Subject of the notification
 - `type` (String) The type of action to perform
 - `work_pool_id` (String) (Work Pool) ID of the work pool to apply this action to
 - `work_queue_id` (String) (Work Queue) ID of the work queue to apply this action to

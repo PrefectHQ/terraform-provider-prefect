@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -308,11 +309,11 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 	tfModel.Enabled = types.BoolValue(apiAutomation.Enabled)
 
 	// Map actions
-	actions, diagnostics := mapActionsAPIToTerraform(apiAutomation.Actions)
+	actions, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.Actions)
 	diags.Append(diagnostics...)
-	actionsOnTrigger, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnTrigger)
+	actionsOnTrigger, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.ActionsOnTrigger)
 	diags.Append(diagnostics...)
-	actionsOnResolve, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnResolve)
+	actionsOnResolve, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.ActionsOnResolve)
 	diags.Append(diagnostics...)
 	if diags.HasError() {
 		return diags
@@ -462,7 +463,7 @@ func mapTriggerAPIToTerraform(ctx context.Context, apiTrigger *api.Trigger, tfTr
 // This helper is used when an API response needs to be translated for Terraform state.
 // NOTE: we are re-constructing the response list every time (rather than updating member items in-place),
 // because there is no guarantee that the API returns the list in the same order as the Terraform model.
-func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
+func mapActionsAPIToTerraform(ctx context.Context, apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tfActionsModel := make([]ActionModel, 0)
@@ -484,6 +485,15 @@ func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diag
 		actionModel.Name = types.StringPointerValue(action.Name)
 		actionModel.State = types.StringPointerValue(action.State)
 		actionModel.Message = types.StringPointerValue(action.Message)
+		actionModel.ScheduleID = customtypes.NewUUIDPointerValue(action.ScheduleID)
+
+		if len(action.Emails) > 0 {
+			emails, diagnostics := types.ListValueFrom(ctx, types.StringType, action.Emails)
+			diags.Append(diagnostics...)
+			actionModel.Emails = emails
+		} else {
+			actionModel.Emails = types.ListValueMust(types.StringType, []attr.Value{})
+		}
 
 		// Only set parameters and job variables if they are set in the API.
 		// Otherwise, the string `"null"` is set to the Terraform model, which will
@@ -529,11 +539,11 @@ func mapAutomationTerraformToAPI(ctx context.Context, apiAutomation *api.Automat
 	apiAutomation.Enabled = tfModel.Enabled.ValueBool()
 
 	// Map actions
-	actions, diagnostics := mapActionsTerraformToAPI(tfModel.Actions)
+	actions, diagnostics := mapActionsTerraformToAPI(ctx, tfModel.Actions)
 	diags.Append(diagnostics...)
-	actionsOnTrigger, diagnostics := mapActionsTerraformToAPI(tfModel.ActionsOnTrigger)
+	actionsOnTrigger, diagnostics := mapActionsTerraformToAPI(ctx, tfModel.ActionsOnTrigger)
 	diags.Append(diagnostics...)
-	actionsOnResolve, diagnostics := mapActionsTerraformToAPI(tfModel.ActionsOnResolve)
+	actionsOnResolve, diagnostics := mapActionsTerraformToAPI(ctx, tfModel.ActionsOnResolve)
 	diags.Append(diagnostics...)
 	if diags.HasError() {
 		return diags
@@ -656,7 +666,7 @@ func mapTriggerTerraformToAPI(ctx context.Context, apiTrigger *api.Trigger, tfTr
 // mapActionsTerraformToAPI creates an Actions payload for an AutomationUpsert request.
 // This helper is used when constructing the overall AutomationUpsert request payload
 // from a given Terraform model.
-func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
+func mapActionsTerraformToAPI(ctx context.Context, tfActions []ActionModel) ([]api.Action, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	actions := make([]api.Action, 0)
@@ -678,6 +688,13 @@ func mapActionsTerraformToAPI(tfActions []ActionModel) ([]api.Action, diag.Diagn
 		apiAction.Name = tfAction.Name.ValueStringPointer()
 		apiAction.State = tfAction.State.ValueStringPointer()
 		apiAction.Message = tfAction.Message.ValueStringPointer()
+		apiAction.ScheduleID = tfAction.ScheduleID.ValueUUIDPointer()
+
+		if !tfAction.Emails.IsNull() && !tfAction.Emails.IsUnknown() {
+			var emails []string
+			diags.Append(tfAction.Emails.ElementsAs(ctx, &emails, false)...)
+			apiAction.Emails = emails
+		}
 
 		// Parse and set parameters + job variables (JSON)
 		parameters, diagnostics := helpers.UnmarshalOptional(tfAction.Parameters)

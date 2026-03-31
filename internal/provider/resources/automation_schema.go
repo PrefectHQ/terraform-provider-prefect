@@ -275,12 +275,14 @@ func ActionsSchema() schema.ListNestedAttribute {
 					"work_queue_id":     customtypes.UUIDType{},
 					"subject":           types.StringType,
 					"body":              types.StringType,
+					"emails":            types.ListType{ElemType: types.StringType},
 					"payload":           types.StringType,
 					"name":              types.StringType,
 					"state":             types.StringType,
 					"message":           types.StringType,
 					"parameters":        jsontypes.NormalizedType{},
 					"job_variables":     jsontypes.NormalizedType{},
+					"schedule_id":       customtypes.UUIDType{},
 				},
 			},
 			[]attr.Value{},
@@ -341,17 +343,22 @@ func ActionsSchema() schema.ListNestedAttribute {
 					CustomType:  customtypes.UUIDType{},
 				},
 				"block_document_id": schema.StringAttribute{
-					Description: "(Webhook / Notification) ID of the block to use",
+					Description: "(Webhook / Notification / Email Notification) ID of the block to use",
 					Optional:    true,
 					CustomType:  customtypes.UUIDType{},
 				},
 				"subject": schema.StringAttribute{
-					Description: "(Notification) Subject of the notification",
+					Description: "(Notification / Email Notification) Subject of the notification",
 					Optional:    true,
 				},
 				"body": schema.StringAttribute{
-					Description: "(Notification) Body of the notification",
+					Description: "(Notification / Email Notification) Body of the notification",
 					Optional:    true,
+				},
+				"emails": schema.ListAttribute{
+					Description: "(Email Notification) List of email addresses to send the notification to",
+					Optional:    true,
+					ElementType: types.StringType,
 				},
 				"payload": schema.StringAttribute{
 					Description: "(Webhook) Payload to send when calling the webhook",
@@ -364,6 +371,11 @@ func ActionsSchema() schema.ListNestedAttribute {
 				},
 				"work_pool_id": schema.StringAttribute{
 					Description: "(Work Pool) ID of the work pool to apply this action to",
+					Optional:    true,
+					CustomType:  customtypes.UUIDType{},
+				},
+				"schedule_id": schema.StringAttribute{
+					Description: "(Pause/Resume Schedule) ID of the schedule to apply this action to",
 					Optional:    true,
 					CustomType:  customtypes.UUIDType{},
 				},
