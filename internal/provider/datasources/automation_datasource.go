@@ -7,7 +7,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -287,7 +286,7 @@ func mapActionsAPIToTerraform(ctx context.Context, apiActions []api.Action) ([]A
 			diags.Append(diagnostics...)
 			actionModel.Emails = emails
 		} else {
-			actionModel.Emails = types.ListValueMust(types.StringType, []attr.Value{})
+			actionModel.Emails = types.ListNull(types.StringType)
 		}
 
 		// Only set parameters and job variables if they are set in the API.
