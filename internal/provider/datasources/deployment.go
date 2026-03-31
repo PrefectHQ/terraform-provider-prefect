@@ -250,6 +250,10 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 							Computed:    true,
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
 						},
+						"container": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'pull_from_azure_blob_storage') The name of the container where files are stored.",
+						},
 						"folder": schema.StringAttribute{
 							Computed:    true,
 							Description: "(For type 'pull_from_*') The folder in the bucket where files are stored.",
