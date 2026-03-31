@@ -634,7 +634,7 @@ Required:
   - `pause-schedule-for-flow-run`
   - `resume-schedule-for-flow-run`
 
-The following types are available on Prefect Cloud only:
+  The following types are available on Prefect Cloud only:
 
   - `send-email-notification`
   - `pause-schedule-for-flow-run`
@@ -688,7 +688,7 @@ Required:
   - `pause-schedule-for-flow-run`
   - `resume-schedule-for-flow-run`
 
-The following types are available on Prefect Cloud only:
+  The following types are available on Prefect Cloud only:
 
   - `send-email-notification`
   - `pause-schedule-for-flow-run`
@@ -742,7 +742,7 @@ Required:
   - `pause-schedule-for-flow-run`
   - `resume-schedule-for-flow-run`
 
-The following types are available on Prefect Cloud only:
+  The following types are available on Prefect Cloud only:
 
   - `send-email-notification`
   - `pause-schedule-for-flow-run`

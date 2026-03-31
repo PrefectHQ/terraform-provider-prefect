@@ -318,7 +318,7 @@ func automationActionTypeDescription() string {
 		fmt.Fprintf(&sb, "  - `%s`\n", t)
 	}
 
-	sb.WriteString("\nThe following types are available on Prefect Cloud only:\n\n")
+	sb.WriteString("\n  The following types are available on Prefect Cloud only:\n\n")
 	for _, t := range utils.CloudOnlyAutomationActionTypes {
 		fmt.Fprintf(&sb, "  - `%s`\n", t)
 	}
