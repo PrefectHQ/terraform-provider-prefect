@@ -340,8 +340,9 @@ func ActionsSchema() schema.ListNestedAttribute {
 					CustomType:  customtypes.UUIDType{},
 				},
 				"block_document_id": schema.StringAttribute{
-					Description: "(Webhook / Notification / Email Notification) ID of the block to use",
+					Description: "(Webhook / Notification / Email Notification) ID of the block to use. For send-email-notification, the server generates one if not provided.",
 					Optional:    true,
+					Computed:    true,
 					CustomType:  customtypes.UUIDType{},
 				},
 				"subject": schema.StringAttribute{

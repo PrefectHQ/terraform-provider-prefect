@@ -643,7 +643,7 @@ Required:
 Optional:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use. For send-email-notification, the server generates one if not provided.
 - `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
 - `emails` (List of String) (Email Notification) List of email addresses to send the notification to
@@ -697,7 +697,7 @@ Required:
 Optional:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use. For send-email-notification, the server generates one if not provided.
 - `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
 - `emails` (List of String) (Email Notification) List of email addresses to send the notification to
@@ -751,7 +751,7 @@ Required:
 Optional:
 
 - `automation_id` (String) (Automation) ID of the automation to apply this action to
-- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use
+- `block_document_id` (String) (Webhook / Notification / Email Notification) ID of the block to use. For send-email-notification, the server generates one if not provided.
 - `body` (String) (Notification / Email Notification) Body of the notification
 - `deployment_id` (String) (Deployment) ID of the deployment to apply this action to
 - `emails` (List of String) (Email Notification) List of email addresses to send the notification to
