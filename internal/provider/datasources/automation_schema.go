@@ -221,12 +221,8 @@ func ActionsSchema() schema.ListNestedAttribute {
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
 				"type": schema.StringAttribute{
-					Computed: true,
-					Description: fmt.Sprintf(
-						"The type of action to perform. Possible values: %s. The following types are available on Prefect Cloud only: %s",
-						strings.Join(utils.AllAutomationActionTypes, ", "),
-						strings.Join(utils.CloudOnlyAutomationActionTypes, ", "),
-					),
+					Computed:    true,
+					Description: automationActionTypeDescription(),
 					Validators: []validator.String{
 						stringvalidator.OneOf(utils.AllAutomationActionTypes...),
 					},
@@ -310,4 +306,22 @@ func ActionsSchema() schema.ListNestedAttribute {
 			},
 		},
 	}
+}
+
+// automationActionTypeDescription returns a formatted description for the action `type` attribute,
+// listing all valid values and calling out the Cloud-only ones.
+func automationActionTypeDescription() string {
+	var sb strings.Builder
+
+	sb.WriteString("The type of action to perform. Possible values:\n\n")
+	for _, t := range utils.AllAutomationActionTypes {
+		fmt.Fprintf(&sb, "  - `%s`\n", t)
+	}
+
+	sb.WriteString("\nThe following types are available on Prefect Cloud only:\n\n")
+	for _, t := range utils.CloudOnlyAutomationActionTypes {
+		fmt.Fprintf(&sb, "  - `%s`\n", t)
+	}
+
+	return sb.String()
 }

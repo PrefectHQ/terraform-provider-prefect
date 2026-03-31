@@ -611,7 +611,34 @@ Required:
 
 Required:
 
-- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
+- `type` (String) The type of action to perform. Possible values:
+
+  - `do-nothing`
+  - `run-deployment`
+  - `pause-deployment`
+  - `resume-deployment`
+  - `cancel-flow-run`
+  - `change-flow-run-state`
+  - `pause-work-queue`
+  - `resume-work-queue`
+  - `send-notification`
+  - `send-email-notification`
+  - `call-webhook`
+  - `pause-automation`
+  - `resume-automation`
+  - `suspend-flow-run`
+  - `resume-flow-run`
+  - `declare-incident`
+  - `pause-work-pool`
+  - `resume-work-pool`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
+
+The following types are available on Prefect Cloud only:
+
+  - `send-email-notification`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
 
 Optional:
 
@@ -638,7 +665,34 @@ Optional:
 
 Required:
 
-- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
+- `type` (String) The type of action to perform. Possible values:
+
+  - `do-nothing`
+  - `run-deployment`
+  - `pause-deployment`
+  - `resume-deployment`
+  - `cancel-flow-run`
+  - `change-flow-run-state`
+  - `pause-work-queue`
+  - `resume-work-queue`
+  - `send-notification`
+  - `send-email-notification`
+  - `call-webhook`
+  - `pause-automation`
+  - `resume-automation`
+  - `suspend-flow-run`
+  - `resume-flow-run`
+  - `declare-incident`
+  - `pause-work-pool`
+  - `resume-work-pool`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
+
+The following types are available on Prefect Cloud only:
+
+  - `send-email-notification`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
 
 Optional:
 
@@ -665,7 +719,34 @@ Optional:
 
 Required:
 
-- `type` (String) The type of action to perform. Possible values: do-nothing, run-deployment, pause-deployment, resume-deployment, cancel-flow-run, change-flow-run-state, pause-work-queue, resume-work-queue, send-notification, send-email-notification, call-webhook, pause-automation, resume-automation, suspend-flow-run, resume-flow-run, declare-incident, pause-work-pool, resume-work-pool, pause-schedule-for-flow-run, resume-schedule-for-flow-run. The following types are available on Prefect Cloud only: send-email-notification, pause-schedule-for-flow-run, resume-schedule-for-flow-run
+- `type` (String) The type of action to perform. Possible values:
+
+  - `do-nothing`
+  - `run-deployment`
+  - `pause-deployment`
+  - `resume-deployment`
+  - `cancel-flow-run`
+  - `change-flow-run-state`
+  - `pause-work-queue`
+  - `resume-work-queue`
+  - `send-notification`
+  - `send-email-notification`
+  - `call-webhook`
+  - `pause-automation`
+  - `resume-automation`
+  - `suspend-flow-run`
+  - `resume-flow-run`
+  - `declare-incident`
+  - `pause-work-pool`
+  - `resume-work-pool`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
+
+The following types are available on Prefect Cloud only:
+
+  - `send-email-notification`
+  - `pause-schedule-for-flow-run`
+  - `resume-schedule-for-flow-run`
 
 Optional:
 
