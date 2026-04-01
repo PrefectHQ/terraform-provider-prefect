@@ -24,6 +24,7 @@ var AllAutomationActionTypes = []string{
 	"pause-work-queue",
 	"resume-work-queue",
 	"send-notification",
+	"send-email-notification",
 	"call-webhook",
 	"pause-automation",
 	"resume-automation",
@@ -32,6 +33,15 @@ var AllAutomationActionTypes = []string{
 	"declare-incident",
 	"pause-work-pool",
 	"resume-work-pool",
+	"pause-schedule-for-flow-run",
+	"resume-schedule-for-flow-run",
+}
+
+// CloudOnlyAutomationActionTypes lists action types that are only available on Prefect Cloud.
+var CloudOnlyAutomationActionTypes = []string{
+	"send-email-notification",
+	"pause-schedule-for-flow-run",
+	"resume-schedule-for-flow-run",
 }
 
 var AllMetricOperators = []string{
