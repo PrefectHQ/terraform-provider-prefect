@@ -104,6 +104,9 @@ type Action struct {
 	Subject *string `json:"subject,omitempty"`
 	Body    *string `json:"body,omitempty"`
 
+	// On Send Email Notification action (Cloud-only)
+	Emails []string `json:"emails,omitempty"`
+
 	// On Call Webhook action
 	Payload *string `json:"payload,omitempty"`
 
@@ -111,4 +114,7 @@ type Action struct {
 	Name    *string `json:"name,omitempty"`
 	State   *string `json:"state,omitempty"`
 	Message *string `json:"message,omitempty"`
+
+	// On Pause/Resume Schedule actions (Cloud-only)
+	ScheduleID *uuid.UUID `json:"schedule_id,omitempty"`
 }

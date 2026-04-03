@@ -99,6 +99,7 @@ Read-Only:
 - `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
 - `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
 - `directory` (String) (For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.
 - `env` (Map of String) (For type 'run_shell_script') Environment variables to set when running the script.
