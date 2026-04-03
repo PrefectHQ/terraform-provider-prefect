@@ -27,7 +27,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Install tool dependencies
-        uses: jdx/mise-action@v3
+        uses: jdx/mise-action@v4
         with:
           install_args: terraform
       - name: Disable mise auto-install for task runs
