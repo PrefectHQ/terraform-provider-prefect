@@ -90,6 +90,7 @@ func TestAccResource_block(t *testing.T) {
 	randomName := testutils.NewRandomPrefixedString()
 	randomValue := testutils.NewRandomPrefixedString()
 	randomValue2 := testutils.NewRandomPrefixedString()
+	driftedValue := testutils.NewRandomPrefixedString()
 
 	workspace := testutils.NewEphemeralWorkspace()
 
@@ -98,6 +99,10 @@ func TestAccResource_block(t *testing.T) {
 	// We use this variable to store the fetched block document resource from the API
 	// and it will be shared between the TestSteps via pointer.
 	var blockDocument api.BlockDocument
+	// blockWorkspaceID is captured during testAccCheckBlockExists so that
+	// PreConfig hooks (which don't receive the Terraform state) can build a
+	// scoped Prefect client to mutate the block out-of-band.
+	var blockWorkspaceID uuid.UUID
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -135,6 +140,7 @@ func TestAccResource_block(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckBlockExists(blockResourceName, &blockDocument),
+					captureBlockWorkspaceID(&blockWorkspaceID),
 					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
 						Name:     randomName,
 						TypeSlug: "secret",
@@ -144,6 +150,57 @@ func TestAccResource_block(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(blockResourceName, "name", randomName),
 					testutils.ExpectKnownValue(blockResourceName, "type_slug", "secret"),
+					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
+				},
+			},
+			// Mutate the block out-of-band and verify Terraform plans a corrective
+			// update. This guards against regressions of the drift-detection fix
+			// from PLA-2676.
+			{
+				PreConfig: func() {
+					c, err := testutils.NewTestClient()
+					if err != nil {
+						t.Fatalf("failed to construct test client: %v", err)
+					}
+					blockDocumentsClient, err := c.BlockDocuments(uuid.Nil, blockWorkspaceID)
+					if err != nil {
+						t.Fatalf("failed to construct block documents client: %v", err)
+					}
+					if err := blockDocumentsClient.Update(context.Background(), blockDocument.ID, api.BlockDocumentUpdate{
+						BlockSchemaID:     blockDocument.BlockSchemaID,
+						Data:              map[string]any{"value": driftedValue},
+						MergeExistingData: false,
+					}); err != nil {
+						t.Fatalf("failed to mutate block out-of-band: %v", err)
+					}
+				},
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:      workspace.Resource,
+					WorkspaceIDArg: workspace.IDArg,
+					BlockName:      randomName,
+					BlockValue:     randomValue2,
+				}),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+			// Re-apply the same config and confirm state converges back to the
+			// Terraform-declared value, overwriting the out-of-band mutation.
+			{
+				Config: fixtureAccBlock(blockFixtureConfig{
+					Workspace:      workspace.Resource,
+					WorkspaceIDArg: workspace.IDArg,
+					BlockName:      randomName,
+					BlockValue:     randomValue2,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckBlockExists(blockResourceName, &blockDocument),
+					testAccCheckBlockValues(&blockDocument, ExpectedBlockValues{
+						Name:     randomName,
+						TypeSlug: "secret",
+						Data:     fmt.Sprintf(`{"value":%q}`, randomValue2),
+					}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(blockResourceName, "data", fmt.Sprintf(`{"value":%q}`, randomValue2)),
 				},
 			},
@@ -221,7 +278,9 @@ func TestAccResource_block(t *testing.T) {
 				ResourceName:      blockResourceName,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(blockResourceName),
 				ImportStateVerify: true,
-				// We ignore the .Data field because when we hydrate the state from the API.
+				// On import we cannot distinguish whether the user manages
+				// `data` vs the write-only `data_wo`, so Read leaves Data
+				// untouched. The user must re-declare it in HCL after import.
 				ImportStateVerifyIgnore: []string{"data"},
 			},
 		},
@@ -261,6 +320,26 @@ func testAccCheckBlockExists(blockResourceName string, blockDocument *api.BlockD
 		// Assign the fetched block document to the passed pointer
 		// so we can use it in the next test assertion
 		*blockDocument = *fetchedBlockDocument
+
+		return nil
+	}
+}
+
+// captureBlockWorkspaceID stores the test workspace ID into out so that
+// subsequent steps' PreConfig hooks (which don't receive the Terraform state)
+// can build a workspace-scoped Prefect client.
+func captureBlockWorkspaceID(out *uuid.UUID) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if testutils.TestContextOSS() {
+			*out = uuid.Nil
+
+			return nil
+		}
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(s)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
+		}
+		*out = workspaceID
 
 		return nil
 	}

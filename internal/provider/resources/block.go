@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/avast/retry-go/v4"
@@ -82,7 +83,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				"\n"+
 				"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)."+
 				"\n"+
-				"*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.",
+				"*NOTE:* drift in the `.data` attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: Blocks whose `data` contains a `$ref` expression do not have drift detected (see the `$ref` section below), and Blocks managed via the write-only `data_wo` attribute do not have drift detected (bump `data_wo_version` to force an update).",
 			helpers.AllPlans...,
 		),
 		Version: 0,
@@ -238,17 +239,61 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 
 // copyBlockToModel maps an API response to a model that is saved in Terraform state.
 // A model can be a Terraform Plan, State, or Config object.
-func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel) diag.Diagnostics {
+//
+// When persistData is true, the API's Data payload is serialized and copied onto
+// tfModel.Data so that out-of-band changes can be detected as drift. Callers must
+// pass false when the user supplied a $ref expression (the API resolves $ref
+// server-side and would return the resolved form, causing inconsistent-result
+// errors) or when the user supplied data via the write-only data_wo attribute
+// (state must remain null to honor the write-only contract).
+func copyBlockToModel(block *api.BlockDocument, tfModel *BlockResourceModel, persistData bool) diag.Diagnostics {
+	var diags diag.Diagnostics
+
 	tfModel.ID = customtypes.NewUUIDValue(block.ID)
 	tfModel.Created = customtypes.NewTimestampPointerValue(block.Created)
 	tfModel.Updated = customtypes.NewTimestampPointerValue(block.Updated)
 	tfModel.Name = types.StringValue(block.Name)
 	tfModel.TypeSlug = types.StringValue(block.BlockType.Slug)
 
-	// NOTE: we do not persist the fetched .Data value from the API -> State.
-	// See the `Read()` and `Update()` methods for more context.
+	if persistData {
+		byteSlice, err := json.Marshal(block.Data)
+		if err != nil {
+			diags.Append(helpers.SerializeDataErrorDiagnostic("data", "Block Data", err))
 
-	return nil
+			return diags
+		}
+		tfModel.Data = jsontypes.NewNormalizedValue(string(byteSlice))
+	}
+
+	return diags
+}
+
+// containsRef reports whether the decoded block data contains a "$ref" key
+// at any depth. Block payloads can reference other blocks via {"$ref": ...};
+// the API resolves these server-side, so a GET returns the resolved form
+// rather than the literal $ref expression. We must avoid persisting the
+// resolved form back to state, otherwise Terraform reports an inconsistent
+// result after apply and a permanent diff against the user's HCL.
+func containsRef(value any) bool {
+	switch v := value.(type) {
+	case map[string]any:
+		if _, ok := v["$ref"]; ok {
+			return true
+		}
+		for _, child := range v {
+			if containsRef(child) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range v {
+			if containsRef(child) {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // Create will create the Block resource through the API and insert it into the State.
@@ -315,19 +360,33 @@ func (r *BlockResource) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	diags = copyBlockToModel(createdBlockDocument, &plan)
+	// Persist the API's data payload to state so that out-of-band changes show
+	// up as drift on subsequent plans. Skip when:
+	//   - data_wo was used (write-only contract requires state to stay null), or
+	//   - the user supplied a $ref (API resolves it server-side; persisting the
+	//     resolved form would cause inconsistent-result errors), or
+	//   - the user supplied no data at all.
+	persistData := len(dataWO) == 0 && len(data) > 0 && !containsRef(data)
+
+	// The POST response does not include unmasked secrets, so fetch the block
+	// again before copying its Data into state.
+	if persistData {
+		blockID := createdBlockDocument.ID
+		fetched, err := blockDocumentClient.Get(ctx, blockID)
+		if err != nil {
+			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block", "get", err))
+
+			return
+		}
+		createdBlockDocument = fetched
+	}
+
+	diags = copyBlockToModel(createdBlockDocument, &plan, persistData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// NOTE: we're not persisting the fetched .Data value from the API -> State.
-	// Normally, we would also copy the retrieved Block's Data field into the
-	// plan object before setting the current state.
-	//
-	// However, the API's POST method does not return unmasked data, so we'll
-	// fall back to the user-configured JSON payload. Otherwise, there will always
-	// be a state conflict between the plan <> fetched value.
 	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -385,19 +444,21 @@ func (r *BlockResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	diags = copyBlockToModel(block, &state)
+	// Decide whether to persist Data based on the prior state: skip when the
+	// user used data_wo (state.Data is null) or when the prior state contained
+	// a $ref expression that the API would have resolved server-side.
+	priorData, priorDataDiags := helpers.UnmarshalOptional(state.Data)
+	resp.Diagnostics.Append(priorDataDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	persistData := !state.Data.IsNull() && !containsRef(priorData)
+
+	diags = copyBlockToModel(block, &state, persistData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// NOTE: we're not persisting the fetched .Data value from the API -> State.
-	// Normally, we would also copy the retrieved Block's Data field into the
-	// plan object before setting the current state.
-	//
-	// However, the API's GET method does not return the `$ref` expression if it
-	// was specified in the Data field on the Block resource. This leads to
-	// "inconsistent result after apply" errors. For now, we'll skip copying the
-	// retrieved Block's Data field and use what was specified in the plan.
 
 	diags = resp.State.Set(ctx, &state)
 	resp.Diagnostics.Append(diags...)
@@ -489,19 +550,17 @@ func (r *BlockResource) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	diags = copyBlockToModel(block, &plan)
+	// Persist the API's data payload to state when safe to do so. See the
+	// matching block in Create for the full rationale.
+	persistData := plan.DataWOVersion.Equal(state.DataWOVersion) &&
+		!plan.Data.IsNull() &&
+		!containsRef(data)
+
+	diags = copyBlockToModel(block, &plan, persistData)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	// NOTE: we're not persisting the fetched .Data value from the API -> State.
-	// Normally, we would also copy the retrieved Block's Data field into the
-	// plan object before setting the current state.
-	//
-	// However, the API's GET method does not return the `$ref` expression if it
-	// was specified in the Data field on the Block resource. This leads to
-	// "inconsistent result after apply" errors. For now, we'll skip copying the
-	// retrieved Block's Data field and use what was specified in the plan.
 
 	diags = resp.State.Set(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
