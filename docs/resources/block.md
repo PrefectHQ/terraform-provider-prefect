@@ -8,7 +8,7 @@ description: |-
   Note: you should be on version 3.0.0rc1 or later to use the following commands:
   Use prefect block type ls to view all available Block type slugs, which is used in the type_slug attribute.
   Use prefect block type inspect <slug> to view the data schema for a given Block type. Use this to construct the data attribute value (as JSON string).
-  NOTE: if a Block is managed in Terraform, the .data attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
+  NOTE: drift in the .data attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: Blocks whose data contains a $ref expression do not have drift detected, because the API resolves $ref server-side and the round-tripped value would never match the literal HCL. Blocks managed via the write-only data_wo attribute also do not have drift detected, because state must remain null to honor the write-only contract; bump data_wo_version to force an update in that case.
   This feature is available in the following product plan(s) https://www.prefect.io/pricing: Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 ---
 
@@ -20,7 +20,7 @@ The resource `block` allows creating and managing [Prefect Blocks](https://docs.
 *Note:* you should be on version `3.0.0rc1` or later to use the following commands:
 Use `prefect block type ls` to view all available Block type slugs, which is used in the `type_slug` attribute.
 Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string).
-*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.
+*NOTE:* drift in the `.data` attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: Blocks whose `data` contains a `$ref` expression do not have drift detected, because the API resolves `$ref` server-side and the round-tripped value would never match the literal HCL. Blocks managed via the write-only `data_wo` attribute also do not have drift detected, because state must remain null to honor the write-only contract; bump `data_wo_version` to force an update in that case.
 
 This feature is available in the following [product plan(s)](https://www.prefect.io/pricing): Prefect OSS, Hobby, Starter, Team, Pro, Enterprise.
 

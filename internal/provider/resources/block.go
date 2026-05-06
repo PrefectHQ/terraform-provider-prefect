@@ -83,7 +83,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				"\n"+
 				"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)."+
 				"\n"+
-				"*NOTE:* if a Block is managed in Terraform, the `.data` attribute will NOT be re-reconciled if the remote value is changed. This means that a TF-managed Block will only update the API, and not the other way around.",
+				"*NOTE:* drift in the `.data` attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: Blocks whose `data` contains a `$ref` expression do not have drift detected, because the API resolves `$ref` server-side and the round-tripped value would never match the literal HCL. Blocks managed via the write-only `data_wo` attribute also do not have drift detected, because state must remain null to honor the write-only contract; bump `data_wo_version` to force an update in that case.",
 			helpers.AllPlans...,
 		),
 		Version: 0,
