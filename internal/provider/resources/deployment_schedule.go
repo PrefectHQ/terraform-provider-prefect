@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -439,7 +440,7 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.AnchorDate = types.StringValue(schedule.Schedule.AnchorDate)
 	model.Cron = types.StringValue(schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
-	model.RRule = types.StringValue(schedule.Schedule.RRule)
+	model.RRule = types.StringValue(normalizeRRuleForState(schedule.Schedule.RRule, model.RRule.ValueString()))
 
 	model.Slug = types.StringValue(schedule.Slug)
 
@@ -472,6 +473,55 @@ func validateSchedules(schedules []*api.DeploymentSchedule) diag.Diagnostic {
 	}
 
 	return nil
+}
+
+// normalizeRRuleForState returns the rrule value to write into Terraform state.
+//
+// The Prefect server normalizes rrule values by prepending an explicit
+// `DTSTART:...\n` line when the submitted rrule lacks one. If we copy that
+// normalized form into state verbatim, Terraform sees a different value than
+// the plan and fails with "Provider produced inconsistent result after apply".
+//
+// To preserve round-trip stability, strip a leading `DTSTART...\n` line from
+// the server response when the prior local value (plan during Create, state
+// during Read/Update) did not itself begin with a DTSTART line. Users who
+// supply their own DTSTART get the server's value as-is.
+func normalizeRRuleForState(serverRRule, priorRRule string) string {
+	if serverRRule == "" {
+		return serverRRule
+	}
+
+	if hasDTStartPrefix(priorRRule) {
+		return serverRRule
+	}
+
+	if !hasDTStartPrefix(serverRRule) {
+		return serverRRule
+	}
+
+	if newline := strings.IndexByte(serverRRule, '\n'); newline >= 0 {
+		return serverRRule[newline+1:]
+	}
+
+	return serverRRule
+}
+
+// hasDTStartPrefix reports whether s starts with a DTSTART iCalendar line
+// (`DTSTART:...` or `DTSTART;TZID=...:...`), case-insensitive.
+func hasDTStartPrefix(s string) bool {
+	const prefix = "DTSTART"
+	if len(s) < len(prefix)+1 {
+		return false
+	}
+	if !strings.EqualFold(s[:len(prefix)], prefix) {
+		return false
+	}
+	switch s[len(prefix)] {
+	case ':', ';':
+		return true
+	default:
+		return false
+	}
 }
 
 // getScheduleByID gets a schedule by ID from a list of schedules.
