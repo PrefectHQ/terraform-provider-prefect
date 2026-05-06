@@ -83,7 +83,7 @@ func (r *BlockResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				"\n"+
 				"Use `prefect block type inspect <slug>` to view the data schema for a given Block type. Use this to construct the `data` attribute value (as JSON string)."+
 				"\n"+
-				"*NOTE:* drift in the `.data` attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: (1) Blocks whose `data` contains a `$ref` expression -- the syntax used to reference another Block document by ID, e.g. an `s3-bucket` Block pointing at an `aws-credentials` Block, or a `dbt-core-operation` pointing at a `dbt-cli-profile` (see the `$ref` example below) -- do not have drift detected, because the API resolves `$ref` server-side and returns the resolved nested data, which would never match the literal HCL. (2) Blocks managed via the write-only `data_wo` attribute also do not have drift detected, because state must remain null to honor the write-only contract; bump `data_wo_version` to force an update in that case.",
+				"*NOTE:* drift in the `.data` attribute is detected for Blocks managed in Terraform, so out-of-band changes (e.g. edits made in the Prefect UI) will surface on the next plan. Two carve-outs apply: Blocks whose `data` contains a `$ref` expression do not have drift detected (see the `$ref` section below), and Blocks managed via the write-only `data_wo` attribute do not have drift detected (bump `data_wo_version` to force an update).",
 			helpers.AllPlans...,
 		),
 		Version: 0,
