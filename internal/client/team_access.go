@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 )
 
 var _ = api.TeamAccessClient(&TeamAccessClient{})
@@ -107,7 +108,7 @@ func (c *TeamAccessClient) Read(ctx context.Context, teamID, memberID, memberAct
 	}
 
 	if teamAccess == nil {
-		return nil, fmt.Errorf("client.Read: team access not found for member ID: %s", memberActorID.String())
+		return nil, fmt.Errorf("client.Read: team access not found for member ID: %s: %w", memberActorID.String(), helpers.ErrNotFound)
 	}
 
 	return teamAccess, nil
