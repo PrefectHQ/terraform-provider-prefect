@@ -154,6 +154,10 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 	// We use this variable to store the fetched resource from the API
 	// and it will be shared between TestSteps via a pointer.
 	var workspaceAccess api.WorkspaceAccess
+	// workspaceID is captured during the test so that the PreConfig hook
+	// (which does not receive the Terraform state) can build a scoped client
+	// to delete the access grant out-of-band.
+	var workspaceID uuid.UUID
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -178,12 +182,37 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 					// Check updating the role of the workspace access resource, with matching linked attributes
 					testAccCheckWorkspaceAccessExists(utils.Team, accessResourceName, &workspaceAccess),
 					testAccCheckWorkspaceAccessValuesForAccessor(utils.Team, &workspaceAccess, teamResourceName, runnerRoleDatsourceName),
+					captureWorkspaceAccessWorkspaceID(&workspaceID),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.CompareValuePairs(accessResourceName, "accessor_id", teamResourceName, "id"),
 					testutils.CompareValuePairs(accessResourceName, "workspace_id", testutils.WorkspaceResourceName, "id"),
 					testutils.CompareValuePairs(accessResourceName, "workspace_role_id", runnerRoleDatsourceName, "id"),
 				},
+			},
+			// Delete the TEAM access grant out-of-band and verify Terraform plans
+			// a corrective re-create rather than erroring during read. The TEAM
+			// accessor fetches via a 200-OK list filter, so a missing grant
+			// surfaces as a synthetic not-found that must still drop the resource
+			// from state. Regression guard for PLA-2779.
+			{
+				PreConfig: func() {
+					c, err := testutils.NewTestClient()
+					if err != nil {
+						t.Fatalf("failed to construct test client: %v", err)
+					}
+					workspaceAccessClient, err := c.WorkspaceAccess(uuid.Nil, workspaceID)
+					if err != nil {
+						t.Fatalf("failed to construct workspace access client: %v", err)
+					}
+					// For TEAM access, Delete is keyed off the accessor (team) ID.
+					if err := workspaceAccessClient.Delete(context.Background(), utils.Team, workspaceAccess.ID, *workspaceAccess.TeamID); err != nil {
+						t.Fatalf("failed to delete team workspace access out-of-band: %v", err)
+					}
+				},
+				Config:             fixtureAccWorkspaceAccessResourceUpdateForTeam(workspace.Resource),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 			{
 				ImportState:       true,
@@ -193,6 +222,21 @@ func TestAccResource_team_workspace_access(t *testing.T) {
 			},
 		},
 	})
+}
+
+// captureWorkspaceAccessWorkspaceID stores the ephemeral workspace ID from
+// state so a subsequent step's PreConfig hook (which does not receive the
+// Terraform state) can build a scoped client to mutate access out-of-band.
+func captureWorkspaceAccessWorkspaceID(out *uuid.UUID) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		workspaceID, err := testutils.GetResourceWorkspaceIDFromState(state)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
+		}
+		*out = workspaceID
+
+		return nil
+	}
 }
 
 func testAccCheckWorkspaceAccessExists(accessorType string, accessResourceName string, access *api.WorkspaceAccess) resource.TestCheckFunc {
