@@ -10,7 +10,7 @@ func FixtureAccAutomationDeployment(workspaceIDArg string) string {
 	return fmt.Sprintf(`
 resource "prefect_block" "test_block" {
 	name = "test-block"
-	type_slug = "string"
+	type_slug = "secret"
 
 	data = jsonencode({
 		"value": "test-value"

@@ -48,7 +48,7 @@ func fixtureAccDeployment(cfg deploymentConfig) string {
 
 resource "prefect_block" "test_gh_repository" {
 	name = "{{.StorageDocumentName}}"
-	type_slug = "string"
+	type_slug = "secret"
 
 	data = jsonencode({
 		"value": "test-value"
