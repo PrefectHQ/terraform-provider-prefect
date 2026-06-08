@@ -104,6 +104,13 @@ func TestAccResource_account_settings(t *testing.T) {
 	// Accounts are not compatible OSS.
 	testutils.SkipTestsIfOSS(t)
 
+	// This test exercises several Cloud-only account features that are not
+	// available on customer-managed instances: the pre-existing `github-ci-tests`
+	// account name/handle/link, SSO `domain_names`, and the `managed_execution`
+	// setting (the CM account-settings API rejects `managed_execution` as an
+	// extra field). Skip the whole test on customer-managed instances.
+	testutils.SkipTestsIfCM(t)
+
 	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 	resourceName := "prefect_account.test"
 

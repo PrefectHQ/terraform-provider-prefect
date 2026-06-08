@@ -19,13 +19,13 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 5 | ☑ | `TestAccDatasource_worker_metadata` | datasource | `404` on `collections/views/aggregate-worker-metadata`. **Root cause: `IsCloudEndpoint` didn't match the CM test host `latest-api.private.prefect.dev` (`.dev`, not `.cloud`), so the client used the OSS worker-metadata route instead of the Cloud-style `collections/work_pool_types`. Fixed: added `private.prefect.dev` to the Cloud-endpoint substrings.** Re-run to confirm. | Endpoint routing (host match) |
 | 6 | ☑ | `TestAccDatasource_automation` | datasource | Metric-trigger step returns `422` (only event/compound/sequence triggers accepted on CM). **Fixed: metric-trigger step now skips on OSS or CM (`SkipFuncOSSOrCM`).** | CM-unsupported feature |
 | 7 | ☑ | `TestAccResource_webhook` | resource | Endpoint host mismatch: got `latest-api.private.prefect.dev/hooks/...`, test hardcoded `api.stg.prefect.dev/hooks/...`. **Fixed and confirmed passing: `testAccCheckWebhookEndpoint` now derives the expected host from the test client's `GetEndpointHost()` (same source the provider uses) instead of hardcoding, so it is portable across environments.** | Test hardcodes host |
-| 8 | ☐ | `TestAccResource_work_pool` | resource | `404` on `POST /work_pools/` — endpoint not implemented/different | Missing API endpoint |
+| 8 | ☑ | `TestAccResource_work_pool` | resource | `404` on `POST /work_pools/` (note: **unscoped** URL, missing `/accounts/<id>/workspaces/<id>`). **Root cause: same host-match bug as #5. Step 1 deliberately omits `workspace_id` and expects `validateCloudEndpoint` to reject it, but that check is gated on `IsCloudEndpoint`; the unrecognized `.dev` host skipped validation, so the unscoped request reached CM and 404'd. Fixed by adding `private.prefect.dev` (commit `0fb6cbe`) — no test change needed.** Re-run to confirm. | Endpoint routing (host match) |
 | 9 | ☑ | `TestAccResource_block_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
 | 10 | ☑ | `TestAccResource_team_workspace_access` | resource | Team/account-member lookup failure (`my-team`). **Added `my-team`; re-run to confirm (also touches `marvin@prefect.io`).** | Missing seed data |
 | 11 | ☑ | `TestAccResource_team_access_user` | resource | `Could not find Account Member with email marvin@prefect.io`. **Invited `marvin@prefect.io`; re-run to confirm.** | Missing seed data |
 | 12 | ☑ | `TestAccResource_account` | resource | Import: expected name `github-ci-tests`, got `latest` — account name differs on this instance. **Fixed: expected `name`/`handle`/`link` now read from `PREFECT_ACCOUNT_NAME` / `PREFECT_ACCOUNT_HANDLE` / `PREFECT_ACCOUNT_LINK` env vars (via `testutils.EnvOrDefault`), defaulting to the Cloud values. Set these for the CM instance.** | Env-specific data |
-| 13 | ☐ | `TestAccResource_work_pool_access` | resource | Pre-apply plan failure (depends on team/work-pool seed) | Missing seed data / cascade |
-| 14 | ☐ | `TestAccResource_account_settings` | resource | `422 extra_forbidden: managed_execution` — instance API rejects the `managed_execution` field | API schema mismatch |
+| 13 | ☑ | `TestAccResource_work_pool_access` | resource | Pre-apply plan failure — cascade from the `IsCloudEndpoint` host-match bug (work_pool_access is account/workspace-scoped). **Fixed and confirmed passing via the `private.prefect.dev` host change (commit `0fb6cbe`); no test change needed.** | Endpoint routing (host match) |
+| 14 | ☑ | `TestAccResource_account_settings` | resource | `422 extra_forbidden: managed_execution` — CM rejects the `managed_execution` field. The test also bakes in Cloud-only `github-ci-tests` name/handle/link and SSO `domain_names` in every step. **Fixed: skip the whole test on CM (`SkipTestsIfCM`), since it exercises multiple Cloud-only account features.** | CM-unsupported feature |
 | 15 | ☐ | `TestAccResource_deployment_with_global_concurrency_limit` | resource | Inconsistent result: `global_concurrency_limit_id` was set, now null | Provider/API drift |
 | 16 | ☑ | `TestAccResource_account_member` | resource | Import: `Could not find Account Member marvin@prefect.io`. **Invited `marvin@prefect.io`; re-run to confirm.** | Missing seed data |
 | 17 | ☑ | `TestAccResource_deployment_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
@@ -119,6 +119,20 @@ Committed changes supporting the customer-managed (CM) test environment:
   account/workspace-scoped and uses Cloud routes; CM-vs-Cloud *feature*
   differences stay handled test-side via `TEST_CONTEXT=CM`. Considered a separate
   `IsCMEndpoint`/`IsCloudOrCMEndpoint` split but it wasn't warranted here.
+  This same fix also covers #8 `work_pool`: its Step 1 expects
+  `validateCloudEndpoint` (gated on `IsCloudEndpoint`) to reject a work pool
+  submitted without a `workspace_id`. The unrecognized `.dev` host skipped that
+  validation, so the unscoped `POST /work_pools/` reached CM and 404'd. No
+  work_pool test change needed.
+- **2026-06-08:** #14 `account_settings` — skipped on CM via `SkipTestsIfCM`.
+  The test exercises several Cloud-only account features (pre-existing
+  `github-ci-tests` name/handle/link, SSO `domain_names`, and the
+  `managed_execution` setting that CM's API rejects as an extra field), so a
+  surgical removal of `managed_execution` alone wouldn't make it pass on CM.
+  Note: the provider serializes `managed_execution` unconditionally (plain bool,
+  no omitempty in `api.AccountSettings`); if account settings should be supported
+  on CM later, the provider would need to omit Cloud-only settings for CM
+  endpoints. Out of scope for the test pass.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
