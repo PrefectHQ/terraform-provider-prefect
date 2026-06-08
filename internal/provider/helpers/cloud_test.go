@@ -45,6 +45,16 @@ func TestIsCloudEndpoint(t *testing.T) {
 			want:     true,
 		},
 		{
+			name:     "private dev latest-api host (customer-managed test cluster)",
+			endpoint: "latest-api.private.prefect.dev/api",
+			want:     true,
+		},
+		{
+			name:     "private dev bare host",
+			endpoint: "private.prefect.dev",
+			want:     true,
+		},
+		{
 			name:     "self-hosted server host",
 			endpoint: "prefect.example.com",
 			want:     false,

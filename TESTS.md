@@ -16,7 +16,7 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 2 | ☑ | `TestAccDatasource_account_member` | datasource | `Could not find Account Member with email marvin@prefect.io`. **Invited `marvin@prefect.io` to instance; re-run to confirm.** | Missing seed data |
 | 3 | ☑ | `TestAccDatasource_account_role_defaults` | datasource | Expected 44 permission elements, got 40 — instance has fewer default permissions. **Fixed and confirmed passing: test now asserts a minimum permission count (`ExpectKnownValueListSizeMin`) instead of an exact count, so it is portable across environments.** | API/data mismatch |
 | 4 | ☑ | `TestAccDatasource_account` | datasource | Expected 2 `domain_names`, got 0 — domains/SSO not available on customer-managed. **Fixed and confirmed passing: added `CM` test context; the `domain_names` assertion is skipped when `TEST_CONTEXT=CM`. Rest of the test (id/name/handle) still runs.** | CM-unsupported feature |
-| 5 | ☐ | `TestAccDatasource_worker_metadata` | datasource | `404` on `collections/views/aggregate-worker-metadata` — endpoint not implemented | Missing API endpoint |
+| 5 | ☑ | `TestAccDatasource_worker_metadata` | datasource | `404` on `collections/views/aggregate-worker-metadata`. **Root cause: `IsCloudEndpoint` didn't match the CM test host `latest-api.private.prefect.dev` (`.dev`, not `.cloud`), so the client used the OSS worker-metadata route instead of the Cloud-style `collections/work_pool_types`. Fixed: added `private.prefect.dev` to the Cloud-endpoint substrings.** Re-run to confirm. | Endpoint routing (host match) |
 | 6 | ☑ | `TestAccDatasource_automation` | datasource | Metric-trigger step returns `422` (only event/compound/sequence triggers accepted on CM). **Fixed: metric-trigger step now skips on OSS or CM (`SkipFuncOSSOrCM`).** | CM-unsupported feature |
 | 7 | ☑ | `TestAccResource_webhook` | resource | Endpoint host mismatch: got `latest-api.private.prefect.dev/hooks/...`, test hardcoded `api.stg.prefect.dev/hooks/...`. **Fixed and confirmed passing: `testAccCheckWebhookEndpoint` now derives the expected host from the test client's `GetEndpointHost()` (same source the provider uses) instead of hardcoding, so it is portable across environments.** | Test hardcodes host |
 | 8 | ☐ | `TestAccResource_work_pool` | resource | `404` on `POST /work_pools/` — endpoint not implemented/different | Missing API endpoint |
@@ -108,6 +108,17 @@ Committed changes supporting the customer-managed (CM) test environment:
   values. Set these env vars to the CM account's values when running on CM.
   NOTE: `TestAccResource_account_settings` (#14) still hardcodes
   `github-ci-tests`; left for the #14 fix.
+- **2026-06-08:** #5 `worker_metadata` — the CM test cluster host is
+  `latest-api.private.prefect.dev` (`.dev`), which `IsCloudEndpoint` did not
+  match, so the collections client took the OSS branch
+  (`collections/views/aggregate-worker-metadata`) and 404'd. CM serves the
+  Cloud-style `collections/work_pool_types` route. Added `private.prefect.dev`
+  to the Cloud-endpoint substrings. Decision: the 3 provider-side
+  `IsCloudEndpoint` call sites (API-key/account-ID requirement, account+workspace
+  validation, worker-metadata route) all want Cloud behavior for CM since CM is
+  account/workspace-scoped and uses Cloud routes; CM-vs-Cloud *feature*
+  differences stay handled test-side via `TEST_CONTEXT=CM`. Considered a separate
+  `IsCMEndpoint`/`IsCloudOrCMEndpoint` split but it wasn't warranted here.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
