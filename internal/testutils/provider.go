@@ -90,6 +90,21 @@ func SkipFuncCM() (bool, error) {
 	return TestContextCM(), nil
 }
 
+// SkipTestsIfOSSOrCM skips the test if running against either Prefect OSS or a
+// customer-managed instance. Use this for features that are only available on
+// Prefect Cloud (for example, resource SLAs).
+func SkipTestsIfOSSOrCM(t *testing.T) {
+	t.Helper()
+
+	if TestContextOSS() {
+		t.Skip("skipping test in OSS mode")
+	}
+
+	if TestContextCM() {
+		t.Skip("skipping test in customer-managed mode")
+	}
+}
+
 // SkipFuncOSSOrCM implements a Terraform acceptance test SkipFunc that will
 // skip the test if it is running against either Prefect OSS or a customer-managed
 // instance. Use this for features that are only available on Prefect Cloud

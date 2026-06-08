@@ -31,7 +31,7 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 17 | ☑ | `TestAccResource_deployment_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
 | 18 | ☑ | `TestAccResource_deployment_schedule` | resource | Inconsistent result: `.slug` was `test-schedule`, now empty. **Root cause via CM source: CM *persists* the schedule slug (`test_can_create_schedule_with_slug`), but its `DeploymentScheduleResponse` schema omits the `slug` field, so the create/read response returns it empty. Unlike #15 this is a real, correctable provider gap. Fixed in the provider: `copyScheduleModelToResourceModel` now preserves the prior local slug when the server response omits it (mirrors the existing rrule/parameters round-trip handling). Benefits real users on this CM version, not just the test.** | Provider fix (response omits field) |
 | 19 | ☑ | `TestAccResource_variable` | resource | `422: value must be of type string` on the number-value step. **Root cause via CM source (`api/variables.py: enforce_variable_value_type`): CM gates non-string (JSON) variable values behind a `WRITE_JSON_VARIABLES` feature flag that is off by default, returning exactly this 422. Fixed: skip the typed-value steps (number/bool/object/tuple) on CM via per-step `SkipFunc: SkipFuncCM`, and switch the tags step to a string value so it still runs on CM. String-value coverage and tag coverage are preserved on CM.** | CM-unsupported feature (flag) |
-| 20 | ☐ | `TestAccResource_resource_sla` | resource | `unknown` — no result recorded (run interrupted) | Inconclusive |
+| 20 | ☑ | `TestAccResource_resource_sla` | resource | Clean re-run gave a real verdict: `404` on `slas/apply-resource-slas/...`. **Root cause: SLAs are a Cloud-only feature; the CM server does not implement the SLA endpoint (no `apply-resource-slas` route in the CM source). Fixed: skip on OSS or CM via new `SkipTestsIfOSSOrCM` (the test already skipped OSS).** | CM-unsupported feature |
 | 21 | ☑ | `TestAccResource_automation` | resource | Multiple Cloud-only steps return `422` on CM: Step 4 (metric trigger — only `event`/`compound`/`sequence` accepted), Step 8 (`send-email-notification` action — not in CM's accepted action list), and the `pause-schedule-for-flow-run` action. **Fixed: all Cloud-only steps (metric trigger + its import, send-email + its import, pause-schedule) now skip on OSS or CM (`SkipFuncOSSOrCM`).** | CM-unsupported feature |
 
 ## Grouped by category
@@ -160,6 +160,12 @@ Committed changes supporting the customer-managed (CM) test environment:
   and changed the tags step to use a string value so it still exercises tag
   handling on CM. String + tag coverage preserved; full typed coverage still
   runs on Cloud.
+- **2026-06-08:** #20 `resource_sla` — the original "unknown" was just the
+  interrupted run. A clean re-run gave a real 404 on
+  `slas/apply-resource-slas/...`. SLAs are Cloud-only; the CM server source has
+  no `apply-resource-slas` route. Added `SkipTestsIfOSSOrCM` (mirrors the
+  existing `SkipFuncOSSOrCM`) and switched the test's top-level `SkipTestsIfOSS`
+  to it.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
