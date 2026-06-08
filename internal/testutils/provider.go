@@ -90,6 +90,14 @@ func SkipFuncCM() (bool, error) {
 	return TestContextCM(), nil
 }
 
+// SkipFuncOSSOrCM implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against either Prefect OSS or a customer-managed
+// instance. Use this for features that are only available on Prefect Cloud
+// (for example, metric-trigger automations).
+func SkipFuncOSSOrCM() (bool, error) {
+	return TestContextOSS() || TestContextCM(), nil
+}
+
 // EnvOrDefault returns the value of the environment variable named by key,
 // or defaultValue if the variable is unset or empty. This is useful for test
 // expectations that differ between environments (for example, the pre-existing

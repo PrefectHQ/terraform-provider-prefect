@@ -336,12 +336,14 @@ func TestAccDatasource_automation(t *testing.T) {
 					testutils.ExpectKnownValueListSize(metricTriggerAutomationDataSourceNameAndPath, "actions", 1),
 					testutils.ExpectKnownValue(metricTriggerAutomationDataSourceNameAndPath, "actions.0.type", "change-flow-run-state"),
 				},
-				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
-				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				// Metric-trigger automations are a Prefect Cloud feature. Against OSS and
+				// customer-managed instances, the API returns a 422 unprocessable entity
+				// because those environments only accept event/compound/sequence triggers.
 				//
-				// We will skip this test for now, but might be able to either adapt the fixture to work against both
-				// environments, or create a separate fixture and text for each environment.
-				SkipFunc: testutils.SkipFuncOSS,
+				// We skip this test for those environments. We might later adapt the fixture
+				// to work against all environments, or create a separate fixture/test per
+				// environment.
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{

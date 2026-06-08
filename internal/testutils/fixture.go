@@ -10,11 +10,10 @@ func FixtureAccAutomationDeployment(workspaceIDArg string) string {
 	return fmt.Sprintf(`
 resource "prefect_block" "test_block" {
 	name = "test-block"
-	type_slug = "github-repository"
+	type_slug = "string"
 
 	data = jsonencode({
-		"repository_url": "https://github.com/foo/bar",
-		"reference": "main"
+		"value": "test-value"
 	})
 
 	%s

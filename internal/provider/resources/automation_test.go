@@ -541,12 +541,14 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.name", "Failed by automation"),
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.message", "Flow run failed"),
 				},
-				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
-				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				// Metric-trigger automations are a Prefect Cloud feature. Against OSS and
+				// customer-managed instances, the API returns a 422 unprocessable entity
+				// because those environments only accept event/compound/sequence triggers.
 				//
-				// We will skip this test for now, but might be able to either adapt the fixture to work against both
-				// environments, or create a separate fixture and text for each environment.
-				SkipFunc: testutils.SkipFuncOSS,
+				// We skip this test for those environments. We might later adapt the fixture
+				// to work against all environments, or create a separate fixture/test per
+				// environment.
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			{
 				// Import State checks - import by automation_id
@@ -554,9 +556,10 @@ func TestAccResource_automation(t *testing.T) {
 				ResourceName:      metricTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(metricTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
-				// Because we skip the previous test in OSS, we have to skip this test in OSS as well because there will
-				// be no resource by that name available to import.
-				SkipFunc: testutils.SkipFuncOSS,
+				// Because we skip the previous step in OSS / customer-managed, we have to skip
+				// this import step there as well, since there will be no resource by that name
+				// available to import.
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
@@ -686,7 +689,7 @@ func TestAccResource_automation(t *testing.T) {
 						}),
 					),
 				},
-				SkipFunc: testutils.SkipFuncOSS,
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			// Cloud-only: import state for send-email-notification
 			{
@@ -694,7 +697,7 @@ func TestAccResource_automation(t *testing.T) {
 				ResourceName:      emailNotificationAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(emailNotificationAutomationResourceNameAndPath),
 				ImportStateVerify: true,
-				SkipFunc:          testutils.SkipFuncOSS,
+				SkipFunc:          testutils.SkipFuncOSSOrCM,
 			},
 			// Cloud-only: pause-schedule-for-flow-run action
 			{
@@ -717,7 +720,7 @@ func TestAccResource_automation(t *testing.T) {
 						}),
 					),
 				},
-				SkipFunc: testutils.SkipFuncOSS,
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 		},
 	})
