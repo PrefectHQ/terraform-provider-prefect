@@ -52,6 +52,13 @@ func TestContextOSS() bool {
 	return os.Getenv("TEST_CONTEXT") == "OSS"
 }
 
+// TestContextCM checks an environment variable to determine if the tests are running
+// against a customer-managed Prefect instance, which does not support all
+// Prefect Cloud features (for example, SSO / account domain names).
+func TestContextCM() bool {
+	return os.Getenv("TEST_CONTEXT") == "CM"
+}
+
 // SkipTestsIfCloud skips the test if running against Prefect OSS.
 func SkipTestsIfOSS(t *testing.T) {
 	t.Helper()
@@ -65,6 +72,22 @@ func SkipTestsIfOSS(t *testing.T) {
 // skip the test if it is running against Prefect OSS.
 func SkipFuncOSS() (bool, error) {
 	return TestContextOSS(), nil
+}
+
+// SkipTestsIfCM skips the test if running against a customer-managed Prefect
+// instance, which does not support all Prefect Cloud features.
+func SkipTestsIfCM(t *testing.T) {
+	t.Helper()
+
+	if TestContextCM() {
+		t.Skip("skipping test in customer-managed mode")
+	}
+}
+
+// SkipFuncCM implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against a customer-managed Prefect instance.
+func SkipFuncCM() (bool, error) {
+	return TestContextCM(), nil
 }
 
 // AccTestPreCheck is a utility hook, which every test suite will call

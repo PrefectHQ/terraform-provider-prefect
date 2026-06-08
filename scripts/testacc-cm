@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 set -e
 
-# This script runs the acceptance tests from a local machine.
+# This script runs the acceptance tests from a local machine
+# against a Customer-Managed test instance.
 #
 # It collects the required environment variables from 1Password
 # using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
 #
 # To run specific tests, add the test name as the first argument:
-#   ./scripts/testacc-dev TestAccResource_deployment
+#   ./scripts/testacc-cm TestAccResource_deployment
 #
 # To adjust the log level, specify it as the second argument:
-#   ./scripts/testacc-dev TestAccResource_deployment DEBUG
+#   ./scripts/testacc-cm TestAccResource_deployment DEBUG
 #
 # Log levels are listed here:
 #   https://developer.hashicorp.com/terraform/internals/debugging
 
-vault_entry='op://Platform/terraform-provider-acceptance-tests'
+vault_entry='op://Platform/terraform-provider-acceptance-tests-cm'
 
 tests=${1:-""}
 log_level=${2:-"INFO"}
@@ -40,6 +41,7 @@ fi
 
 TF_ACC=1 \
   TF_LOG=${log_level} \
+  TEST_CONTEXT="CM" \
   PREFECT_API_URL=$(op read "${vault_entry}/api-url") \
   PREFECT_API_KEY=$(op read "${vault_entry}/api-key") \
   PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/account-id") \
