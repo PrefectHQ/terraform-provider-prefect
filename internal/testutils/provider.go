@@ -90,6 +90,18 @@ func SkipFuncCM() (bool, error) {
 	return TestContextCM(), nil
 }
 
+// EnvOrDefault returns the value of the environment variable named by key,
+// or defaultValue if the variable is unset or empty. This is useful for test
+// expectations that differ between environments (for example, the pre-existing
+// account name on Prefect Cloud vs. a customer-managed instance).
+func EnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+
+	return defaultValue
+}
+
 // AccTestPreCheck is a utility hook, which every test suite will call
 // in order to verify if the necessary provider configurations are passed
 // through the environment variables.

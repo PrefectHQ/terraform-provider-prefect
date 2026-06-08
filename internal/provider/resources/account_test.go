@@ -30,6 +30,15 @@ func TestAccResource_account(t *testing.T) {
 
 	resourceName := "prefect_account.test"
 
+	// The account used for this test is pre-existing (accounts cannot be created
+	// via the API), so its name/handle/link differ between Prefect Cloud and a
+	// customer-managed instance. Default to the Cloud values, but allow them to
+	// be overridden via environment variables when running against a
+	// customer-managed instance.
+	expectedName := testutils.EnvOrDefault("PREFECT_ACCOUNT_NAME", "github-ci-tests")
+	expectedHandle := testutils.EnvOrDefault("PREFECT_ACCOUNT_HANDLE", "github-ci-tests")
+	expectedLink := testutils.EnvOrDefault("PREFECT_ACCOUNT_LINK", "https://github.com/PrefectHQ/terraform-provider-prefect")
+
 	checkFunc := func(s []*terraform.InstanceState) error {
 		if len(s) != 1 {
 			return fmt.Errorf("expected 1 instance state, got %d", len(s))
@@ -43,16 +52,16 @@ func TestAccResource_account(t *testing.T) {
 		}{
 			{
 				attribute: "name",
-				expected:  "github-ci-tests",
+				expected:  expectedName,
 			},
 			{
 				attribute: "handle",
-				expected:  "github-ci-tests",
+				expected:  expectedHandle,
 			},
 			{
 				// This value was provided manually in the UI to support this test.
 				attribute: "link",
-				expected:  "https://github.com/PrefectHQ/terraform-provider-prefect",
+				expected:  expectedLink,
 			},
 		}
 
