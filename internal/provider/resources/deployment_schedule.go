@@ -442,7 +442,17 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
 	model.RRule = types.StringValue(normalizeRRuleForState(schedule.Schedule.RRule, model.RRule.ValueString()))
 
+	// Some Prefect server versions (notably customer-managed) persist the
+	// schedule slug but omit it from the schedule response payload. If the
+	// server response has no slug but the prior local value (plan during Create,
+	// state during Read/Update) did, preserve the local value to avoid an
+	// "inconsistent result after apply" error. This mirrors how we handle other
+	// fields the server may not echo back (see the parameters/rrule handling).
+	priorSlug := model.Slug
 	model.Slug = types.StringValue(schedule.Slug)
+	if schedule.Slug == "" && !priorSlug.IsNull() && priorSlug.ValueString() != "" {
+		model.Slug = priorSlug
+	}
 
 	parametersByteSlice, err := json.Marshal(schedule.Parameters)
 	if err != nil {

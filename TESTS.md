@@ -29,7 +29,7 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 15 | ☑ | `TestAccResource_deployment_with_global_concurrency_limit` | resource | Inconsistent result: `global_concurrency_limit_id` was set, now null. **Root cause confirmed via CM source (`customer-managed` repo, `test_deployment_compatibility.py`): CM accepts `global_concurrency_limit_id` on create/update as an OSS-compat shim but deliberately does NOT persist it (excluded from response, logs "not supported by this server version"). It's a Cloud-only feature, not a provider bug. Fixed: skip on CM (`SkipTestsIfCM`).** | CM-unsupported feature |
 | 16 | ☑ | `TestAccResource_account_member` | resource | Import: `Could not find Account Member marvin@prefect.io`. **Invited `marvin@prefect.io`; re-run to confirm.** | Missing seed data |
 | 17 | ☑ | `TestAccResource_deployment_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
-| 18 | ☐ | `TestAccResource_deployment_schedule` | resource | Inconsistent result: `.slug` was `test-schedule`, now changed/null | Provider/API drift |
+| 18 | ☑ | `TestAccResource_deployment_schedule` | resource | Inconsistent result: `.slug` was `test-schedule`, now empty. **Root cause via CM source: CM *persists* the schedule slug (`test_can_create_schedule_with_slug`), but its `DeploymentScheduleResponse` schema omits the `slug` field, so the create/read response returns it empty. Unlike #15 this is a real, correctable provider gap. Fixed in the provider: `copyScheduleModelToResourceModel` now preserves the prior local slug when the server response omits it (mirrors the existing rrule/parameters round-trip handling). Benefits real users on this CM version, not just the test.** | Provider fix (response omits field) |
 | 19 | ☐ | `TestAccResource_variable` | resource | `422: value must be of type string` on update — API value-type handling differs | API schema mismatch |
 | 20 | ☐ | `TestAccResource_resource_sla` | resource | `unknown` — no result recorded (run interrupted) | Inconclusive |
 | 21 | ☑ | `TestAccResource_automation` | resource | Multiple Cloud-only steps return `422` on CM: Step 4 (metric trigger — only `event`/`compound`/`sequence` accepted), Step 8 (`send-email-notification` action — not in CM's accepted action list), and the `pause-schedule-for-flow-run` action. **Fixed: all Cloud-only steps (metric trigger + its import, send-email + its import, pause-schedule) now skip on OSS or CM (`SkipFuncOSSOrCM`).** | CM-unsupported feature |
@@ -141,6 +141,17 @@ Committed changes supporting the customer-managed (CM) test environment:
   provider correctly nulls it. Not a provider bug; a follow-up GET or preserving
   the planned value would both cause permanent drift. Skipped on CM via
   `SkipTestsIfCM`.
+- **2026-06-08:** #18 `deployment_schedule` — distinct from #15. Checked the CM
+  source: CM *does* persist the schedule slug, but its `DeploymentScheduleResponse`
+  schema (`schemas/responses.py`) has no `slug` field, so the create/read response
+  returns it empty and the provider overwrote state with `""`, tripping
+  "inconsistent result after apply". Real, correctable gap. Fixed in
+  `copyScheduleModelToResourceModel`: when the server response has no slug but the
+  prior local value (plan on create/update, state on read) had one, keep the local
+  value. This mirrors the existing rrule (`normalizeRRuleForState`) and parameters
+  round-trip handling, and is correct because the slug is actually persisted on CM
+  — so it benefits real users on this CM version, not just the acceptance test. No
+  test change needed.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
