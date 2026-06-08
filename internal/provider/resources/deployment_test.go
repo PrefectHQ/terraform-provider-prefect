@@ -232,6 +232,13 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_with_global_concurrency_limit(t *testing.T) {
+	// Deployment-level global concurrency limits are a Prefect Cloud feature.
+	// Customer-managed servers accept `global_concurrency_limit_id` on
+	// create/update for compatibility but deliberately do not persist it (it is
+	// excluded from the response), so the value comes back null and Terraform
+	// reports an inconsistent result after apply. Skip this test on CM.
+	testutils.SkipTestsIfCM(t)
+
 	workspace := testutils.NewEphemeralWorkspace()
 	deploymentName := testutils.NewRandomPrefixedString()
 	flowName := testutils.NewRandomPrefixedString()

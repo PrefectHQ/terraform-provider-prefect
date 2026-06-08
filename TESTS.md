@@ -26,7 +26,7 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 12 | ☑ | `TestAccResource_account` | resource | Import: expected name `github-ci-tests`, got `latest` — account name differs on this instance. **Fixed: expected `name`/`handle`/`link` now read from `PREFECT_ACCOUNT_NAME` / `PREFECT_ACCOUNT_HANDLE` / `PREFECT_ACCOUNT_LINK` env vars (via `testutils.EnvOrDefault`), defaulting to the Cloud values. Set these for the CM instance.** | Env-specific data |
 | 13 | ☑ | `TestAccResource_work_pool_access` | resource | Pre-apply plan failure — cascade from the `IsCloudEndpoint` host-match bug (work_pool_access is account/workspace-scoped). **Fixed and confirmed passing via the `private.prefect.dev` host change (commit `0fb6cbe`); no test change needed.** | Endpoint routing (host match) |
 | 14 | ☑ | `TestAccResource_account_settings` | resource | `422 extra_forbidden: managed_execution` — CM rejects the `managed_execution` field. The test also bakes in Cloud-only `github-ci-tests` name/handle/link and SSO `domain_names` in every step. **Fixed: skip the whole test on CM (`SkipTestsIfCM`), since it exercises multiple Cloud-only account features.** | CM-unsupported feature |
-| 15 | ☐ | `TestAccResource_deployment_with_global_concurrency_limit` | resource | Inconsistent result: `global_concurrency_limit_id` was set, now null | Provider/API drift |
+| 15 | ☑ | `TestAccResource_deployment_with_global_concurrency_limit` | resource | Inconsistent result: `global_concurrency_limit_id` was set, now null. **Root cause confirmed via CM source (`customer-managed` repo, `test_deployment_compatibility.py`): CM accepts `global_concurrency_limit_id` on create/update as an OSS-compat shim but deliberately does NOT persist it (excluded from response, logs "not supported by this server version"). It's a Cloud-only feature, not a provider bug. Fixed: skip on CM (`SkipTestsIfCM`).** | CM-unsupported feature |
 | 16 | ☑ | `TestAccResource_account_member` | resource | Import: `Could not find Account Member marvin@prefect.io`. **Invited `marvin@prefect.io`; re-run to confirm.** | Missing seed data |
 | 17 | ☑ | `TestAccResource_deployment_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
 | 18 | ☐ | `TestAccResource_deployment_schedule` | resource | Inconsistent result: `.slug` was `test-schedule`, now changed/null | Provider/API drift |
@@ -133,6 +133,14 @@ Committed changes supporting the customer-managed (CM) test environment:
   no omitempty in `api.AccountSettings`); if account settings should be supported
   on CM later, the provider would need to omit Cloud-only settings for CM
   endpoints. Out of scope for the test pass.
+- **2026-06-08:** #15 `deployment_with_global_concurrency_limit` — confirmed via
+  the customer-managed server source that `global_concurrency_limit_id` is an
+  OSS-compatibility shim on CM: accepted on create/update but intentionally not
+  persisted and excluded from the response (it logs a "not supported by this
+  server version" warning). So the value legitimately comes back null and the
+  provider correctly nulls it. Not a provider bug; a follow-up GET or preserving
+  the planned value would both cause permanent drift. Skipped on CM via
+  `SkipTestsIfCM`.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
