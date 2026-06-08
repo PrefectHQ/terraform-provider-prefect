@@ -48,11 +48,10 @@ func fixtureAccDeployment(cfg deploymentConfig) string {
 
 resource "prefect_block" "test_gh_repository" {
 	name = "{{.StorageDocumentName}}"
-	type_slug = "github-repository"
+	type_slug = "string"
 
 	data = jsonencode({
-		"repository_url": "https://github.com/foo/bar",
-		"reference": "main"
+		"value": "test-value"
 	})
 
 	{{.WorkspaceIDArg}}

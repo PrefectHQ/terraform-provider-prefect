@@ -71,7 +71,7 @@ resource "prefect_block" "{{ .BlockName }}" {
 
 resource "prefect_block" "with_ref" {
   name      = "block-with-ref"
-  type_slug = "s3-bucket"
+  type_slug = "string"
 
   data = jsonencode({
     bucket_name = "my-bucket"
@@ -258,7 +258,7 @@ func TestAccResource_block(t *testing.T) {
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue("prefect_block.with_ref", "name", "block-with-ref"),
-					testutils.ExpectKnownValue("prefect_block.with_ref", "type_slug", "s3-bucket"),
+					testutils.ExpectKnownValue("prefect_block.with_ref", "type_slug", "string"),
 				},
 			},
 			{
