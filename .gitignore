@@ -17,3 +17,5 @@ build/*
 dev/*
 
 wiki_output.md
+
+TESTS.md
