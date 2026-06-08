@@ -30,7 +30,7 @@ Status legend: ☐ open · ☑ fixed · ⊘ won't fix / not a provider bug
 | 16 | ☑ | `TestAccResource_account_member` | resource | Import: `Could not find Account Member marvin@prefect.io`. **Invited `marvin@prefect.io`; re-run to confirm.** | Missing seed data |
 | 17 | ☑ | `TestAccResource_deployment_access` | resource | `Could not find Team with name my-team`. **Added `my-team` to instance; re-run to confirm.** | Missing seed data |
 | 18 | ☑ | `TestAccResource_deployment_schedule` | resource | Inconsistent result: `.slug` was `test-schedule`, now empty. **Root cause via CM source: CM *persists* the schedule slug (`test_can_create_schedule_with_slug`), but its `DeploymentScheduleResponse` schema omits the `slug` field, so the create/read response returns it empty. Unlike #15 this is a real, correctable provider gap. Fixed in the provider: `copyScheduleModelToResourceModel` now preserves the prior local slug when the server response omits it (mirrors the existing rrule/parameters round-trip handling). Benefits real users on this CM version, not just the test.** | Provider fix (response omits field) |
-| 19 | ☐ | `TestAccResource_variable` | resource | `422: value must be of type string` on update — API value-type handling differs | API schema mismatch |
+| 19 | ☑ | `TestAccResource_variable` | resource | `422: value must be of type string` on the number-value step. **Root cause via CM source (`api/variables.py: enforce_variable_value_type`): CM gates non-string (JSON) variable values behind a `WRITE_JSON_VARIABLES` feature flag that is off by default, returning exactly this 422. Fixed: skip the typed-value steps (number/bool/object/tuple) on CM via per-step `SkipFunc: SkipFuncCM`, and switch the tags step to a string value so it still runs on CM. String-value coverage and tag coverage are preserved on CM.** | CM-unsupported feature (flag) |
 | 20 | ☐ | `TestAccResource_resource_sla` | resource | `unknown` — no result recorded (run interrupted) | Inconclusive |
 | 21 | ☑ | `TestAccResource_automation` | resource | Multiple Cloud-only steps return `422` on CM: Step 4 (metric trigger — only `event`/`compound`/`sequence` accepted), Step 8 (`send-email-notification` action — not in CM's accepted action list), and the `pause-schedule-for-flow-run` action. **Fixed: all Cloud-only steps (metric trigger + its import, send-email + its import, pause-schedule) now skip on OSS or CM (`SkipFuncOSSOrCM`).** | CM-unsupported feature |
 
@@ -152,6 +152,14 @@ Committed changes supporting the customer-managed (CM) test environment:
   round-trip handling, and is correct because the slug is actually persisted on CM
   — so it benefits real users on this CM version, not just the acceptance test. No
   test change needed.
+- **2026-06-08:** #19 `variable` — CM source (`api/variables.py`,
+  `enforce_variable_value_type`) gates non-string variable values behind the
+  `WRITE_JSON_VARIABLES` feature flag, which is off by default; without it CM
+  returns "`value` must be of type `string`." (422). Skipped the typed-value
+  steps (number/bool/object/tuple) on CM via per-step `SkipFunc: SkipFuncCM`,
+  and changed the tags step to use a string value so it still exercises tag
+  handling on CM. String + tag coverage preserved; full typed coverage still
+  runs on Cloud.
 - **2026-06-08:** #21 / #6 `automation` (resource + datasource) — several
   automation features are Cloud-only and CM returns 422 for them:
   metric-trigger automations (only event/compound/sequence accepted),
