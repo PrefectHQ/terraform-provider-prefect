@@ -719,6 +719,115 @@ resource "prefect_deployment" "%[4]s" {
 	})
 }
 
+// TestAccResource_deployment_remove_concurrency_limit tests that a
+// concurrency_limit (and concurrency_options) added to a deployment can later
+// be removed from configuration. Previously, removing them produced a
+// "Provider produced inconsistent result after apply (.concurrency_limit)"
+// error and left the limit in place server-side, because the update payload
+// omitted the field instead of sending an explicit null.
+// See: https://github.com/PrefectHQ/terraform-provider-prefect/issues/681
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_remove_concurrency_limit(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	// Config with a concurrency_limit and concurrency_options set.
+	configWithConcurrency := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name              = "%[4]s"
+  flow_id           = prefect_flow.%[2]s.id
+  entrypoint        = "hello_world.py:hello_world"
+  concurrency_limit = 1
+  concurrency_options = {
+    collision_strategy = "ENQUEUE"
+  }
+  %[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName)
+
+	// Same deployment, with concurrency_limit and concurrency_options removed.
+	configWithoutConcurrency := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name       = "%[4]s"
+  flow_id    = prefect_flow.%[2]s.id
+  entrypoint = "hello_world.py:hello_world"
+  %[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName)
+
+	var deployment api.Deployment
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create with a concurrency limit.
+				Config: configWithConcurrency,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(deploymentResourceName, "concurrency_limit", 1),
+					testutils.ExpectKnownValueMap(deploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": "ENQUEUE",
+					}),
+				},
+			},
+			{
+				// Remove the concurrency limit and options. This previously
+				// failed with an inconsistent-result error.
+				Config: configWithoutConcurrency,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists(deploymentResourceName, &deployment),
+					testAccCheckDeploymentConcurrencyLimitCleared(&deployment),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_limit"),
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_options"),
+				},
+			},
+			{
+				// Re-apply the same config to confirm there is no perpetual diff.
+				Config: configWithoutConcurrency,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_limit"),
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_options"),
+				},
+			},
+		},
+	})
+}
+
+// testAccCheckDeploymentConcurrencyLimitCleared verifies that the deployment no
+// longer has a concurrency limit set server-side.
+func testAccCheckDeploymentConcurrencyLimitCleared(deployment *api.Deployment) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		if deployment.GlobalConcurrencyLimit != nil {
+			return fmt.Errorf(
+				"expected deployment concurrency limit to be cleared, got limit %d",
+				deployment.GlobalConcurrencyLimit.Limit,
+			)
+		}
+
+		return nil
+	}
+}
+
 // testAccCheckDeploymentExists is a Custom Check Function that
 // verifies that the API object was created correctly.
 func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api.Deployment) resource.TestCheckFunc {

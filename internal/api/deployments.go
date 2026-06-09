@@ -67,12 +67,18 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	ConcurrencyLimit         *int64              `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options,omitempty"`
+	// The concurrency fields intentionally omit `omitempty`. The Prefect API
+	// distinguishes "field absent" (no change) from "field is null" (clear the
+	// limit). With `omitempty`, a nil pointer would be dropped from the PATCH
+	// body, so the server would never clear an existing concurrency limit when
+	// the user removes it from config. Emitting an explicit null instructs the
+	// server to clear it. See https://github.com/PrefectHQ/terraform-provider-prefect/issues/681.
+	ConcurrencyLimit         *int64              `json:"concurrency_limit"`
+	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options"`
 	Description              *string             `json:"description,omitempty"`
 	EnforceParameterSchema   *bool               `json:"enforce_parameter_schema,omitempty"`
 	Entrypoint               *string             `json:"entrypoint,omitempty"`
-	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id,omitempty"`
+	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id"`
 	JobVariables             map[string]any      `json:"job_variables,omitempty"`
 	ParameterOpenAPISchema   map[string]any      `json:"parameter_openapi_schema,omitempty"`
 	Parameters               map[string]any      `json:"parameters,omitempty"`

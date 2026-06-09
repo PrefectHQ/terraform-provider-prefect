@@ -745,6 +745,10 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		model.ConcurrencyOptions = &ConcurrencyOptions{
 			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
+	} else {
+		// Reset to nil when the API returns no concurrency options, otherwise
+		// removing concurrency_options from config would leave stale state.
+		model.ConcurrencyOptions = nil
 	}
 
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
