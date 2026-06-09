@@ -96,13 +96,8 @@ func SkipFuncCM() (bool, error) {
 func SkipTestsIfOSSOrCM(t *testing.T) {
 	t.Helper()
 
-	if TestContextOSS() {
-		t.Skip("skipping test in OSS mode")
-	}
-
-	if TestContextCM() {
-		t.Skip("skipping test in customer-managed mode")
-	}
+	SkipTestsIfOSS(t)
+	SkipTestsIfCM(t)
 }
 
 // SkipFuncOSSOrCM implements a Terraform acceptance test SkipFunc that will
