@@ -72,7 +72,7 @@ type DeploymentUpdate struct {
 	// limit). With `omitempty`, a nil pointer would be dropped from the PATCH
 	// body, so the server would never clear an existing concurrency limit when
 	// the user removes it from config. Emitting an explicit null instructs the
-	// server to clear it. See https://github.com/PrefectHQ/terraform-provider-prefect/issues/681.
+	// server to clear it.
 	ConcurrencyLimit         *int64              `json:"concurrency_limit"`
 	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options"`
 	Description              *string             `json:"description,omitempty"`

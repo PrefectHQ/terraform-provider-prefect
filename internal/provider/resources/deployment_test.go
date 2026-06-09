@@ -725,7 +725,6 @@ resource "prefect_deployment" "%[4]s" {
 // "Provider produced inconsistent result after apply (.concurrency_limit)"
 // error and left the limit in place server-side, because the update payload
 // omitted the field instead of sending an explicit null.
-// See: https://github.com/PrefectHQ/terraform-provider-prefect/issues/681
 //
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_remove_concurrency_limit(t *testing.T) {
