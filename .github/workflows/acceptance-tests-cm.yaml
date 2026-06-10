@@ -1,0 +1,54 @@
+name: Acceptance Tests - Customer-Managed
+
+# This workflow runs the acceptance test suite against a Customer-Managed
+# Prefect instance. It is a smoke test: it is triggered manually and is not a
+# required check, so a failure surfaces as a red mark for us to investigate
+# without blocking the pipeline.
+"on":
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  acceptance_tests:
+    permissions:
+      contents: read
+    name: Acceptance Tests - Customer-Managed
+    environment: Acceptance Tests - Customer-Managed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v6
+
+      # This action installs go and caches downloaded modules, so we favor
+      # this over using the `mise-action` to install Go.
+      - name: Set up Golang
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v4
+        with:
+          install_args: gotestsum terraform
+
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
+
+      - name: Run acceptance tests - Customer-Managed
+        run: mise run testacc
+        env:
+          # TEST_CONTEXT=CM skips the Cloud-only features that a Customer-Managed
+          # instance does not support (see docs/guides/customer-managed.md).
+          TEST_CONTEXT: CM
+          # The CM instance's API URL, key, and account ID.
+          # The values are stored in 1Password:
+          # `op://Platform/terraform-provider-acceptance-tests-cm`.
+          PREFECT_API_URL: ${{ secrets.ACC_TEST_CM_PREFECT_API_URL }}
+          PREFECT_API_KEY: ${{ secrets.ACC_TEST_CM_PREFECT_API_KEY }}
+          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_CM_PREFECT_ACCOUNT_ID }}
+          # The CM account's name/handle/link differ from the Cloud CI account,
+          # so TestAccResource_account requires them to be supplied explicitly.
+          PREFECT_ACCOUNT_NAME: ${{ secrets.ACC_TEST_CM_PREFECT_ACCOUNT_NAME }}
+          PREFECT_ACCOUNT_HANDLE: ${{ secrets.ACC_TEST_CM_PREFECT_ACCOUNT_HANDLE }}
+          PREFECT_ACCOUNT_LINK: ${{ secrets.ACC_TEST_CM_PREFECT_ACCOUNT_LINK }}
