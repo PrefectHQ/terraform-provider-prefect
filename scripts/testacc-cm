@@ -45,4 +45,7 @@ TF_ACC=1 \
   PREFECT_API_URL=$(op read "${vault_entry}/api-url") \
   PREFECT_API_KEY=$(op read "${vault_entry}/api-key") \
   PREFECT_CLOUD_ACCOUNT_ID=$(op read "${vault_entry}/account-id") \
+  PREFECT_ACCOUNT_NAME=$(op read "${vault_entry}/account-name") \
+  PREFECT_ACCOUNT_HANDLE=$(op read "${vault_entry}/account-handle") \
+  PREFECT_ACCOUNT_LINK=$(op read "${vault_entry}/account-link") \
   ${run_arg}

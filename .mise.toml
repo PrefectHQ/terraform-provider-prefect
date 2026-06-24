@@ -72,6 +72,11 @@ alias = "tadu"
 description = "Run automated acceptance tests for user-related resources from a local machine"
 file = 'scripts/testacc-dev-user'
 
+[tasks.testacc-cm]
+alias = "tac"
+description = "Run automated acceptance tests against a Customer-Managed instance from a local machine ({{vars.helper_tests_arg}})"
+run = 'scripts/testacc-cm {{arg(name="tests", default="")}} {{arg(name="log_level", default="")}} {{arg(name="sweep",default="")}}'
+
 [tasks.testacc-oss]
 alias = "tao"
 description = "Run automated acceptance tests for Prefect OSS"
