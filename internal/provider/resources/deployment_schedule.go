@@ -259,7 +259,7 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	//
 	// Additionally, we couldn't use getResourceByID here because of a race condition:
 	// we'd need an ID in the state to compare against, which doesn't exist yet.
-	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedules[0], &plan, true)...)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedules[0], &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -313,7 +313,7 @@ func (r *DeploymentScheduleResource) Read(ctx context.Context, req resource.Read
 		return
 	}
 
-	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &state, false)...)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -386,7 +386,7 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 
-	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &plan, true)...)
+	resp.Diagnostics.Append(copyScheduleModelToResourceModel(schedule, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -424,16 +424,7 @@ func (r *DeploymentScheduleResource) Delete(ctx context.Context, req resource.De
 	}
 }
 
-// copyScheduleModelToResourceModel maps an API schedule onto the resource model.
-//
-// preserveOmittedSlug controls how an empty slug in the API response is handled.
-// During Create and Update we pass true: the model holds the plan, and if the
-// server persists the slug but omits it from the response (notably on
-// customer-managed instances), we keep the planned value to avoid an
-// "inconsistent result after apply" error. During Read we pass false: the model
-// holds prior state, and Read must reflect the API response so that a slug
-// removed outside Terraform surfaces as drift rather than being masked.
-func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel, preserveOmittedSlug bool) diag.Diagnostics {
+func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *DeploymentScheduleResourceModel) diag.Diagnostics {
 	model.ID = customtypes.NewUUIDValue(schedule.ID)
 	model.Created = customtypes.NewTimestampPointerValue(schedule.Created)
 	model.Updated = customtypes.NewTimestampPointerValue(schedule.Updated)
@@ -452,15 +443,23 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.RRule = types.StringValue(normalizeRRuleForState(schedule.Schedule.RRule, model.RRule.ValueString()))
 
 	// Some Prefect server versions (notably customer-managed) persist the
-	// schedule slug but omit it from the schedule response payload. On Create and
-	// Update, if the server response has no slug but the prior plan value did,
-	// preserve the planned value to avoid an "inconsistent result after apply"
-	// error. This mirrors how we handle other fields the server may not echo back
-	// (see the parameters/rrule handling). On Read we deliberately skip this so
-	// that a slug removed outside Terraform is reflected as drift, not masked.
+	// schedule slug but omit it from every schedule response payload. When the
+	// response has no slug but we already have a non-empty one locally (the plan
+	// during Create/Update, prior state during Read), keep the local value.
+	//
+	// This applies on Read as well as Create/Update. We cannot distinguish "the
+	// server never echoes slugs" from "the slug was deleted out of band" given a
+	// single empty response (the API models slug as a plain string, so an omitted
+	// field and an empty one both decode to ""). Reflecting the empty value on
+	// Read would break the steady state on servers that never echo slugs: every
+	// refresh would wipe the slug from state and produce a perpetual non-empty
+	// plan. We accept that an out-of-band slug deletion is not surfaced as drift;
+	// the user's configured slug still drives the next apply, which re-asserts it.
+	// This mirrors how we handle other fields the server may not echo back (see
+	// the parameters/rrule handling).
 	priorSlug := model.Slug
 	model.Slug = types.StringValue(schedule.Slug)
-	if preserveOmittedSlug && schedule.Slug == "" && !priorSlug.IsNull() && priorSlug.ValueString() != "" {
+	if schedule.Slug == "" && !priorSlug.IsNull() && priorSlug.ValueString() != "" {
 		model.Slug = priorSlug
 	}
 
