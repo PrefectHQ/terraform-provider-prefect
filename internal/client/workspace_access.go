@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/prefecthq/terraform-provider-prefect/internal/api"
+	"github.com/prefecthq/terraform-provider-prefect/internal/provider/helpers"
 	"github.com/prefecthq/terraform-provider-prefect/internal/utils"
 )
 
@@ -178,7 +179,7 @@ func (c *WorkspaceAccessClient) Get(ctx context.Context, accessorType string, ac
 	}
 
 	if workspaceAccess.ID == uuid.Nil {
-		return nil, fmt.Errorf("workspace access not found for accessID: %s", accessID.String())
+		return nil, fmt.Errorf("workspace access not found for accessID: %s: %w", accessID.String(), helpers.ErrNotFound)
 	}
 
 	return &workspaceAccess, nil

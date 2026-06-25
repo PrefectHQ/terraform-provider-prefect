@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
@@ -67,23 +68,35 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	ConcurrencyLimit         *int64              `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options,omitempty"`
-	Description              *string             `json:"description,omitempty"`
-	EnforceParameterSchema   *bool               `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint               *string             `json:"entrypoint,omitempty"`
-	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id,omitempty"`
-	JobVariables             map[string]any      `json:"job_variables,omitempty"`
-	ParameterOpenAPISchema   map[string]any      `json:"parameter_openapi_schema,omitempty"`
-	Parameters               map[string]any      `json:"parameters,omitempty"`
-	Path                     *string             `json:"path,omitempty"`
-	Paused                   *bool               `json:"paused,omitempty"`
-	PullSteps                []PullStep          `json:"pull_steps,omitempty"`
-	StorageDocumentID        *uuid.UUID          `json:"storage_document_id,omitempty"`
-	Tags                     []string            `json:"tags,omitempty"`
-	Version                  *string             `json:"version,omitempty"`
-	WorkPoolName             *string             `json:"work_pool_name,omitempty"`
-	WorkQueueName            *string             `json:"work_queue_name,omitempty"`
+	// The Prefect API distinguishes "field absent" (no change) from "field is
+	// null" (clear). concurrency_limit and global_concurrency_limit_id route
+	// through the same underlying limit, so sending an explicit null for either
+	// clears it, and sending concurrency_limit alongside an explicit
+	// global_concurrency_limit_id:null can trip a 409. concurrency_options is
+	// not cleared automatically when the limit is, so removing it also needs an
+	// explicit null.
+	//
+	// Because the standard `omitempty` tag cannot emit an explicit null, these
+	// fields are encoded as json.RawMessage and populated only when they should
+	// change. See the concurrency*UpdateValue helpers in the deployment
+	// resource's Update.
+	ConcurrencyLimit         json.RawMessage `json:"concurrency_limit,omitempty"`
+	ConcurrencyOptions       json.RawMessage `json:"concurrency_options,omitempty"`
+	Description              *string         `json:"description,omitempty"`
+	EnforceParameterSchema   *bool           `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               *string         `json:"entrypoint,omitempty"`
+	GlobalConcurrencyLimitID json.RawMessage `json:"global_concurrency_limit_id,omitempty"`
+	JobVariables             map[string]any  `json:"job_variables,omitempty"`
+	ParameterOpenAPISchema   map[string]any  `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]any  `json:"parameters,omitempty"`
+	Path                     *string         `json:"path,omitempty"`
+	Paused                   *bool           `json:"paused,omitempty"`
+	PullSteps                []PullStep      `json:"pull_steps,omitempty"`
+	StorageDocumentID        *uuid.UUID      `json:"storage_document_id,omitempty"`
+	Tags                     []string        `json:"tags,omitempty"`
+	Version                  *string         `json:"version,omitempty"`
+	WorkPoolName             *string         `json:"work_pool_name,omitempty"`
+	WorkQueueName            *string         `json:"work_queue_name,omitempty"`
 }
 
 // ConcurrencyOptions is a representation of the deployment concurrency options.

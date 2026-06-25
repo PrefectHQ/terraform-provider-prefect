@@ -745,6 +745,10 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		model.ConcurrencyOptions = &ConcurrencyOptions{
 			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
+	} else {
+		// Reset to nil when the API returns no concurrency options, otherwise
+		// removing concurrency_options from config would leave stale state.
+		model.ConcurrencyOptions = nil
 	}
 
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
@@ -971,11 +975,77 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 }
 
+// concurrencyUpdateValue computes the concurrency_limit value to send in a
+// deployment update. The Prefect API distinguishes an absent field (no change)
+// from an explicit null (clear the limit), so we only include the field when it
+// is being set or cleared:
+//
+//   - plan has a value          -> send that value
+//   - plan null, prior had value -> send null (clear)
+//   - plan null, prior null      -> omit (return nil RawMessage)
+//
+// Returning a nil json.RawMessage leaves the omitempty field out of the payload.
+func concurrencyUpdateValue(plan, prior types.Int64) json.RawMessage {
+	switch {
+	case !plan.IsNull():
+		return json.RawMessage(fmt.Sprintf("%d", plan.ValueInt64()))
+	case !prior.IsNull():
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
+// globalConcurrencyLimitUpdateValue mirrors concurrencyUpdateValue for the
+// global_concurrency_limit_id field. The same underlying limit backs both
+// fields server-side, so we send each only when it actually changes to avoid
+// clobbering the other or tripping a data-integrity conflict.
+//
+// This attribute is Computed, so when it is absent from config its planned
+// value is unknown (not null). An unknown value means "leave it alone", so we
+// omit the field in that case rather than sending the zero UUID.
+func globalConcurrencyLimitUpdateValue(plan, prior customtypes.UUIDValue) json.RawMessage {
+	switch {
+	case plan.IsUnknown():
+		return nil
+	case !plan.IsNull():
+		return json.RawMessage(fmt.Sprintf("%q", plan.ValueUUID().String()))
+	case !prior.IsNull() && !prior.IsUnknown():
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
+// concurrencyOptionsUpdateValue mirrors concurrencyUpdateValue for the
+// concurrency_options field. The server does not clear concurrency_options when
+// the limit is cleared, so removing it from config requires an explicit null.
+func concurrencyOptionsUpdateValue(plan, prior *ConcurrencyOptions) json.RawMessage {
+	switch {
+	case plan != nil:
+		return json.RawMessage(fmt.Sprintf(`{"collision_strategy":%q}`, plan.CollisionStrategy.ValueString()))
+	case prior != nil:
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var model DeploymentResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// We need the prior state to know whether a concurrency limit is being
+	// cleared. The Prefect API only clears a limit when it receives an explicit
+	// null, and routes both concurrency_limit and global_concurrency_limit_id
+	// through the same underlying limit, so we send each only when it changes.
+	var priorState DeploymentResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &priorState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -1032,11 +1102,11 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
+		ConcurrencyLimit:         concurrencyUpdateValue(model.ConcurrencyLimit, priorState.ConcurrencyLimit),
 		Description:              model.Description.ValueStringPointer(),
 		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               model.Entrypoint.ValueStringPointer(),
-		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		GlobalConcurrencyLimitID: globalConcurrencyLimitUpdateValue(model.GlobalConcurrencyLimitID, priorState.GlobalConcurrencyLimitID),
 		JobVariables:             jobVariables,
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
@@ -1050,11 +1120,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
 
-	if model.ConcurrencyOptions != nil {
-		payload.ConcurrencyOptions = &api.ConcurrencyOptions{
-			CollisionStrategy: model.ConcurrencyOptions.CollisionStrategy.ValueString(),
-		}
-	}
+	payload.ConcurrencyOptions = concurrencyOptionsUpdateValue(model.ConcurrencyOptions, priorState.ConcurrencyOptions)
 
 	// Capture the planned parameter_openapi_schema before the API call
 	// overwrites it (same reason as in Create).
