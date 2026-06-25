@@ -54,25 +54,25 @@ run = "golangci-lint run"
 [tasks.test]
 alias = "t"
 description = "Run automated unit tests ({{vars.helper_tests_arg}})"
-usage = 'arg "[tests]" default=""'
-run = 'gotestsum --max-fails=50 ./... -run "${usage_tests?}"'
+usage = 'arg "[tests]" default="" env="TESTS"'
+run = 'tests="${usage_tests?}"; gotestsum --max-fails=50 ./... -run "${tests#TESTS=}"'
 run_windows = 'gotestsum --max-fails=50 ./...'
 
 [tasks.testacc]
 alias = "ta"
 description = "Run acceptance tests against real infrastructure ({{vars.helper_tests_arg}})"
-usage = 'arg "[tests]" default=""'
-run = 'TF_ACC=1 mise run test "${usage_tests?}"'
+usage = 'arg "[tests]" default="" env="TESTS"'
+run = 'tests="${usage_tests?}"; TF_ACC=1 mise run test "${tests#TESTS=}"'
 
 [tasks.testacc-dev]
 alias = "tad"
 description = "Run automated acceptance tests from a local machine ({{vars.helper_tests_arg}})"
 usage = '''
-arg "[tests]" default=""
-arg "[log_level]" default=""
-arg "[sweep]" default=""
+arg "[tests]" default="" env="TESTS"
+arg "[log_level]" default="" env="LOG_LEVEL"
+arg "[sweep]" default="" env="SWEEP"
 '''
-run = 'scripts/testacc-dev "${usage_tests?}" "${usage_log_level?}" "${usage_sweep?}"'
+run = 'tests="${usage_tests?}"; log_level="${usage_log_level?}"; sweep="${usage_sweep?}"; scripts/testacc-dev "${tests#TESTS=}" "${log_level#LOG_LEVEL=}" "${sweep#SWEEP=}"'
 
 [tasks.testacc-dev-user]
 alias = "tadu"
@@ -83,19 +83,19 @@ file = 'scripts/testacc-dev-user'
 alias = "tac"
 description = "Run automated acceptance tests against a Customer-Managed instance from a local machine ({{vars.helper_tests_arg}})"
 usage = '''
-arg "[tests]" default=""
-arg "[log_level]" default=""
-arg "[sweep]" default=""
+arg "[tests]" default="" env="TESTS"
+arg "[log_level]" default="" env="LOG_LEVEL"
+arg "[sweep]" default="" env="SWEEP"
 '''
-run = 'scripts/testacc-cm "${usage_tests?}" "${usage_log_level?}" "${usage_sweep?}"'
+run = 'tests="${usage_tests?}"; log_level="${usage_log_level?}"; sweep="${usage_sweep?}"; scripts/testacc-cm "${tests#TESTS=}" "${log_level#LOG_LEVEL=}" "${sweep#SWEEP=}"'
 
 [tasks.testacc-oss]
 alias = "tao"
 description = "Run automated acceptance tests for Prefect OSS"
-usage = 'arg "[tests]" default=""'
+usage = 'arg "[tests]" default="" env="TESTS"'
 run = [
   "docker compose up -d",
-  './scripts/testacc-oss "${usage_tests?}"',
+  'tests="${usage_tests?}"; ./scripts/testacc-oss "${tests#TESTS=}"',
   "docker compose down"
 ]
 
