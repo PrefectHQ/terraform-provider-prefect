@@ -7,7 +7,7 @@ set -e
 # It collects the required environment variables from 1Password
 # using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
 #
-# To run specific tests, add the test name or regex as the first argument:
+# To run specific tests, add the test name as the first argument:
 #   ./scripts/testacc-cm TestAccResource_deployment
 #
 # To adjust the log level, specify it as the second argument:
@@ -33,7 +33,7 @@ if [ "${sweep}" != "" ]; then
   run_arg="go test ./internal/sweep -v -sweep=all"
 elif [ "${tests}" != "" ]; then
   echo "specific test(s) configured: ${tests}"
-  run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ${tests}"
+  run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ^${tests}$"
 else
   echo "no specific test configured, running all"
   run_arg="gotestsum --max-fails=50 ./... -count=1 -v"

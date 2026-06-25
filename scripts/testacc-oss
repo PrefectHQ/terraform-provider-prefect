@@ -6,7 +6,7 @@ set -e
 # Start Prefect OSS by running:
 #   docker compose up -d
 #
-# Then, run the OSS tests by name or regex:
+# Then, run the OSS tests:
 #   ./scripts/testacc-oss [tests]
 
 tests=${1:-""}
@@ -23,5 +23,5 @@ if [ "${tests}" == "" ]; then
   run
 else
   echo "Running specified tests: ${tests}"
-  run "${tests}"
+  run "^${tests}$"
 fi
