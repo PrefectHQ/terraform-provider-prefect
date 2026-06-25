@@ -24,21 +24,28 @@ func TestAccDatasource_account(t *testing.T) {
 	testutils.SkipTestsIfOSS(t)
 
 	datasourceName := "data.prefect_account.test"
+
+	stateChecks := []statecheck.StateCheck{
+		testutils.ExpectKnownValue(datasourceName, "id", os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")),
+		testutils.ExpectKnownValueNotNull(datasourceName, "name"),
+		testutils.ExpectKnownValueNotNull(datasourceName, "handle"),
+	}
+
+	// Domain names are an SSO feature that is not available on customer-managed
+	// instances, so only assert them when not running in customer-managed mode.
+	if !testutils.TestContextCM() {
+		// These domain names were manually added to the account, because we're using a pre-existing account
+		// due to the fact that accounts cannot be created with the API/Terraform.
+		stateChecks = append(stateChecks, testutils.ExpectKnownValueList(datasourceName, "domain_names", []string{"example.com", "foobar.com"}))
+	}
+
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccAccount(),
-				ConfigStateChecks: []statecheck.StateCheck{
-					testutils.ExpectKnownValue(datasourceName, "id", os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")),
-					testutils.ExpectKnownValueNotNull(datasourceName, "name"),
-					testutils.ExpectKnownValueNotNull(datasourceName, "handle"),
-
-					// These domain names were manually added to the account, because we're using a pre-existing account
-					// due to the fact that accounts cannot be created with the API/Terraform.
-					testutils.ExpectKnownValueList(datasourceName, "domain_names", []string{"example.com", "foobar.com"}),
-				},
+				Config:            fixtureAccAccount(),
+				ConfigStateChecks: stateChecks,
 			},
 		},
 	})

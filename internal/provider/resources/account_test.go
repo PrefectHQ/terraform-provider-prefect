@@ -30,6 +30,25 @@ func TestAccResource_account(t *testing.T) {
 
 	resourceName := "prefect_account.test"
 
+	// The account used for this test is pre-existing (accounts cannot be created
+	// via the API), so its name/handle/link differ between Prefect Cloud and a
+	// customer-managed instance. The defaults below describe the Cloud CI account.
+	// When running against a customer-managed instance these will not match, so
+	// require them to be supplied explicitly rather than silently asserting the
+	// Cloud values (which would fail the import check even though the provider
+	// read succeeded).
+	if testutils.TestContextCM() {
+		for _, key := range []string{"PREFECT_ACCOUNT_NAME", "PREFECT_ACCOUNT_HANDLE", "PREFECT_ACCOUNT_LINK"} {
+			if os.Getenv(key) == "" {
+				t.Fatalf("%s must be set to the customer-managed account's value when running this test with TEST_CONTEXT=CM", key)
+			}
+		}
+	}
+
+	expectedName := testutils.EnvOrDefault("PREFECT_ACCOUNT_NAME", "github-ci-tests")
+	expectedHandle := testutils.EnvOrDefault("PREFECT_ACCOUNT_HANDLE", "github-ci-tests")
+	expectedLink := testutils.EnvOrDefault("PREFECT_ACCOUNT_LINK", "https://github.com/PrefectHQ/terraform-provider-prefect")
+
 	checkFunc := func(s []*terraform.InstanceState) error {
 		if len(s) != 1 {
 			return fmt.Errorf("expected 1 instance state, got %d", len(s))
@@ -43,16 +62,16 @@ func TestAccResource_account(t *testing.T) {
 		}{
 			{
 				attribute: "name",
-				expected:  "github-ci-tests",
+				expected:  expectedName,
 			},
 			{
 				attribute: "handle",
-				expected:  "github-ci-tests",
+				expected:  expectedHandle,
 			},
 			{
 				// This value was provided manually in the UI to support this test.
 				attribute: "link",
-				expected:  "https://github.com/PrefectHQ/terraform-provider-prefect",
+				expected:  expectedLink,
 			},
 		}
 
@@ -94,6 +113,13 @@ func TestAccResource_account(t *testing.T) {
 func TestAccResource_account_settings(t *testing.T) {
 	// Accounts are not compatible OSS.
 	testutils.SkipTestsIfOSS(t)
+
+	// This test exercises several Cloud-only account features that are not
+	// available on customer-managed instances: the pre-existing `github-ci-tests`
+	// account name/handle/link, SSO `domain_names`, and the `managed_execution`
+	// setting (the CM account-settings API rejects `managed_execution` as an
+	// extra field). Skip the whole test on customer-managed instances.
+	testutils.SkipTestsIfCM(t)
 
 	accountID := os.Getenv("PREFECT_CLOUD_ACCOUNT_ID")
 	resourceName := "prefect_account.test"

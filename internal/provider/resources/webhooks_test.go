@@ -243,8 +243,17 @@ func testAccCheckWebhookEndpoint(webhookResourceName string, webhook *api.Webhoo
 			return fmt.Errorf("Resource not found in state: %s", webhookResourceName)
 		}
 
+		// Derive the expected endpoint host from the same source the provider
+		// uses (the configured API URL), rather than hardcoding a specific host.
+		// This keeps the assertion correct across environments (Prefect Cloud,
+		// staging, and customer-managed instances).
+		c, err := testutils.NewTestClient()
+		if err != nil {
+			return fmt.Errorf("error creating test client: %w", err)
+		}
+
 		storedEndpoint := webhookResource.Primary.Attributes["endpoint"]
-		expectedEndpoint := fmt.Sprintf("https://api.stg.prefect.dev/hooks/%s", webhook.Slug)
+		expectedEndpoint := fmt.Sprintf("%s/hooks/%s", c.GetEndpointHost(), webhook.Slug)
 		if storedEndpoint != expectedEndpoint {
 			return fmt.Errorf("Endpoint does not match expected value: %s != %s", storedEndpoint, expectedEndpoint)
 		}

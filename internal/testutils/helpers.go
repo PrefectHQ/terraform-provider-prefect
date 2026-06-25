@@ -109,6 +109,43 @@ func ExpectKnownValueListSize(resourceName, path string, size int) statecheck.St
 	return expectKnownValue(resourceName, path, knownvalue.ListSizeExact(size))
 }
 
+// listSizeMin is a knownvalue.Check that asserts a list has at least a minimum
+// number of elements. This is useful for values whose exact size varies across
+// environments (for example, the default permission set on an account role can
+// differ between Prefect Cloud and customer-managed instances), where we still
+// want to assert the value is populated with a substantial set.
+type listSizeMin struct {
+	min int
+}
+
+// CheckValue verifies that the passed value is a list and contains at least
+// the minimum number of elements.
+func (v listSizeMin) CheckValue(other any) error {
+	otherVal, ok := other.([]any)
+	if !ok {
+		return fmt.Errorf("expected []any value for ListSizeMin check, got: %T", other)
+	}
+
+	if len(otherVal) < v.min {
+		return fmt.Errorf("expected at least %d elements for ListSizeMin check, got %d elements", v.min, len(otherVal))
+	}
+
+	return nil
+}
+
+// String returns the string representation of the value.
+func (v listSizeMin) String() string {
+	return strconv.Itoa(v.min)
+}
+
+// ExpectKnownValueListSizeMin returns a statecheck.StateCheck that asserts a
+// list attribute has at least min elements.
+//
+//nolint:ireturn // required for testing
+func ExpectKnownValueListSizeMin(resourceName, path string, minSize int) statecheck.StateCheck {
+	return expectKnownValue(resourceName, path, listSizeMin{min: minSize})
+}
+
 // ExpectKnownValueSet returns a statecheck.StateCheck that can be used to
 // check the known value of a resource attribute that is a set of strings.
 //
