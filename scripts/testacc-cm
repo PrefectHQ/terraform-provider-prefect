@@ -7,8 +7,9 @@ set -e
 # It collects the required environment variables from 1Password
 # using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
 #
-# To run specific tests, add the test name as the first argument:
+# To run specific tests, add the test name or glob-style pattern as the first argument:
 #   ./scripts/testacc-cm TestAccResource_deployment
+#   ./scripts/testacc-cm 'TestAccResource_block*'
 #
 # To adjust the log level, specify it as the second argument:
 #   ./scripts/testacc-cm TestAccResource_deployment DEBUG
@@ -22,6 +23,16 @@ tests=${1:-""}
 log_level=${2:-"INFO"}
 sweep=${3:-""}
 
+normalize_test_filter() {
+  local filter="${1}"
+
+  if [[ "${filter}" == *"*"* && "${filter}" != *".*"* ]]; then
+    filter="${filter//\*/.*}"
+  fi
+
+  printf '%s' "${filter}"
+}
+
 run_arg=""
 if [ "${sweep}" != "" ]; then
   # If sweep is set to anything, only run the sweepers and skip the acceptance tests.
@@ -33,7 +44,8 @@ if [ "${sweep}" != "" ]; then
   run_arg="go test ./internal/sweep -v -sweep=all"
 elif [ "${tests}" != "" ]; then
   echo "specific test(s) configured: ${tests}"
-  run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ^${tests}$"
+  tests_filter=$(normalize_test_filter "${tests}")
+  run_arg="gotestsum --max-fails=50 ./... -count=1 -v -run ^${tests_filter}$"
 else
   echo "no specific test configured, running all"
   run_arg="gotestsum --max-fails=50 ./... -count=1 -v"

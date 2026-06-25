@@ -6,10 +6,20 @@ set -e
 # Start Prefect OSS by running:
 #   docker compose up -d
 #
-# Then, run the OSS tests:
+# Then, run the OSS tests by name or glob-style pattern:
 #   ./scripts/testacc-oss [tests]
 
 tests=${1:-""}
+
+function normalize_test_filter() {
+  local filter="${1}"
+
+  if [[ "${filter}" == *"*"* && "${filter}" != *".*"* ]]; then
+    filter="${filter//\*/.*}"
+  fi
+
+  printf '%s' "${filter}"
+}
 
 function run() {
   TF_ACC=1 \
@@ -23,5 +33,6 @@ if [ "${tests}" == "" ]; then
   run
 else
   echo "Running specified tests: ${tests}"
-  run "^${tests}$"
+  tests_filter=$(normalize_test_filter "${tests}")
+  run "^${tests_filter}$"
 fi
