@@ -6,8 +6,9 @@ set -e
 # It collects the required environment variables from 1Password
 # using its CLI: https://developer.1password.com/docs/cli/secrets-scripts
 #
-# To run specific tests, add the test name as the first argument:
+# To run specific tests, add the test name or Go test regex as the first argument:
 #   ./scripts/testacc-dev TestAccResource_deployment
+#   ./scripts/testacc-dev 'TestAccResource_block.*'
 #
 # To adjust the log level, specify it as the second argument:
 #   ./scripts/testacc-dev TestAccResource_deployment DEBUG
