@@ -54,18 +54,25 @@ run = "golangci-lint run"
 [tasks.test]
 alias = "t"
 description = "Run automated unit tests ({{vars.helper_tests_arg}})"
-run = 'gotestsum --max-fails=50 ./... -run {{arg(name="tests", default="")}}'
+usage = 'arg "[tests]" default=""'
+run = 'gotestsum --max-fails=50 ./... -run "${usage_tests?}"'
 run_windows = 'gotestsum --max-fails=50 ./...'
 
 [tasks.testacc]
 alias = "ta"
 description = "Run acceptance tests against real infrastructure ({{vars.helper_tests_arg}})"
-run = 'TF_ACC=1 mise run test {{arg(name="tests", default="")}}'
+usage = 'arg "[tests]" default=""'
+run = 'TF_ACC=1 mise run test "${usage_tests?}"'
 
 [tasks.testacc-dev]
 alias = "tad"
 description = "Run automated acceptance tests from a local machine ({{vars.helper_tests_arg}})"
-run = 'scripts/testacc-dev {{arg(name="tests", default="")}} {{arg(name="log_level", default="")}} {{arg(name="sweep",default="")}}'
+usage = '''
+arg "[tests]" default=""
+arg "[log_level]" default=""
+arg "[sweep]" default=""
+'''
+run = 'scripts/testacc-dev "${usage_tests?}" "${usage_log_level?}" "${usage_sweep?}"'
 
 [tasks.testacc-dev-user]
 alias = "tadu"
@@ -75,14 +82,20 @@ file = 'scripts/testacc-dev-user'
 [tasks.testacc-cm]
 alias = "tac"
 description = "Run automated acceptance tests against a Customer-Managed instance from a local machine ({{vars.helper_tests_arg}})"
-run = 'scripts/testacc-cm {{arg(name="tests", default="")}} {{arg(name="log_level", default="")}} {{arg(name="sweep",default="")}}'
+usage = '''
+arg "[tests]" default=""
+arg "[log_level]" default=""
+arg "[sweep]" default=""
+'''
+run = 'scripts/testacc-cm "${usage_tests?}" "${usage_log_level?}" "${usage_sweep?}"'
 
 [tasks.testacc-oss]
 alias = "tao"
 description = "Run automated acceptance tests for Prefect OSS"
+usage = 'arg "[tests]" default=""'
 run = [
   "docker compose up -d",
-  './scripts/testacc-oss {{arg(name="tests", default="")}}',
+  './scripts/testacc-oss "${usage_tests?}"',
   "docker compose down"
 ]
 
@@ -103,7 +116,11 @@ run = [
 [tasks.dev-new]
 alias = "dn"
 description = "Creates a new dev testfile"
-run = 'sh create-dev-testfile.sh {{arg(name="resource")}} {{arg(name="resourcename",default="")}}'
+usage = '''
+arg "<resource>"
+arg "[resourcename]" default=""
+'''
+run = 'sh create-dev-testfile.sh "${usage_resource?}" "${usage_resourcename?}"'
 
 [settings]
 # Enable experimental mode to support installing
