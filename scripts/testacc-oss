@@ -6,8 +6,9 @@ set -e
 # Start Prefect OSS by running:
 #   docker compose up -d
 #
-# Then, run the OSS tests:
+# Then, run the OSS tests by name or Go test regex:
 #   ./scripts/testacc-oss [tests]
+#   ./scripts/testacc-oss 'TestAccResource_block.*'
 
 tests=${1:-""}
 
