@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/google/uuid"
 )
@@ -67,22 +68,35 @@ type DeploymentCreate struct {
 
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
-	ConcurrencyLimit         *int64              `json:"concurrency_limit,omitempty"`
-	ConcurrencyOptions       *ConcurrencyOptions `json:"concurrency_options,omitempty"`
-	Description              *string             `json:"description,omitempty"`
-	EnforceParameterSchema   *bool               `json:"enforce_parameter_schema,omitempty"`
-	Entrypoint               *string             `json:"entrypoint,omitempty"`
-	GlobalConcurrencyLimitID *uuid.UUID          `json:"global_concurrency_limit_id,omitempty"`
-	JobVariables             map[string]any      `json:"job_variables,omitempty"`
-	ParameterOpenAPISchema   map[string]any      `json:"parameter_openapi_schema,omitempty"`
-	Parameters               map[string]any      `json:"parameters,omitempty"`
-	Path                     *string             `json:"path,omitempty"`
-	Paused                   *bool               `json:"paused,omitempty"`
-	StorageDocumentID        *uuid.UUID          `json:"storage_document_id,omitempty"`
-	Tags                     []string            `json:"tags,omitempty"`
-	Version                  *string             `json:"version,omitempty"`
-	WorkPoolName             *string             `json:"work_pool_name,omitempty"`
-	WorkQueueName            *string             `json:"work_queue_name,omitempty"`
+	// The Prefect API distinguishes "field absent" (no change) from "field is
+	// null" (clear). concurrency_limit and global_concurrency_limit_id route
+	// through the same underlying limit, so sending an explicit null for either
+	// clears it, and sending concurrency_limit alongside an explicit
+	// global_concurrency_limit_id:null can trip a 409. concurrency_options is
+	// not cleared automatically when the limit is, so removing it also needs an
+	// explicit null.
+	//
+	// Because the standard `omitempty` tag cannot emit an explicit null, these
+	// fields are encoded as json.RawMessage and populated only when they should
+	// change. See the concurrency*UpdateValue helpers in the deployment
+	// resource's Update.
+	ConcurrencyLimit         json.RawMessage `json:"concurrency_limit,omitempty"`
+	ConcurrencyOptions       json.RawMessage `json:"concurrency_options,omitempty"`
+	Description              *string         `json:"description,omitempty"`
+	EnforceParameterSchema   *bool           `json:"enforce_parameter_schema,omitempty"`
+	Entrypoint               *string         `json:"entrypoint,omitempty"`
+	GlobalConcurrencyLimitID json.RawMessage `json:"global_concurrency_limit_id,omitempty"`
+	JobVariables             map[string]any  `json:"job_variables,omitempty"`
+	ParameterOpenAPISchema   map[string]any  `json:"parameter_openapi_schema,omitempty"`
+	Parameters               map[string]any  `json:"parameters,omitempty"`
+	Path                     *string         `json:"path,omitempty"`
+	Paused                   *bool           `json:"paused,omitempty"`
+	PullSteps                []PullStep      `json:"pull_steps,omitempty"`
+	StorageDocumentID        *uuid.UUID      `json:"storage_document_id,omitempty"`
+	Tags                     []string        `json:"tags,omitempty"`
+	Version                  *string         `json:"version,omitempty"`
+	WorkPoolName             *string         `json:"work_pool_name,omitempty"`
+	WorkQueueName            *string         `json:"work_queue_name,omitempty"`
 }
 
 // ConcurrencyOptions is a representation of the deployment concurrency options.
@@ -126,7 +140,8 @@ type PullStepGitClone struct {
 	Branch *string `json:"branch,omitempty"`
 
 	// Access token for the repository.
-	AccessToken *string `json:"access_token,omitempty"` //nolint:gosec // struct field name, not a credential
+	//nolint:gosec // This is an API model field name required by Prefect's schema.
+	AccessToken *string `json:"access_token,omitempty"`
 
 	// IncludeSubmodules determines whether to include submodules when cloning the repository.
 	IncludeSubmodules *bool `json:"include_submodules,omitempty"`
@@ -160,11 +175,47 @@ type PullStepPullFromAzure struct {
 	Folder *string `json:"folder,omitempty"`
 }
 
+// PullStepRunShellScript is a representation of a pull step that runs a shell script.
+type PullStepRunShellScript struct {
+	PullStepCommon
+
+	// The script to run.
+	Script *string `json:"script,omitempty"`
+
+	// The directory to run the script in.
+	Directory *string `json:"directory,omitempty"`
+
+	// Environment variables to set for the script.
+	Env map[string]string `json:"env,omitempty"`
+
+	// Whether to stream script output to stdout/stderr.
+	StreamOutput *bool `json:"stream_output,omitempty"`
+
+	// Whether to expand environment variables in the script before running.
+	ExpandEnvVars *bool `json:"expand_env_vars,omitempty"`
+}
+
+// PullStepPipInstallRequirements is a representation of a pull step that installs dependencies from a requirements file.
+type PullStepPipInstallRequirements struct {
+	PullStepCommon
+
+	// The directory containing the requirements file.
+	Directory *string `json:"directory,omitempty"`
+
+	// The requirements file to install from.
+	RequirementsFile *string `json:"requirements_file,omitempty"`
+
+	// Whether to stream pip install output to stdout/stderr.
+	StreamOutput *bool `json:"stream_output,omitempty"`
+}
+
 // PullStep contains instructions for preparing your flows for a deployment run.
 type PullStep struct {
-	PullStepGitClone                 *PullStepGitClone            `json:"prefect.deployments.steps.git_clone,omitempty"`
-	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory `json:"prefect.deployments.steps.set_working_directory,omitempty"`
-	PullStepPullFromAzureBlobStorage *PullStepPullFromAzure       `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
-	PullStepPullFromGCS              *PullStepPullFrom            `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
-	PullStepPullFromS3               *PullStepPullFrom            `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
+	PullStepGitClone                 *PullStepGitClone               `json:"prefect.deployments.steps.git_clone,omitempty"`
+	PullStepRunShellScript           *PullStepRunShellScript         `json:"prefect.deployments.steps.run_shell_script,omitempty"`
+	PullStepPipInstallRequirements   *PullStepPipInstallRequirements `json:"prefect.deployments.steps.pip_install_requirements,omitempty"`
+	PullStepSetWorkingDirectory      *PullStepSetWorkingDirectory    `json:"prefect.deployments.steps.set_working_directory,omitempty"`
+	PullStepPullFromAzureBlobStorage *PullStepPullFromAzure          `json:"prefect_azure.deployments.steps.pull_from_azure_blob_storage,omitempty"`
+	PullStepPullFromGCS              *PullStepPullFrom               `json:"prefect_gcp.deployments.steps.pull_from_gcs,omitempty"`
+	PullStepPullFromS3               *PullStepPullFrom               `json:"prefect_aws.deployments.steps.pull_from_s3,omitempty"`
 }

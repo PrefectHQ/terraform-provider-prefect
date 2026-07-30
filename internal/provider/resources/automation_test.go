@@ -352,7 +352,80 @@ resource "prefect_automation" "{{ .AutomationResourceName }}" {
 	return testutils.RenderTemplate(tmpl, cfg)
 }
 
-//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func fixtureAccAutomationResourceSendEmailNotification(cfg automationFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+resource "prefect_automation" "{{ .AutomationResourceName }}" {
+	{{ .WorkspaceIDArg }}
+
+	name        = "test-email-notification-automation"
+	description = "description for test-email-notification-automation"
+	enabled     = true
+
+  trigger = {
+    event = {
+      posture = "Reactive"
+      match = jsonencode({
+        "prefect.resource.id" = "prefect.flow-run.*"
+      })
+      expect    = ["prefect.flow-run.Failed"]
+      threshold = 1
+      within    = 0
+    }
+  }
+
+  actions = [
+    {
+      type    = "send-email-notification"
+      emails  = ["test@example.com", "oncall@example.com"]
+      subject = "Flow run failed"
+      body    = "A flow run entered a failed state."
+    }
+  ]
+}
+`
+
+	return testutils.RenderTemplate(tmpl, cfg)
+}
+
+func fixtureAccAutomationResourcePauseResumeSchedule(cfg automationFixtureConfig) string {
+	tmpl := `
+{{ .Workspace }}
+
+resource "prefect_automation" "{{ .AutomationResourceName }}" {
+	{{ .WorkspaceIDArg }}
+
+	name        = "test-pause-schedule-automation"
+	description = "description for test-pause-schedule-automation"
+	enabled     = true
+
+  trigger = {
+    event = {
+      posture = "Reactive"
+      match = jsonencode({
+        "prefect.resource.id" = "prefect.flow-run.*"
+      })
+      expect    = ["prefect.flow-run.Failed"]
+      threshold = 1
+      within    = 0
+    }
+  }
+
+  actions = [
+    {
+      type          = "pause-schedule-for-flow-run"
+      deployment_id = "123e4567-e89b-12d3-a456-426614174000"
+      schedule_id   = "223e4567-e89b-12d3-a456-426614174001"
+    }
+  ]
+}
+`
+
+	return testutils.RenderTemplate(tmpl, cfg)
+}
+
+//nolint:paralleltest,maintidx // we use the resource.ParallelTest helper instead; test complexity is acceptable
 func TestAccResource_automation(t *testing.T) {
 	eventTriggerAutomationResourceName := testutils.NewRandomPrefixedString()
 	eventTriggerAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", eventTriggerAutomationResourceName)
@@ -365,6 +438,13 @@ func TestAccResource_automation(t *testing.T) {
 
 	sequenceTriggerAutomationResourceName := testutils.NewRandomPrefixedString()
 	sequenceTriggerAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", sequenceTriggerAutomationResourceName)
+
+	emailNotificationAutomationResourceName := testutils.NewRandomPrefixedString()
+	emailNotificationAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", emailNotificationAutomationResourceName)
+
+	pauseScheduleAutomationResourceName := testutils.NewRandomPrefixedString()
+	pauseScheduleAutomationResourceNameAndPath := fmt.Sprintf("prefect_automation.%s", pauseScheduleAutomationResourceName)
+
 	ephemeralWorkspace := testutils.NewEphemeralWorkspace()
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -461,12 +541,14 @@ func TestAccResource_automation(t *testing.T) {
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.name", "Failed by automation"),
 					testutils.ExpectKnownValue(metricTriggerAutomationResourceNameAndPath, "actions.0.message", "Flow run failed"),
 				},
-				// This test doesn't work against OSS. It returns a 422 unprocessable entity request, indicating
-				// that there might be a schema difference between OSS and Cloud for this type of automation.
+				// Metric-trigger automations are a Prefect Cloud feature. Against OSS and
+				// customer-managed instances, the API returns a 422 unprocessable entity
+				// because those environments only accept event/compound/sequence triggers.
 				//
-				// We will skip this test for now, but might be able to either adapt the fixture to work against both
-				// environments, or create a separate fixture and text for each environment.
-				SkipFunc: testutils.SkipFuncOSS,
+				// We skip this test for those environments. We might later adapt the fixture
+				// to work against all environments, or create a separate fixture/test per
+				// environment.
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			{
 				// Import State checks - import by automation_id
@@ -474,9 +556,10 @@ func TestAccResource_automation(t *testing.T) {
 				ResourceName:      metricTriggerAutomationResourceNameAndPath,
 				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(metricTriggerAutomationResourceNameAndPath),
 				ImportStateVerify: true,
-				// Because we skip the previous test in OSS, we have to skip this test in OSS as well because there will
-				// be no resource by that name available to import.
-				SkipFunc: testutils.SkipFuncOSS,
+				// Because we skip the previous step in OSS / customer-managed, we have to skip
+				// this import step there as well, since there will be no resource by that name
+				// available to import.
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 			{
 				Config: fixtureAccAutomationResourceCompoundTrigger(automationFixtureConfig{
@@ -581,6 +664,63 @@ func TestAccResource_automation(t *testing.T) {
 						}),
 					),
 				},
+			},
+			// Cloud-only: send-email-notification action
+			{
+				Config: fixtureAccAutomationResourceSendEmailNotification(automationFixtureConfig{
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: emailNotificationAutomationResourceName,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckAutomationResourceExists(emailNotificationAutomationResourceNameAndPath, &api.Automation{}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(emailNotificationAutomationResourceNameAndPath, "name", "test-email-notification-automation"),
+					testutils.ExpectKnownValueBool(emailNotificationAutomationResourceNameAndPath, "enabled", true),
+					statecheck.ExpectKnownValue(emailNotificationAutomationResourceNameAndPath,
+						tfjsonpath.New("actions").AtSliceIndex(0),
+						knownvalue.MapPartial(map[string]knownvalue.Check{
+							"type": knownvalue.StringExact("send-email-notification"),
+							"emails": knownvalue.ListExact([]knownvalue.Check{
+								knownvalue.StringExact("test@example.com"),
+								knownvalue.StringExact("oncall@example.com"),
+							}),
+						}),
+					),
+				},
+				SkipFunc: testutils.SkipFuncOSSOrCM,
+			},
+			// Cloud-only: import state for send-email-notification
+			{
+				ImportState:       true,
+				ResourceName:      emailNotificationAutomationResourceNameAndPath,
+				ImportStateIdFunc: testutils.GetResourceWorkspaceImportStateID(emailNotificationAutomationResourceNameAndPath),
+				ImportStateVerify: true,
+				SkipFunc:          testutils.SkipFuncOSSOrCM,
+			},
+			// Cloud-only: pause-schedule-for-flow-run action
+			{
+				Config: fixtureAccAutomationResourcePauseResumeSchedule(automationFixtureConfig{
+					Workspace:              ephemeralWorkspace.Resource,
+					WorkspaceIDArg:         ephemeralWorkspace.IDArg,
+					AutomationResourceName: pauseScheduleAutomationResourceName,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckAutomationResourceExists(pauseScheduleAutomationResourceNameAndPath, &api.Automation{}),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValue(pauseScheduleAutomationResourceNameAndPath, "name", "test-pause-schedule-automation"),
+					statecheck.ExpectKnownValue(pauseScheduleAutomationResourceNameAndPath,
+						tfjsonpath.New("actions").AtSliceIndex(0),
+						knownvalue.MapPartial(map[string]knownvalue.Check{
+							"type":          knownvalue.StringExact("pause-schedule-for-flow-run"),
+							"deployment_id": knownvalue.StringExact("123e4567-e89b-12d3-a456-426614174000"),
+							"schedule_id":   knownvalue.StringExact("223e4567-e89b-12d3-a456-426614174001"),
+						}),
+					),
+				},
+				SkipFunc: testutils.SkipFuncOSSOrCM,
 			},
 		},
 	})

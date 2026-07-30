@@ -48,11 +48,10 @@ func fixtureAccDeployment(cfg deploymentConfig) string {
 
 resource "prefect_block" "test_gh_repository" {
 	name = "{{.StorageDocumentName}}"
-	type_slug = "github-repository"
+	type_slug = "secret"
 
 	data = jsonencode({
-		"repository_url": "https://github.com/foo/bar",
-		"reference": "main"
+		"value": "test-value"
 	})
 
 	{{.WorkspaceIDArg}}
@@ -114,6 +113,54 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 			{{-   end }}
 			{{-   if .IncludeSubmodules }}
 			include_submodules = {{.IncludeSubmodules}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepRunShellScript }}
+			type = "run_shell_script"
+			{{-   if .Script }}
+			script = "{{.Script}}"
+			{{-   end }}
+			{{-   if .Directory }}
+			directory = "{{.Directory}}"
+			{{-   end }}
+			{{-   if .ExpandEnvVars }}
+			expand_env_vars = {{.ExpandEnvVars}}
+			{{-   end }}
+			{{-   if .StreamOutput }}
+			stream_output = {{.StreamOutput}}
+			{{-   end }}
+			{{-   if .Credentials }}
+			credentials = "{{.Credentials}}"
+			{{-   end }}
+			{{-   if .Requires }}
+			requires = "{{.Requires}}"
+			{{-   end }}
+			{{-   if .Env }}
+			env = {
+				{{- range $key, $value := .Env }}
+				"{{$key}}" = "{{$value}}"
+				{{- end }}
+			}
+			{{-   end }}
+			{{- end }}
+
+			{{- with .PullStepPipInstallRequirements }}
+			type = "pip_install_requirements"
+			{{-   if .Directory }}
+			directory = "{{.Directory}}"
+			{{-   end }}
+			{{-   if .RequirementsFile }}
+			requirements_file = "{{.RequirementsFile}}"
+			{{-   end }}
+			{{-   if .StreamOutput }}
+			stream_output = {{.StreamOutput}}
 			{{-   end }}
 			{{-   if .Credentials }}
 			credentials = "{{.Credentials}}"
@@ -185,6 +232,13 @@ resource "prefect_deployment" "{{.DeploymentName}}" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_deployment_with_global_concurrency_limit(t *testing.T) {
+	// Deployment-level global concurrency limits are a Prefect Cloud feature.
+	// Customer-managed servers accept `global_concurrency_limit_id` on
+	// create/update for compatibility but deliberately do not persist it (it is
+	// excluded from the response), so the value comes back null and Terraform
+	// reports an inconsistent result after apply. Skip this test on CM.
+	testutils.SkipTestsIfCM(t)
+
 	workspace := testutils.NewEphemeralWorkspace()
 	deploymentName := testutils.NewRandomPrefixedString()
 	flowName := testutils.NewRandomPrefixedString()
@@ -415,7 +469,7 @@ func TestAccResource_deployment(t *testing.T) {
 		// Tags: []string{"test1", "test3"}
 		Tags: cfgCreate.Tags,
 
-		// PullSteps require a replacement of the resource.
+		// PullSteps are updateable in-place.
 		PullSteps: []api.PullStep{
 			{
 				PullStepSetWorkingDirectory: &api.PullStepSetWorkingDirectory{
@@ -428,6 +482,24 @@ func TestAccResource_deployment(t *testing.T) {
 					Branch:            new("main"),
 					AccessToken:       new("123abc"),
 					IncludeSubmodules: new(true),
+				},
+			},
+			{
+				PullStepRunShellScript: &api.PullStepRunShellScript{
+					Script:        new("echo hello"),
+					Directory:     new("/some/script/directory"),
+					StreamOutput:  new(true),
+					ExpandEnvVars: new(true),
+					Env: map[string]string{
+						"NAME": "world",
+					},
+				},
+			},
+			{
+				PullStepPipInstallRequirements: &api.PullStepPipInstallRequirements{
+					Directory:        new("/some/script/directory"),
+					RequirementsFile: new("requirements.txt"),
+					StreamOutput:     new(false),
 				},
 			},
 			{
@@ -455,7 +527,10 @@ func TestAccResource_deployment(t *testing.T) {
 		StorageDocumentName: cfgCreate.StorageDocumentName,
 	}
 
-	var deployment api.Deployment
+	var (
+		deployment   api.Deployment
+		deploymentID string
+	)
 
 	resource.ParallelTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
@@ -471,6 +546,7 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgCreate.Description,
 						pullSteps:   cfgCreate.PullSteps,
 					}),
+					testAccCaptureResourceID(cfgCreate.DeploymentResourceName, &deploymentID),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNumber(cfgCreate.DeploymentResourceName, "concurrency_limit", cfgCreate.ConcurrencyLimit),
@@ -501,6 +577,7 @@ func TestAccResource_deployment(t *testing.T) {
 						description: cfgUpdate.Description,
 						pullSteps:   cfgUpdate.PullSteps,
 					}),
+					testAccCheckResourceIDUnchanged(cfgUpdate.DeploymentResourceName, &deploymentID),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNumber(cfgUpdate.DeploymentResourceName, "concurrency_limit", cfgUpdate.ConcurrencyLimit),
@@ -648,6 +725,114 @@ resource "prefect_deployment" "%[4]s" {
 	})
 }
 
+// TestAccResource_deployment_remove_concurrency_limit tests that a
+// concurrency_limit (and concurrency_options) added to a deployment can later
+// be removed from configuration. Previously, removing them produced a
+// "Provider produced inconsistent result after apply (.concurrency_limit)"
+// error and left the limit in place server-side, because the update payload
+// omitted the field instead of sending an explicit null.
+//
+//nolint:paralleltest // we use the resource.ParallelTest helper instead
+func TestAccResource_deployment_remove_concurrency_limit(t *testing.T) {
+	workspace := testutils.NewEphemeralWorkspace()
+	deploymentName := testutils.NewRandomPrefixedString()
+	flowName := testutils.NewRandomPrefixedString()
+	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
+
+	// Config with a concurrency_limit and concurrency_options set.
+	configWithConcurrency := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name              = "%[4]s"
+  flow_id           = prefect_flow.%[2]s.id
+  entrypoint        = "hello_world.py:hello_world"
+  concurrency_limit = 1
+  concurrency_options = {
+    collision_strategy = "ENQUEUE"
+  }
+  %[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName)
+
+	// Same deployment, with concurrency_limit and concurrency_options removed.
+	configWithoutConcurrency := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+  name = "%[2]s"
+  %[3]s
+}
+
+resource "prefect_deployment" "%[4]s" {
+  name       = "%[4]s"
+  flow_id    = prefect_flow.%[2]s.id
+  entrypoint = "hello_world.py:hello_world"
+  %[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, deploymentName)
+
+	var deployment api.Deployment
+
+	resource.ParallelTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: testutils.TestAccProtoV6ProviderFactories,
+		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Create with a concurrency limit.
+				Config: configWithConcurrency,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNumber(deploymentResourceName, "concurrency_limit", 1),
+					testutils.ExpectKnownValueMap(deploymentResourceName, "concurrency_options", map[string]string{
+						"collision_strategy": "ENQUEUE",
+					}),
+				},
+			},
+			{
+				// Remove the concurrency limit and options. This previously
+				// failed with an inconsistent-result error.
+				Config: configWithoutConcurrency,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentExists(deploymentResourceName, &deployment),
+					testAccCheckDeploymentConcurrencyLimitCleared(&deployment),
+				),
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_limit"),
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_options"),
+				},
+			},
+			{
+				// Re-apply the same config to confirm there is no perpetual diff.
+				Config: configWithoutConcurrency,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_limit"),
+					testutils.ExpectKnownValueNull(deploymentResourceName, "concurrency_options"),
+				},
+			},
+		},
+	})
+}
+
+// testAccCheckDeploymentConcurrencyLimitCleared verifies that the deployment no
+// longer has a concurrency limit set server-side.
+func testAccCheckDeploymentConcurrencyLimitCleared(deployment *api.Deployment) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		if deployment.GlobalConcurrencyLimit != nil {
+			return fmt.Errorf(
+				"expected deployment concurrency limit to be cleared, got limit %d",
+				deployment.GlobalConcurrencyLimit.Limit,
+			)
+		}
+
+		return nil
+	}
+}
+
 // testAccCheckDeploymentExists is a Custom Check Function that
 // verifies that the API object was created correctly.
 func testAccCheckDeploymentExists(deploymentResourceName string, deployment *api.Deployment) resource.TestCheckFunc {
@@ -705,6 +890,46 @@ func testAccCheckDeploymentValues(fetchedDeployment *api.Deployment, expectedVal
 
 		if !reflect.DeepEqual(fetchedDeployment.PullSteps, expectedValues.pullSteps) {
 			return fmt.Errorf("Expected pull steps to be: \n%v\n got \n%v", expectedValues.pullSteps, fetchedDeployment.PullSteps)
+		}
+
+		return nil
+	}
+}
+
+func testAccCaptureResourceID(resourceName string, resourceID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		*resourceID = resourceState.Primary.ID
+		if *resourceID == "" {
+			return fmt.Errorf("resource %q ID is empty", resourceName)
+		}
+
+		return nil
+	}
+}
+
+func testAccCheckResourceIDUnchanged(resourceName string, expectedID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		resourceState, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		if *expectedID == "" {
+			return fmt.Errorf("expected resource ID is empty for %q", resourceName)
+		}
+
+		if resourceState.Primary.ID != *expectedID {
+			return fmt.Errorf(
+				"expected resource %q to keep ID %q, got %q",
+				resourceName,
+				*expectedID,
+				resourceState.Primary.ID,
+			)
 		}
 
 		return nil

@@ -122,11 +122,6 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the associated storage document (UUID)",
 			},
-			"manifest_path": schema.StringAttribute{
-				Computed:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
-			},
 			"job_variables": schema.StringAttribute{
 				Computed:    true,
 				CustomType:  jsontypes.NormalizedType{},
@@ -212,7 +207,28 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 						},
 						"directory": schema.StringAttribute{
 							Computed:    true,
-							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
+							Description: "(For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.",
+						},
+						"script": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') The shell script to execute.",
+						},
+						"env": schema.MapAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') Environment variables to set when running the script.",
+							ElementType: types.StringType,
+						},
+						"stream_output": schema.BoolAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.",
+						},
+						"expand_env_vars": schema.BoolAttribute{
+							Computed:    true,
+							Description: "(For type 'run_shell_script') Whether to expand environment variables in the script before running.",
+						},
+						"requirements_file": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'pip_install_requirements') The requirements file to install from.",
 						},
 						"repository": schema.StringAttribute{
 							Computed:    true,
@@ -233,6 +249,10 @@ For more information, see [deploy overview](https://docs.prefect.io/v3/deploy/in
 						"bucket": schema.StringAttribute{
 							Computed:    true,
 							Description: "(For type 'pull_from_*') The name of the bucket where files are stored.",
+						},
+						"container": schema.StringAttribute{
+							Computed:    true,
+							Description: "(For type 'pull_from_azure_blob_storage') The name of the container where files are stored.",
 						},
 						"folder": schema.StringAttribute{
 							Computed:    true,

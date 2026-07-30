@@ -107,8 +107,10 @@ resource "prefect_resource_sla" "test" {
 
 //nolint:paralleltest // we use the resource.ParallelTest helper instead
 func TestAccResource_resource_sla(t *testing.T) {
-	// SLAs are not supported in OSS.
-	testutils.SkipTestsIfOSS(t)
+	// SLAs are a Prefect Cloud feature. They are not supported on OSS, and the
+	// customer-managed server does not implement the SLA endpoint either
+	// (apply-resource-slas returns 404).
+	testutils.SkipTestsIfOSSOrCM(t)
 
 	resourceName := "prefect_resource_sla.test"
 	workspace := testutils.NewEphemeralWorkspace()

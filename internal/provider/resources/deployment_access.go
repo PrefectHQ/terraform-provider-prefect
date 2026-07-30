@@ -350,11 +350,11 @@ func (r *DeploymentAccessResource) Delete(ctx context.Context, req resource.Dele
 	}
 
 	payload := api.DeploymentAccessSet{}
-	payload.AccessControl.ManageActorIDs = []string{}
-	payload.AccessControl.ViewActorIDs = []string{}
+	payload.AccessControl.ManageActorIDs = []string{"*"}
+	payload.AccessControl.ViewActorIDs = []string{"*"}
 	payload.AccessControl.ManageTeamIDs = []string{}
 	payload.AccessControl.ViewTeamIDs = []string{}
-	payload.AccessControl.RunActorIDs = []string{}
+	payload.AccessControl.RunActorIDs = []string{"*"}
 	payload.AccessControl.RunTeamIDs = []string{}
 
 	err = client.Set(ctx, state.DeploymentID.ValueUUID(), payload)

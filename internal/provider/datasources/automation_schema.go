@@ -1,6 +1,9 @@
 package datasources
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -219,7 +222,7 @@ func ActionsSchema() schema.ListNestedAttribute {
 			Attributes: map[string]schema.Attribute{
 				"type": schema.StringAttribute{
 					Computed:    true,
-					Description: "The type of action to perform",
+					Description: automationActionTypeDescription(),
 					Validators: []validator.String{
 						stringvalidator.OneOf(utils.AllAutomationActionTypes...),
 					},
@@ -264,17 +267,22 @@ func ActionsSchema() schema.ListNestedAttribute {
 					CustomType:  customtypes.UUIDType{},
 				},
 				"block_document_id": schema.StringAttribute{
-					Description: "(Webhook / Notification) ID of the block to use",
+					Description: "(Webhook / Notification / Email Notification) ID of the block to use",
 					Computed:    true,
 					CustomType:  customtypes.UUIDType{},
 				},
 				"subject": schema.StringAttribute{
-					Description: "(Notification) Subject of the notification",
+					Description: "(Notification / Email Notification) Subject of the notification",
 					Computed:    true,
 				},
 				"body": schema.StringAttribute{
-					Description: "(Notification) Body of the notification",
+					Description: "(Notification / Email Notification) Body of the notification",
 					Computed:    true,
+				},
+				"emails": schema.ListAttribute{
+					Description: "(Email Notification) List of email addresses to send the notification to",
+					Computed:    true,
+					ElementType: types.StringType,
 				},
 				"payload": schema.StringAttribute{
 					Description: "(Webhook) Payload to send when calling the webhook",
@@ -290,7 +298,30 @@ func ActionsSchema() schema.ListNestedAttribute {
 					Computed:    true,
 					CustomType:  customtypes.UUIDType{},
 				},
+				"schedule_id": schema.StringAttribute{
+					Description: "(Pause/Resume Schedule) ID of the schedule to apply this action to",
+					Computed:    true,
+					CustomType:  customtypes.UUIDType{},
+				},
 			},
 		},
 	}
+}
+
+// automationActionTypeDescription returns a formatted description for the action `type` attribute,
+// listing all valid values and calling out the Cloud-only ones.
+func automationActionTypeDescription() string {
+	var sb strings.Builder
+
+	sb.WriteString("The type of action to perform. Possible values:\n\n")
+	for _, t := range utils.AllAutomationActionTypes {
+		fmt.Fprintf(&sb, "  - `%s`\n", t)
+	}
+
+	sb.WriteString("\n  The following types are available on Prefect Cloud only:\n\n")
+	for _, t := range utils.CloudOnlyAutomationActionTypes {
+		fmt.Fprintf(&sb, "  - `%s`\n", t)
+	}
+
+	return sb.String()
 }

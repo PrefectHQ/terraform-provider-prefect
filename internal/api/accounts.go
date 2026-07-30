@@ -38,7 +38,6 @@ type Account struct {
 	RunRetentionDays      int64    `json:"run_retention_days"`
 	AuditLogRetentionDays int64    `json:"audit_log_retention_days"`
 	AutomationsLimit      int64    `json:"automations_limit"`
-	BillingEmail          *string  `json:"billing_email"`
 }
 
 // AccountUpdate is the data sent when updating an account.

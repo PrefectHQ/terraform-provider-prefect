@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -17,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -56,7 +56,6 @@ type DeploymentResourceModel struct {
 	FlowID                   customtypes.UUIDValue `tfsdk:"flow_id"`
 	GlobalConcurrencyLimitID customtypes.UUIDValue `tfsdk:"global_concurrency_limit_id"`
 	JobVariables             jsontypes.Normalized  `tfsdk:"job_variables"`
-	ManifestPath             types.String          `tfsdk:"manifest_path"`
 	Name                     types.String          `tfsdk:"name"`
 	ParameterOpenAPISchema   jsontypes.Normalized  `tfsdk:"parameter_openapi_schema"`
 	Parameters               jsontypes.Normalized  `tfsdk:"parameters"`
@@ -82,6 +81,8 @@ type PullStepModel struct {
 	// One of:
 	// - set_working_directory
 	// - git_clone
+	// - run_shell_script
+	// - pip_install_requirements
 	// - pull_from_azure_blob_storage
 	// - pull_from_gcs
 	// - pull_from_s3
@@ -99,6 +100,21 @@ type PullStepModel struct {
 	//
 
 	Directory types.String `tfsdk:"directory"`
+
+	//
+	// Fields for run_shell_script
+	//
+
+	Script        types.String `tfsdk:"script"`
+	Env           types.Map    `tfsdk:"env"`
+	StreamOutput  types.Bool   `tfsdk:"stream_output"`
+	ExpandEnvVars types.Bool   `tfsdk:"expand_env_vars"`
+
+	//
+	// Fields for pip_install_requirements
+	//
+
+	RequirementsFile types.String `tfsdk:"requirements_file"`
 
 	//
 	// Fields for git_clone
@@ -248,14 +264,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				CustomType:  customtypes.UUIDType{},
 				Description: "ID of the associated storage document (UUID)",
 			},
-			"manifest_path": schema.StringAttribute{
-				Description:        "The path to the flow's manifest file, relative to the chosen storage.",
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-				Optional:           true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
 			"job_variables": schema.StringAttribute{
 				Description: "Overrides for the flow's infrastructure configuration.",
 				Optional:    true,
@@ -369,11 +377,6 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Pull steps to prepare flows for a deployment run.",
 				Optional:    true,
 				Computed:    true,
-				PlanModifiers: []planmodifier.List{
-					// Pull steps are only set on create, so any change in their value will require a resource
-					// of the resource. See https://github.com/PrefectHQ/prefect/issues/11052 for more context.
-					listplanmodifier.RequiresReplace(),
-				},
 				Default: listdefault.StaticValue(basetypes.NewListValueMust(
 					types.ObjectType{
 						AttrTypes: map[string]attr.Type{
@@ -381,6 +384,11 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							"credentials":        types.StringType,
 							"requires":           types.StringType,
 							"directory":          types.StringType,
+							"script":             types.StringType,
+							"env":                types.MapType{ElemType: types.StringType},
+							"stream_output":      types.BoolType,
+							"expand_env_vars":    types.BoolType,
+							"requirements_file":  types.StringType,
 							"repository":         types.StringType,
 							"branch":             types.StringType,
 							"access_token":       types.StringType,
@@ -401,6 +409,8 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 								stringvalidator.OneOf(
 									"set_working_directory",
 									"git_clone",
+									"run_shell_script",
+									"pip_install_requirements",
 									"pull_from_azure_blob_storage",
 									"pull_from_gcs",
 									"pull_from_s3",
@@ -416,11 +426,35 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 							Optional:    true,
 						},
 						"directory": schema.StringAttribute{
-							Description: "(For type 'set_working_directory') The directory to set as the working directory.",
+							Description: "(For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.",
 							Optional:    true,
 							Validators: []validator.String{
 								stringvalidator.ConflictsWith(pathExpressionsForAttributes(nonDirectoryAttributes)...),
 							},
+						},
+						"script": schema.StringAttribute{
+							Description: "(For type 'run_shell_script') The shell script to execute.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonRunShellScriptAttributes),
+						},
+						"env": schema.MapAttribute{
+							Description: "(For type 'run_shell_script') Environment variables to set when running the script.",
+							Optional:    true,
+							ElementType: types.StringType,
+						},
+						"stream_output": schema.BoolAttribute{
+							Description: "(For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.",
+							Optional:    true,
+						},
+						"expand_env_vars": schema.BoolAttribute{
+							Description: "(For type 'run_shell_script') Whether to expand environment variables in the script before running.",
+							Optional:    true,
+							Validators:  boolConflictsWithValidators(nonRunShellScriptBoolAttributes),
+						},
+						"requirements_file": schema.StringAttribute{
+							Description: "(For type 'pip_install_requirements') The requirements file to install from.",
+							Optional:    true,
+							Validators:  stringConflictsWithValidators(nonPipInstallRequirementsAttributes),
 						},
 						"repository": schema.StringAttribute{
 							Description: "(For type 'git_clone') The URL of the repository to clone.",
@@ -501,6 +535,34 @@ func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, di
 				Directory: tfPullStep.Directory.ValueStringPointer(),
 			}
 
+		case "run_shell_script":
+			var env map[string]string
+			if !tfPullStep.Env.IsNull() && !tfPullStep.Env.IsUnknown() {
+				env = make(map[string]string)
+				for key, value := range tfPullStep.Env.Elements() {
+					if strVal, ok := value.(basetypes.StringValue); ok {
+						env[key] = strVal.ValueString()
+					}
+				}
+			}
+
+			apiPullStep.PullStepRunShellScript = &api.PullStepRunShellScript{
+				PullStepCommon: pullStepCommon,
+				Script:         tfPullStep.Script.ValueStringPointer(),
+				Directory:      tfPullStep.Directory.ValueStringPointer(),
+				Env:            env,
+				StreamOutput:   tfPullStep.StreamOutput.ValueBoolPointer(),
+				ExpandEnvVars:  tfPullStep.ExpandEnvVars.ValueBoolPointer(),
+			}
+
+		case "pip_install_requirements":
+			apiPullStep.PullStepPipInstallRequirements = &api.PullStepPipInstallRequirements{
+				PullStepCommon:   pullStepCommon,
+				Directory:        tfPullStep.Directory.ValueStringPointer(),
+				RequirementsFile: tfPullStep.RequirementsFile.ValueStringPointer(),
+				StreamOutput:     tfPullStep.StreamOutput.ValueBoolPointer(),
+			}
+
 		case "pull_from_azure_blob_storage":
 			apiPullStep.PullStepPullFromAzureBlobStorage = &api.PullStepPullFromAzure{
 				PullStepCommon: pullStepCommon,
@@ -529,7 +591,10 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 	for i := range pullSteps {
 		pullStep := pullSteps[i]
 
-		var pullStepModel PullStepModel
+		pullStepModel := PullStepModel{
+			// Ensure map type metadata is always present, even on non-run_shell_script pull steps.
+			Env: types.MapNull(types.StringType),
+		}
 
 		// PullStepGitClone
 		if pullStep.PullStepGitClone != nil {
@@ -550,6 +615,43 @@ func mapPullStepsAPIToTerraform(pullSteps []api.PullStep) ([]PullStepModel, diag
 			pullStepModel.Directory = types.StringValue(*pullStep.PullStepSetWorkingDirectory.Directory)
 
 			// common fields not used on this pull step type
+		}
+
+		// PullStepRunShellScript
+		if pullStep.PullStepRunShellScript != nil {
+			pullStepModel.Type = types.StringValue("run_shell_script")
+			pullStepModel.Script = types.StringPointerValue(pullStep.PullStepRunShellScript.Script)
+			pullStepModel.Directory = types.StringPointerValue(pullStep.PullStepRunShellScript.Directory)
+			pullStepModel.StreamOutput = types.BoolPointerValue(pullStep.PullStepRunShellScript.StreamOutput)
+			pullStepModel.ExpandEnvVars = types.BoolPointerValue(pullStep.PullStepRunShellScript.ExpandEnvVars)
+
+			envElements := make(map[string]attr.Value, len(pullStep.PullStepRunShellScript.Env))
+			for key, value := range pullStep.PullStepRunShellScript.Env {
+				envElements[key] = types.StringValue(value)
+			}
+			if len(envElements) > 0 {
+				env, mapDiags := types.MapValue(types.StringType, envElements)
+				diags.Append(mapDiags...)
+				if !mapDiags.HasError() {
+					pullStepModel.Env = env
+				}
+			}
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepRunShellScript.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepRunShellScript.Requires)
+		}
+
+		// PullStepPipInstallRequirements
+		if pullStep.PullStepPipInstallRequirements != nil {
+			pullStepModel.Type = types.StringValue("pip_install_requirements")
+			pullStepModel.Directory = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Directory)
+			pullStepModel.RequirementsFile = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.RequirementsFile)
+			pullStepModel.StreamOutput = types.BoolPointerValue(pullStep.PullStepPipInstallRequirements.StreamOutput)
+
+			// common fields
+			pullStepModel.Credentials = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Credentials)
+			pullStepModel.Requires = types.StringPointerValue(pullStep.PullStepPipInstallRequirements.Requires)
 		}
 
 		// PullStepPullFromAzureBlobStorage
@@ -643,6 +745,10 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 		model.ConcurrencyOptions = &ConcurrencyOptions{
 			CollisionStrategy: types.StringValue(deployment.ConcurrencyOptions.CollisionStrategy),
 		}
+	} else {
+		// Reset to nil when the API returns no concurrency options, otherwise
+		// removing concurrency_options from config would leave stale state.
+		model.ConcurrencyOptions = nil
 	}
 
 	pullSteps, diags := mapPullStepsAPIToTerraform(deployment.PullSteps)
@@ -869,11 +975,77 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 }
 
+// concurrencyUpdateValue computes the concurrency_limit value to send in a
+// deployment update. The Prefect API distinguishes an absent field (no change)
+// from an explicit null (clear the limit), so we only include the field when it
+// is being set or cleared:
+//
+//   - plan has a value          -> send that value
+//   - plan null, prior had value -> send null (clear)
+//   - plan null, prior null      -> omit (return nil RawMessage)
+//
+// Returning a nil json.RawMessage leaves the omitempty field out of the payload.
+func concurrencyUpdateValue(plan, prior types.Int64) json.RawMessage {
+	switch {
+	case !plan.IsNull():
+		return json.RawMessage(fmt.Sprintf("%d", plan.ValueInt64()))
+	case !prior.IsNull():
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
+// globalConcurrencyLimitUpdateValue mirrors concurrencyUpdateValue for the
+// global_concurrency_limit_id field. The same underlying limit backs both
+// fields server-side, so we send each only when it actually changes to avoid
+// clobbering the other or tripping a data-integrity conflict.
+//
+// This attribute is Computed, so when it is absent from config its planned
+// value is unknown (not null). An unknown value means "leave it alone", so we
+// omit the field in that case rather than sending the zero UUID.
+func globalConcurrencyLimitUpdateValue(plan, prior customtypes.UUIDValue) json.RawMessage {
+	switch {
+	case plan.IsUnknown():
+		return nil
+	case !plan.IsNull():
+		return json.RawMessage(fmt.Sprintf("%q", plan.ValueUUID().String()))
+	case !prior.IsNull() && !prior.IsUnknown():
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
+// concurrencyOptionsUpdateValue mirrors concurrencyUpdateValue for the
+// concurrency_options field. The server does not clear concurrency_options when
+// the limit is cleared, so removing it from config requires an explicit null.
+func concurrencyOptionsUpdateValue(plan, prior *ConcurrencyOptions) json.RawMessage {
+	switch {
+	case plan != nil:
+		return json.RawMessage(fmt.Sprintf(`{"collision_strategy":%q}`, plan.CollisionStrategy.ValueString()))
+	case prior != nil:
+		return json.RawMessage("null")
+	default:
+		return nil
+	}
+}
+
 // Update updates the resource and sets the updated Terraform state on success.
 func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var model DeploymentResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// We need the prior state to know whether a concurrency limit is being
+	// cleared. The Prefect API only clears a limit when it receives an explicit
+	// null, and routes both concurrency_limit and global_concurrency_limit_id
+	// through the same underlying limit, so we send each only when it changes.
+	var priorState DeploymentResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &priorState)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -923,17 +1095,24 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	pullSteps, diags := mapPullStepsTerraformToAPI(model.PullSteps)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:         model.ConcurrencyLimit.ValueInt64Pointer(),
+		ConcurrencyLimit:         concurrencyUpdateValue(model.ConcurrencyLimit, priorState.ConcurrencyLimit),
 		Description:              model.Description.ValueStringPointer(),
 		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               model.Entrypoint.ValueStringPointer(),
-		GlobalConcurrencyLimitID: model.GlobalConcurrencyLimitID.ValueUUIDPointer(),
+		GlobalConcurrencyLimitID: globalConcurrencyLimitUpdateValue(model.GlobalConcurrencyLimitID, priorState.GlobalConcurrencyLimitID),
 		JobVariables:             jobVariables,
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
 		Path:                     model.Path.ValueStringPointer(),
 		Paused:                   model.Paused.ValueBoolPointer(),
+		PullSteps:                pullSteps,
 		StorageDocumentID:        model.StorageDocumentID.ValueUUIDPointer(),
 		Tags:                     tags,
 		Version:                  model.Version.ValueStringPointer(),
@@ -941,11 +1120,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
 
-	if model.ConcurrencyOptions != nil {
-		payload.ConcurrencyOptions = &api.ConcurrencyOptions{
-			CollisionStrategy: model.ConcurrencyOptions.CollisionStrategy.ValueString(),
-		}
-	}
+	payload.ConcurrencyOptions = concurrencyOptionsUpdateValue(model.ConcurrencyOptions, priorState.ConcurrencyOptions)
 
 	// Capture the planned parameter_openapi_schema before the API call
 	// overwrites it (same reason as in Create).
@@ -1075,9 +1250,23 @@ func boolConflictsWithValidators(attributes []string) []validator.Bool {
 	}
 }
 
+func combineAttributes(groups ...[]string) []string {
+	return slices.Concat(groups...)
+}
+
 var (
 	directoryAttributes = []string{
 		"directory",
+	}
+
+	runShellScriptAttributes = []string{
+		"script",
+		"env",
+		"expand_env_vars",
+	}
+
+	pipInstallRequirementsAttributes = []string{
+		"requirements_file",
 	}
 
 	gitCloneAttributes = []string{
@@ -1093,7 +1282,11 @@ var (
 		"folder",
 	}
 
-	nonDirectoryAttributes = append(gitCloneAttributes, pullFromAttributes...)
-	nonGitCloneAttributes  = append(directoryAttributes, pullFromAttributes...)
-	nonPullFromAttributes  = append(directoryAttributes, gitCloneAttributes...)
+	nonDirectoryAttributes = combineAttributes(gitCloneAttributes, pullFromAttributes)
+	nonGitCloneAttributes  = combineAttributes(directoryAttributes, pullFromAttributes, runShellScriptAttributes, pipInstallRequirementsAttributes)
+	nonPullFromAttributes  = combineAttributes(directoryAttributes, gitCloneAttributes, runShellScriptAttributes, pipInstallRequirementsAttributes)
+
+	nonRunShellScriptAttributes         = combineAttributes(gitCloneAttributes, pullFromAttributes, pipInstallRequirementsAttributes)
+	nonRunShellScriptBoolAttributes     = combineAttributes(gitCloneAttributes, pullFromAttributes)
+	nonPipInstallRequirementsAttributes = combineAttributes(gitCloneAttributes, pullFromAttributes, runShellScriptAttributes)
 )

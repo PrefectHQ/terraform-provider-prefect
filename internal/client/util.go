@@ -167,7 +167,8 @@ func request(ctx context.Context, client *http.Client, cfg requestConfig) (*http
 	setDefaultHeaders(req, cfg.apiKey, cfg.basicAuthKey, cfg.csrfClientToken, cfg.csrfToken, cfg.customHeaders)
 
 	// Body will be closed by the caller.
-	resp, err := client.Do(req) //nolint:gosec // URL is constructed from provider config, not user input
+	// #nosec G704 -- request URL comes from validated API route construction in provider clients.
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("http error: %w", err)
 	}

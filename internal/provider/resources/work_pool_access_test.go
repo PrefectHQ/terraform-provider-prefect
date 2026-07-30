@@ -16,6 +16,7 @@ type workPoolAccessConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
 	ServiceAccountName    string
+	IncludeAccess         bool
 }
 
 func fixtureAccWorkPoolAccess(cfg workPoolAccessConfig) string {
@@ -59,6 +60,7 @@ resource "prefect_work_pool" "test" {
 	workspace_id = {{.WorkspaceResourceName}}.id
 }
 
+{{if .IncludeAccess}}
 resource "prefect_work_pool_access" "test" {
 	workspace_id = {{.WorkspaceResourceName}}.id
 	work_pool_name = prefect_work_pool.test.name
@@ -71,6 +73,7 @@ resource "prefect_work_pool_access" "test" {
 	run_team_ids = [data.prefect_team.test.id]
 	view_team_ids = [data.prefect_team.test.id]
 }
+{{end}}
 `
 
 	return testutils.RenderTemplate(tmpl, cfg)
@@ -85,7 +88,7 @@ func TestAccResource_work_pool_access(t *testing.T) {
 	serviceAccountName := testutils.NewRandomPrefixedString()
 	teamName := "my-team"
 
-	cfgSet := workPoolAccessConfig{
+	baseCfg := workPoolAccessConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
 		ServiceAccountName:    serviceAccountName,
@@ -99,7 +102,12 @@ func TestAccResource_work_pool_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccWorkPoolAccess(cfgSet),
+				Config: fixtureAccWorkPoolAccess(workPoolAccessConfig{
+					WorkspaceResource:     baseCfg.WorkspaceResource,
+					WorkspaceResourceName: baseCfg.WorkspaceResourceName,
+					ServiceAccountName:    baseCfg.ServiceAccountName,
+					IncludeAccess:         true,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckWorkPoolExists("prefect_work_pool.test", &workPool),
 					testAccCheckWorkPoolAccessExists("prefect_work_pool_access.test", &workPoolAccess),
@@ -117,6 +125,12 @@ func TestAccResource_work_pool_access(t *testing.T) {
 							{Name: teamName, Type: api.TeamAccessor},
 						},
 					}),
+				),
+			},
+			{
+				Config: fixtureAccWorkPoolAccess(baseCfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckWorkPoolAccessDestroy("prefect_work_pool.test"),
 				),
 			},
 		},
@@ -180,6 +194,53 @@ func testAccCheckWorkPoolAccessValues(fetchedWorkPoolAccess *api.WorkPoolAccessC
 			err := actorFound(test.fetched, test.expected)
 			if err != nil {
 				return fmt.Errorf("%s: %w", name, err)
+			}
+		}
+
+		return nil
+	}
+}
+
+// testAccCheckWorkPoolAccessDestroy is a Custom Check Function that
+// verifies that the API object was destroyed correctly.
+func testAccCheckWorkPoolAccessDestroy(workPoolResourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// Get the workspace resource we just created from the state
+		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
+		}
+
+		workPoolName, err := testutils.GetResourceAttributeFromStateByAttribute(s, workPoolResourceName, "name")
+		if err != nil {
+			return fmt.Errorf("error fetching work pool name: %w", err)
+		}
+
+		// Initialize the client with the associated workspaceID
+		// NOTE: the accountID is inherited by the one set in the test environment
+		c, _ := testutils.NewTestClient()
+		workPoolAccessClient, _ := c.WorkPoolAccess(uuid.Nil, workspaceID)
+
+		fetchedWorkPoolAccess, err := workPoolAccessClient.Read(context.Background(), workPoolName)
+		if err != nil {
+			return fmt.Errorf("error fetching work pool access: %w", err)
+		}
+
+		expectedActors := []api.ObjectActorAccess{
+			{ID: "*", Name: "*", Type: api.AllAccessors},
+		}
+
+		checks := map[string][]api.ObjectActorAccess{
+			"manage_actors": fetchedWorkPoolAccess.ManageActors,
+			"run_actors":    fetchedWorkPoolAccess.RunActors,
+			"view_actors":   fetchedWorkPoolAccess.ViewActors,
+		}
+		for name, actors := range checks {
+			if len(actors) != len(expectedActors) {
+				return fmt.Errorf("expected %s to have %d entries, got %d", name, len(expectedActors), len(actors))
+			}
+			if actors[0].ID != "*" || actors[0].Type != api.AllAccessors {
+				return fmt.Errorf("expected %s to be wildcard access, got %+v", name, actors[0])
 			}
 		}
 

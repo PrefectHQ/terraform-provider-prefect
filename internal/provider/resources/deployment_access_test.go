@@ -16,6 +16,7 @@ type deploymentAccessConfig struct {
 	WorkspaceResource     string
 	WorkspaceResourceName string
 	ServiceAccountName    string
+	IncludeAccess         bool
 }
 
 func fixtureAccDeploymentAccess(cfg deploymentAccessConfig) string {
@@ -60,6 +61,7 @@ resource "prefect_deployment" "test" {
 	flow_id = prefect_flow.test.id
 }
 
+{{if .IncludeAccess}}
 resource "prefect_deployment_access" "test" {
 	workspace_id = {{.WorkspaceResourceName}}.id
 	deployment_id = prefect_deployment.test.id
@@ -72,6 +74,7 @@ resource "prefect_deployment_access" "test" {
 	run_team_ids = [data.prefect_team.test.id]
 	view_team_ids = [data.prefect_team.test.id]
 }
+{{end}}
 `
 
 	return testutils.RenderTemplate(tmpl, cfg)
@@ -86,7 +89,7 @@ func TestAccResource_deployment_access(t *testing.T) {
 	serviceAccountName := testutils.NewRandomPrefixedString()
 	teamName := "my-team"
 
-	cfgSet := deploymentAccessConfig{
+	baseCfg := deploymentAccessConfig{
 		WorkspaceResource:     workspace.Resource,
 		WorkspaceResourceName: testutils.WorkspaceResourceName,
 		ServiceAccountName:    serviceAccountName,
@@ -100,7 +103,12 @@ func TestAccResource_deployment_access(t *testing.T) {
 		PreCheck:                 func() { testutils.AccTestPreCheck(t) },
 		Steps: []resource.TestStep{
 			{
-				Config: fixtureAccDeploymentAccess(cfgSet),
+				Config: fixtureAccDeploymentAccess(deploymentAccessConfig{
+					WorkspaceResource:     baseCfg.WorkspaceResource,
+					WorkspaceResourceName: baseCfg.WorkspaceResourceName,
+					ServiceAccountName:    baseCfg.ServiceAccountName,
+					IncludeAccess:         true,
+				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckDeploymentExists("prefect_deployment.test", &deployment),
 					testAccCheckDeploymentAccessExists("prefect_deployment_access.test", &deploymentAccess),
@@ -118,6 +126,12 @@ func TestAccResource_deployment_access(t *testing.T) {
 							{Name: teamName, Type: api.TeamAccessor},
 						},
 					}),
+				),
+			},
+			{
+				Config: fixtureAccDeploymentAccess(baseCfg),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					testAccCheckDeploymentAccessDestroy("prefect_deployment.test"),
 				),
 			},
 		},
@@ -181,6 +195,53 @@ func testAccCheckDeploymentAccessValues(fetchedDeploymentAccess *api.DeploymentA
 			err := actorFound(test.fetched, test.expected)
 			if err != nil {
 				return fmt.Errorf("%s: %w", name, err)
+			}
+		}
+
+		return nil
+	}
+}
+
+// testAccCheckDeploymentAccessDestroy is a Custom Check Function that
+// verifies that the access control was reset to wildcard on deletion.
+func testAccCheckDeploymentAccessDestroy(deploymentResourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		// Get the workspace resource we just created from the state
+		workspaceID, err := testutils.GetResourceIDFromState(s, testutils.WorkspaceResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching workspace ID: %w", err)
+		}
+
+		deploymentID, err := testutils.GetResourceIDFromState(s, deploymentResourceName)
+		if err != nil {
+			return fmt.Errorf("error fetching deployment ID: %w", err)
+		}
+
+		// Initialize the client with the associated workspaceID
+		// NOTE: the accountID is inherited by the one set in the test environment
+		c, _ := testutils.NewTestClient()
+		deploymentAccessClient, _ := c.DeploymentAccess(uuid.Nil, workspaceID)
+
+		fetchedDeploymentAccess, err := deploymentAccessClient.Read(context.Background(), deploymentID)
+		if err != nil {
+			return fmt.Errorf("error fetching deployment access: %w", err)
+		}
+
+		expectedActors := []api.ObjectActorAccess{
+			{ID: "*", Name: "*", Type: api.AllAccessors},
+		}
+
+		checks := map[string][]api.ObjectActorAccess{
+			"manage_actors": fetchedDeploymentAccess.ManageActors,
+			"run_actors":    fetchedDeploymentAccess.RunActors,
+			"view_actors":   fetchedDeploymentAccess.ViewActors,
+		}
+		for name, actors := range checks {
+			if len(actors) != len(expectedActors) {
+				return fmt.Errorf("expected %s to have %d entries, got %d", name, len(expectedActors), len(actors))
+			}
+			if actors[0].ID != "*" || actors[0].Type != api.AllAccessors {
+				return fmt.Errorf("expected %s to be wildcard access, got %+v", name, actors[0])
 			}
 		}
 

@@ -92,10 +92,32 @@ resource "prefect_deployment" "deployment" {
       folder    = "my-folder",
     },
     {
+      type     = "pull_from_gcs",
+      requires = "prefect-gcp>=0.6.0"
+      bucket   = "some-gcs-bucket",
+      folder   = "some-folder",
+    },
+    {
       type     = "pull_from_s3",
       requires = "prefect-aws>=0.3.4"
       bucket   = "some-bucket",
       folder   = "some-folder",
+    },
+    {
+      type              = "pip_install_requirements"
+      directory         = "/some/directory"
+      requirements_file = "requirements.txt"
+      stream_output     = true
+    },
+    {
+      type            = "run_shell_script"
+      script          = "python --version"
+      directory       = "/some/directory"
+      expand_env_vars = true
+      stream_output   = true
+      env = {
+        "EXAMPLE_ENV_KEY" = "example-value"
+      }
     }
   ]
   storage_document_id = prefect_block.test_gh_repository.id
@@ -123,7 +145,6 @@ resource "prefect_deployment" "deployment" {
 - `entrypoint` (String) The path to the entrypoint for the workflow, relative to the path.
 - `global_concurrency_limit_id` (String) The ID of a global concurrency limit to apply to this deployment. This is the recommended way to set concurrency limits. Mutually exclusive with concurrency_limit.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
-- `manifest_path` (String, Deprecated) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
@@ -164,15 +185,32 @@ Optional:
 - `bucket` (String) (For type 'pull_from_s3' and 'pull_from_gcs') The name of the bucket where files are stored.
 - `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
-- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `directory` (String) (For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.
+- `env` (Map of String) (For type 'run_shell_script') Environment variables to set when running the script.
+- `expand_env_vars` (Boolean) (For type 'run_shell_script') Whether to expand environment variables in the script before running.
 - `folder` (String) (For type 'pull_from_*') The folder in the bucket/container where files are stored.
 - `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
+- `requirements_file` (String) (For type 'pip_install_requirements') The requirements file to install from.
 - `requires` (String) A list of Python package dependencies.
+- `script` (String) (For type 'run_shell_script') The shell script to execute.
+- `stream_output` (Boolean) (For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.
 
 ## Import
 
 Import is supported using the following syntax:
+
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = prefect_deployment.example
+  id = "00000000-0000-0000-0000-000000000000"
+}
+
+resource "prefect_deployment" "example" {
+}
+```
 
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 

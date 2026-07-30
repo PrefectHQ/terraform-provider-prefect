@@ -71,7 +71,6 @@ data "prefect_deployment" "existing_by_id_string" {
 - `flow_id` (String) Flow ID (UUID) to associate deployment to
 - `global_concurrency_limit_id` (String) The ID of a global concurrency limit applied to this deployment.
 - `job_variables` (String) Overrides for the flow's infrastructure configuration.
-- `manifest_path` (String, Deprecated) The path to the flow's manifest file, relative to the chosen storage.
 - `parameter_openapi_schema` (String) The parameter schema of the flow, including defaults.
 - `parameters` (String) Parameters for flow runs scheduled by the deployment.
 - `path` (String) The path to the working directory for the workflow, relative to remote storage or an absolute path.
@@ -100,10 +99,16 @@ Read-Only:
 - `access_token` (String) (For type 'git_clone') Access token for the repository. Refer to a credentials block for security purposes. Used in leiu of 'credentials'.
 - `branch` (String) (For type 'git_clone') The branch to clone. If not provided, the default branch is used.
 - `bucket` (String) (For type 'pull_from_*') The name of the bucket where files are stored.
+- `container` (String) (For type 'pull_from_azure_blob_storage') The name of the container where files are stored.
 - `credentials` (String) Credentials to use for the pull step. Refer to a {GitHub,GitLab,BitBucket} credentials block.
-- `directory` (String) (For type 'set_working_directory') The directory to set as the working directory.
+- `directory` (String) (For type 'set_working_directory', 'run_shell_script', and 'pip_install_requirements') The directory where the step should run/apply.
+- `env` (Map of String) (For type 'run_shell_script') Environment variables to set when running the script.
+- `expand_env_vars` (Boolean) (For type 'run_shell_script') Whether to expand environment variables in the script before running.
 - `folder` (String) (For type 'pull_from_*') The folder in the bucket where files are stored.
 - `include_submodules` (Boolean) (For type 'git_clone') Whether to include submodules when cloning the repository.
 - `repository` (String) (For type 'git_clone') The URL of the repository to clone.
+- `requirements_file` (String) (For type 'pip_install_requirements') The requirements file to install from.
 - `requires` (String) A list of Python package dependencies.
+- `script` (String) (For type 'run_shell_script') The shell script to execute.
+- `stream_output` (Boolean) (For type 'run_shell_script' and 'pip_install_requirements') Whether to stream command output to stdout/stderr.
 - `type` (String) The type of pull step

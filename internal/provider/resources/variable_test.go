@@ -84,6 +84,11 @@ func TestAccResource_variable(t *testing.T) {
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueString}),
 				),
 			},
+			// Non-string variable values (number, bool, object, tuple) require the
+			// server's JSON-variables support. Customer-managed instances gate this
+			// behind a feature flag that is off by default and return
+			// "`value` must be of type `string`." (HTTP 422) without it. Skip these
+			// typed-value steps on CM; the string-value steps above still run.
 			{
 				// Check updating value of the variable resource to a number
 				Config: fixtureAccVariableResource(workspace.Resource, workspace.IDArg, randomName2, valueNumber),
@@ -91,6 +96,7 @@ func TestAccResource_variable(t *testing.T) {
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueNumber}),
 				),
+				SkipFunc: testutils.SkipFuncCM,
 			},
 			{
 				// Check updating value of the variable resource to a boolean
@@ -99,6 +105,7 @@ func TestAccResource_variable(t *testing.T) {
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
 				),
+				SkipFunc: testutils.SkipFuncCM,
 			},
 			{
 				// Check updating value of the variable resource to a object
@@ -107,6 +114,7 @@ func TestAccResource_variable(t *testing.T) {
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueObjectExpected}),
 				),
+				SkipFunc: testutils.SkipFuncCM,
 			},
 			{
 				// Check updating value of the variable resource to a tuple
@@ -115,13 +123,16 @@ func TestAccResource_variable(t *testing.T) {
 					testAccCheckVariableExists(resourceName, &variable),
 					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueTupleExpected}),
 				),
+				SkipFunc: testutils.SkipFuncCM,
 			},
 			{
-				// Check adding tags
-				Config: fixtureAccVariableResourceWithTags(workspace.Resource, workspace.IDArg, randomName2, valueBool),
+				// Check adding tags. Use a string value so this step also runs on
+				// customer-managed instances (which only support string values by
+				// default); the focus of this step is tag handling, not the value type.
+				Config: fixtureAccVariableResourceWithTags(workspace.Resource, workspace.IDArg, randomName2, valueStringForResource),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					testAccCheckVariableExists(resourceName, &variable),
-					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueBool}),
+					testAccCheckVariableValues(&variable, &api.Variable{Name: randomName2, Value: valueString}),
 				),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", randomName2),

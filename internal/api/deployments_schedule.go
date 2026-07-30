@@ -27,10 +27,6 @@ type DeploymentSchedulePayload struct {
 	Active           *bool   `json:"active,omitempty"`
 	MaxScheduledRuns float32 `json:"max_scheduled_runs,omitempty"`
 
-	// Cloud only
-	MaxActiveRuns float32 `json:"max_active_runs,omitempty"`
-	Catchup       bool    `json:"catchup,omitempty"`
-
 	Schedule   Schedule       `json:"schedule"`
 	Parameters map[string]any `json:"parameters,omitempty"`
 	Slug       string         `json:"slug,omitempty"`

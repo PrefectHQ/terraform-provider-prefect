@@ -108,6 +108,9 @@ type ActionModel struct {
 	Subject types.String `tfsdk:"subject"`
 	Body    types.String `tfsdk:"body"`
 
+	// On Send Email Notification action (Cloud-only)
+	Emails types.List `tfsdk:"emails"`
+
 	// On Call Webhook action
 	Payload types.String `tfsdk:"payload"`
 
@@ -115,4 +118,7 @@ type ActionModel struct {
 	Name    types.String `tfsdk:"name"`
 	State   types.String `tfsdk:"state"`
 	Message types.String `tfsdk:"message"`
+
+	// On Pause/Resume Schedule actions (Cloud-only)
+	ScheduleID customtypes.UUIDValue `tfsdk:"schedule_id"`
 }

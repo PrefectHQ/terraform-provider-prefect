@@ -41,7 +41,6 @@ resource "prefect_account" "example" {
 
 ### Optional
 
-- `billing_email` (String, Deprecated) Billing email to apply to the account's Stripe customer
 - `domain_names` (List of String) The list of domain names for enabling SSO in Prefect Cloud.
 - `link` (String) An optional for an external url associated with the account, e.g. https://prefect.io/
 - `location` (String) An optional physical location for the account, e.g. Washington, D.C.
@@ -66,6 +65,18 @@ Optional:
 ## Import
 
 Import is supported using the following syntax:
+
+In Terraform v1.5.0 and later, the [`import` block](https://developer.hashicorp.com/terraform/language/import) can be used with the `id` attribute, for example:
+
+```terraform
+import {
+  to = prefect_account.example
+  id = "00000000-0000-0000-0000-000000000000"
+}
+
+resource "prefect_account" "example" {
+}
+```
 
 The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 

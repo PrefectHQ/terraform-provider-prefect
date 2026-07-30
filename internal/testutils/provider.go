@@ -52,6 +52,13 @@ func TestContextOSS() bool {
 	return os.Getenv("TEST_CONTEXT") == "OSS"
 }
 
+// TestContextCM checks an environment variable to determine if the tests are running
+// against a customer-managed Prefect instance, which does not support all
+// Prefect Cloud features (for example, SSO / account domain names).
+func TestContextCM() bool {
+	return os.Getenv("TEST_CONTEXT") == "CM"
+}
+
 // SkipTestsIfCloud skips the test if running against Prefect OSS.
 func SkipTestsIfOSS(t *testing.T) {
 	t.Helper()
@@ -65,6 +72,52 @@ func SkipTestsIfOSS(t *testing.T) {
 // skip the test if it is running against Prefect OSS.
 func SkipFuncOSS() (bool, error) {
 	return TestContextOSS(), nil
+}
+
+// SkipTestsIfCM skips the test if running against a customer-managed Prefect
+// instance, which does not support all Prefect Cloud features.
+func SkipTestsIfCM(t *testing.T) {
+	t.Helper()
+
+	if TestContextCM() {
+		t.Skip("skipping test in customer-managed mode")
+	}
+}
+
+// SkipFuncCM implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against a customer-managed Prefect instance.
+func SkipFuncCM() (bool, error) {
+	return TestContextCM(), nil
+}
+
+// SkipTestsIfOSSOrCM skips the test if running against either Prefect OSS or a
+// customer-managed instance. Use this for features that are only available on
+// Prefect Cloud (for example, resource SLAs).
+func SkipTestsIfOSSOrCM(t *testing.T) {
+	t.Helper()
+
+	SkipTestsIfOSS(t)
+	SkipTestsIfCM(t)
+}
+
+// SkipFuncOSSOrCM implements a Terraform acceptance test SkipFunc that will
+// skip the test if it is running against either Prefect OSS or a customer-managed
+// instance. Use this for features that are only available on Prefect Cloud
+// (for example, metric-trigger automations).
+func SkipFuncOSSOrCM() (bool, error) {
+	return TestContextOSS() || TestContextCM(), nil
+}
+
+// EnvOrDefault returns the value of the environment variable named by key,
+// or defaultValue if the variable is unset or empty. This is useful for test
+// expectations that differ between environments (for example, the pre-existing
+// account name on Prefect Cloud vs. a customer-managed instance).
+func EnvOrDefault(key, defaultValue string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+
+	return defaultValue
 }
 
 // AccTestPreCheck is a utility hook, which every test suite will call

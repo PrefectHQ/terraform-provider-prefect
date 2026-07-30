@@ -123,11 +123,11 @@ func mapAutomationAPIToTerraform(ctx context.Context, apiAutomation *api.Automat
 	tfModel.Enabled = types.BoolValue(apiAutomation.Enabled)
 
 	// Map actions
-	actions, diagnostics := mapActionsAPIToTerraform(apiAutomation.Actions)
+	actions, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.Actions)
 	diags.Append(diagnostics...)
-	actionsOnTrigger, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnTrigger)
+	actionsOnTrigger, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.ActionsOnTrigger)
 	diags.Append(diagnostics...)
-	actionsOnResolve, diagnostics := mapActionsAPIToTerraform(apiAutomation.ActionsOnResolve)
+	actionsOnResolve, diagnostics := mapActionsAPIToTerraform(ctx, apiAutomation.ActionsOnResolve)
 	diags.Append(diagnostics...)
 	if diags.HasError() {
 		return diags
@@ -257,7 +257,7 @@ func mapTriggerAPIToTerraform(ctx context.Context, apiTrigger *api.Trigger, tfTr
 // This helper is used when an API response needs to be translated for Terraform state.
 // NOTE: we are re-constructing the response list every time (rather than updating member items in-place),
 // because there is no guarantee that the API returns the list in the same order as the Terraform model.
-func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
+func mapActionsAPIToTerraform(ctx context.Context, apiActions []api.Action) ([]ActionModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	tfActionsModel := make([]ActionModel, 0)
@@ -279,6 +279,15 @@ func mapActionsAPIToTerraform(apiActions []api.Action) ([]ActionModel, diag.Diag
 		actionModel.Name = types.StringPointerValue(action.Name)
 		actionModel.State = types.StringPointerValue(action.State)
 		actionModel.Message = types.StringPointerValue(action.Message)
+		actionModel.ScheduleID = customtypes.NewUUIDPointerValue(action.ScheduleID)
+
+		if len(action.Emails) > 0 {
+			emails, diagnostics := types.ListValueFrom(ctx, types.StringType, action.Emails)
+			diags.Append(diagnostics...)
+			actionModel.Emails = emails
+		} else {
+			actionModel.Emails = types.ListNull(types.StringType)
+		}
 
 		// Only set parameters and job variables if they are set in the API.
 		// Otherwise, the string `"null"` is set to the Terraform model, which will

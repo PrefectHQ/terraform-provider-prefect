@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -38,10 +39,6 @@ type DeploymentScheduleResourceModel struct {
 
 	Active           types.Bool    `tfsdk:"active"`
 	MaxScheduledRuns types.Float32 `tfsdk:"max_scheduled_runs"`
-
-	// Cloud-only
-	MaxActiveRuns types.Float32 `tfsdk:"max_active_runs"`
-	Catchup       types.Bool    `tfsdk:"catchup"`
 
 	// All schedule kinds specify an interval.
 	Timezone types.String `tfsdk:"timezone"`
@@ -153,16 +150,6 @@ For more information, see [schedule flow runs](https://docs.prefect.io/v3/automa
 				Description: "The maximum number of scheduled runs for the schedule.",
 				Optional:    true,
 				Computed:    true,
-			},
-			"max_active_runs": schema.Float32Attribute{
-				Description:        "(Cloud only) The maximum number of active runs for the schedule.",
-				Optional:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
-			},
-			"catchup": schema.BoolAttribute{
-				Description:        "(Cloud only) Whether or not a worker should catch up on Late runs for the schedule.",
-				Optional:           true,
-				DeprecationMessage: "Remove this attribute's configuration as it no longer is used and the attribute will be removed in the next major version of the provider.",
 			},
 			"parameters": schema.StringAttribute{
 				Description: "Parameters for flow runs scheduled by the deployment schedule.",
@@ -453,9 +440,28 @@ func copyScheduleModelToResourceModel(schedule *api.DeploymentSchedule, model *D
 	model.AnchorDate = types.StringValue(schedule.Schedule.AnchorDate)
 	model.Cron = types.StringValue(schedule.Schedule.Cron)
 	model.DayOr = types.BoolValue(schedule.Schedule.DayOr)
-	model.RRule = types.StringValue(schedule.Schedule.RRule)
+	model.RRule = types.StringValue(normalizeRRuleForState(schedule.Schedule.RRule, model.RRule.ValueString()))
 
+	// Some Prefect server versions (notably customer-managed) persist the
+	// schedule slug but omit it from every schedule response payload. When the
+	// response has no slug but we already have a non-empty one locally (the plan
+	// during Create/Update, prior state during Read), keep the local value.
+	//
+	// This applies on Read as well as Create/Update. We cannot distinguish "the
+	// server never echoes slugs" from "the slug was deleted out of band" given a
+	// single empty response (the API models slug as a plain string, so an omitted
+	// field and an empty one both decode to ""). Reflecting the empty value on
+	// Read would break the steady state on servers that never echo slugs: every
+	// refresh would wipe the slug from state and produce a perpetual non-empty
+	// plan. We accept that an out-of-band slug deletion is not surfaced as drift;
+	// the user's configured slug still drives the next apply, which re-asserts it.
+	// This mirrors how we handle other fields the server may not echo back (see
+	// the parameters/rrule handling).
+	priorSlug := model.Slug
 	model.Slug = types.StringValue(schedule.Slug)
+	if schedule.Slug == "" && !priorSlug.IsNull() && priorSlug.ValueString() != "" {
+		model.Slug = priorSlug
+	}
 
 	parametersByteSlice, err := json.Marshal(schedule.Parameters)
 	if err != nil {
@@ -486,6 +492,55 @@ func validateSchedules(schedules []*api.DeploymentSchedule) diag.Diagnostic {
 	}
 
 	return nil
+}
+
+// normalizeRRuleForState returns the rrule value to write into Terraform state.
+//
+// The Prefect server normalizes rrule values by prepending an explicit
+// `DTSTART:...\n` line when the submitted rrule lacks one. If we copy that
+// normalized form into state verbatim, Terraform sees a different value than
+// the plan and fails with "Provider produced inconsistent result after apply".
+//
+// To preserve round-trip stability, strip a leading `DTSTART...\n` line from
+// the server response when the prior local value (plan during Create, state
+// during Read/Update) did not itself begin with a DTSTART line. Users who
+// supply their own DTSTART get the server's value as-is.
+func normalizeRRuleForState(serverRRule, priorRRule string) string {
+	if serverRRule == "" {
+		return serverRRule
+	}
+
+	if hasDTStartPrefix(priorRRule) {
+		return serverRRule
+	}
+
+	if !hasDTStartPrefix(serverRRule) {
+		return serverRRule
+	}
+
+	if newline := strings.IndexByte(serverRRule, '\n'); newline >= 0 {
+		return serverRRule[newline+1:]
+	}
+
+	return serverRRule
+}
+
+// hasDTStartPrefix reports whether s starts with a DTSTART iCalendar line
+// (`DTSTART:...` or `DTSTART;TZID=...:...`), case-insensitive.
+func hasDTStartPrefix(s string) bool {
+	const prefix = "DTSTART"
+	if len(s) < len(prefix)+1 {
+		return false
+	}
+	if !strings.EqualFold(s[:len(prefix)], prefix) {
+		return false
+	}
+	switch s[len(prefix)] {
+	case ':', ';':
+		return true
+	default:
+		return false
+	}
 }
 
 // getScheduleByID gets a schedule by ID from a list of schedules.
