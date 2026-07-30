@@ -152,19 +152,26 @@ func (r *WebhookResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 	}
 }
 
-// waitForWebhookStateStabilization waits for the webhook's enabled state to match the expected value.
-// This handles eventual consistency where the webhook may be created with a temporary enabled state
-// that gets updated asynchronously by the API.
-func waitForWebhookStateStabilization(ctx context.Context, client api.WebhooksClient, webhookID string, expectedEnabled bool) (*api.Webhook, error) {
+// waitForWebhookStateStabilization waits for the webhook's enabled state and template to match the request.
+func waitForWebhookStateStabilization(
+	ctx context.Context,
+	client api.WebhooksClient,
+	webhookID string,
+	expectedEnabled bool,
+	expectedTemplate string,
+) (*api.Webhook, error) {
 	webhook, err := helpers.WaitForResourceStabilization(
 		ctx,
 		func(ctx context.Context) (*api.Webhook, error) {
 			return client.Get(ctx, webhookID)
 		},
 		func(webhook *api.Webhook) error {
-			// Check if enabled state matches expected
 			if webhook.Enabled != expectedEnabled {
 				return fmt.Errorf("webhook enabled state does not match expected: got %v, want %v", webhook.Enabled, expectedEnabled)
+			}
+
+			if webhook.Template != expectedTemplate {
+				return fmt.Errorf("webhook template does not match expected: got %q, want %q", webhook.Template, expectedTemplate)
 			}
 
 			return nil
@@ -225,25 +232,20 @@ func (r *WebhookResource) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	// Wait for the webhook enabled state to stabilize
-	// The API may update this field asynchronously after creation
-	expectedEnabled := plan.Enabled.ValueBool()
-	webhook, err = waitForWebhookStateStabilization(ctx, webhookClient, webhook.ID.String(), expectedEnabled)
+	webhook, err = waitForWebhookStateStabilization(
+		ctx,
+		webhookClient,
+		webhook.ID.String(),
+		plan.Enabled.ValueBool(),
+		plan.Template.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "create", err))
 
 		return
 	}
 
-	// Capture the user's configured template before copying the API response,
-	// which may contain an expanded form of Jinja macros (e.g. from_cloud_event).
-	plannedTemplate := plan.Template
-
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
-
-	// Restore the user's configured template to avoid "inconsistent result
-	// after apply" when the API expands Jinja macros server-side.
-	plan.Template = plannedTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
@@ -303,13 +305,7 @@ func (r *WebhookResource) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	// Preserve the user's configured template from state to avoid phantom
-	// diffs when the API returns an expanded form of Jinja macros.
-	stateTemplate := state.Template
-
 	copyWebhookResponseToModel(webhook, &state, r.client.GetEndpointHost())
-
-	state.Template = stateTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -352,34 +348,20 @@ func (r *WebhookResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Wait for the webhook enabled state to stabilize after update
-	// The API may update this field asynchronously
-	expectedEnabled := plan.Enabled.ValueBool()
-	webhook, err := client.Get(ctx, state.ID.ValueString())
+	webhook, err := waitForWebhookStateStabilization(
+		ctx,
+		client,
+		state.ID.ValueString(),
+		plan.Enabled.ValueBool(),
+		plan.Template.ValueString(),
+	)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
 
 		return
 	}
 
-	// Only wait for stabilization if enabled state doesn't match immediately
-	if webhook.Enabled != expectedEnabled {
-		webhook, err = waitForWebhookStateStabilization(ctx, client, state.ID.ValueString(), expectedEnabled)
-		if err != nil {
-			resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Webhook", "get", err))
-
-			return
-		}
-	}
-
-	// Capture the user's configured template before copying the API response.
-	plannedTemplate := plan.Template
-
 	copyWebhookResponseToModel(webhook, &plan, r.client.GetEndpointHost())
-
-	// Restore the user's configured template to avoid "inconsistent result
-	// after apply" when the API expands Jinja macros server-side.
-	plan.Template = plannedTemplate
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
