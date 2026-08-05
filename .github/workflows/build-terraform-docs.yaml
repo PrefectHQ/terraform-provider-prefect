@@ -14,21 +14,11 @@ on:
 
 permissions: {}
 
-# This workflow generates Terraform docs from the PR's code and pushes the
-# result back to the PR branch, so it needs `contents: write`. We split
-# trusted from untrusted PRs:
-#
-#   * Trusted (a PR from a branch on THIS repo -- internal contributors,
-#     Renovate, Dependabot) run automatically with a normal checkout and push
-#     directly. No environment gate.
-#   * Untrusted (PRs from a fork) run in the `Docs` environment, which requires
-#     reviewer approval, and opt in to fork-head checkout via
-#     `allow-unsafe-pr-checkout`.
-#
-# A same-repo branch is the trust boundary: only users with push access can
-# create one, so it cannot be forged by an outside contributor.
+# Generates docs from the PR's code and pushes them back, so it needs
+# `contents: write`. Trust boundary is a same-repo branch (internal +
+# Renovate); fork PRs are gated behind the `Docs` environment.
 jobs:
-  # Trusted path: same-repo-branch PR (internal / Renovate).
+  # Trusted: same-repo-branch PR. Runs automatically and pushes directly.
   build_tf_docs_internal:
     if: |
       github.event.pull_request.head.repo.full_name == github.repository
@@ -63,8 +53,8 @@ jobs:
             echo "No changes to commit"
           fi
 
-  # Untrusted path: PR from a fork. Gated by the `Docs` environment (required
-  # reviewers) and opts in to fork-head checkout explicitly.
+  # Fork PR: gated by the `Docs` environment (required reviewers); opts into
+  # fork-head checkout explicitly.
   build_tf_docs_fork:
     if: |
       github.event.pull_request.head.repo.full_name != github.repository
@@ -79,10 +69,7 @@ jobs:
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
-          # This PR is from a fork: v7 blocks fork-head checkout under
-          # pull_request_target by default. Generating docs FROM the PR is the
-          # point, and it is gated by the `Docs` environment's required
-          # reviewers, so opt in.
+          # v7 blocks fork-head checkout; opt in (gated by the environment above).
           allow-unsafe-pr-checkout: true
       - name: Install tool dependencies
         uses: jdx/mise-action@v4

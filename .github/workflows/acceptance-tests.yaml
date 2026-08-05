@@ -21,21 +21,11 @@ name: Acceptance Tests
 
 permissions: {}
 
-# Acceptance tests run the PR's code against a live Prefect Cloud account, so
-# they need real API keys. We split trusted from untrusted PRs:
-#
-#   * Trusted (push to main, or a PR from a branch on THIS repo -- internal
-#     contributors, Renovate, Dependabot) run automatically. Their code is
-#     already trusted, so we do a normal checkout with no environment gate.
-#   * Untrusted (PRs from a fork) run in the `Acceptance Tests` environment,
-#     which requires reviewer approval before the secrets are released, and
-#     opt in to fork-head checkout explicitly via `allow-unsafe-pr-checkout`.
-#
-# A same-repo branch is the trust boundary: only users with push access can
-# create one, so `head.repo.full_name == github.repository` cannot be forged
-# by an outside contributor.
+# Tests run the PR's code against live Prefect Cloud, so they need real keys.
+# Trust boundary is a same-repo branch (internal + Renovate), which only
+# push-access users can create; fork PRs are gated behind an environment.
 jobs:
-  # Trusted path: push to main, or a same-repo-branch PR (internal / Renovate).
+  # Trusted: push, or same-repo-branch PR. Runs automatically, no env gate.
   acceptance_tests_internal:
     if: |
       github.event_name != 'pull_request_target' ||
@@ -94,9 +84,8 @@ jobs:
           # and copying the ID on the "Profile" page.
           ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
 
-  # Untrusted path: PR from a fork. Gated by the `Acceptance Tests` environment
-  # (required reviewers) before the API keys are released, and opts in to
-  # fork-head checkout explicitly.
+  # Fork PR: gated by the `Acceptance Tests` environment (required reviewers)
+  # before keys release; opts into fork-head checkout explicitly.
   acceptance_tests_fork:
     if: |
       github.event_name == 'pull_request_target' &&
@@ -110,10 +99,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          # This PR is from a fork: v7 blocks fork-head checkout under
-          # pull_request_target by default. Running fork code against live
-          # Cloud credentials is the point of this job, and it is gated by the
-          # `Acceptance Tests` environment's required reviewers, so opt in.
+          # v7 blocks fork-head checkout; opt in (gated by the environment above).
           allow-unsafe-pr-checkout: true
           persist-credentials: false
 
