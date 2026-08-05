@@ -8,9 +8,12 @@
 
   permissions: {}
 
+  # Labeling needs no secrets and no code checkout, so it is not gated by an
+  # environment: internal and fork PRs alike get labeled automatically. The
+  # `pull_request_target` trigger grants the `pull-requests: write` scope safely
+  # because no untrusted code runs here.
   jobs:
     label:
-      environment: Docs
       runs-on: ubuntu-latest
       permissions:
         contents: read

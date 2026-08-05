@@ -14,19 +14,76 @@ on:
 
 permissions: {}
 
+# This workflow generates Terraform docs from the PR's code and pushes the
+# result back to the PR branch, so it needs `contents: write`. We split
+# trusted from untrusted PRs:
+#
+#   * Trusted (a PR from a branch on THIS repo -- internal contributors,
+#     Renovate, Dependabot) run automatically with a normal checkout and push
+#     directly. No environment gate.
+#   * Untrusted (PRs from a fork) run in the `Docs` environment, which requires
+#     reviewer approval, and opt in to fork-head checkout via
+#     `allow-unsafe-pr-checkout`.
+#
+# A same-repo branch is the trust boundary: only users with push access can
+# create one, so it cannot be forged by an outside contributor.
 jobs:
-  build_tf_docs:
-    name: Build Terraform Docs
+  # Trusted path: same-repo-branch PR (internal / Renovate).
+  build_tf_docs_internal:
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository
+    name: Build Terraform Docs (internal)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Install tool dependencies
+        uses: jdx/mise-action@v4
+        with:
+          install_args: terraform go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
+      - name: Disable mise auto-install for task runs
+        run: mise settings set task_run_auto_install false
+      - name: Build Terraform Docs
+        run: mise run docs
+      - name: Commit changes
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git add .
+          if [[ $(git diff --staged) != '' ]]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git commit -m "Generate Terraform Docs"
+            git push --set-upstream origin ${{ env.HEAD_REF }}
+          else
+            echo "No changes to commit"
+          fi
+
+  # Untrusted path: PR from a fork. Gated by the `Docs` environment (required
+  # reviewers) and opts in to fork-head checkout explicitly.
+  build_tf_docs_fork:
+    if: |
+      github.event.pull_request.head.repo.full_name != github.repository
+    name: Build Terraform Docs (fork)
     environment: Docs
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
+          # This PR is from a fork: v7 blocks fork-head checkout under
+          # pull_request_target by default. Generating docs FROM the PR is the
+          # point, and it is gated by the `Docs` environment's required
+          # reviewers, so opt in.
+          allow-unsafe-pr-checkout: true
       - name: Install tool dependencies
         uses: jdx/mise-action@v4
         with:
