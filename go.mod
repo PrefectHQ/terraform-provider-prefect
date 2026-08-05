@@ -4,7 +4,6 @@ go 1.26
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/avast/retry-go/v4 v4.7.0
 	github.com/avast/retry-go/v5 v5.0.0
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8

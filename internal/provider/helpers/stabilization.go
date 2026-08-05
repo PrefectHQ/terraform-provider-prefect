@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/avast/retry-go/v4"
+	"github.com/avast/retry-go/v5"
 )
 
 const (
@@ -56,7 +56,11 @@ func WaitForResourceStabilization[T any](
 	var resource T
 	var fetchErr error
 
-	retryErr := retry.Do(
+	retryErr := retry.New(
+		retry.Attempts(DefaultStabilizationAttempts),
+		retry.Delay(DefaultStabilizationDelay),
+		retry.LastErrorOnly(true),
+	).Do(
 		func() error {
 			var err error
 			resource, err = fetchFunc(ctx)
@@ -73,9 +77,6 @@ func WaitForResourceStabilization[T any](
 
 			return nil
 		},
-		retry.Attempts(DefaultStabilizationAttempts),
-		retry.Delay(DefaultStabilizationDelay),
-		retry.LastErrorOnly(true),
 	)
 
 	if retryErr != nil {
@@ -132,7 +133,11 @@ func WaitForResourceStabilizationByComparison[T any](
 	var fetchErr error
 	isFirstAttempt := true
 
-	retryErr := retry.Do(
+	retryErr := retry.New(
+		retry.Attempts(DefaultStabilizationAttempts),
+		retry.Delay(DefaultStabilizationDelay),
+		retry.LastErrorOnly(true),
+	).Do(
 		func() error {
 			var err error
 			resource, err = fetchFunc(ctx)
@@ -154,9 +159,6 @@ func WaitForResourceStabilizationByComparison[T any](
 
 			return fmt.Errorf("resource state still changing")
 		},
-		retry.Attempts(DefaultStabilizationAttempts),
-		retry.Delay(DefaultStabilizationDelay),
-		retry.LastErrorOnly(true),
 	)
 
 	if retryErr != nil {

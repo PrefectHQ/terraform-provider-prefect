@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/avast/retry-go/v4"
+	"github.com/avast/retry-go/v5"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
@@ -210,7 +210,7 @@ func (r *BlockResource) getLatestBlockSchema(ctx context.Context, plan BlockReso
 	var latestBlockSchema *api.BlockSchema
 	var diags diag.Diagnostic
 
-	err := retry.Do(func() error {
+	err := retry.New().Do(func() error {
 		blockSchemas, diags = r.getBlockSchemas(ctx, plan)
 		if diags != nil {
 			return fmt.Errorf("unable to get block schemas: %s", diags.Detail())

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/avast/retry-go/v4"
+	"github.com/avast/retry-go/v5"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -128,7 +128,11 @@ func waitForTeamAccessToExist(ctx context.Context, client api.TeamAccessClient, 
 	var teamAccess *api.TeamAccess
 	var fetchErr error
 
-	err := retry.Do(
+	err := retry.New(
+		retry.Attempts(maxRetryAttempts),
+		retry.Delay(time.Duration(retryDelay)*time.Millisecond),
+		retry.LastErrorOnly(true),
+	).Do(
 		func() error {
 			var err error
 			teamAccess, err = client.Read(ctx, teamID.ValueUUID(), memberID.ValueUUID(), memberActorID.ValueUUID())
@@ -141,9 +145,6 @@ func waitForTeamAccessToExist(ctx context.Context, client api.TeamAccessClient, 
 			// If we successfully read the team access, it exists
 			return nil
 		},
-		retry.Attempts(maxRetryAttempts),
-		retry.Delay(time.Duration(retryDelay)*time.Millisecond),
-		retry.LastErrorOnly(true),
 	)
 
 	if err != nil {
