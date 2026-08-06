@@ -2,7 +2,7 @@
 name: Build Terraform Docs
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
@@ -14,23 +14,17 @@ on:
 
 permissions: {}
 
-# Generates docs from the PR's code and pushes them back, so it needs
-# `contents: write`. Trust boundary is a same-repo branch (internal +
-# Renovate); fork PRs are gated behind the `Docs` environment.
 jobs:
-  # Trusted: same-repo-branch PR. Runs automatically and pushes directly.
-  build_tf_docs_internal:
-    if: |
-      github.event.pull_request.head.repo.full_name == github.repository
-    name: Build Terraform Docs (internal)
+  build_tf_docs:
+    name: Build Terraform Docs
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
       - name: Install tool dependencies
         uses: jdx/mise-action@v4
         with:
@@ -39,56 +33,10 @@ jobs:
         run: mise settings set task_run_auto_install false
       - name: Build Terraform Docs
         run: mise run docs
-      - name: Commit changes
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      - name: Check Terraform Docs
         run: |
-          git add .
-          if [[ $(git diff --staged) != '' ]]; then
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git commit -m "Generate Terraform Docs"
-            git push --set-upstream origin ${{ env.HEAD_REF }}
-          else
-            echo "No changes to commit"
-          fi
-
-  # Fork PR: gated by the `Docs` environment (required reviewers); opts into
-  # fork-head checkout explicitly.
-  build_tf_docs_fork:
-    if: |
-      github.event.pull_request.head.repo.full_name != github.repository
-    name: Build Terraform Docs (fork)
-    environment: Docs
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          # v7 blocks fork-head checkout; opt in (gated by the environment above).
-          allow-unsafe-pr-checkout: true
-      - name: Install tool dependencies
-        uses: jdx/mise-action@v4
-        with:
-          install_args: terraform go:github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
-      - name: Disable mise auto-install for task runs
-        run: mise settings set task_run_auto_install false
-      - name: Build Terraform Docs
-        run: mise run docs
-      - name: Commit changes
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          git add .
-          if [[ $(git diff --staged) != '' ]]; then
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git commit -m "Generate Terraform Docs"
-            git push --set-upstream origin ${{ env.HEAD_REF }}
-          else
-            echo "No changes to commit"
+          git add --intent-to-add .
+          if ! git diff --exit-code; then
+            echo "::error::Terraform docs are out of date. Run 'mise run docs' and commit the result."
+            exit 1
           fi

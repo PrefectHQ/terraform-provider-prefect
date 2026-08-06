@@ -12,8 +12,10 @@ repos:
         # - templates/
         # - examples/
         files: ^(.*\.go|docs/.*|templates/.*|examples/.*)$
-        entry: mise
-        args: [run, docs]
+        entry: bash
+        args:
+          - -c
+          - mise run docs && git add --intent-to-add docs/ && git diff --exit-code -- docs/
         language: system
         pass_filenames: false
 
