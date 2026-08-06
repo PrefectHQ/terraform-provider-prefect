@@ -3,5 +3,42 @@
   "extends": [
     "github>PrefectHQ/renovate-config",
     "github>PrefectHQ/renovate-config:go"
+  ],
+  "customDatasources": {
+    "onepassword-cli": {
+      "description": "1Password CLI (op) versions, read from the AgileBits product-history changelog. The mise `1password` tool resolves (via the aqua registry) to an HTTP package downloaded from cache.agilebits.com, so it has no GitHub repo. The native mise manager falls back to github-tags 1password/cli, which does not exist and fails with no-result. This scrapes the authoritative changelog HTML and a jsonata regex extracts the X.Y.Z versions.",
+      "defaultRegistryUrlTemplate": "https://app-updates.agilebits.com/product_history/CLI2",
+      "format": "html",
+      "transformTemplates": [
+        "{ \"releases\": $map($match($, /[0-9]+\\.[0-9]+\\.[0-9]+/).match, function($v) { { \"version\": $v } }) }"
+      ]
+    }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "1Password CLI version pinned as the mise `1password` tool (1password = \"X.Y.Z\"). Tracked via the custom onepassword-cli changelog datasource above, because the tool has no GitHub repo for the native mise manager to query.",
+      "managerFilePatterns": [
+        "/^\\.mise\\.toml$/"
+      ],
+      "matchStrings": [
+        "1password\\s*=\\s*\"(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)\""
+      ],
+      "depNameTemplate": "1password/cli",
+      "datasourceTemplate": "custom.onepassword-cli",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "The native mise manager also detects the `1password` tool and resolves it to github-tags 1password/cli (no such repo), which fails with no-result. The custom onepassword-cli manager above owns this pin, so disable the native mise lookup for it to stop the warning.",
+      "matchManagers": [
+        "mise"
+      ],
+      "matchPackageNames": [
+        "1password/cli"
+      ],
+      "enabled": false
+    }
   ]
 }
