@@ -8,9 +8,10 @@
 
   permissions: {}
 
+  # No secrets or checkout, so no environment gate: all PRs get labeled
+  # automatically. No untrusted code runs here.
   jobs:
     label:
-      environment: Docs
       runs-on: ubuntu-latest
       permissions:
         contents: read

@@ -10,7 +10,7 @@ name: Acceptance Tests
       - go.sum
       - "**/*.go"
       - .github/workflows/acceptance-tests.yaml
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
@@ -23,20 +23,19 @@ permissions: {}
 
 jobs:
   acceptance_tests:
+    # Fork pull requests run the OSS acceptance workflow instead.
+    if: |
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
     name: Acceptance Tests
-    environment: ${{ github.event_name == 'push' && 'Acceptance Tests (main)' || 'Acceptance Tests' }}
+    environment: Acceptance Tests (main)
     runs-on: ubuntu-latest
     steps:
-      - if: |
-          github.event_name == 'pull_request_target'
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - if: |
-          github.event_name == 'push'
-        uses: actions/checkout@v6
+          persist-credentials: false
 
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
