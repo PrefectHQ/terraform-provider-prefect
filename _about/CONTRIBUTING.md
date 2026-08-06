@@ -82,7 +82,7 @@ Note that this _does not_ require building the provider binary with `mise run bu
 
 Acceptance tests create real Prefect Cloud resources, and require a Prefect Cloud account.
 
-In most development and contribution cases, acceptance tests will be run in CI/CD via Github Actions, as test-specific credentials are stored in the environment there. These tests happen in Prefect's internal staging environment, and a Prefect team member must approve the CI action for it to run.
+In CI, pull requests whose branches are in this repository run Prefect Cloud acceptance tests automatically. Pull requests from forks run only the OSS acceptance tests and do not receive Prefect Cloud credentials.
 
 The tests can optionally be triggered from a developer's machine by specifying the Prefect API url, API key, and account ID:
 
@@ -96,8 +96,8 @@ mise run testacc
 
 All acceptance tests run in an ephemeral Prefect workspace, except tests for Prefect workspaces and accounts.
 This means that the target Prefect environment needs to allow for multiple workspaces. If your account lacks this,
-contribute tests to your pull request and a Prefect team member will review and approve them to run in our internal
-infrastructure.
+contribute tests to your pull request. A Prefect team member can review them and run them from a branch in this
+repository.
 
 Here are some general guidelines for writing **datasource** acceptance tests
 
@@ -202,7 +202,7 @@ The `tfplugindocs` CLI will:
 2. Create and populate `.md` files for each page of documentation for the objects mentioned in (1)
 3. Crawl and extract all named examples in `examples/**` + add those HCL configurations into the examples section of each `.md`
 
-**NOTE:** If any documentation input files inside `examples/**` are modified, Github Actions will automatically run `mise run docs` and push any udpates to the working branch
+GitHub Actions runs this command when documentation inputs change. The check fails if generated files differ, so commit the updated `docs/` files with your change.
 
 Documentation will be rendered into the `docs/` directory. If you need to add additional
 information to a document page, create a template first. To do this, create a new file under either:

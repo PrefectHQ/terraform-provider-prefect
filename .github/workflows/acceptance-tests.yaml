@@ -10,7 +10,7 @@ name: Acceptance Tests
       - go.sum
       - "**/*.go"
       - .github/workflows/acceptance-tests.yaml
-  pull_request_target:
+  pull_request:
     branches:
       - main
     paths:
@@ -21,30 +21,21 @@ name: Acceptance Tests
 
 permissions: {}
 
-# Tests run the PR's code against live Prefect Cloud, so they need real keys.
-# Trust boundary is a same-repo branch (internal + Renovate), which only
-# push-access users can create; fork PRs are gated behind an environment.
 jobs:
-  # Trusted: push, or same-repo-branch PR. Runs automatically, no env gate.
-  acceptance_tests_internal:
+  acceptance_tests:
+    # Fork pull requests run the OSS acceptance workflow instead.
     if: |
-      github.event_name != 'pull_request_target' ||
+      github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
-    name: Acceptance Tests (internal)
-    environment: ${{ github.event_name == 'push' && 'Acceptance Tests (main)' || '' }}
+    name: Acceptance Tests
+    environment: Acceptance Tests (main)
     runs-on: ubuntu-latest
     steps:
-      - if: |
-          github.event_name == 'pull_request_target'
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - if: |
-          github.event_name != 'pull_request_target'
-        uses: actions/checkout@v7
 
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
@@ -82,50 +73,4 @@ jobs:
           PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
           # This is the user ID retrieved by logging in as the Marvin user
           # and copying the ID on the "Profile" page.
-          ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
-
-  # Fork PR: gated by the `Acceptance Tests` environment (required reviewers)
-  # before keys release; opts into fork-head checkout explicitly.
-  acceptance_tests_fork:
-    if: |
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.head.repo.full_name != github.repository
-    permissions:
-      contents: read
-    name: Acceptance Tests (fork)
-    environment: Acceptance Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          # v7 blocks fork-head checkout; opt in (gated by the environment above).
-          allow-unsafe-pr-checkout: true
-          persist-credentials: false
-
-      - name: Set up Golang
-        uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-
-      - name: Install tool dependencies
-        uses: jdx/mise-action@v4
-        with:
-          install_args: gotestsum terraform
-
-      - name: Disable mise auto-install for task runs
-        run: mise settings set task_run_auto_install false
-
-      - name: Run acceptance tests
-        run: mise run testacc
-        env:
-          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
-          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_API_KEY }}
-          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
-      - name: Run acceptance tests (user resource)
-        run: mise run testacc "TestAccResource_user*"
-        env:
-          PREFECT_API_URL: ${{ secrets.ACC_TEST_PREFECT_API_URL }}
-          PREFECT_API_KEY: ${{ secrets.ACC_TEST_PREFECT_MARVIN_API_KEY }}
-          PREFECT_CLOUD_ACCOUNT_ID: ${{ secrets.ACC_TEST_PREFECT_CLOUD_ACCOUNT_ID }}
           ACC_TEST_USER_RESOURCE_ID: "48750018-b4c4-4484-8fbf-b61baf3926b5"
