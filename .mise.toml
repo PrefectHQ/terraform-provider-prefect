@@ -7,7 +7,7 @@ go = "1.26"
 golangci-lint = "2.12.2"
 goreleaser = "2.17.1"
 gotestsum = "1.13.0"
-pre-commit = "4.6.1"
+pre-commit = "4.6.2"
 terraform = "1.15.8"
 
 [vars]
