@@ -34,6 +34,7 @@ import (
 var (
 	_                     = resource.ResourceWithConfigure(&DeploymentResource{})
 	_                     = resource.ResourceWithImportState(&DeploymentResource{})
+	_                     = resource.ResourceWithModifyPlan(&DeploymentResource{})
 	_ planmodifier.String = globalLimitRemovalModifier{}
 )
 
@@ -525,6 +526,33 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	}
 }
 
+// ModifyPlan marks the update timestamp unknown when removing a global
+// concurrency limit. The attribute plan modifier introduces the resource
+// change after Terraform has processed computed attributes.
+func (r *DeploymentResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
+
+	var planGlobalLimitID customtypes.UUIDValue
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("global_concurrency_limit_id"), &planGlobalLimitID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var priorGlobalLimitID customtypes.UUIDValue
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("global_concurrency_limit_id"), &priorGlobalLimitID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !globalLimitRemoved(planGlobalLimitID, priorGlobalLimitID) {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("updated"), customtypes.NewTimestampUnknown())...)
+}
+
 func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
@@ -1014,6 +1042,10 @@ type concurrencyUpdatePayload struct {
 	globalConcurrencyLimitID json.RawMessage
 }
 
+func globalLimitRemoved(plan, prior customtypes.UUIDValue) bool {
+	return plan.IsNull() && !prior.IsNull() && !prior.IsUnknown()
+}
+
 // concurrencyUpdateValues computes the concurrency fields to send in a
 // deployment update. The Prefect API distinguishes an absent field (no change)
 // from an explicit null (clear). At most one of concurrency_limit and
@@ -1038,9 +1070,7 @@ func concurrencyUpdateValues(plan, prior DeploymentResourceModel) concurrencyUpd
 		// Omit unresolved configured values.
 	case !plan.GlobalConcurrencyLimitID.IsNull() && !plan.GlobalConcurrencyLimitID.IsUnknown():
 		payload.globalConcurrencyLimitID = json.RawMessage(fmt.Sprintf("%q", plan.GlobalConcurrencyLimitID.ValueUUID().String()))
-	case plan.GlobalConcurrencyLimitID.IsNull() &&
-		!prior.GlobalConcurrencyLimitID.IsNull() &&
-		!prior.GlobalConcurrencyLimitID.IsUnknown():
+	case globalLimitRemoved(plan.GlobalConcurrencyLimitID, prior.GlobalConcurrencyLimitID):
 		payload.globalConcurrencyLimitID = json.RawMessage("null")
 	case plan.GlobalConcurrencyLimitID.IsUnknown() &&
 		!prior.GlobalConcurrencyLimitID.IsNull() &&
