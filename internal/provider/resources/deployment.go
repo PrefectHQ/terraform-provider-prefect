@@ -32,9 +32,33 @@ import (
 )
 
 var (
-	_ = resource.ResourceWithConfigure(&DeploymentResource{})
-	_ = resource.ResourceWithImportState(&DeploymentResource{})
+	_                     = resource.ResourceWithConfigure(&DeploymentResource{})
+	_                     = resource.ResourceWithImportState(&DeploymentResource{})
+	_ planmodifier.String = globalLimitRemovalModifier{}
 )
+
+type globalLimitRemovalModifier struct{}
+
+// Description describes the plan modification.
+func (globalLimitRemovalModifier) Description(_ context.Context) string {
+	return "plans a null global concurrency limit ID when the attribute is removed from configuration"
+}
+
+// MarkdownDescription describes the plan modification in Markdown.
+func (m globalLimitRemovalModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+// PlanModifyString plans a null ID when a configured global concurrency limit
+// is removed. Terraform otherwise retains the prior value for this Optional
+// and Computed attribute.
+func (globalLimitRemovalModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if !req.ConfigValue.IsNull() || req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+		return
+	}
+
+	resp.PlanValue = types.StringNull()
+}
 
 // DeploymentResource contains state for the resource.
 type DeploymentResource struct {
@@ -366,6 +390,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					globalLimitRemovalModifier{},
+				},
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("concurrency_limit")),
 				},
@@ -707,7 +734,11 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
 	model.Paused = types.BoolValue(deployment.Paused)
-	model.StorageDocumentID = customtypes.NewUUIDValue(deployment.StorageDocumentID)
+	if deployment.StorageDocumentID == uuid.Nil {
+		model.StorageDocumentID = customtypes.NewUUIDNull()
+	} else {
+		model.StorageDocumentID = customtypes.NewUUIDValue(deployment.StorageDocumentID)
+	}
 	model.Version = types.StringValue(deployment.Version)
 	model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
 	model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
@@ -985,13 +1016,11 @@ type concurrencyUpdatePayload struct {
 
 // concurrencyUpdateValues computes the concurrency fields to send in a
 // deployment update. The Prefect API distinguishes an absent field (no change)
-// from an explicit null (clear). Configuration identifies which limit field the
-// user selected because an absent Optional and Computed field is unknown in the
-// plan. At most one of concurrency_limit and global_concurrency_limit_id is
-// sent:
+// from an explicit null (clear). At most one of concurrency_limit and
+// global_concurrency_limit_id is sent:
 //
-//   - a configured concurrency_limit value -> send the planned value
-//   - a configured global_concurrency_limit_id value -> send the planned ID
+//   - a planned concurrency_limit value -> send that value
+//   - a planned global_concurrency_limit_id value -> send that ID
 //   - a removed global_concurrency_limit_id -> send global_concurrency_limit_id:null
 //   - otherwise -> send concurrency_limit:null
 //
@@ -999,20 +1028,24 @@ type concurrencyUpdatePayload struct {
 // deleting the underlying shared limit. Unknown configured values are omitted
 // until Terraform resolves them. concurrency_options uses an explicit null when
 // it is absent from the planned configuration.
-func concurrencyUpdateValues(config, plan, prior DeploymentResourceModel) concurrencyUpdatePayload {
+func concurrencyUpdateValues(plan, prior DeploymentResourceModel) concurrencyUpdatePayload {
 	var payload concurrencyUpdatePayload
 
 	switch {
-	case !config.ConcurrencyLimit.IsNull():
-		if !plan.ConcurrencyLimit.IsNull() && !plan.ConcurrencyLimit.IsUnknown() {
-			payload.concurrencyLimit = json.RawMessage(fmt.Sprintf("%d", plan.ConcurrencyLimit.ValueInt64()))
-		}
-	case !config.GlobalConcurrencyLimitID.IsNull():
-		if !plan.GlobalConcurrencyLimitID.IsNull() && !plan.GlobalConcurrencyLimitID.IsUnknown() {
-			payload.globalConcurrencyLimitID = json.RawMessage(fmt.Sprintf("%q", plan.GlobalConcurrencyLimitID.ValueUUID().String()))
-		}
-	case !prior.GlobalConcurrencyLimitID.IsNull() && !prior.GlobalConcurrencyLimitID.IsUnknown():
+	case !plan.ConcurrencyLimit.IsNull() && !plan.ConcurrencyLimit.IsUnknown():
+		payload.concurrencyLimit = json.RawMessage(fmt.Sprintf("%d", plan.ConcurrencyLimit.ValueInt64()))
+	case plan.ConcurrencyLimit.IsUnknown():
+		// Omit unresolved configured values.
+	case !plan.GlobalConcurrencyLimitID.IsNull() && !plan.GlobalConcurrencyLimitID.IsUnknown():
+		payload.globalConcurrencyLimitID = json.RawMessage(fmt.Sprintf("%q", plan.GlobalConcurrencyLimitID.ValueUUID().String()))
+	case plan.GlobalConcurrencyLimitID.IsNull() &&
+		!prior.GlobalConcurrencyLimitID.IsNull() &&
+		!prior.GlobalConcurrencyLimitID.IsUnknown():
 		payload.globalConcurrencyLimitID = json.RawMessage("null")
+	case plan.GlobalConcurrencyLimitID.IsUnknown() &&
+		!prior.GlobalConcurrencyLimitID.IsNull() &&
+		!prior.GlobalConcurrencyLimitID.IsUnknown():
+		// Omit unresolved configured values.
 	default:
 		payload.concurrencyLimit = json.RawMessage("null")
 	}
@@ -1031,15 +1064,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 	var model DeploymentResourceModel
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &model)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// global_concurrency_limit_id is Optional and Computed, so an omitted value
-	// is unknown in the plan. The configuration preserves whether the value was
-	// removed or is still configured but unresolved.
-	var config DeploymentResourceModel
-	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -1101,7 +1125,7 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	concurrencyUpdate := concurrencyUpdateValues(config, model, priorState)
+	concurrencyUpdate := concurrencyUpdateValues(model, priorState)
 	payload := api.DeploymentUpdate{
 		ConcurrencyLimit:         concurrencyUpdate.concurrencyLimit,
 		ConcurrencyOptions:       concurrencyUpdate.concurrencyOptions,

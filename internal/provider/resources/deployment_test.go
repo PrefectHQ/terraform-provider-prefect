@@ -303,7 +303,6 @@ resource "prefect_deployment" "%[6]s" {
 }
 `, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
 
-	// Configuration for removing the global concurrency limit from the deployment
 	cfgRemove := fmt.Sprintf(`
 %[1]s
 
@@ -352,7 +351,6 @@ resource "prefect_deployment" "%[6]s" {
 				},
 			},
 			{
-				// Check removal without deleting the shared global concurrency limit
 				Config: cfgRemove,
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNull(deploymentResourceName, "global_concurrency_limit_id"),
