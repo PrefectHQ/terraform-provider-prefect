@@ -16,6 +16,7 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 
 	tests := []struct {
 		name              string
+		config            DeploymentResourceModel
 		plan              DeploymentResourceModel
 		prior             DeploymentResourceModel
 		wantLimit         string
@@ -24,16 +25,38 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 	}{
 		{
 			name: "concurrency limit set",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Value(2),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Value(2),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			wantLimit:         "2",
 			wantOptions:       "null",
 			wantGlobalLimitID: "<omitted>",
 		},
 		{
+			name: "concurrency limit unknown",
+			config: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Unknown(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Unknown(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
+			},
+			wantLimit:         "<omitted>",
+			wantOptions:       "null",
+			wantGlobalLimitID: "<omitted>",
+		},
+		{
 			name: "global concurrency limit ID set",
+			config: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDValue(limitID),
+			},
 			plan: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDValue(limitID),
@@ -44,19 +67,31 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "global concurrency limit ID unknown",
+			config: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
+			},
 			plan: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
-			wantLimit:         "null",
+			prior: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDValue(limitID),
+			},
+			wantLimit:         "<omitted>",
 			wantOptions:       "null",
 			wantGlobalLimitID: "<omitted>",
 		},
 		{
 			name: "nothing configured with no prior limit",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			prior: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
@@ -68,9 +103,13 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "nothing configured with prior concurrency limit",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			prior: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Value(2),
@@ -82,9 +121,13 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "global concurrency limit ID removed",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			prior: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
@@ -96,9 +139,13 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "concurrency options set",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 				ConcurrencyOptions: &ConcurrencyOptions{
 					CollisionStrategy: types.StringValue("ENQUEUE"),
 				},
@@ -109,9 +156,13 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "concurrency options removed with no prior options",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			wantLimit:         "null",
 			wantOptions:       "null",
@@ -119,9 +170,13 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		},
 		{
 			name: "concurrency options removed with prior options",
-			plan: DeploymentResourceModel{
+			config: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
 				GlobalConcurrencyLimitID: customtypes.NewUUIDNull(),
+			},
+			plan: DeploymentResourceModel{
+				ConcurrencyLimit:         types.Int64Null(),
+				GlobalConcurrencyLimitID: customtypes.NewUUIDUnknown(),
 			},
 			prior: DeploymentResourceModel{
 				ConcurrencyLimit:         types.Int64Null(),
@@ -140,7 +195,7 @@ func TestConcurrencyUpdateValues(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := concurrencyUpdateValues(tt.plan, tt.prior)
+			got := concurrencyUpdateValues(tt.config, tt.plan, tt.prior)
 
 			if got := rawMessageString(got.concurrencyLimit); got != tt.wantLimit {
 				t.Errorf("concurrency_limit = %q, want %q", got, tt.wantLimit)

@@ -70,8 +70,8 @@ type DeploymentCreate struct {
 type DeploymentUpdate struct {
 	// The Prefect API distinguishes "field absent" (no change) from "field is
 	// null" (clear). The resource builds concurrency_limit and
-	// global_concurrency_limit_id from the planned configuration and sends at
-	// most one of them. An update with no configured limit sends an explicit
+	// global_concurrency_limit_id from the configuration, plan, and prior state.
+	// It sends at most one of them. An update with no configured limit sends an explicit
 	// concurrency_limit:null; removing a global_concurrency_limit_id instead
 	// sends global_concurrency_limit_id:null so a shared limit is detached
 	// without being deleted. concurrency_options also receives an explicit null

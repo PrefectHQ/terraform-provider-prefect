@@ -303,6 +303,34 @@ resource "prefect_deployment" "%[6]s" {
 }
 `, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
 
+	// Configuration for removing the global concurrency limit from the deployment
+	cfgRemove := fmt.Sprintf(`
+%[1]s
+
+resource "prefect_flow" "%[2]s" {
+	name = "%[2]s"
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test1" {
+	name = "%[4]s"
+	limit = 5
+	%[3]s
+}
+
+resource "prefect_global_concurrency_limit" "test2" {
+	name = "%[5]s"
+	limit = 10
+	%[3]s
+}
+
+resource "prefect_deployment" "%[6]s" {
+	name = "%[6]s"
+	flow_id = prefect_flow.%[2]s.id
+	%[3]s
+}
+`, workspace.Resource, flowName, workspace.IDArg, gcl1Name, gcl2Name, deploymentName)
+
 	deploymentResourceName := fmt.Sprintf("prefect_deployment.%s", deploymentName)
 
 	resource.ParallelTest(t, resource.TestCase{
@@ -321,6 +349,14 @@ resource "prefect_deployment" "%[6]s" {
 				Config: cfgUpdate,
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValueNotNull(deploymentResourceName, "global_concurrency_limit_id"),
+				},
+			},
+			{
+				// Check removal without deleting the shared global concurrency limit
+				Config: cfgRemove,
+				ConfigStateChecks: []statecheck.StateCheck{
+					testutils.ExpectKnownValueNull(deploymentResourceName, "global_concurrency_limit_id"),
+					testutils.ExpectKnownValueNotNull("prefect_global_concurrency_limit.test2", "id"),
 				},
 			},
 		},
