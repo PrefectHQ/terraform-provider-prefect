@@ -44,14 +44,14 @@ func TestAccResource_global_concurrency_limit(t *testing.T) {
 				},
 			},
 			{
-				// Check updating the resource
-				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, workspace.IDArg, "test2", 20, false, 1, 2),
+				// Keep decay disabled so active_slots stays stable through import verification.
+				Config: fixtureAccGlobalConcurrencyLimitCreate(workspace.Resource, workspace.IDArg, "test2", 20, false, 1, 0),
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "name", "test2"),
 					testutils.ExpectKnownValueNumber(resourceName, "limit", 20),
 					testutils.ExpectKnownValueBool(resourceName, "active", false),
 					testutils.ExpectKnownValueNumber(resourceName, "active_slots", 1),
-					testutils.ExpectKnownValueFloat(resourceName, "slot_decay_per_second", 2),
+					testutils.ExpectKnownValueFloat(resourceName, "slot_decay_per_second", 0),
 				},
 			},
 			{

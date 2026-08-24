@@ -69,17 +69,17 @@ type DeploymentCreate struct {
 // DeploymentUpdate is a subset of Deployment used when updating deployments.
 type DeploymentUpdate struct {
 	// The Prefect API distinguishes "field absent" (no change) from "field is
-	// null" (clear). concurrency_limit and global_concurrency_limit_id route
-	// through the same underlying limit, so sending an explicit null for either
-	// clears it, and sending concurrency_limit alongside an explicit
-	// global_concurrency_limit_id:null can trip a 409. concurrency_options is
-	// not cleared automatically when the limit is, so removing it also needs an
-	// explicit null.
+	// null" (clear). The resource builds concurrency_limit and
+	// global_concurrency_limit_id from the plan and prior state. It sends at
+	// most one of them. An update with no configured limit sends an explicit
+	// concurrency_limit:null; removing a global_concurrency_limit_id instead
+	// sends global_concurrency_limit_id:null so a shared limit is detached
+	// without being deleted. concurrency_options also receives an explicit null
+	// when it is absent from the planned configuration.
 	//
 	// Because the standard `omitempty` tag cannot emit an explicit null, these
-	// fields are encoded as json.RawMessage and populated only when they should
-	// change. See the concurrency*UpdateValue helpers in the deployment
-	// resource's Update.
+	// fields are encoded as json.RawMessage and populated by the concurrency
+	// payload helper in the deployment resource's Update.
 	ConcurrencyLimit         json.RawMessage `json:"concurrency_limit,omitempty"`
 	ConcurrencyOptions       json.RawMessage `json:"concurrency_options,omitempty"`
 	Description              *string         `json:"description,omitempty"`
