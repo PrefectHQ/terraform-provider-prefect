@@ -32,9 +32,34 @@ import (
 )
 
 var (
-	_ = resource.ResourceWithConfigure(&DeploymentResource{})
-	_ = resource.ResourceWithImportState(&DeploymentResource{})
+	_                     = resource.ResourceWithConfigure(&DeploymentResource{})
+	_                     = resource.ResourceWithImportState(&DeploymentResource{})
+	_                     = resource.ResourceWithModifyPlan(&DeploymentResource{})
+	_ planmodifier.String = globalLimitRemovalModifier{}
 )
+
+type globalLimitRemovalModifier struct{}
+
+// Description describes the plan modification.
+func (globalLimitRemovalModifier) Description(_ context.Context) string {
+	return "plans a null global concurrency limit ID when the attribute is removed from configuration"
+}
+
+// MarkdownDescription describes the plan modification in Markdown.
+func (m globalLimitRemovalModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+// PlanModifyString plans a null ID when a configured global concurrency limit
+// is removed. Terraform otherwise retains the prior value for this Optional
+// and Computed attribute.
+func (globalLimitRemovalModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if !req.ConfigValue.IsNull() || req.StateValue.IsNull() || req.StateValue.IsUnknown() {
+		return
+	}
+
+	resp.PlanValue = types.StringNull()
+}
 
 // DeploymentResource contains state for the resource.
 type DeploymentResource struct {
@@ -366,6 +391,9 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Optional:    true,
 				Computed:    true,
 				CustomType:  customtypes.UUIDType{},
+				PlanModifiers: []planmodifier.String{
+					globalLimitRemovalModifier{},
+				},
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(path.MatchRoot("concurrency_limit")),
 				},
@@ -496,6 +524,33 @@ func (r *DeploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 			},
 		},
 	}
+}
+
+// ModifyPlan marks the update timestamp unknown when removing a global
+// concurrency limit. The attribute plan modifier introduces the resource
+// change after Terraform has processed computed attributes.
+func (r *DeploymentResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || req.State.Raw.IsNull() {
+		return
+	}
+
+	var planGlobalLimitID customtypes.UUIDValue
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("global_concurrency_limit_id"), &planGlobalLimitID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var priorGlobalLimitID customtypes.UUIDValue
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("global_concurrency_limit_id"), &priorGlobalLimitID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if !globalLimitRemoved(planGlobalLimitID, priorGlobalLimitID) {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, path.Root("updated"), customtypes.NewTimestampUnknown())...)
 }
 
 func mapPullStepsTerraformToAPI(tfPullSteps []PullStepModel) ([]api.PullStep, diag.Diagnostics) {
@@ -707,7 +762,11 @@ func CopyDeploymentToModel(ctx context.Context, deployment *api.Deployment, mode
 	model.Name = types.StringValue(deployment.Name)
 	model.Path = types.StringValue(deployment.Path)
 	model.Paused = types.BoolValue(deployment.Paused)
-	model.StorageDocumentID = customtypes.NewUUIDValue(deployment.StorageDocumentID)
+	if deployment.StorageDocumentID == uuid.Nil {
+		model.StorageDocumentID = customtypes.NewUUIDNull()
+	} else {
+		model.StorageDocumentID = customtypes.NewUUIDValue(deployment.StorageDocumentID)
+	}
 	model.Version = types.StringValue(deployment.Version)
 	model.WorkPoolName = types.StringValue(deployment.WorkPoolName)
 	model.WorkQueueName = types.StringValue(deployment.WorkQueueName)
@@ -975,60 +1034,59 @@ func (r *DeploymentResource) Read(ctx context.Context, req resource.ReadRequest,
 	}
 }
 
-// concurrencyUpdateValue computes the concurrency_limit value to send in a
+// concurrencyUpdatePayload contains the concurrency fields to send in a
+// deployment update.
+type concurrencyUpdatePayload struct {
+	concurrencyLimit         json.RawMessage
+	concurrencyOptions       json.RawMessage
+	globalConcurrencyLimitID json.RawMessage
+}
+
+func globalLimitRemoved(plan, prior customtypes.UUIDValue) bool {
+	return plan.IsNull() && !prior.IsNull() && !prior.IsUnknown()
+}
+
+// concurrencyUpdateValues computes the concurrency fields to send in a
 // deployment update. The Prefect API distinguishes an absent field (no change)
-// from an explicit null (clear the limit), so we only include the field when it
-// is being set or cleared:
+// from an explicit null (clear). At most one of concurrency_limit and
+// global_concurrency_limit_id is sent:
 //
-//   - plan has a value          -> send that value
-//   - plan null, prior had value -> send null (clear)
-//   - plan null, prior null      -> omit (return nil RawMessage)
+//   - a planned concurrency_limit value -> send that value
+//   - a planned global_concurrency_limit_id value -> send that ID
+//   - a removed global_concurrency_limit_id -> send global_concurrency_limit_id:null
+//   - otherwise -> send concurrency_limit:null
 //
-// Returning a nil json.RawMessage leaves the omitempty field out of the payload.
-func concurrencyUpdateValue(plan, prior types.Int64) json.RawMessage {
-	switch {
-	case !plan.IsNull():
-		return json.RawMessage(fmt.Sprintf("%d", plan.ValueInt64()))
-	case !prior.IsNull():
-		return json.RawMessage("null")
-	default:
-		return nil
-	}
-}
+// Removing a global concurrency limit ID detaches the deployment without
+// deleting the underlying shared limit. Unknown configured values are omitted
+// until Terraform resolves them. concurrency_options uses an explicit null when
+// it is absent from the planned configuration.
+func concurrencyUpdateValues(plan, prior DeploymentResourceModel) concurrencyUpdatePayload {
+	var payload concurrencyUpdatePayload
 
-// globalConcurrencyLimitUpdateValue mirrors concurrencyUpdateValue for the
-// global_concurrency_limit_id field. The same underlying limit backs both
-// fields server-side, so we send each only when it actually changes to avoid
-// clobbering the other or tripping a data-integrity conflict.
-//
-// This attribute is Computed, so when it is absent from config its planned
-// value is unknown (not null). An unknown value means "leave it alone", so we
-// omit the field in that case rather than sending the zero UUID.
-func globalConcurrencyLimitUpdateValue(plan, prior customtypes.UUIDValue) json.RawMessage {
 	switch {
-	case plan.IsUnknown():
-		return nil
-	case !plan.IsNull():
-		return json.RawMessage(fmt.Sprintf("%q", plan.ValueUUID().String()))
-	case !prior.IsNull() && !prior.IsUnknown():
-		return json.RawMessage("null")
+	case !plan.ConcurrencyLimit.IsNull() && !plan.ConcurrencyLimit.IsUnknown():
+		payload.concurrencyLimit = json.RawMessage(fmt.Sprintf("%d", plan.ConcurrencyLimit.ValueInt64()))
+	case plan.ConcurrencyLimit.IsUnknown():
+		// Omit unresolved configured values.
+	case !plan.GlobalConcurrencyLimitID.IsNull() && !plan.GlobalConcurrencyLimitID.IsUnknown():
+		payload.globalConcurrencyLimitID = json.RawMessage(fmt.Sprintf("%q", plan.GlobalConcurrencyLimitID.ValueUUID().String()))
+	case globalLimitRemoved(plan.GlobalConcurrencyLimitID, prior.GlobalConcurrencyLimitID):
+		payload.globalConcurrencyLimitID = json.RawMessage("null")
+	case plan.GlobalConcurrencyLimitID.IsUnknown() &&
+		!prior.GlobalConcurrencyLimitID.IsNull() &&
+		!prior.GlobalConcurrencyLimitID.IsUnknown():
+		// Omit unresolved configured values.
 	default:
-		return nil
+		payload.concurrencyLimit = json.RawMessage("null")
 	}
-}
 
-// concurrencyOptionsUpdateValue mirrors concurrencyUpdateValue for the
-// concurrency_options field. The server does not clear concurrency_options when
-// the limit is cleared, so removing it from config requires an explicit null.
-func concurrencyOptionsUpdateValue(plan, prior *ConcurrencyOptions) json.RawMessage {
-	switch {
-	case plan != nil:
-		return json.RawMessage(fmt.Sprintf(`{"collision_strategy":%q}`, plan.CollisionStrategy.ValueString()))
-	case prior != nil:
-		return json.RawMessage("null")
-	default:
-		return nil
+	if plan.ConcurrencyOptions != nil {
+		payload.concurrencyOptions = json.RawMessage(fmt.Sprintf(`{"collision_strategy":%q}`, plan.ConcurrencyOptions.CollisionStrategy.ValueString()))
+	} else {
+		payload.concurrencyOptions = json.RawMessage("null")
 	}
+
+	return payload
 }
 
 // Update updates the resource and sets the updated Terraform state on success.
@@ -1040,10 +1098,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// We need the prior state to know whether a concurrency limit is being
-	// cleared. The Prefect API only clears a limit when it receives an explicit
-	// null, and routes both concurrency_limit and global_concurrency_limit_id
-	// through the same underlying limit, so we send each only when it changes.
 	var priorState DeploymentResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &priorState)...)
 	if resp.Diagnostics.HasError() {
@@ -1101,12 +1155,14 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
+	concurrencyUpdate := concurrencyUpdateValues(model, priorState)
 	payload := api.DeploymentUpdate{
-		ConcurrencyLimit:         concurrencyUpdateValue(model.ConcurrencyLimit, priorState.ConcurrencyLimit),
+		ConcurrencyLimit:         concurrencyUpdate.concurrencyLimit,
+		ConcurrencyOptions:       concurrencyUpdate.concurrencyOptions,
 		Description:              model.Description.ValueStringPointer(),
 		EnforceParameterSchema:   model.EnforceParameterSchema.ValueBoolPointer(),
 		Entrypoint:               model.Entrypoint.ValueStringPointer(),
-		GlobalConcurrencyLimitID: globalConcurrencyLimitUpdateValue(model.GlobalConcurrencyLimitID, priorState.GlobalConcurrencyLimitID),
+		GlobalConcurrencyLimitID: concurrencyUpdate.globalConcurrencyLimitID,
 		JobVariables:             jobVariables,
 		ParameterOpenAPISchema:   parameterOpenAPISchema,
 		Parameters:               parameters,
@@ -1119,8 +1175,6 @@ func (r *DeploymentResource) Update(ctx context.Context, req resource.UpdateRequ
 		WorkPoolName:             model.WorkPoolName.ValueStringPointer(),
 		WorkQueueName:            model.WorkQueueName.ValueStringPointer(),
 	}
-
-	payload.ConcurrencyOptions = concurrencyOptionsUpdateValue(model.ConcurrencyOptions, priorState.ConcurrencyOptions)
 
 	// Capture the planned parameter_openapi_schema before the API call
 	// overwrites it (same reason as in Create).

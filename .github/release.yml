@@ -19,6 +19,8 @@ changelog:
     - title: Dependency Updates
       labels:
         - dependencies
+        - automated-dependency-updates
+        - renovate
     - title: Documentation
       labels:
         - docs
