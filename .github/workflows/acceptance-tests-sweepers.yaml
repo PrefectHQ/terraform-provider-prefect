@@ -19,11 +19,11 @@ jobs:
     environment: 'Acceptance Tests (main)'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       # This action installs go and caches downloaded modules, so we favor
       # this over using the `mise-action` to install Go.
       - name: Set up Golang
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: 'go.mod'
       - name: Install tool dependencies
