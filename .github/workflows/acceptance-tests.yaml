@@ -45,7 +45,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Install tool dependencies
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5
         with:
           install_args: gotestsum terraform
 
