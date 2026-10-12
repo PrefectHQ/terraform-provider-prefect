@@ -57,6 +57,7 @@ func (sa *ServiceAccountsClient) Create(ctx context.Context, request api.Service
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
@@ -83,6 +84,7 @@ func (sa *ServiceAccountsClient) List(ctx context.Context, names []string) ([]*a
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -103,6 +105,7 @@ func (sa *ServiceAccountsClient) Get(ctx context.Context, botID string) (*api.Se
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusOK,
 	}
 
@@ -123,6 +126,7 @@ func (sa *ServiceAccountsClient) Update(ctx context.Context, botID string, reque
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -145,6 +149,7 @@ func (sa *ServiceAccountsClient) Delete(ctx context.Context, botID string) error
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusOKOrNoContent,
 	}
 
@@ -167,6 +172,7 @@ func (sa *ServiceAccountsClient) RotateKey(ctx context.Context, serviceAccountID
 		basicAuthKey:    sa.basicAuthKey,
 		csrfClientToken: sa.csrfClientToken,
 		csrfToken:       sa.csrfToken,
+		customHeaders:   sa.customHeaders,
 		successCodes:    successCodesStatusCreated,
 	}
 
