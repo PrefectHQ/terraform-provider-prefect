@@ -74,12 +74,15 @@ func (c *BlockSchemaClient) List(ctx context.Context, blockTypeIDs []uuid.UUID) 
 // Create creates a new BlockSchema.
 func (c *BlockSchemaClient) Create(ctx context.Context, payload *api.BlockSchemaCreate) (*api.BlockSchema, error) {
 	cfg := requestConfig{
-		method:       http.MethodPost,
-		url:          c.routePrefix,
-		body:         payload,
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusCreated,
+		method:          http.MethodPost,
+		url:             c.routePrefix,
+		body:            payload,
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusCreated,
 	}
 
 	var createdBlockSchema *api.BlockSchema
@@ -93,11 +96,14 @@ func (c *BlockSchemaClient) Create(ctx context.Context, payload *api.BlockSchema
 // Read gets a BlockSchema by ID.
 func (c *BlockSchemaClient) Read(ctx context.Context, id uuid.UUID) (*api.BlockSchema, error) {
 	cfg := requestConfig{
-		method:       http.MethodGet,
-		url:          c.routePrefix + "/" + id.String(),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusOK,
+		method:          http.MethodGet,
+		url:             c.routePrefix + "/" + id.String(),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusOK,
 	}
 
 	var blockSchema *api.BlockSchema
@@ -111,11 +117,14 @@ func (c *BlockSchemaClient) Read(ctx context.Context, id uuid.UUID) (*api.BlockS
 // Delete deletes a BlockSchema by ID.
 func (c *BlockSchemaClient) Delete(ctx context.Context, id uuid.UUID) error {
 	cfg := requestConfig{
-		method:       http.MethodDelete,
-		url:          c.routePrefix + "/" + id.String(),
-		apiKey:       c.apiKey,
-		basicAuthKey: c.basicAuthKey,
-		successCodes: successCodesStatusNoContent,
+		method:          http.MethodDelete,
+		url:             c.routePrefix + "/" + id.String(),
+		apiKey:          c.apiKey,
+		basicAuthKey:    c.basicAuthKey,
+		csrfClientToken: c.csrfClientToken,
+		csrfToken:       c.csrfToken,
+		customHeaders:   c.customHeaders,
+		successCodes:    successCodesStatusNoContent,
 	}
 
 	resp, err := request(ctx, c.hc, cfg)
