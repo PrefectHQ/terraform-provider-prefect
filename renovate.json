@@ -39,6 +39,30 @@
         "1password/cli"
       ],
       "enabled": false
+    },
+    {
+      "description": "Renovate leaves the go.mod `go` directive alone by default. Bump it so it tracks the Go version pinned in .mise.toml, which CI reads through setup-go.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "matchDepTypes": [
+        "golang"
+      ],
+      "rangeStrategy": "bump"
+    },
+    {
+      "description": "Bump Go in .mise.toml and go.mod together in one PR so local and CI builds stay on the same version.",
+      "matchManagers": [
+        "mise",
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "groupName": "go"
     }
   ]
 }
