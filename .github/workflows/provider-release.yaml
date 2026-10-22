@@ -30,10 +30,12 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_KEYRING_BASE64 }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v7
+      - name: Install GoReleaser
+        uses: jdx/mise-action@v4
         with:
-          args: release --clean
+          install_args: goreleaser
+      - name: Run GoReleaser
+        run: goreleaser release --clean
         env:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
