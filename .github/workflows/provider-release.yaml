@@ -31,7 +31,7 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_KEYRING_BASE64 }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
       - name: Install GoReleaser
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5
         with:
           install_args: goreleaser
       - name: Run GoReleaser
