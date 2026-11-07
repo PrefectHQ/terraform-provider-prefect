@@ -257,7 +257,17 @@ func (r *BlockSchemaResource) Read(ctx context.Context, req resource.ReadRequest
 
 	blockSchema, err := blockSchemaClient.Read(ctx, state.ID.ValueUUID())
 	if err != nil {
+		// If the remote object does not exist, we can remove it from TF state
+		// so that the framework can queue up a new Create.
+		if helpers.Is404Error(err) {
+			resp.State.RemoveResource(ctx)
+
+			return
+		}
+
 		resp.Diagnostics.Append(helpers.ResourceClientErrorDiagnostic("Block Schema", "get", err))
+
+		return
 	}
 
 	diags = copyBlockSchemaToModel(ctx, blockSchema, &state)
