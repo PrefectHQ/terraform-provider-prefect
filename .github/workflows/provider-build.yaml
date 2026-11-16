@@ -71,7 +71,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Install golangci-lint
-        uses: jdx/mise-action@v4
+        uses: jdx/mise-action@v5
         with:
           install_args: golangci-lint
 
