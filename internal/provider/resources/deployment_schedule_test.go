@@ -246,6 +246,8 @@ func TestAccResource_deployment_schedule(t *testing.T) {
 				ConfigStateChecks: []statecheck.StateCheck{
 					testutils.ExpectKnownValue(resourceName, "cron", "* * * * *"),
 					testutils.ExpectKnownValueBool(resourceName, "day_or", true),
+					// Removing parameters from config must clear the previous step's overrides.
+					testutils.ExpectKnownValue(resourceName, "parameters", "{}"),
 				},
 			},
 			{

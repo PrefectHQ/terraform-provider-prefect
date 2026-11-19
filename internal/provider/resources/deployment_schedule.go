@@ -223,6 +223,9 @@ func (r *DeploymentScheduleResource) Create(ctx context.Context, req resource.Cr
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	if parameters == nil {
+		parameters = map[string]any{}
+	}
 
 	cfgCreate := []api.DeploymentSchedulePayload{
 		{
@@ -343,6 +346,9 @@ func (r *DeploymentScheduleResource) Update(ctx context.Context, req resource.Up
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+	if parameters == nil {
+		parameters = map[string]any{}
 	}
 
 	cfgUpdate := api.DeploymentSchedulePayload{
