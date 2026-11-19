@@ -27,8 +27,10 @@ type DeploymentSchedulePayload struct {
 	Active           *bool   `json:"active,omitempty"`
 	MaxScheduledRuns float32 `json:"max_scheduled_runs,omitempty"`
 
-	Schedule   Schedule       `json:"schedule"`
-	Parameters map[string]any `json:"parameters,omitempty"`
+	Schedule Schedule `json:"schedule"`
+	// Parameters is always sent, even when empty. The server keeps the existing
+	// overrides when a PATCH omits the field, so omitting {} would never clear them.
+	Parameters map[string]any `json:"parameters"`
 	Slug       string         `json:"slug,omitempty"`
 }
 
