@@ -175,6 +175,8 @@ func (r *AccountMemberResource) Read(ctx context.Context, req resource.ReadReque
 	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	accountMembers, err := client.List(ctx, []string{state.Email.ValueString()})
@@ -218,6 +220,8 @@ func (r *AccountMemberResource) Update(ctx context.Context, req resource.UpdateR
 	client, err := r.client.AccountMemberships(plan.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	payload := api.AccountMembershipUpdate{
@@ -277,6 +281,8 @@ func (r *AccountMemberResource) Delete(ctx context.Context, req resource.DeleteR
 	client, err := r.client.AccountMemberships(state.AccountID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	id, err := uuid.Parse(state.ID.ValueString())

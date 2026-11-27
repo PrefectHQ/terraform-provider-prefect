@@ -152,6 +152,8 @@ func (d *AccountDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	client, err := d.client.Accounts(accountID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	account, err := client.Get(ctx)

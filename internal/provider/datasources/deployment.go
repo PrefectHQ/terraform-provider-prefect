@@ -278,6 +278,8 @@ func (d *deploymentDataSource) Read(ctx context.Context, req datasource.ReadRequ
 	client, err := d.client.Deployments(model.AccountID.ValueUUID(), model.WorkspaceID.ValueUUID())
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Deployment", err))
+
+		return
 	}
 
 	// A deployment can be imported + read by either ID or Handle

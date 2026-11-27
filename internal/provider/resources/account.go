@@ -230,6 +230,8 @@ func (r *AccountResource) Read(ctx context.Context, req resource.ReadRequest, re
 	client, err := r.client.Accounts(accountID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	account, err := client.Get(ctx)
@@ -281,6 +283,8 @@ func (r *AccountResource) Update(ctx context.Context, req resource.UpdateRequest
 	client, err := r.client.Accounts(accountID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	err = client.Update(ctx, api.AccountUpdate{
@@ -368,6 +372,8 @@ func (r *AccountResource) Delete(ctx context.Context, req resource.DeleteRequest
 	client, err := r.client.Accounts(accountID)
 	if err != nil {
 		resp.Diagnostics.Append(helpers.CreateClientErrorDiagnostic("Account", err))
+
+		return
 	}
 
 	err = client.Delete(ctx)
